@@ -4,57 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>题目列表 - 考试系统</title>
-
-  <!-- TailwindCSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- FontAwesome CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- TailwindCSS 自定义配置 -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: {
-              50: '#E6F9F0',
-              100: '#B3EDCE',
-              200: '#80E0AD',
-              300: '#4DD48B',
-              400: '#1AC76A',
-              500: '#00B96B',
-              600: '#00A35C',
-              700: '#008A4D',
-              800: '#00703E',
-              900: '#00572F',
-            },
-            success: {
-              50: '#E8FFEA',
-              500: '#00B42A',
-              600: '#009A24',
-            },
-            warning: {
-              50: '#FFF7E8',
-              500: '#FF7D00',
-              600: '#D66A00',
-            },
-            error: {
-              50: '#FFECE8',
-              500: '#F53F3F',
-              600: '#CB2634',
-            },
-            info: {
-              50: '#E8F7FF',
-              500: '#14C9C9',
-              600: '#0EAAAA',
-            },
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
           }
         }
       }
     }
   </script>
-  <!-- iframe嵌入检测脚本 - 放在head中立即执行 -->
+  <style>
+    /* 苹果风格卡片 */
+    .apple-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .apple-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* 知识点树样式 */
+    .tree-item {
+      transition: all 0.2s;
+    }
+    .tree-item:hover {
+      background-color: #F9FAFB;
+    }
+    .tree-item.active {
+      background-color: #E6F9F0;
+      color: #00B96B;
+      font-weight: 500;
+    }
+
+    /* 滚动条样式 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #a1a1a1;
+    }
+  </style>
+  <!-- iframe嵌入检测脚本 -->
   <script>
   (function() {
     function isInIframe() {
@@ -65,259 +70,442 @@
     }
   })();
   </script>
-
 </head>
 <body class="bg-gray-50">
-  <div class="min-h-screen">
-    <!-- 顶部导航栏 -->
-    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-      <div class="flex items-center justify-between h-full px-6">
-        <div class="flex items-center space-x-4">
-          <button id="sidebarToggle" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-            <i class="fas fa-bars"></i>
-          </button>
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
-              <i class="fas fa-graduation-cap text-white"></i>
-            </div>
-            <span class="text-xl font-semibold text-gray-900">考试系统</span>
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
           </div>
-          <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <a href="#" class="hover:text-primary-500 transition-colors">首页</a>
-            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
-            <a href="#" class="hover:text-primary-500 transition-colors">题库管理</a>
-            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
-            <span class="text-gray-900 font-medium">题目列表</span>
-          </nav>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
         </div>
-        <div class="flex items-center space-x-4">
-          <button class="relative w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-            <i class="fas fa-bell"></i>
-            <span class="absolute -top-1 -right-1 w-5 h-5 bg-error-500 text-white text-xs font-medium rounded-full flex items-center justify-center">3</span>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">题库管理</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <img src="https://via.placeholder.com/32" alt="用户" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700 font-medium">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="pt-16 flex h-screen">
+    <!-- 左侧知识点树 -->
+    <aside class="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <!-- 搜索栏 -->
+      <div class="p-4 border-b border-gray-200">
+        <div class="relative mb-3">
+          <input type="text" id="searchInput" placeholder="搜索知识点..." oninput="searchKnowledge(this.value)"
+                 class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+          <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+            <i class="fas fa-times text-xs"></i>
           </button>
-          <div class="relative">
-            <button id="userMenuBtn" class="flex items-center space-x-2 px-3 py-1.5 hover:bg-gray-100 rounded transition-colors">
-              <img src="https://via.placeholder.com/32" alt="用户头像" class="w-8 h-8 rounded-full">
-              <span class="text-sm text-gray-700 font-medium">管理员</span>
-              <i class="fas fa-chevron-down text-xs text-gray-400"></i>
-            </button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-md py-1">
-              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <i class="fas fa-user w-4"></i>
-                <span>个人信息</span>
-              </a>
-              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <i class="fas fa-cog w-4"></i>
-                <span>系统设置</span>
-              </a>
-              <div class="border-t border-gray-200 my-1"></div>
-              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-error-500 hover:bg-error-50">
-                <i class="fas fa-sign-out-alt w-4"></i>
-                <span>退出登录</span>
-              </a>
+        </div>
+        <button onclick="addRootKnowledge()" class="w-full bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-plus mr-2"></i>新增知识点
+        </button>
+      </div>
+
+      <!-- 知识点树 -->
+      <div id="knowledgeTree" class="flex-1 overflow-y-auto custom-scrollbar p-4">
+        <div class="space-y-1">
+          <!-- 全部题目 -->
+          <div class="tree-item active px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between" onclick="selectAllQuestions(this)">
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-folder text-primary-500"></i>
+              <span class="text-sm">全部题目</span>
             </div>
+            <span class="text-xs text-gray-500">128</span>
+          </div>
+
+          <!-- 动态渲染的知识点树 -->
+          <div id="knowledgeTreeContainer" class="mt-4 space-y-1">
+            <!-- 将通过JavaScript动态渲染 -->
           </div>
         </div>
       </div>
-    </header>
-
-    <!-- 侧边栏 -->
-    <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 fixed top-16 left-0 bottom-0 overflow-y-auto transition-all duration-300">
-      <nav class="p-4">
-        <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors">
-          <i class="fas fa-home w-5"></i>
-          <span class="sidebar-text">首页</span>
-        </a>
-        <div class="mt-2">
-          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium bg-primary-50 text-primary-600">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-book w-5"></i>
-              <span class="sidebar-text">题库管理</span>
-            </div>
-            <i class="fas fa-chevron-down text-xs sidebar-text"></i>
-          </button>
-          <div class="submenu ml-8 mt-1 space-y-1">
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-primary-600 bg-primary-50 font-medium">题目列表</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">标准录入</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">简便录入</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">AI出题</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">知识点管理</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题目查重</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题库统计</a>
-            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题目导出</a>
-          </div>
-        </div>
-        <div class="mt-2">
-          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-file-alt w-5"></i>
-              <span class="sidebar-text">试卷管理</span>
-            </div>
-            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
-          </button>
-        </div>
-        <div class="mt-2">
-          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-clipboard-check w-5"></i>
-              <span class="sidebar-text">考试管理</span>
-            </div>
-            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
-          </button>
-        </div>
-        <div class="mt-2">
-          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-brain w-5"></i>
-              <span class="sidebar-text">刷题管理</span>
-            </div>
-            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
-          </button>
-        </div>
-        <div class="border-t border-gray-200 my-4"></div>
-        <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          <i class="fas fa-cog w-5"></i>
-          <span class="sidebar-text">系统设置</span>
-        </a>
-      </nav>
     </aside>
 
-    <!-- 主内容区 -->
-    <main id="mainContent" class="ml-64 pt-16 min-h-screen transition-all duration-300">
-      <div class="p-6">
-        <!-- 页面标题区 -->
-        <div class="flex items-center justify-between mb-6">
+    <!-- 右侧主内容区 -->
+    <main class="flex-1 flex flex-col bg-gray-50">
+      <!-- 工具栏 -->
+      <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-semibold text-gray-900">题目列表</h1>
-            <p class="mt-1 text-sm text-gray-500">管理和查看所有题目信息</p>
+            <h1 class="text-xl font-semibold text-gray-900">全部题目</h1>
+            <p class="mt-1 text-sm text-gray-500">共 128 道题目</p>
           </div>
           <div class="flex items-center space-x-3">
-            <button class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm transition-colors">
-              <i class="fas fa-download mr-2"></i>
-              导出
-            </button>
-            <button onclick="openAddModal()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors">
-              <i class="fas fa-plus mr-2"></i>
-              新增题目
+            <!-- 题型筛选 -->
+            <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option>全部题型</option>
+              <option>单选题</option>
+              <option>多选题</option>
+              <option>判断题</option>
+              <option>填空题</option>
+              <option>简答题</option>
+              <option disabled>───────</option>
+              <option>阅读理解</option>
+              <option>材料分析</option>
+              <option>综合应用</option>
+            </select>
+
+            <!-- 难度筛选 -->
+            <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option>全部难度</option>
+              <option>一级</option>
+              <option>二级</option>
+              <option>三级</option>
+              <option>四级</option>
+              <option>五级</option>
+            </select>
+
+            <!-- 排序 -->
+            <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option>最新创建</option>
+              <option>最早创建</option>
+              <option>使用最多</option>
+              <option>难度升序</option>
+              <option>难度降序</option>
+            </select>
+
+            <!-- 新增按钮 -->
+            <button onclick="addNewQuestion()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center space-x-2">
+              <i class="fas fa-plus"></i>
+              <span>新增题目</span>
             </button>
           </div>
         </div>
+      </div>
 
-        <!-- 筛选区域 -->
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <!-- 题型选择 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">题型</label>
-              <select class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
-                <option value="">全部题型</option>
-                <option value="single">单选题</option>
-                <option value="multiple">多选题</option>
-                <option value="judge">判断题</option>
-                <option value="fill">填空题</option>
-                <option value="essay">简答题</option>
-              </select>
-            </div>
-
-            <!-- 知识点选择 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">知识点</label>
-              <select class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
-                <option value="">全部知识点</option>
-                <option value="1">计算机基础</option>
-                <option value="2">数学基础</option>
-                <option value="3">英语基础</option>
-                <option value="4">语文基础</option>
-              </select>
-            </div>
-
-            <!-- 难度选择 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">难度</label>
-              <select class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
-                <option value="">全部难度</option>
-                <option value="1">一级</option>
-                <option value="2">二级</option>
-                <option value="3">三级</option>
-                <option value="4">四级</option>
-                <option value="5">五级</option>
-              </select>
-            </div>
-
-            <!-- 关键词搜索 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">关键词</label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i class="fas fa-search text-gray-400"></i>
+      <!-- 题目列表 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <div class="max-w-6xl mx-auto space-y-4">
+          <!-- 基础题型示例：单选题 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q001</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-info-50 text-info-700">
+                    <i class="fas fa-dot-circle mr-1.5"></i>单选题
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
+                    二级
+                  </span>
                 </div>
-                <input type="text" class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="搜索题目...">
+                <p class="text-gray-900 text-base leading-relaxed mb-3">
+                  下列关于计算机系统的描述，<strong>正确</strong>的是？
+                </p>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    计算机基础 / 计算机系统
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-15 14:30
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    张老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 12 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q001')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q001')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q001', '下列关于计算机系统的描述，正确的是？')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- 操作按钮 -->
-          <div class="flex items-center justify-end space-x-3">
-            <button class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm transition-colors">
-              <i class="fas fa-redo mr-2"></i>
-              重置
-            </button>
-            <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors">
-              <i class="fas fa-search mr-2"></i>
-              查询
-            </button>
+          <!-- 基础题型示例：多选题 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q002</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700">
+                    <i class="fas fa-check-double mr-1.5"></i>多选题
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
+                    二级
+                  </span>
+                </div>
+                <p class="text-gray-900 text-base leading-relaxed mb-3">
+                  以下哪些是Python的特点？（多选）
+                </p>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    编程语言 / Python基础
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-15 10:20
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    李老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 8 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q002')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q002')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q002', '以下哪些是Python的特点？（多选）')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- 表格区域 -->
-        <div class="table-container overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm">
-          <table class="data-table w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left">
-                  <input type="checkbox" id="selectAll" class="w-4 h-4 text-primary-500 rounded focus:ring-primary-500 border-gray-300">
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题干</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题型</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">知识点</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">难度</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody">
-              <!-- 数据将通过JavaScript动态填充 -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 分页器 -->
-        <div class="flex items-center justify-between mt-6">
-          <div class="text-sm text-gray-600">
-            显示 <span class="font-medium text-gray-900">1</span> 到 <span class="font-medium text-gray-900">10</span> 条，
-            共 <span class="font-medium text-gray-900">50</span> 条
+          <!-- 复合题型示例：阅读理解 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q003</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700">
+                    <i class="fas fa-layer-group mr-1.5"></i>阅读理解
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
+                    三级
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    <i class="fas fa-list-ol mr-1"></i>5 道子题
+                  </span>
+                </div>
+                <div class="mb-3">
+                  <div class="text-xs text-gray-500 mb-2">阅读材料：</div>
+                  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      HTTP协议是无状态协议。这意味着服务器不保留与客户端交互的任何信息。每个请求都是独立的，服务器不会记住之前的请求。为了解决这个问题，开发者通常使用Cookie、Session等技术来维持状态...
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    网络技术 / 网络协议
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-14 16:45
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    王老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 15 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q003')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q003')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q003', '阅读理解 - HTTP协议')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center space-x-1">
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-primary-500 bg-primary-500 text-white text-sm font-medium">1</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">2</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">3</button>
-            <span class="px-2 text-gray-400">...</span>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">5</button>
-            <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-            <div class="ml-4 flex items-center space-x-2">
-              <select class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
-                <option>100</option>
-              </select>
-              <span class="text-sm text-gray-600">条/页</span>
+
+          <!-- 复合题型示例：材料分析 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q004</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                    <i class="fas fa-layer-group mr-1.5"></i>材料分析
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error-50 text-error-700">
+                    四级
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    <i class="fas fa-list-ol mr-1"></i>3 道子题
+                  </span>
+                </div>
+                <div class="mb-3">
+                  <div class="text-xs text-gray-500 mb-2">分析材料：</div>
+                  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      某公司数据库设计方案：用户表(users)包含字段 id, username, password, email, phone, address, age, gender...共30个字段。所有用户信息都存储在一张表中...
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    数据库 / 数据库设计
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-14 09:30
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    赵老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 6 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q004')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q004')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q004', '材料分析 - 数据库设计')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 复合题型示例：综合应用 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q005</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-50 text-pink-700">
+                    <i class="fas fa-layer-group mr-1.5"></i>综合应用
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error-50 text-error-700">
+                    五级
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                    <i class="fas fa-list-ol mr-1"></i>4 道子题
+                  </span>
+                </div>
+                <div class="mb-3">
+                  <div class="text-xs text-gray-500 mb-2">应用场景：</div>
+                  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p class="text-sm text-gray-700 leading-relaxed">
+                      某电商平台需要开发一个商品搜索功能，要求支持关键词搜索、价格筛选、分类筛选、排序等功能。数据库中有100万条商品数据...
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    数据库 / SQL语法
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-13 15:20
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    孙老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 10 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q005')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q005')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q005', '综合应用 - 电商搜索功能')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 判断题示例 -->
+          <div class="apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <span class="text-xs font-mono font-semibold text-gray-400">Q006</span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
+                    <i class="fas fa-check mr-1.5"></i>判断题
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700">
+                    一级
+                  </span>
+                </div>
+                <p class="text-gray-900 text-base leading-relaxed mb-3">
+                  HTTP协议是无状态协议。
+                </p>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <i class="fas fa-folder text-gray-400 mr-1.5"></i>
+                    网络技术 / 网络协议
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-clock text-gray-400 mr-1.5"></i>
+                    2026-01-13 11:15
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-user text-gray-400 mr-1.5"></i>
+                    周老师
+                  </span>
+                  <span class="flex items-center">
+                    <i class="fas fa-chart-line text-gray-400 mr-1.5"></i>
+                    使用 20 次
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-2 ml-6">
+                <button onclick="viewQuestion('Q006')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editQuestion('Q006')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-info-500 hover:bg-info-50 rounded-lg transition-colors" title="编辑题目">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteQuestion('Q006', 'HTTP协议是无状态协议。')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded-lg transition-colors" title="删除题目">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -325,270 +513,624 @@
     </main>
   </div>
 
-  <!-- 新增题目模态框 -->
-  <div id="addModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">选择录入方式</h3>
-        <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 text-xl">
+  <!-- 移动知识点位置弹窗 -->
+  <div id="moveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">移动知识点</h3>
+        <button onclick="closeMoveModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="px-6 py-4">
-        <div class="space-y-3">
-          <button class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-primary-100 rounded flex items-center justify-center">
-                <i class="fas fa-edit text-primary-600 text-lg"></i>
-              </div>
-              <div class="text-left">
-                <p class="text-sm font-medium text-gray-900">标准录入</p>
-                <p class="text-xs text-gray-500">结构化表单录入</p>
-              </div>
-            </div>
-            <i class="fas fa-chevron-right text-gray-400"></i>
-          </button>
-
-          <button class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-info-100 rounded flex items-center justify-center">
-                <i class="fas fa-keyboard text-info-600 text-lg"></i>
-              </div>
-              <div class="text-left">
-                <p class="text-sm font-medium text-gray-900">简便录入</p>
-                <p class="text-xs text-gray-500">文本格式快速录入</p>
-              </div>
-            </div>
-            <i class="fas fa-chevron-right text-gray-400"></i>
-          </button>
-
-          <button class="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-warning-100 rounded flex items-center justify-center">
-                <i class="fas fa-robot text-warning-600 text-lg"></i>
-              </div>
-              <div class="text-left">
-                <p class="text-sm font-medium text-gray-900">AI出题</p>
-                <p class="text-xs text-gray-500">智能生成题目</p>
-              </div>
-            </div>
-            <i class="fas fa-chevron-right text-gray-400"></i>
-          </button>
-        </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">目标位置</label>
+        <select id="moveTargetSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+          <option value="root">根目录</option>
+          <!-- 动态填充其他知识点 -->
+        </select>
       </div>
-    </div>
-  </div>
-
-  <!-- 删除确认模态框 -->
-  <div id="deleteModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">删除确认</h3>
-        <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-600 text-xl">
-          <i class="fas fa-times"></i>
-        </button>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">排序位置</label>
+        <input type="number" id="movePositionInput" min="1" value="1"
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+               placeholder="输入位置序号（从1开始）">
       </div>
-      <div class="px-6 py-4">
-        <p class="text-sm text-gray-600">确定要删除这道题目吗？此操作不可恢复。</p>
-      </div>
-      <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <button onclick="closeDeleteModal()" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm">
+      <div class="flex items-center space-x-3">
+        <button onclick="closeMoveModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors">
           取消
         </button>
-        <button onclick="confirmDelete()" class="bg-error-500 hover:bg-error-600 text-white px-4 py-2 rounded font-medium text-sm">
-          确定删除
+        <button onclick="confirmMove()" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+          确定移动
         </button>
       </div>
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
-    // 模拟数据
-    const mockData = [
-      { id: 'Q001', content: '下列关于计算机系统的描述，正确的是？', type: '单选题', category: '计算机基础', difficulty: 2, createTime: '2026-01-15' },
-      { id: 'Q002', content: '以下哪些是Python的特点？（多选）', type: '多选题', category: '计算机基础', difficulty: 2, createTime: '2026-01-15' },
-      { id: 'Q003', content: 'HTTP协议是无状态协议', type: '判断题', category: '计算机基础', difficulty: 1, createTime: '2026-01-14' },
-      { id: 'Q004', content: '请简述面向对象编程的三大特性', type: '简答题', category: '计算机基础', difficulty: 3, createTime: '2026-01-14' },
-      { id: 'Q005', content: '二次方程 ax² + bx + c = 0 的求根公式为____', type: '填空题', category: '数学基础', difficulty: 2, createTime: '2026-01-13' },
-      { id: 'Q006', content: '英语中的现在完成时态的结构是什么？', type: '简答题', category: '英语基础', difficulty: 2, createTime: '2026-01-13' },
-      { id: 'Q007', content: '勾股定理只适用于直角三角形', type: '判断题', category: '数学基础', difficulty: 1, createTime: '2026-01-12' },
-      { id: 'Q008', content: '以下哪些属于唐宋八大家？（多选）', type: '多选题', category: '语文基础', difficulty: 3, createTime: '2026-01-12' },
-      { id: 'Q009', content: 'SQL中用于查询数据的关键字是？', type: '单选题', category: '计算机基础', difficulty: 1, createTime: '2026-01-11' },
-      { id: 'Q010', content: '请解释什么是闭包（Closure）', type: '简答题', category: '计算机基础', difficulty: 4, createTime: '2026-01-11' },
+    // ==================== 知识点树数据结构 ====================
+    let knowledgeTree = [
+      {
+        id: 1,
+        name: '计算机基础',
+        count: 45,
+        collapsed: false,
+        children: [
+          { id: 11, name: '计算机系统', count: 15, children: [] },
+          { id: 12, name: '操作系统', count: 18, children: [] },
+          { id: 13, name: '数据结构', count: 12, children: [] }
+        ]
+      },
+      {
+        id: 2,
+        name: '编程语言',
+        count: 38,
+        collapsed: true,
+        children: [
+          { id: 21, name: 'Python基础', count: 20, children: [] },
+          { id: 22, name: 'Java基础', count: 18, children: [] }
+        ]
+      },
+      {
+        id: 3,
+        name: '数据库',
+        count: 25,
+        collapsed: true,
+        children: [
+          { id: 31, name: 'SQL语法', count: 15, children: [] },
+          { id: 32, name: '数据库设计', count: 10, children: [] }
+        ]
+      },
+      {
+        id: 4,
+        name: '网络技术',
+        count: 20,
+        collapsed: true,
+        children: [
+          { id: 41, name: '网络协议', count: 12, children: [] },
+          { id: 42, name: '网络安全', count: 8, children: [] }
+        ]
+      }
     ];
 
-    // 题型颜色映射
-    const typeColors = {
-      '单选题': 'bg-info-50 text-info-600',
-      '多选题': 'bg-primary-50 text-primary-600',
-      '判断题': 'bg-success-50 text-success-600',
-      '填空题': 'bg-warning-50 text-warning-600',
-      '简答题': 'bg-error-50 text-error-600'
-    };
+    let nextId = 100; // 用于生成新节点的ID
+    let draggedNode = null; // 被拖拽的节点
+    let draggedNodeParent = null; // 被拖拽节点的父节点
+    let moveTargetNode = null; // 移动目标节点
 
-    // 难度颜色映射
-    const difficultyColors = {
-      1: 'bg-success-50 text-success-600',
-      2: 'bg-info-50 text-info-600',
-      3: 'bg-warning-50 text-warning-600',
-      4: 'bg-error-50 text-error-600',
-      5: 'bg-gray-800 text-white'
-    };
+    // ==================== 渲染函数 ====================
 
-    const difficultyTexts = {
-      1: '一级',
-      2: '二级',
-      3: '三级',
-      4: '四级',
-      5: '五级'
-    };
+    // 渲染整个知识点树
+    function renderKnowledgeTree() {
+      const container = document.getElementById('knowledgeTreeContainer');
+      container.innerHTML = '';
 
-    // 渲染表格
-    function renderTable() {
-      const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = mockData.map((item, index) => `
-        <tr class="border-t border-gray-200 hover:bg-gray-50">
-          <td class="px-6 py-4">
-            <input type="checkbox" class="row-checkbox w-4 h-4 text-primary-500 rounded focus:ring-primary-500 border-gray-300">
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="text-primary-500 font-mono font-medium">${item.id}</span>
-          </td>
-          <td class="px-6 py-4">
-            <p class="text-sm text-gray-700 max-w-md truncate">${item.content}</p>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${typeColors[item.type]}">${item.type}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${item.category}</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${difficultyColors[item.difficulty]}">${difficultyTexts[item.difficulty]}</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.createTime}</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center space-x-2">
-              <button onclick="viewQuestion('${item.id}')" class="text-primary-500 hover:text-primary-600" title="查看">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button onclick="editQuestion('${item.id}')" class="text-gray-500 hover:text-gray-700" title="编辑">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button onclick="deleteQuestion('${item.id}')" class="text-error-500 hover:text-error-600" title="删除">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      // 如果有搜索关键词，过滤节点
+      const nodesToRender = searchKeyword
+        ? knowledgeTree.filter(node => matchesSearch(node, searchKeyword))
+        : knowledgeTree;
+
+      nodesToRender.forEach((node, index) => {
+        container.appendChild(createNodeElement(node, null, index));
+      });
+
+      // 如果搜索后没有结果，显示提示
+      if (nodesToRender.length === 0 && searchKeyword) {
+        const noResult = document.createElement('div');
+        noResult.className = 'text-center text-gray-400 py-8';
+        noResult.innerHTML = '<i class="fas fa-search text-2xl mb-2"></i><p class="text-sm">未找到匹配的知识点</p>';
+        container.appendChild(noResult);
+      }
     }
 
-    // 全选功能
-    document.getElementById('selectAll').addEventListener('change', function() {
-      const checkboxes = document.querySelectorAll('.row-checkbox');
-      checkboxes.forEach(cb => cb.checked = this.checked);
-    });
+    // 创建节点元素（递归）
+    function createNodeElement(node, parentNode, index) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'knowledge-node-wrapper';
+      wrapper.dataset.nodeId = node.id;
 
-    // 模态框控制
-    function openAddModal() {
-      document.getElementById('addModal').classList.remove('hidden');
-    }
+      // 主节点
+      const nodeDiv = document.createElement('div');
+      nodeDiv.className = 'tree-item px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between group';
+      nodeDiv.draggable = true;
+      nodeDiv.dataset.nodeId = node.id;
 
-    function closeAddModal() {
-      document.getElementById('addModal').classList.add('hidden');
-    }
+      // 设置拖拽事件
+      nodeDiv.addEventListener('dragstart', (e) => handleDragStart(e, node, parentNode));
+      nodeDiv.addEventListener('dragover', (e) => handleDragOver(e));
+      nodeDiv.addEventListener('drop', (e) => handleDrop(e, node));
+      nodeDiv.addEventListener('dragend', () => handleDragEnd());
 
-    function openDeleteModal() {
-      document.getElementById('deleteModal').classList.remove('hidden');
-    }
+      // 左侧内容
+      const leftDiv = document.createElement('div');
+      leftDiv.className = 'flex items-center space-x-2 flex-1';
 
-    function closeDeleteModal() {
-      document.getElementById('deleteModal').classList.add('hidden');
-    }
-
-    // 操作函数
-    function viewQuestion(id) {
-      console.log('查看题目:', id);
-      alert('跳转到题目详情页: ' + id);
-    }
-
-    function editQuestion(id) {
-      console.log('编辑题目:', id);
-      alert('跳转到编辑页面: ' + id);
-    }
-
-    function deleteQuestion(id) {
-      console.log('删除题目:', id);
-      openDeleteModal();
-    }
-
-    function confirmDelete() {
-      alert('题目已删除');
-      closeDeleteModal();
-    }
-
-    // 侧边栏折叠
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    let sidebarCollapsed = false;
-
-    sidebarToggle.addEventListener('click', () => {
-      sidebarCollapsed = !sidebarCollapsed;
-      if (sidebarCollapsed) {
-        sidebar.classList.remove('w-64');
-        sidebar.classList.add('w-20');
-        mainContent.classList.remove('ml-64');
-        mainContent.classList.add('ml-20');
-        document.querySelectorAll('.sidebar-text').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.submenu').forEach(el => el.classList.add('hidden'));
+      // 如果有子节点，显示展开/收起图标
+      if (node.children && node.children.length > 0) {
+        const chevron = document.createElement('i');
+        // 搜索时自动展开，显示向下箭头
+        const isExpanded = searchKeyword ? true : !node.collapsed;
+        chevron.className = `fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs text-gray-400 transition-transform`;
+        chevron.onclick = (e) => {
+          e.stopPropagation();
+          // 搜索模式下不允许折叠
+          if (!searchKeyword) {
+            toggleNode(node.id);
+          }
+        };
+        leftDiv.appendChild(chevron);
       } else {
-        sidebar.classList.remove('w-20');
-        sidebar.classList.add('w-64');
-        mainContent.classList.remove('ml-20');
-        mainContent.classList.add('ml-64');
-        document.querySelectorAll('.sidebar-text').forEach(el => el.classList.remove('hidden'));
+        // 空白占位
+        const spacer = document.createElement('span');
+        spacer.style.width = '12px';
+        leftDiv.appendChild(spacer);
+      }
+
+      // 文件夹图标
+      const folderIcon = document.createElement('i');
+      const colors = ['text-warning-500', 'text-info-500', 'text-success-500', 'text-error-500', 'text-purple-500'];
+      folderIcon.className = `fas fa-folder ${colors[index % colors.length]}`;
+      leftDiv.appendChild(folderIcon);
+
+      // 名称（可编辑）
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'text-sm node-name';
+
+      // 如果有搜索关键词，高亮显示
+      if (searchKeyword && node.name.toLowerCase().includes(searchKeyword)) {
+        const regex = new RegExp(`(${searchKeyword})`, 'gi');
+        const highlightedName = node.name.replace(regex, '<mark class="bg-yellow-200 text-gray-900">$1</mark>');
+        nameSpan.innerHTML = highlightedName;
+      } else {
+        nameSpan.textContent = node.name;
+      }
+
+      nameSpan.dataset.nodeId = node.id;
+      leftDiv.appendChild(nameSpan);
+
+      // 编辑输入框（隐藏）
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'hidden text-sm px-2 py-1 border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 node-input';
+      input.value = node.name;
+      input.dataset.nodeId = node.id;
+      input.addEventListener('blur', () => finishEditing(node.id));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          finishEditing(node.id);
+        } else if (e.key === 'Escape') {
+          cancelEditing(node.id);
+        }
+      });
+      leftDiv.appendChild(input);
+
+      nodeDiv.appendChild(leftDiv);
+
+      // 右侧操作按钮
+      const rightDiv = document.createElement('div');
+      rightDiv.className = 'flex items-center space-x-2';
+
+      // 题目数量（悬停时隐藏）
+      const countSpan = document.createElement('span');
+      countSpan.className = 'text-xs text-gray-500 group-hover:hidden';
+      countSpan.textContent = node.count || 0;
+      rightDiv.appendChild(countSpan);
+
+      // 操作按钮组（悬停显示）
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'hidden group-hover:flex items-center space-x-1 ml-2';
+      actionsDiv.onclick = (e) => e.stopPropagation();
+
+      // 添加子知识点
+      const addBtn = createActionButton('fa-plus', 'success', '添加子知识点', () => addChildNode(node.id));
+      actionsDiv.appendChild(addBtn);
+
+      // 编辑
+      const editBtn = createActionButton('fa-edit', 'info', '编辑', () => startEditing(node.id));
+      actionsDiv.appendChild(editBtn);
+
+      // 移动
+      const moveBtn = createActionButton('fa-arrows-alt', 'warning', '移动位置', () => openMoveModal(node.id, parentNode));
+      actionsDiv.appendChild(moveBtn);
+
+      // 删除
+      const deleteBtn = createActionButton('fa-trash', 'error', '删除', () => deleteNode(node.id, parentNode));
+      actionsDiv.appendChild(deleteBtn);
+
+      rightDiv.appendChild(actionsDiv);
+      nodeDiv.appendChild(rightDiv);
+
+      wrapper.appendChild(nodeDiv);
+
+      // 子节点（递归）
+      if (node.children && node.children.length > 0) {
+        // 搜索模式下，过滤子节点并自动展开
+        const shouldExpand = searchKeyword ? true : !node.collapsed;
+        const childrenToRender = searchKeyword
+          ? node.children.filter(child => matchesSearch(child, searchKeyword))
+          : node.children;
+
+        if (childrenToRender.length > 0 && shouldExpand) {
+          const childrenContainer = document.createElement('div');
+          childrenContainer.className = 'ml-6 mt-1 space-y-1';
+          childrenToRender.forEach((child, childIndex) => {
+            childrenContainer.appendChild(createNodeElement(child, node, childIndex));
+          });
+          wrapper.appendChild(childrenContainer);
+        }
+      }
+
+      return wrapper;
+    }
+
+    // 创建操作按钮
+    function createActionButton(icon, color, title, onclick) {
+      const btn = document.createElement('button');
+      btn.className = `w-6 h-6 flex items-center justify-center text-gray-400 hover:text-${color}-600 hover:bg-${color}-50 rounded transition-colors`;
+      btn.title = title;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        onclick();
+      };
+
+      const iconEl = document.createElement('i');
+      iconEl.className = `fas ${icon} text-xs`;
+      btn.appendChild(iconEl);
+
+      return btn;
+    }
+
+    // ==================== 节点操作 ====================
+
+    // 切换展开/收起
+    function toggleNode(nodeId) {
+      const node = findNode(nodeId);
+      if (node) {
+        node.collapsed = !node.collapsed;
+        renderKnowledgeTree();
+      }
+    }
+
+    // 添加根知识点
+    function addRootKnowledge() {
+      const newNode = {
+        id: nextId++,
+        name: '',
+        count: 0,
+        collapsed: false,
+        children: [],
+        isNew: true
+      };
+      knowledgeTree.push(newNode);
+      renderKnowledgeTree();
+
+      // 自动进入编辑状态
+      setTimeout(() => startEditing(newNode.id), 50);
+    }
+
+    // 添加子知识点
+    function addChildNode(parentId) {
+      const parent = findNode(parentId);
+      if (parent) {
+        if (!parent.children) {
+          parent.children = [];
+        }
+        const newNode = {
+          id: nextId++,
+          name: '',
+          count: 0,
+          collapsed: false,
+          children: [],
+          isNew: true
+        };
+        parent.children.push(newNode);
+        parent.collapsed = false; // 展开父节点
+        renderKnowledgeTree();
+
+        // 自动进入编辑状态
+        setTimeout(() => startEditing(newNode.id), 50);
+      }
+    }
+
+    // 开始编辑
+    function startEditing(nodeId) {
+      const nameSpan = document.querySelector(`.node-name[data-node-id="${nodeId}"]`);
+      const input = document.querySelector(`.node-input[data-node-id="${nodeId}"]`);
+
+      if (nameSpan && input) {
+        nameSpan.classList.add('hidden');
+        input.classList.remove('hidden');
+        input.focus();
+        input.select();
+      }
+    }
+
+    // 完成编辑
+    function finishEditing(nodeId) {
+      const input = document.querySelector(`.node-input[data-node-id="${nodeId}"]`);
+      const nameSpan = document.querySelector(`.node-name[data-node-id="${nodeId}"]`);
+
+      if (input && nameSpan) {
+        const newName = input.value.trim();
+        if (newName) {
+          const node = findNode(nodeId);
+          if (node) {
+            node.name = newName;
+            node.isNew = false;
+            nameSpan.textContent = newName;
+          }
+        } else if (findNode(nodeId)?.isNew) {
+          // 如果是新建节点且名称为空，删除它
+          deleteNodeById(nodeId);
+          renderKnowledgeTree();
+          return;
+        }
+
+        input.classList.add('hidden');
+        nameSpan.classList.remove('hidden');
+      }
+    }
+
+    // 取消编辑
+    function cancelEditing(nodeId) {
+      const node = findNode(nodeId);
+      if (node?.isNew) {
+        // 新建节点取消时删除
+        deleteNodeById(nodeId);
+        renderKnowledgeTree();
+      } else {
+        const input = document.querySelector(`.node-input[data-node-id="${nodeId}"]`);
+        const nameSpan = document.querySelector(`.node-name[data-node-id="${nodeId}"]`);
+
+        if (input && nameSpan && node) {
+          input.value = node.name;
+          input.classList.add('hidden');
+          nameSpan.classList.remove('hidden');
+        }
+      }
+    }
+
+    // 删除节点
+    function deleteNode(nodeId, parentNode) {
+      const node = findNode(nodeId);
+      if (!node) return;
+
+      if (confirm(`确定要删除"${node.name}"知识点吗？\n\n删除后，该知识点下的子知识点和题目将移至"未分类"。`)) {
+        deleteNodeById(nodeId);
+        renderKnowledgeTree();
+      }
+    }
+
+    // 根据ID删除节点（递归）
+    function deleteNodeById(nodeId) {
+      // 从根级别删除
+      const rootIndex = knowledgeTree.findIndex(n => n.id === nodeId);
+      if (rootIndex !== -1) {
+        knowledgeTree.splice(rootIndex, 1);
+        return true;
+      }
+
+      // 递归查找并删除
+      function deleteFromChildren(nodes) {
+        for (let node of nodes) {
+          if (node.children) {
+            const index = node.children.findIndex(n => n.id === nodeId);
+            if (index !== -1) {
+              node.children.splice(index, 1);
+              return true;
+            }
+            if (deleteFromChildren(node.children)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      return deleteFromChildren(knowledgeTree);
+    }
+
+    // 查找节点（递归）
+    function findNode(nodeId, nodes = knowledgeTree) {
+      for (let node of nodes) {
+        if (node.id === nodeId) return node;
+        if (node.children) {
+          const found = findNode(nodeId, node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    // ==================== 拖拽功能 ====================
+
+    function handleDragStart(e, node, parentNode) {
+      draggedNode = node;
+      draggedNodeParent = parentNode;
+      e.currentTarget.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.style.background = '#E6F9F0';
+    }
+
+    function handleDrop(e, targetNode) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.style.background = '';
+
+      if (!draggedNode || draggedNode.id === targetNode.id) return;
+
+      // 删除原位置的节点
+      deleteNodeById(draggedNode.id);
+
+      // 添加到新位置
+      if (!targetNode.children) {
+        targetNode.children = [];
+      }
+      targetNode.children.push(draggedNode);
+      targetNode.collapsed = false;
+
+      renderKnowledgeTree();
+    }
+
+    function handleDragEnd() {
+      document.querySelectorAll('.tree-item').forEach(el => {
+        el.style.opacity = '';
+        el.style.background = '';
+      });
+      draggedNode = null;
+      draggedNodeParent = null;
+    }
+
+    // ==================== 移动位置功能 ====================
+
+    function openMoveModal(nodeId, parentNode) {
+      moveTargetNode = { id: nodeId, parent: parentNode };
+
+      // 填充目标位置下拉框
+      const select = document.getElementById('moveTargetSelect');
+      select.innerHTML = '<option value="root">根目录</option>';
+
+      function addOptions(nodes, prefix = '') {
+        nodes.forEach(node => {
+          if (node.id !== nodeId) { // 不能移动到自己
+            const option = document.createElement('option');
+            option.value = node.id;
+            option.textContent = prefix + node.name;
+            select.appendChild(option);
+
+            if (node.children && node.children.length > 0) {
+              addOptions(node.children, prefix + '　');
+            }
+          }
+        });
+      }
+
+      addOptions(knowledgeTree);
+
+      document.getElementById('moveModal').classList.remove('hidden');
+    }
+
+    function closeMoveModal() {
+      document.getElementById('moveModal').classList.add('hidden');
+      moveTargetNode = null;
+    }
+
+    function confirmMove() {
+      const targetValue = document.getElementById('moveTargetSelect').value;
+      const position = parseInt(document.getElementById('movePositionInput').value) - 1;
+
+      if (!moveTargetNode) return;
+
+      const node = findNode(moveTargetNode.id);
+      if (!node) return;
+
+      // 删除原位置
+      deleteNodeById(node.id);
+
+      // 插入到新位置
+      if (targetValue === 'root') {
+        knowledgeTree.splice(Math.max(0, Math.min(position, knowledgeTree.length)), 0, node);
+      } else {
+        const targetNode = findNode(parseInt(targetValue));
+        if (targetNode) {
+          if (!targetNode.children) {
+            targetNode.children = [];
+          }
+          targetNode.children.splice(Math.max(0, Math.min(position, targetNode.children.length)), 0, node);
+          targetNode.collapsed = false;
+        }
+      }
+
+      closeMoveModal();
+      renderKnowledgeTree();
+    }
+
+    // ESC键关闭弹窗
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeMoveModal();
       }
     });
 
-    // 菜单展开
-    const menuItems = document.querySelectorAll('.menu-item');
-    menuItems.forEach(item => {
-      item.addEventListener('click', () => {
-        if (sidebarCollapsed) return;
-        const submenu = item.nextElementSibling;
-        const icon = item.querySelector('.fa-chevron-right, .fa-chevron-down');
-        if (submenu && submenu.classList.contains('submenu')) {
-          if (submenu.classList.contains('hidden')) {
-            submenu.classList.remove('hidden');
-            icon.classList.remove('fa-chevron-right');
-            icon.classList.add('fa-chevron-down');
-          } else {
-            submenu.classList.add('hidden');
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-right');
-          }
-        }
-      });
-    });
+    // ==================== 其他功能 ====================
 
-    // 用户菜单
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userMenu = document.getElementById('userMenu');
-    userMenuBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userMenu.classList.toggle('hidden');
-    });
-    document.addEventListener('click', () => {
-      userMenu.classList.add('hidden');
-    });
-    userMenu.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
+    // 搜索知识点
+    let searchKeyword = '';
 
-    // 初始化
-    renderTable();
+    function searchKnowledge(keyword) {
+      searchKeyword = keyword.trim().toLowerCase();
+      renderKnowledgeTree();
+
+      // 显示/隐藏清空按钮
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchKeyword) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    }
+
+    // 清空搜索
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchKnowledge('');
+    }
+
+    // 检查节点或其子节点是否匹配搜索关键词
+    function matchesSearch(node, keyword) {
+      if (!keyword) return true;
+
+      // 检查当前节点
+      if (node.name.toLowerCase().includes(keyword)) {
+        return true;
+      }
+
+      // 检查子节点
+      if (node.children && node.children.length > 0) {
+        return node.children.some(child => matchesSearch(child, keyword));
+      }
+
+      return false;
+    }
+
+    // 选择全部题目
+    function selectAllQuestions(element) {
+      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+    }
+
+    // ==================== 题目操作函数 ====================
+
+    // 新增题目
+    function addNewQuestion() {
+      window.location.href = 'add-standard.html';
+    }
+
+    // 查看题目详情
+    function viewQuestion(questionId) {
+      window.location.href = `detail.html?id=${questionId}`;
+    }
+
+    // 编辑题目
+    function editQuestion(questionId) {
+      window.location.href = `add-standard.html?mode=edit&id=${questionId}`;
+    }
+
+    // 删除题目
+    function deleteQuestion(questionId, questionTitle) {
+      if (confirm(`确定要删除这道题目吗？\n\n题目编号：${questionId}\n题目内容：${questionTitle}\n\n删除后不可恢复！`)) {
+        alert(`已删除题目：${questionId}`);
+      }
+    }
+
+    // 页面加载完成后渲染知识点树
+    window.addEventListener('DOMContentLoaded', function() {
+      renderKnowledgeTree();
+    });
   </script>
-
 </body>
 </html>

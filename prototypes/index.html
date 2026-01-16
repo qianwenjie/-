@@ -107,24 +107,37 @@
 
         <!-- 管理端 -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-user-shield text-primary-500 mr-2"></i>
-            管理端（Admin Portal）
-          </h2>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-user-shield text-primary-500 mr-2"></i>
+              管理端（Admin Portal）
+            </h2>
+            <a href="admin/dashboard.html" target="_blank" class="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-6 py-3 rounded-lg font-medium text-sm transition-all shadow-lg hover:shadow-xl">
+              <i class="fas fa-rocket mr-2"></i>进入管理系统首页
+            </a>
+          </div>
+
+          <div class="bg-gradient-to-r from-primary-50 to-info-50 rounded-lg p-5 mb-6 border border-primary-200">
+            <div class="flex items-start space-x-3">
+              <i class="fas fa-star text-primary-500 text-xl mt-0.5"></i>
+              <div>
+                <p class="text-sm text-gray-900 font-medium mb-1">
+                  <strong>推荐入口：</strong>点击上方按钮进入管理系统首页
+                </p>
+                <p class="text-sm text-gray-600">
+                  首页展示题库、试卷、考试、刷题四大模块的统一入口，提供完整的导航体验。下方为各模块的直接访问链接。
+                </p>
+              </div>
+            </div>
+          </div>
 
           <!-- 题库模块 -->
           <div class="mb-6">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-base font-medium text-gray-700 pl-4 border-l-4 border-primary-500">题库管理</h3>
-              <a href="admin/question-bank/index.html" target="_blank" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors">
-                <i class="fas fa-arrow-right mr-2"></i>进入题库管理系统
+              <a href="admin/question-bank/index.html" target="_blank" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm transition-colors">
+                <i class="fas fa-arrow-right mr-2"></i>直接进入题库
               </a>
-            </div>
-            <div class="bg-info-50 rounded-lg p-4 mb-4">
-              <p class="text-sm text-info-900">
-                <i class="fas fa-info-circle mr-2"></i>
-                <strong>推荐：</strong>点击上方按钮进入完整的题库管理系统，体验页面间的流畅导航。下方为各独立页面的快捷入口。
-              </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <a href="admin/question-bank/list.html" target="_blank" class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5 group">

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理系统首页 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 苹果风格模块卡片 */
+    .module-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .module-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+    .module-card:hover .module-icon {
+      transform: scale(1.1);
+    }
+    .module-icon {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 背景装饰 */
+    .bg-pattern {
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(0, 185, 107, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(20, 201, 201, 0.05) 0%, transparent 50%);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 bg-pattern">
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-8 max-w-7xl mx-auto">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-graduation-cap text-white text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-gray-900">考试系统</h1>
+            <p class="text-xs text-gray-500">管理控制台</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button class="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-bell"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-error-500 rounded-full"></span>
+        </button>
+        <div class="h-8 w-px bg-gray-200"></div>
+        <div class="flex items-center space-x-3">
+          <img src="https://via.placeholder.com/40" alt="用户头像" class="w-10 h-10 rounded-full border-2 border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-900">管理员</p>
+            <p class="text-xs text-gray-500">admin@exam.com</p>
+          </div>
+          <button class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-chevron-down text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="max-w-7xl mx-auto px-8 py-12">
+      <!-- 欢迎区域 -->
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 mb-2">欢迎回来 👋</h2>
+        <p class="text-gray-600">今天是 <span id="currentDate"></span>，选择一个模块开始工作</p>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="mb-12 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
+              <i class="fas fa-bolt text-primary-500 text-xl"></i>
+            </div>
+            <div>
+              <h4 class="text-base font-semibold text-gray-900">快捷操作</h4>
+              <p class="text-sm text-gray-500">常用功能快速入口</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="window.location.href='question-bank/add-standard.html'" class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-plus mr-2"></i>新增题目
+            </button>
+            <button onclick="window.location.href='paper/create.html'" class="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-file-alt mr-2"></i>创建试卷
+            </button>
+            <button onclick="window.location.href='exam/create.html'" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-calendar-plus mr-2"></i>发起考试
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 功能模块卡片 -->
+      <div class="grid grid-cols-2 gap-8">
+        <!-- 题库管理 -->
+        <a href="question-bank/list.html" class="module-card bg-white rounded-3xl p-8 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-start justify-between mb-6">
+            <div class="module-icon w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-book text-white text-2xl"></i>
+            </div>
+            <span class="text-gray-400 group-hover:text-primary-500 transition-colors">
+              <i class="fas fa-arrow-right text-xl"></i>
+            </span>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">题库管理</h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">管理所有题目，支持多种题型录入、分类组织和智能查重</p>
+          <div class="flex items-center space-x-6 text-sm">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+              <span class="text-gray-600">1,245 道题目</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+              <span class="text-gray-600">12 个分类</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 试卷管理 -->
+        <a href="paper/list.html" class="module-card bg-white rounded-3xl p-8 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-start justify-between mb-6">
+            <div class="module-icon w-16 h-16 bg-gradient-to-br from-info-500 to-info-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-file-alt text-white text-2xl"></i>
+            </div>
+            <span class="text-gray-400 group-hover:text-info-500 transition-colors">
+              <i class="fas fa-arrow-right text-xl"></i>
+            </span>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">试卷管理</h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">创建和管理试卷，支持手动组卷、随机抽题和文档导入</p>
+          <div class="flex items-center space-x-6 text-sm">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-info-500 rounded-full"></div>
+              <span class="text-gray-600">86 份试卷</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-warning-500 rounded-full"></div>
+              <span class="text-gray-600">5 份草稿</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 考试管理 -->
+        <a href="exam/list.html" class="module-card bg-white rounded-3xl p-8 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-start justify-between mb-6">
+            <div class="module-icon w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-clipboard-list text-white text-2xl"></i>
+            </div>
+            <span class="text-gray-400 group-hover:text-warning-500 transition-colors">
+              <i class="fas fa-arrow-right text-xl"></i>
+            </span>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">考试管理</h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">组织和监控考试，设置考试规则、查看实时进度和成绩</p>
+          <div class="flex items-center space-x-6 text-sm">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-warning-500 rounded-full"></div>
+              <span class="text-gray-600">23 场考试</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+              <span class="text-gray-600">3 场进行中</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 刷题管理 -->
+        <a href="practice/list.html" class="module-card bg-white rounded-3xl p-8 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-start justify-between mb-6">
+            <div class="module-icon w-16 h-16 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-brain text-white text-2xl"></i>
+            </div>
+            <span class="text-gray-400 group-hover:text-success-500 transition-colors">
+              <i class="fas fa-arrow-right text-xl"></i>
+            </span>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">刷题管理</h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">配置刷题训练计划，查看学生练习进度和错题统计</p>
+          <div class="flex items-center space-x-6 text-sm">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-success-500 rounded-full"></div>
+              <span class="text-gray-600">15 个题集</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-info-500 rounded-full"></div>
+              <span class="text-gray-600">456 名学生</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 显示当前日期
+    const today = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+    document.getElementById('currentDate').textContent = today.toLocaleDateString('zh-CN', options);
+  </script>
+</body>
+</html>

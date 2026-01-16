@@ -15,8 +15,3 @@
 
 # Playwright MCP cache
 .playwright-mcp/
-
-# Planning files (temporary working files)
-task_plan.md
-findings.md
-progress.md

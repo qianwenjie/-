@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批阅试卷 - 教师端</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部信息栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6 max-w-7xl mx-auto">
+      <div class="flex items-center space-x-4">
+        <button onclick="history.back()" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h1 class="text-lg font-semibold text-gray-900">批阅试卷 - 张三</h1>
+          <p class="text-xs text-gray-500">数学期中测验 | 学号: 20260101</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="text-sm text-gray-600">当前进度: <span class="font-medium text-primary-500">1/50</span></span>
+        <button class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm">
+          暂存
+        </button>
+        <button onclick="submitGrading()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
+          提交批阅
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="pt-16 flex">
+    <!-- 左侧学生答案区 -->
+    <main class="flex-1 p-6 overflow-y-auto" style="height: calc(100vh - 64px);">
+      <div class="max-w-4xl mx-auto space-y-6">
+        <!-- 客观题（自动批阅） -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-lg font-semibold text-gray-900">第 1 题</span>
+              <span class="bg-info-50 text-info-600 px-2 py-0.5 rounded text-xs font-medium">单选题</span>
+              <span class="text-sm text-gray-500">5分</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="bg-success-50 text-success-600 px-3 py-1 rounded-full text-sm font-medium">
+                <i class="fas fa-check mr-1"></i>正确
+              </span>
+              <span class="text-lg font-semibold text-success-500">5分</span>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <p class="text-sm text-gray-700 mb-3">下列关于计算机系统的描述，正确的是？</p>
+            <div class="space-y-2">
+              <div class="flex items-start space-x-2">
+                <span class="text-sm font-medium text-gray-700 w-8">A.</span>
+                <span class="flex-1 text-sm text-gray-700 bg-success-50 px-3 py-2 rounded">计算机系统由硬件系统和软件系统组成 <i class="fas fa-check-circle text-success-500 ml-2"></i></span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <span class="text-sm font-medium text-gray-700 w-8">B.</span>
+                <span class="flex-1 text-sm text-gray-700 px-3 py-2">计算机只能处理数字信息</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-info-50 rounded-lg p-4">
+            <p class="text-xs text-gray-600 mb-1">学生答案</p>
+            <p class="text-sm font-medium text-info-700">A</p>
+          </div>
+        </div>
+
+        <!-- 填空题（需要批阅） -->
+        <div class="bg-white rounded-lg border-2 border-primary-500 shadow-sm p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-lg font-semibold text-gray-900">第 2 题</span>
+              <span class="bg-warning-50 text-warning-600 px-2 py-0.5 rounded text-xs font-medium">填空题</span>
+              <span class="text-sm text-gray-500">总分 4分</span>
+            </div>
+            <span class="bg-warning-50 text-warning-600 px-3 py-1 rounded-full text-sm font-medium">
+              待批阅
+            </span>
+          </div>
+
+          <div class="mb-4">
+            <p class="text-sm text-gray-700 mb-3">
+              计算机的基本工作原理是 <span class="text-primary-600 font-medium">______</span> 原理，
+              由数学家 <span class="text-primary-600 font-medium">______</span> 提出。
+            </p>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-xs text-gray-600 mb-2">学生答案</p>
+            <div class="space-y-2">
+              <p class="text-sm text-gray-900">第1空: <span class="font-medium">存储程序</span></p>
+              <p class="text-sm text-gray-900">第2空: <span class="font-medium">冯·诺依曼</span></p>
+            </div>
+          </div>
+
+          <!-- 评分区 -->
+          <div class="border-t border-gray-200 pt-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">第1空得分</label>
+                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="0-2" min="0" max="2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">第2空得分</label>
+                <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="0-2" min="0" max="2">
+              </div>
+            </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">批注（选填）</label>
+              <textarea class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[60px]" placeholder="填写批注信息..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 简答题（需要批阅） -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-lg font-semibold text-gray-900">第 3 题</span>
+              <span class="bg-error-50 text-error-600 px-2 py-0.5 rounded text-xs font-medium">简答题</span>
+              <span class="text-sm text-gray-500">总分 10分</span>
+            </div>
+            <span class="bg-warning-50 text-warning-600 px-3 py-1 rounded-full text-sm font-medium">
+              待批阅
+            </span>
+          </div>
+
+          <div class="mb-4">
+            <p class="text-sm font-medium text-gray-700 mb-3">题目</p>
+            <p class="text-sm text-gray-700">请简述计算机网络的分层模型（OSI七层模型）各层的主要功能。</p>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-xs text-gray-600 mb-2">学生答案 (共258字)</p>
+            <p class="text-sm text-gray-900 leading-relaxed">
+              OSI七层模型从下到上分别是：<br><br>
+              1. 物理层：负责比特流的传输，定义物理设备的接口标准和传输介质。<br>
+              2. 数据链路层：负责将比特组装成帧，提供点对点的可靠传输，进行差错检测和流量控制。<br>
+              3. 网络层：负责数据包的路由选择和转发，实现不同网络之间的互联。<br>
+              4. 传输层：提供端到端的可靠数据传输服务，进行流量控制和差错控制。<br>
+              5. 会话层：建立、管理和终止会话连接。<br>
+              6. 表示层：数据格式转换、加密解密、压缩解压缩。<br>
+              7. 应用层：为应用程序提供网络服务接口。
+            </p>
+          </div>
+
+          <!-- 评分区 -->
+          <div class="border-t border-gray-200 pt-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">得分</label>
+              <div class="flex items-center space-x-4">
+                <input type="number" class="w-32 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="0-10" min="0" max="10">
+                <div class="flex items-center space-x-2">
+                  <button class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">满分</button>
+                  <button class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">8分</button>
+                  <button class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">6分</button>
+                  <button class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700">0分</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">批注</label>
+              <textarea class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[80px]" placeholder="填写批注信息..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 导航按钮 -->
+        <div class="flex items-center justify-between pb-6">
+          <button class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-6 py-2 rounded font-medium text-sm">
+            <i class="fas fa-chevron-left mr-2"></i>上一份
+          </button>
+          <button class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded font-medium text-sm">
+            下一份<i class="fas fa-chevron-right ml-2"></i>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧参考答案区 -->
+    <aside class="w-96 bg-white border-l border-gray-200 p-6 overflow-y-auto" style="height: calc(100vh - 64px);">
+      <h3 class="text-base font-semibold text-gray-900 mb-4">参考答案与评分标准</h3>
+
+      <!-- 学生信息 -->
+      <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-gray-500 text-xs">姓名</p>
+            <p class="font-medium text-gray-900">张三</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-xs">学号</p>
+            <p class="font-medium text-gray-900">20260101</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-xs">用时</p>
+            <p class="font-medium text-gray-900">52分钟</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-xs">当前得分</p>
+            <p class="font-medium text-primary-500 text-lg">5分</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第2题参考答案 -->
+      <div class="mb-6 p-4 bg-success-50 rounded-lg">
+        <p class="text-xs font-medium text-gray-700 mb-2">第2题 参考答案</p>
+        <div class="text-sm text-gray-900 space-y-1">
+          <p>第1空: 存储程序 (2分)</p>
+          <p>第2空: 冯·诺依曼 (2分)</p>
+        </div>
+      </div>
+
+      <!-- 第3题参考答案 -->
+      <div class="mb-6 p-4 bg-success-50 rounded-lg">
+        <p class="text-xs font-medium text-gray-700 mb-2">第3题 参考答案</p>
+        <div class="text-sm text-gray-900 space-y-2">
+          <p><strong>评分标准 (总分10分):</strong></p>
+          <ul class="list-disc list-inside space-y-1 text-xs">
+            <li>正确列出7层名称 (2分)</li>
+            <li>物理层功能描述准确 (1分)</li>
+            <li>数据链路层功能描述准确 (1分)</li>
+            <li>网络层功能描述准确 (1.5分)</li>
+            <li>传输层功能描述准确 (1.5分)</li>
+            <li>会话层功能描述准确 (1分)</li>
+            <li>表示层功能描述准确 (1分)</li>
+            <li>应用层功能描述准确 (1分)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 批阅进度 -->
+      <div class="border-t border-gray-200 pt-4">
+        <p class="text-sm font-medium text-gray-700 mb-3">批阅进度</p>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600">客观题</span>
+            <span class="text-success-500 font-medium">20/20 (自动)</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600">主观题</span>
+            <span class="text-warning-500 font-medium">0/10</span>
+          </div>
+          <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-full bg-primary-500 rounded-full" style="width: 67%"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    function submitGrading() {
+      if (confirm('确定提交批阅结果吗？提交后不能修改。')) {
+        alert('批阅已提交！');
+        history.back();
+      }
+    }
+  </script>
+</body>
+</html>

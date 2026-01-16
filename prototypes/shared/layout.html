@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>考试系统 - 管理端</title>
+
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- TailwindCSS 自定义配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E6F9F0',
+              100: '#B3EDCE',
+              200: '#80E0AD',
+              300: '#4DD48B',
+              400: '#1AC76A',
+              500: '#00B96B',
+              600: '#00A35C',
+              700: '#008A4D',
+              800: '#00703E',
+              900: '#00572F',
+            },
+            success: {
+              50: '#E8FFEA',
+              500: '#00B42A',
+              600: '#009A24',
+            },
+            warning: {
+              50: '#FFF7E8',
+              500: '#FF7D00',
+              600: '#D66A00',
+            },
+            error: {
+              50: '#FFECE8',
+              500: '#F53F3F',
+              600: '#CB2634',
+            },
+            info: {
+              50: '#E8F7FF',
+              500: '#14C9C9',
+              600: '#0EAAAA',
+            },
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <div class="flex items-center justify-between h-full px-6">
+        <!-- 左侧: Logo + 折叠按钮 + 面包屑 -->
+        <div class="flex items-center space-x-4">
+          <!-- 侧边栏折叠按钮 -->
+          <button id="sidebarToggle" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+            <i class="fas fa-bars"></i>
+          </button>
+
+          <!-- Logo -->
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+              <i class="fas fa-graduation-cap text-white"></i>
+            </div>
+            <span class="text-xl font-semibold text-gray-900">考试系统</span>
+          </div>
+
+          <!-- 面包屑导航 -->
+          <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+            <a href="#" class="hover:text-primary-500 transition-colors">首页</a>
+            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+            <a href="#" class="hover:text-primary-500 transition-colors">题库管理</a>
+            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+            <span class="text-gray-900 font-medium">题目列表</span>
+          </nav>
+        </div>
+
+        <!-- 右侧: 通知 + 用户菜单 -->
+        <div class="flex items-center space-x-4">
+          <!-- 通知按钮 -->
+          <button class="relative w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+            <i class="fas fa-bell"></i>
+            <span class="absolute -top-1 -right-1 w-5 h-5 bg-error-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+              3
+            </span>
+          </button>
+
+          <!-- 用户菜单 -->
+          <div class="relative">
+            <button id="userMenuBtn" class="flex items-center space-x-2 px-3 py-1.5 hover:bg-gray-100 rounded transition-colors">
+              <img src="https://via.placeholder.com/32" alt="用户头像" class="w-8 h-8 rounded-full">
+              <span class="text-sm text-gray-700 font-medium">管理员</span>
+              <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+            </button>
+
+            <!-- 用户下拉菜单 -->
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-md py-1">
+              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-user w-4"></i>
+                <span>个人信息</span>
+              </a>
+              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-cog w-4"></i>
+                <span>系统设置</span>
+              </a>
+              <div class="border-t border-gray-200 my-1"></div>
+              <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-error-500 hover:bg-error-50">
+                <i class="fas fa-sign-out-alt w-4"></i>
+                <span>退出登录</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 fixed top-16 left-0 bottom-0 overflow-y-auto transition-all duration-300">
+      <nav class="p-4">
+        <!-- 首页 -->
+        <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors">
+          <i class="fas fa-home w-5"></i>
+          <span class="sidebar-text">首页</span>
+        </a>
+
+        <!-- 题库管理 -->
+        <div class="mt-2">
+          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium bg-primary-50 text-primary-600">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-book w-5"></i>
+              <span class="sidebar-text">题库管理</span>
+            </div>
+            <i class="fas fa-chevron-down text-xs sidebar-text"></i>
+          </button>
+          <div class="submenu ml-8 mt-1 space-y-1">
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-primary-600 bg-primary-50 font-medium">题目列表</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">标准录入</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">简便录入</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">AI出题</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">知识点管理</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题目查重</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题库统计</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">题目导出</a>
+          </div>
+        </div>
+
+        <!-- 试卷管理 -->
+        <div class="mt-2">
+          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-file-alt w-5"></i>
+              <span class="sidebar-text">试卷管理</span>
+            </div>
+            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
+          </button>
+          <div class="submenu hidden ml-8 mt-1 space-y-1">
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">试卷列表</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">创建试卷</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">文档模式</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">抽题模式</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">试卷预览</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">发布试卷</a>
+          </div>
+        </div>
+
+        <!-- 考试管理 -->
+        <div class="mt-2">
+          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-clipboard-check w-5"></i>
+              <span class="sidebar-text">考试管理</span>
+            </div>
+            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
+          </button>
+          <div class="submenu hidden ml-8 mt-1 space-y-1">
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">考试列表</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">创建考试</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">考试配置</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">发布考试</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">考试监控</a>
+          </div>
+        </div>
+
+        <!-- 刷题管理 -->
+        <div class="mt-2">
+          <button class="menu-item w-full flex items-center justify-between px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-brain w-5"></i>
+              <span class="sidebar-text">刷题管理</span>
+            </div>
+            <i class="fas fa-chevron-right text-xs sidebar-text"></i>
+          </button>
+          <div class="submenu hidden ml-8 mt-1 space-y-1">
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">刷题列表</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">创建刷题</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">统计概览</a>
+            <a href="#" class="block px-3 py-1.5 rounded text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50">统计详情</a>
+          </div>
+        </div>
+
+        <!-- 分割线 -->
+        <div class="border-t border-gray-200 my-4"></div>
+
+        <!-- 系统设置 -->
+        <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          <i class="fas fa-cog w-5"></i>
+          <span class="sidebar-text">系统设置</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main id="mainContent" class="ml-64 pt-16 min-h-screen transition-all duration-300">
+      <div class="p-6">
+        <!-- 页面标题区 -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900">题目列表</h1>
+            <p class="mt-1 text-sm text-gray-500">管理和查看所有题目信息</p>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex items-center space-x-3">
+            <button class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded font-medium text-sm transition-colors">
+              <i class="fas fa-download mr-2"></i>
+              导出
+            </button>
+            <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors">
+              <i class="fas fa-plus mr-2"></i>
+              新增题目
+            </button>
+          </div>
+        </div>
+
+        <!-- 内容区域 (此处由具体页面填充) -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <p class="text-gray-600">页面内容区域...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JavaScript 交互 -->
+  <script>
+    // 侧边栏折叠切换
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    let sidebarCollapsed = false;
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebarCollapsed = !sidebarCollapsed;
+
+      if (sidebarCollapsed) {
+        // 折叠状态
+        sidebar.classList.remove('w-64');
+        sidebar.classList.add('w-20');
+        mainContent.classList.remove('ml-64');
+        mainContent.classList.add('ml-20');
+
+        // 隐藏侧边栏文字和子菜单
+        document.querySelectorAll('.sidebar-text').forEach(el => {
+          el.classList.add('hidden');
+        });
+        document.querySelectorAll('.submenu').forEach(el => {
+          el.classList.add('hidden');
+        });
+      } else {
+        // 展开状态
+        sidebar.classList.remove('w-20');
+        sidebar.classList.add('w-64');
+        mainContent.classList.remove('ml-20');
+        mainContent.classList.add('ml-64');
+
+        // 显示侧边栏文字
+        document.querySelectorAll('.sidebar-text').forEach(el => {
+          el.classList.remove('hidden');
+        });
+      }
+    });
+
+    // 菜单展开/收起
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        if (sidebarCollapsed) return; // 折叠状态不展开子菜单
+
+        const submenu = item.nextElementSibling;
+        const icon = item.querySelector('.fa-chevron-right, .fa-chevron-down');
+
+        if (submenu.classList.contains('hidden')) {
+          // 展开子菜单
+          submenu.classList.remove('hidden');
+          icon.classList.remove('fa-chevron-right');
+          icon.classList.add('fa-chevron-down');
+        } else {
+          // 收起子菜单
+          submenu.classList.add('hidden');
+          icon.classList.remove('fa-chevron-down');
+          icon.classList.add('fa-chevron-right');
+        }
+      });
+    });
+
+    // 用户菜单切换
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userMenu = document.getElementById('userMenu');
+
+    userMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userMenu.classList.toggle('hidden');
+    });
+
+    // 点击其他地方关闭用户菜单
+    document.addEventListener('click', () => {
+      userMenu.classList.add('hidden');
+    });
+
+    userMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  </script>
+</body>
+</html>

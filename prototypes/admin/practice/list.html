@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>刷题列表 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen">
+    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <div class="flex items-center justify-between h-full px-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="pt-16">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900">刷题管理</h1>
+            <p class="mt-1 text-sm text-gray-500">创建和管理刷题任务</p>
+          </div>
+          <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
+            <i class="fas fa-plus mr-2"></i>创建刷题
+          </button>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">总刷题数</p>
+                <p class="text-3xl font-semibold text-gray-900 mt-2">28</p>
+              </div>
+              <div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center">
+                <i class="fas fa-brain text-xl text-primary-500"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">参与人数</p>
+                <p class="text-3xl font-semibold text-gray-900 mt-2">456</p>
+              </div>
+              <div class="w-12 h-12 bg-info-50 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-xl text-info-500"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">完成率</p>
+                <p class="text-3xl font-semibold text-success-500 mt-2">78%</p>
+              </div>
+              <div class="w-12 h-12 bg-success-50 rounded-full flex items-center justify-center">
+                <i class="fas fa-chart-line text-xl text-success-500"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">正确率</p>
+                <p class="text-3xl font-semibold text-warning-500 mt-2">82%</p>
+              </div>
+              <div class="w-12 h-12 bg-warning-50 rounded-full flex items-center justify-center">
+                <i class="fas fa-bullseye text-xl text-warning-500"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 刷题列表 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900">计算机基础专项练习</h3>
+                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium">进行中</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">题目数量</span>
+                  <span class="font-medium text-gray-900">100 题</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">参与人数</span>
+                  <span class="font-medium text-gray-900">156 人</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">完成率</span>
+                  <span class="font-medium text-success-500">85%</span>
+                </div>
+              </div>
+              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
+                <div class="h-full bg-primary-500 rounded-full" style="width: 85%"></div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  查看详情
+                </button>
+                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  统计分析
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900">数学错题强化训练</h3>
+                <span class="bg-info-50 text-info-600 px-2 py-0.5 rounded text-xs font-medium">已发布</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">题目数量</span>
+                  <span class="font-medium text-gray-900">50 题</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">参与人数</span>
+                  <span class="font-medium text-gray-900">98 人</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">完成率</span>
+                  <span class="font-medium text-warning-500">62%</span>
+                </div>
+              </div>
+              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
+                <div class="h-full bg-primary-500 rounded-full" style="width: 62%"></div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  查看详情
+                </button>
+                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  统计分析
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900">英语语法专项</h3>
+                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">草稿</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">题目数量</span>
+                  <span class="font-medium text-gray-900">80 题</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">参与人数</span>
+                  <span class="font-medium text-gray-900">0 人</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600">完成率</span>
+                  <span class="font-medium text-gray-500">--</span>
+                </div>
+              </div>
+              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
+                <div class="h-full bg-gray-300 rounded-full" style="width: 0%"></div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  查看详情
+                </button>
+                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  编辑
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

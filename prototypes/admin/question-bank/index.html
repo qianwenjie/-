@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题库管理 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .menu-item.active {
+      background-color: #E6F9F0;
+      color: #00B96B;
+      border-left: 3px solid #00B96B;
+    }
+    .menu-item:hover {
+      background-color: #F9FAFB;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden">
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+          <i class="fas fa-graduation-cap text-white"></i>
+        </div>
+        <div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+          <span class="text-sm text-gray-500 ml-2">/ 题库管理</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button class="text-gray-600 hover:text-gray-900">
+          <i class="fas fa-bell"></i>
+        </button>
+        <div class="flex items-center space-x-2 pl-4 border-l border-gray-200">
+          <img src="https://via.placeholder.com/32" alt="头像" class="w-8 h-8 rounded-full">
+          <span class="text-sm text-gray-700">管理员</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="pt-16 flex h-screen">
+    <!-- 左侧导航菜单 -->
+    <aside class="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+      <!-- 功能模块导航 -->
+      <nav class="p-4">
+        <div class="mb-6">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">题目管理</p>
+          <div class="space-y-1">
+            <a href="javascript:void(0)" onclick="loadPage('list.html', this)" class="menu-item active flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-list w-5"></i>
+              <span class="ml-3">题目列表</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('detail.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-info-circle w-5"></i>
+              <span class="ml-3">题目详情</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">题目录入</p>
+          <div class="space-y-1">
+            <a href="javascript:void(0)" onclick="loadPage('add-standard.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-edit w-5"></i>
+              <span class="ml-3">标准录入</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('add-simple.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-keyboard w-5"></i>
+              <span class="ml-3">简便录入</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('add-ai.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-robot w-5"></i>
+              <span class="ml-3">AI出题</span>
+              <span class="ml-auto bg-info-100 text-info-700 text-xs px-2 py-0.5 rounded-full">AI</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('import.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-file-upload w-5"></i>
+              <span class="ml-3">批量导入</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">分类与统计</p>
+          <div class="space-y-1">
+            <a href="javascript:void(0)" onclick="loadPage('categories.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-sitemap w-5"></i>
+              <span class="ml-3">分类管理</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('statistics.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-chart-bar w-5"></i>
+              <span class="ml-3">统计报表</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 pt-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">其他模块</p>
+          <div class="space-y-1">
+            <a href="javascript:void(0)" onclick="loadPage('../paper/list.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-file-alt w-5"></i>
+              <span class="ml-3">试卷管理</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('../exam/list.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-clipboard-list w-5"></i>
+              <span class="ml-3">考试管理</span>
+            </a>
+            <a href="javascript:void(0)" onclick="loadPage('../practice/list.html', this)" class="menu-item flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-brain w-5"></i>
+              <span class="ml-3">刷题管理</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- 底部操作区 -->
+      <div class="p-4 border-t border-gray-200">
+        <a href="../../index.html" class="flex items-center justify-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-home mr-2"></i>
+          返回导航首页
+        </a>
+      </div>
+    </aside>
+
+    <!-- 右侧内容区 -->
+    <main class="flex-1 overflow-hidden bg-gray-50">
+      <iframe
+        id="contentFrame"
+        src="list.html?embedded=true"
+        class="w-full h-full border-0"
+        title="内容区域"
+        name="contentFrame">
+      </iframe>
+    </main>
+  </div>
+
+  <script>
+    function loadPage(page, element) {
+      // 添加embedded参数，告诉子页面它在iframe中
+      const url = page.includes('?') ? page + '&embedded=true' : page + '?embedded=true';
+      document.getElementById('contentFrame').src = url;
+
+      // 更新菜单激活状态
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      if (element) {
+        element.classList.add('active');
+      }
+    }
+
+    // 处理iframe内容显示
+    function handleIframeContent() {
+      try {
+        const iframe = document.getElementById('contentFrame');
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+        // 隐藏header
+        const headers = iframeDoc.querySelectorAll('header');
+        headers.forEach(header => {
+          header.style.display = 'none';
+        });
+
+        // 调整顶部padding
+        const ptElements = iframeDoc.querySelectorAll('.pt-16');
+        ptElements.forEach(el => {
+          el.classList.remove('pt-16');
+          el.style.paddingTop = '0';
+        });
+
+        // 隐藏返回按钮
+        const backButtons = iframeDoc.querySelectorAll('button[onclick*="history.back"]');
+        backButtons.forEach(btn => {
+          btn.style.display = 'none';
+        });
+
+        // 调整body padding
+        const body = iframeDoc.querySelector('body');
+        if (body) {
+          const firstDiv = body.querySelector(':scope > div');
+          if (firstDiv && firstDiv.classList.contains('pt-16')) {
+            firstDiv.classList.remove('pt-16');
+            firstDiv.style.paddingTop = '0';
+          }
+        }
+      } catch (e) {
+        // 跨域限制，忽略错误
+        console.log('无法访问iframe内容');
+      }
+    }
+
+    // 监听iframe加载
+    document.getElementById('contentFrame').addEventListener('load', handleIframeContent);
+
+    // 页面加载时也处理一次
+    window.addEventListener('load', function() {
+      setTimeout(handleIframeContent, 100);
+    });
+
+    // 全局函数，供iframe内的页面调用，用于导航到其他页面
+    window.navigateToPage = function(page) {
+      // 找到对应的菜单项
+      const menuItems = document.querySelectorAll('.menu-item');
+      for (let item of menuItems) {
+        const onclick = item.getAttribute('onclick');
+        if (onclick && onclick.includes(page)) {
+          item.click();
+          return;
+        }
+      }
+      // 如果没找到，直接加载
+      document.getElementById('contentFrame').src = page + '?embedded=true';
+    };
+  </script>
+</body>
+</html>

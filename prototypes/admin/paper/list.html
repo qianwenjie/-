@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>试卷列表 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen">
+    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <div class="flex items-center justify-between h-full px-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+          <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+            <a href="#" class="hover:text-primary-500">首页</a>
+            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+            <span class="text-gray-900 font-medium">试卷管理</span>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="pt-16">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900">试卷列表</h1>
+            <p class="mt-1 text-sm text-gray-500">管理和查看所有试卷</p>
+          </div>
+          <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
+            <i class="fas fa-plus mr-2"></i>创建试卷
+          </button>
+        </div>
+
+        <!-- 筛选区域 -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option>全部状态</option>
+              <option>草稿</option>
+              <option>已发布</option>
+              <option>已归档</option>
+            </select>
+            <input type="text" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="搜索试卷...">
+            <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
+              <i class="fas fa-search mr-2"></i>查询
+            </button>
+          </div>
+        </div>
+
+        <!-- 试卷卡片列表 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900 flex-1">2026年计算机基础期末考试</h3>
+                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium ml-2">已发布</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
+                  <span>共 50 题</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-trophy w-5 text-gray-400"></i>
+                  <span>总分 100 分</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-clock w-5 text-gray-400"></i>
+                  <span>考试时长 120 分钟</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-calendar w-5 text-gray-400"></i>
+                  <span>创建时间 2026-01-10</span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-eye mr-1"></i>预览
+                </button>
+                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-edit mr-1"></i>编辑
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900 flex-1">数学期中测验卷</h3>
+                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium ml-2">草稿</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
+                  <span>共 30 题</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-trophy w-5 text-gray-400"></i>
+                  <span>总分 80 分</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-clock w-5 text-gray-400"></i>
+                  <span>考试时长 90 分钟</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-calendar w-5 text-gray-400"></i>
+                  <span>创建时间 2026-01-12</span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-eye mr-1"></i>预览
+                </button>
+                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-edit mr-1"></i>编辑
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <h3 class="text-base font-semibold text-gray-900 flex-1">英语词汇测试</h3>
+                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium ml-2">已发布</span>
+              </div>
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
+                  <span>共 40 题</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-trophy w-5 text-gray-400"></i>
+                  <span>总分 60 分</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-clock w-5 text-gray-400"></i>
+                  <span>考试时长 60 分钟</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                  <i class="fas fa-calendar w-5 text-gray-400"></i>
+                  <span>创建时间 2026-01-08</span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-eye mr-1"></i>预览
+                </button>
+                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
+                  <i class="fas fa-edit mr-1"></i>编辑
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

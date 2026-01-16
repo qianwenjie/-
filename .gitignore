@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*~
+*.swp
+*.swo
+
+# Editor directories
+.vscode/
+.idea/
+
+# Playwright MCP cache
+.playwright-mcp/
+
+# Planning files (temporary working files)
+task_plan.md
+findings.md
+progress.md

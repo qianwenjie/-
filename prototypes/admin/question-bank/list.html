@@ -201,7 +201,7 @@
                     <span class="ml-2 text-sm text-gray-700">填空题</span>
                   </label>
                   <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors">
-                    <input type="checkbox" value="short" class="question-type-checkbox rounded border-gray-300 text-primary-500 focus:ring-primary-500" onchange="updateQuestionTypeSelection()">
+                    <input type="checkbox" value="shortAnswer" class="question-type-checkbox rounded border-gray-300 text-primary-500 focus:ring-primary-500" onchange="updateQuestionTypeSelection()">
                     <span class="ml-2 text-sm text-gray-700">简答题</span>
                   </label>
                   <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors">
@@ -272,7 +272,7 @@
       </div>
 
       <!-- 题目列表 -->
-      <div id="questionListContainer" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div id="questionListContainer" class="flex-1 overflow-y-auto custom-scrollbar p-6 pb-24">
         <div id="questionList" class="max-w-6xl mx-auto space-y-4">
           <!-- 题目将通过JavaScript动态渲染 -->
         </div>
@@ -282,6 +282,32 @@
           <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
           <p class="text-gray-500 text-lg">暂无题目</p>
           <p class="text-gray-400 text-sm mt-2">请调整筛选条件或新增题目</p>
+        </div>
+
+        <!-- 分页控件 -->
+        <div id="paginationContainer" class="hidden fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-6 py-4 z-40">
+          <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+              显示 <span id="pageStart">1</span>-<span id="pageEnd">20</span> 条，共 <span id="pageTotal">0</span> 条
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="goToFirstPage()" id="firstPageBtn" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+                <i class="fas fa-angle-double-left"></i>
+              </button>
+              <button onclick="changePage(currentPage - 1)" id="prevPageBtn" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+                <i class="fas fa-angle-left mr-1"></i>上一页
+              </button>
+              <div id="pageNumbers" class="flex items-center space-x-1">
+                <!-- 页码将通过JavaScript动态渲染 -->
+              </div>
+              <button onclick="changePage(currentPage + 1)" id="nextPageBtn" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                下一页<i class="fas fa-angle-right ml-1"></i>
+              </button>
+              <button onclick="goToLastPage()" id="lastPageBtn" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-angle-double-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -403,7 +429,7 @@
             <option value="multiple">多选题</option>
             <option value="judge">判断题</option>
             <option value="blank">填空题</option>
-            <option value="short">简答题</option>
+            <option value="shortAnswer">简答题</option>
             <option value="composite">复合题型</option>
           </select>
         </div>
@@ -452,7 +478,7 @@
                   <span class="text-sm text-gray-700">填空题</span>
                 </label>
                 <label class="flex items-center space-x-2">
-                  <input type="checkbox" value="short" class="composite-subtype rounded border-gray-300 text-primary-500 focus:ring-primary-500">
+                  <input type="checkbox" value="shortAnswer" class="composite-subtype rounded border-gray-300 text-primary-500 focus:ring-primary-500">
                   <span class="text-sm text-gray-700">简答题</span>
                 </label>
               </div>
@@ -579,10 +605,195 @@
         difficulty: 1, difficultyName: '一级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
         content: '以下哪个不是操作系统的功能？',
         tags: ['操作系统'], createTime: '2026-01-12 14:30', author: '张老师', useCount: 18
+      },
+      // 新增30道题目
+      {
+        id: 'Q009', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中哪个数据类型是不可变的？',
+        tags: ['Python', '数据类型'], createTime: '2026-01-16 09:15', author: '李老师', useCount: 5
+      },
+      {
+        id: 'Q010', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: '以下哪些是SQL的聚合函数？',
+        tags: ['SQL', '聚合函数'], createTime: '2026-01-16 10:20', author: '王老师', useCount: 9
+      },
+      {
+        id: 'Q011', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
+        content: 'CPU是计算机的核心部件，负责执行指令和处理数据。',
+        tags: ['CPU', '硬件'], createTime: '2026-01-16 11:30', author: '张老师', useCount: 14
+      },
+      {
+        id: 'Q012', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的_____关键字用于定义常量。',
+        tags: ['Java', '关键字'], createTime: '2026-01-16 13:45', author: '孙老师', useCount: 11
+      },
+      {
+        id: 'Q013', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '二叉搜索树的中序遍历结果是什么顺序？',
+        tags: ['数据结构', '二叉树'], createTime: '2026-01-16 14:10', author: '赵老师', useCount: 7
+      },
+      {
+        id: 'Q014', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '以下哪些属于应用层协议？',
+        tags: ['网络协议', '应用层'], createTime: '2026-01-16 15:25', author: '周老师', useCount: 13
+      },
+      {
+        id: 'Q015', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python是一种解释型编程语言。',
+        tags: ['Python', '语言特性'], createTime: '2026-01-16 16:40', author: '李老师', useCount: 16
+      },
+      {
+        id: 'Q016', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: '请简述数据库三大范式的主要内容。',
+        tags: ['数据库设计', '范式'], createTime: '2026-01-17 09:00', author: '王老师', useCount: 8
+      },
+      {
+        id: 'Q017', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '以下哪个不是进程调度算法？',
+        tags: ['操作系统', '调度'], createTime: '2026-01-17 10:15', author: '张老师', useCount: 10
+      },
+      {
+        id: 'Q018', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
+        content: 'JavaScript中使用_____关键字声明块级作用域变量。',
+        tags: ['JavaScript', '变量'], createTime: '2026-01-17 11:30', author: '李老师', useCount: 12
+      },
+      {
+        id: 'Q019', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '以下哪些是线性数据结构？',
+        tags: ['数据结构', '线性结构'], createTime: '2026-01-17 13:20', author: '赵老师', useCount: 6
+      },
+      {
+        id: 'Q020', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: 'SELECT语句中WHERE子句用于分组。',
+        tags: ['SQL', '查询'], createTime: '2026-01-17 14:40', author: '王老师', useCount: 15
+      },
+      {
+        id: 'Q021', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '以下哪种加密算法是非对称加密？',
+        tags: ['网络安全', '加密'], createTime: '2026-01-17 15:50', author: '周老师', useCount: 9
+      },
+      {
+        id: 'Q022', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
+        content: '计算机的五大基本组成部分包括：运算器、控制器、存储器、_____和输出设备。',
+        tags: ['计算机系统', '组成'], createTime: '2026-01-18 09:10', author: '张老师', useCount: 11
+      },
+      {
+        id: 'Q023', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的访问修饰符有哪些？',
+        tags: ['Java', '访问控制'], createTime: '2026-01-18 10:25', author: '孙老师', useCount: 8
+      },
+      {
+        id: 'Q024', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '请解释操作系统中的死锁及其产生的四个必要条件。',
+        tags: ['操作系统', '死锁'], createTime: '2026-01-18 11:40', author: '张老师', useCount: 5
+      },
+      {
+        id: 'Q025', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
+        content: 'JavaScript是一种单线程语言。',
+        tags: ['JavaScript', '特性'], createTime: '2026-01-18 13:15', author: '李老师', useCount: 17
+      },
+      {
+        id: 'Q026', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: '以下哪个不是关系型数据库的特点？',
+        tags: ['数据库', '关系型'], createTime: '2026-01-18 14:30', author: '王老师', useCount: 10
+      },
+      {
+        id: 'Q027', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: 'TCP/IP模型中，负责端到端通信的是_____层。',
+        tags: ['网络协议', 'TCP/IP'], createTime: '2026-01-18 15:45', author: '周老师', useCount: 13
+      },
+      {
+        id: 'Q028', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中以下哪些是可迭代对象？',
+        tags: ['Python', '迭代'], createTime: '2026-01-19 09:00', author: '李老师', useCount: 7
+      },
+      {
+        id: 'Q029', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '链表是一种顺序存储的数据结构。',
+        tags: ['数据结构', '链表'], createTime: '2026-01-19 10:20', author: '赵老师', useCount: 12
+      },
+      {
+        id: 'Q030', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: '请说明SQL中JOIN的几种类型及其区别。',
+        tags: ['SQL', 'JOIN'], createTime: '2026-01-19 11:35', author: '王老师', useCount: 9
+      },
+      {
+        id: 'Q031', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的垃圾回收机制主要针对什么内存区域？',
+        tags: ['Java', 'GC'], createTime: '2026-01-19 13:10', author: '孙老师', useCount: 6
+      },
+      {
+        id: 'Q032', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '_____是一种用于验证用户身份的安全机制。',
+        tags: ['网络安全', '认证'], createTime: '2026-01-19 14:25', author: '周老师', useCount: 11
+      },
+      {
+        id: 'Q033', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '以下哪些是操作系统的主要功能？',
+        tags: ['操作系统', '功能'], createTime: '2026-01-19 15:40', author: '张老师', useCount: 8
+      },
+      {
+        id: 'Q034', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: 'NoSQL数据库不支持事务处理。',
+        tags: ['数据库', 'NoSQL'], createTime: '2026-01-19 16:55', author: '王老师', useCount: 14
+      },
+      {
+        id: 'Q035', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
+        content: '请解释JavaScript中的事件循环机制。',
+        tags: ['JavaScript', '事件循环'], createTime: '2026-01-19 17:20', author: '李老师', useCount: 4
+      },
+      {
+        id: 'Q036', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
+        content: '以下哪个是主存储器？',
+        tags: ['计算机系统', '存储'], createTime: '2026-01-19 18:05', author: '张老师', useCount: 15
+      },
+      {
+        id: 'Q037', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中使用_____函数可以获取列表的长度。',
+        tags: ['Python', '列表'], createTime: '2026-01-19 19:15', author: '李老师', useCount: 10
+      },
+      {
+        id: 'Q038', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '以下哪些是传输层协议？',
+        tags: ['网络协议', '传输层'], createTime: '2026-01-19 20:30', author: '周老师', useCount: 7
       }
     ];
 
     let filteredQuestions = [...allQuestions];
+
+    // 分页变量
+    let currentPage = 1;
+    const pageSize = 20;
 
     let nextId = 100; // 用于生成新节点的ID
     let draggedNode = null; // 被拖拽的节点
@@ -1238,6 +1449,9 @@
 
     // 应用筛选
     function applyFilters() {
+      // 重置到第一页
+      currentPage = 1;
+
       currentFilters.search = document.getElementById('globalSearchInput').value.trim().toLowerCase();
       currentFilters.tag = document.getElementById('filterTag').value.trim().toLowerCase();
 
@@ -1306,21 +1520,43 @@
     function renderQuestions() {
       const container = document.getElementById('questionList');
       const emptyState = document.getElementById('emptyState');
+      const paginationContainer = document.getElementById('paginationContainer');
+
+      // 按创建时间倒序排序（最新的在前面）
+      filteredQuestions.sort((a, b) => {
+        return b.createTime.localeCompare(a.createTime);
+      });
 
       document.getElementById('totalQuestions').textContent = filteredQuestions.length;
 
       if (filteredQuestions.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('hidden');
+        paginationContainer.classList.add('hidden');
         return;
       }
 
       emptyState.classList.add('hidden');
       container.innerHTML = '';
 
-      filteredQuestions.forEach(question => {
+      // 计算分页
+      const totalPages = Math.ceil(filteredQuestions.length / pageSize);
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, filteredQuestions.length);
+      const currentQuestions = filteredQuestions.slice(startIndex, endIndex);
+
+      // 渲染当前页的题目
+      currentQuestions.forEach(question => {
         container.appendChild(createQuestionCard(question));
       });
+
+      // 显示并渲染分页控件
+      if (filteredQuestions.length > 0) {
+        paginationContainer.classList.remove('hidden');
+        renderPagination(totalPages, startIndex, endIndex, filteredQuestions.length);
+      } else {
+        paginationContainer.classList.add('hidden');
+      }
     }
 
     // 创建题目卡片
@@ -1377,6 +1613,112 @@
       return card;
     }
 
+    // ==================== 分页功能 ====================
+
+    // 渲染分页控件
+    function renderPagination(totalPages, startIndex, endIndex, total) {
+      // 更新显示信息
+      document.getElementById('pageStart').textContent = startIndex + 1;
+      document.getElementById('pageEnd').textContent = endIndex;
+      document.getElementById('pageTotal').textContent = total;
+
+      // 更新按钮状态
+      const firstPageBtn = document.getElementById('firstPageBtn');
+      const prevPageBtn = document.getElementById('prevPageBtn');
+      const nextPageBtn = document.getElementById('nextPageBtn');
+      const lastPageBtn = document.getElementById('lastPageBtn');
+
+      firstPageBtn.disabled = currentPage === 1;
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+      lastPageBtn.disabled = currentPage === totalPages;
+
+      // 渲染页码
+      const pageNumbers = document.getElementById('pageNumbers');
+      pageNumbers.innerHTML = '';
+
+      // 计算显示的页码范围
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+
+      // 确保始终显示5个页码（如果总页数>=5）
+      if (endPage - startPage < 4) {
+        if (currentPage < 3) {
+          endPage = Math.min(5, totalPages);
+        } else {
+          startPage = Math.max(1, endPage - 4);
+        }
+      }
+
+      // 第一页
+      if (startPage > 1) {
+        const btn = createPageButton(1, false);
+        pageNumbers.appendChild(btn);
+
+        if (startPage > 2) {
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'px-2 text-gray-500';
+          ellipsis.textContent = '...';
+          pageNumbers.appendChild(ellipsis);
+        }
+      }
+
+      // 中间页码
+      for (let i = startPage; i <= endPage; i++) {
+        const btn = createPageButton(i, i === currentPage);
+        pageNumbers.appendChild(btn);
+      }
+
+      // 最后一页
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'px-2 text-gray-500';
+          ellipsis.textContent = '...';
+          pageNumbers.appendChild(ellipsis);
+        }
+
+        const btn = createPageButton(totalPages, false);
+        pageNumbers.appendChild(btn);
+      }
+    }
+
+    // 创建页码按钮
+    function createPageButton(pageNum, isActive) {
+      const btn = document.createElement('button');
+      btn.onclick = () => changePage(pageNum);
+      btn.className = isActive
+        ? 'px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm font-medium'
+        : 'px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors';
+      btn.textContent = pageNum;
+      return btn;
+    }
+
+    // 切换页码
+    function changePage(page) {
+      const totalPages = Math.ceil(filteredQuestions.length / pageSize);
+      if (page < 1 || page > totalPages) return;
+
+      currentPage = page;
+      renderQuestions();
+
+      // 滚动到顶部
+      document.getElementById('questionListContainer').scrollTop = 0;
+    }
+
+    // 跳转到第一页
+    function goToFirstPage() {
+      changePage(1);
+    }
+
+    // 跳转到最后一页
+    function goToLastPage() {
+      const totalPages = Math.ceil(filteredQuestions.length / pageSize);
+      changePage(totalPages);
+    }
+
+    // ==================== 知识点筛选 ====================
+
     // 点击知识点节点筛选
     function selectKnowledgeNode(nodeId, nodeName) {
       document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
@@ -1413,32 +1755,23 @@
 
     // ==================== 题型设置功能 ====================
 
-    // 默认题型（原始定义）
+    // 默认题型（原始定义）- 只保留单选、多选、判断、填空和复合题型
     const defaultQuestionTypes = [
       { id: 'single', name: '单选题', icon: 'fa-dot-circle', color: 'info', isDefault: true },
       { id: 'multiple', name: '多选题', icon: 'fa-check-double', color: 'success', isDefault: true },
-      { id: 'judge', name: '判断题', icon: 'fa-check', color: 'warning', isDefault: true },
-      { id: 'blank', name: '填空题', icon: 'fa-pen', color: 'primary', isDefault: true },
-      { id: 'short', name: '简答题', icon: 'fa-align-left', color: 'purple', isDefault: true },
-      {
-        id: 'cloze',
-        name: '完形填空',
-        icon: 'fa-layer-group',
-        color: 'indigo',
-        isDefault: true,
-        isComposite: true,
-        hasMaterial: true,
-        subTypes: ['single']  // 由单选题组成
-      },
+      { id: 'judge', name: '判断题', icon: 'fa-check-circle', color: 'success', isDefault: true },
+      { id: 'blank', name: '填空题', icon: 'fa-keyboard', color: 'warning', isDefault: true },
+      { id: 'cloze', name: '完形填空', icon: 'fa-layer-group', color: 'indigo', isDefault: true },
+      { id: 'shortAnswer', name: '简答题', icon: 'fa-align-left', color: 'teal', isDefault: true },
       {
         id: 'materialAnalysis',
         name: '材料分析',
-        icon: 'fa-layer-group',
+        icon: 'fa-list-alt',
         color: 'purple',
         isDefault: true,
         isComposite: true,
         hasMaterial: true,
-        subTypes: ['single', 'multiple', 'judge', 'blank', 'short']  // 由所有题型组成
+        subTypes: ['single', 'multiple', 'judge', 'blank', 'shortAnswer']  // 只包含需要的基础题型
       }
     ];
 
@@ -1449,6 +1782,37 @@
     let customQuestionTypes = [];
     let nextCustomTypeId = 1000;
     let editingQuestionType = null; // 正在编辑的题型（可能是默认或自定义）
+
+    // 从 localStorage 加载题型配置
+    function loadQuestionTypesFromStorage() {
+      const saved = localStorage.getItem('questionTypesConfig');
+      if (saved) {
+        try {
+          const config = JSON.parse(saved);
+          if (config.modifiedDefaultTypes) {
+            modifiedDefaultTypes = config.modifiedDefaultTypes;
+          }
+          if (config.customQuestionTypes) {
+            customQuestionTypes = config.customQuestionTypes;
+          }
+          if (config.nextCustomTypeId) {
+            nextCustomTypeId = config.nextCustomTypeId;
+          }
+        } catch (e) {
+          console.error('加载题型配置失败:', e);
+        }
+      }
+    }
+
+    // 保存题型配置到 localStorage
+    function saveQuestionTypesToStorage() {
+      const config = {
+        modifiedDefaultTypes: modifiedDefaultTypes,
+        customQuestionTypes: customQuestionTypes,
+        nextCustomTypeId: nextCustomTypeId
+      };
+      localStorage.setItem('questionTypesConfig', JSON.stringify(config));
+    }
 
     // 获取题型（考虑修改后的版本）
     function getQuestionType(type) {
@@ -1615,7 +1979,8 @@
         <option value="multiple">多选题</option>
         <option value="judge">判断题</option>
         <option value="blank">填空题</option>
-        <option value="short">简答题</option>
+        <option value="cloze">完形填空</option>
+        <option value="shortAnswer">简答题</option>
         <option value="composite">复合题型（自定义组合）</option>
       `;
       baseTypeSelect.value = '';
@@ -1682,6 +2047,9 @@
         // 存储修改
         modifiedDefaultTypes[editingQuestionType.id] = modifications;
 
+        // 保存到 localStorage
+        saveQuestionTypesToStorage();
+
         // 更新UI
         renderDefaultQuestionTypes();
         updateQuestionTypeFilter();
@@ -1731,6 +2099,9 @@
         customQuestionTypes.push(customType);
       }
 
+      // 保存到 localStorage
+      saveQuestionTypesToStorage();
+
       // 更新UI
       renderCustomQuestionTypes();
       updateQuestionTypeFilter();
@@ -1778,7 +2149,8 @@
           <option value="multiple">多选题</option>
           <option value="judge">判断题</option>
           <option value="blank">填空题</option>
-          <option value="short">简答题</option>
+          <option value="cloze">完形填空</option>
+          <option value="shortAnswer">简答题</option>
           <option value="composite">复合题型（自定义组合）</option>
         `;
         baseTypeSelect.disabled = false;
@@ -1805,6 +2177,10 @@
     function deleteCustomType(type) {
       if (confirm(`确定要删除自定义题型"${type.name}"吗？\n\n删除后不可恢复！`)) {
         customQuestionTypes = customQuestionTypes.filter(t => t.id !== type.id);
+
+        // 保存到 localStorage
+        saveQuestionTypesToStorage();
+
         renderCustomQuestionTypes();
         updateQuestionTypeFilter();
       }
@@ -1862,7 +2238,7 @@
 
     // 新增题目
     function addNewQuestion() {
-      window.location.href = 'add-standard.html';
+      window.location.href = 'add.html';
     }
 
     // 查看题目详情
@@ -1884,6 +2260,20 @@
 
     // 页面加载完成后初始化
     window.addEventListener('DOMContentLoaded', function() {
+      // 加载题型配置
+      loadQuestionTypesFromStorage();
+
+      // 从 localStorage 读取新增的题目
+      const savedQuestions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
+
+      if (savedQuestions.length > 0) {
+        // 合并到 allQuestions 数组
+        allQuestions = allQuestions.concat(savedQuestions);
+      }
+
+      // 重新初始化 filteredQuestions
+      filteredQuestions = [...allQuestions];
+
       updateKnowledgeTreeCounts();  // 先更新题目数量
       renderKnowledgeTree();
       renderQuestions();

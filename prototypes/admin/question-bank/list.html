@@ -60,6 +60,84 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #a1a1a1;
     }
+
+    /* 题目内容样式 */
+    .question-content {
+      line-height: 1.75;
+    }
+    .question-content img {
+      max-width: 100%;
+      height: auto;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: block;
+    }
+    .question-content br {
+      display: block;
+      margin: 4px 0;
+      content: "";
+    }
+
+    /* 侧滑面板样式 */
+    .preview-drawer {
+      position: fixed;
+      top: 0;
+      right: -600px;
+      width: 600px;
+      height: 100vh;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-drawer.active {
+      right: 0;
+    }
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      z-index: 99;
+    }
+    .preview-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .option-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .option-label.correct {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .preview-drawer::-webkit-scrollbar {
+      width: 6px;
+    }
+    .preview-drawer::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .preview-drawer::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
   </style>
   <!-- iframe嵌入检测脚本 -->
   <script>
@@ -113,9 +191,14 @@
             <i class="fas fa-times text-xs"></i>
           </button>
         </div>
-        <button onclick="addRootKnowledge()" class="w-full bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <i class="fas fa-plus mr-2"></i>新增知识点
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="addRootDirectory()" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-folder-plus mr-1.5"></i>添加目录
+          </button>
+          <button onclick="addRootKnowledgePoint()" class="flex-1 bg-success-500 hover:bg-success-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-book mr-1.5"></i>添加知识点
+          </button>
+        </div>
       </div>
 
       <!-- 知识点树 -->
@@ -311,6 +394,41 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- 题目预览侧滑面板 -->
+  <div id="previewOverlay" class="preview-overlay" onclick="closePreview()"></div>
+  <div id="previewDrawer" class="preview-drawer">
+    <!-- 面板头部 -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-lg font-semibold text-gray-900">题目详情</h2>
+      <button onclick="closePreview()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- 面板内容 -->
+    <div id="previewContent" class="flex-1 overflow-y-auto p-6">
+      <div class="text-center py-20 text-gray-400">
+        <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+        <p>加载中...</p>
+      </div>
+    </div>
+
+    <!-- 面板底部操作栏 -->
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+      <button onclick="closePreview()" class="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+        关闭
+      </button>
+      <div class="flex items-center space-x-2">
+        <button onclick="editCurrentQuestion()" class="px-4 py-2 bg-info-500 hover:bg-info-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-edit mr-1.5"></i>编辑
+        </button>
+        <button onclick="deleteCurrentQuestion()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-trash mr-1.5"></i>删除
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- 移动知识点位置弹窗 -->
@@ -510,46 +628,52 @@
 
   <script>
     // ==================== 知识点树数据结构 ====================
+    // type: 'directory' 表示目录（可以包含子目录或知识点）
+    // type: 'knowledge' 表示知识点（叶子节点，不能再包含子节点）
     let knowledgeTree = [
       {
         id: 1,
         name: '计算机基础',
+        type: 'directory',
         count: 45,
         collapsed: false,
         children: [
-          { id: 11, name: '计算机系统', count: 15, children: [] },
-          { id: 12, name: '操作系统', count: 18, children: [] },
-          { id: 13, name: '数据结构', count: 12, children: [] }
+          { id: 11, name: '计算机系统', type: 'knowledge', count: 15, children: [] },
+          { id: 12, name: '操作系统', type: 'knowledge', count: 18, children: [] },
+          { id: 13, name: '数据结构', type: 'knowledge', count: 12, children: [] }
         ]
       },
       {
         id: 2,
         name: '编程语言',
+        type: 'directory',
         count: 38,
         collapsed: true,
         children: [
-          { id: 21, name: 'Python基础', count: 20, children: [] },
-          { id: 22, name: 'Java基础', count: 18, children: [] }
+          { id: 21, name: 'Python基础', type: 'knowledge', count: 20, children: [] },
+          { id: 22, name: 'Java基础', type: 'knowledge', count: 18, children: [] }
         ]
       },
       {
         id: 3,
         name: '数据库',
+        type: 'directory',
         count: 25,
         collapsed: true,
         children: [
-          { id: 31, name: 'SQL语法', count: 15, children: [] },
-          { id: 32, name: '数据库设计', count: 10, children: [] }
+          { id: 31, name: 'SQL语法', type: 'knowledge', count: 15, children: [] },
+          { id: 32, name: '数据库设计', type: 'knowledge', count: 10, children: [] }
         ]
       },
       {
         id: 4,
         name: '网络技术',
+        type: 'directory',
         count: 20,
         collapsed: true,
         children: [
-          { id: 41, name: '网络协议', count: 12, children: [] },
-          { id: 42, name: '网络安全', count: 8, children: [] }
+          { id: 41, name: '网络协议', type: 'knowledge', count: 12, children: [] },
+          { id: 42, name: '网络安全', type: 'knowledge', count: 8, children: [] }
         ]
       }
     ];
@@ -560,232 +684,447 @@
         id: 'Q001', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
         content: '下列关于计算机系统的描述，<strong>正确</strong>的是？',
-        tags: ['系统结构', '基础'], createTime: '2026-01-15 14:30', author: '张老师', useCount: 12
+        tags: ['系统结构', '基础'], createTime: '2026-01-15 14:30', author: '张老师', useCount: 12,
+        score: '2', explanation: '计算机系统由硬件和软件两部分组成，硬件是物理设备，软件是程序和数据。',
+        options: [
+          { label: 'A', text: '计算机只由硬件组成' },
+          { label: 'B', text: '计算机系统由硬件和软件组成' },
+          { label: 'C', text: '软件不是计算机系统的一部分' },
+          { label: 'D', text: '操作系统属于硬件' }
+        ],
+        correctAnswers: ['B']
       },
       {
         id: 'Q002', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
         content: '以下哪些是Python的特点？（多选）',
-        tags: ['Python', '特性'], createTime: '2026-01-15 10:20', author: '李老师', useCount: 8
+        tags: ['Python', '特性'], createTime: '2026-01-15 10:20', author: '李老师', useCount: 8,
+        score: '3', explanation: 'Python是一种解释型、面向对象、动态类型的高级编程语言，语法简洁易读。',
+        options: [
+          { label: 'A', text: '解释型语言' },
+          { label: 'B', text: '面向对象' },
+          { label: 'C', text: '静态类型' },
+          { label: 'D', text: '语法简洁' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q003', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
         content: 'HTTP协议是无状态协议。',
-        tags: ['HTTP', '协议'], createTime: '2026-01-13 11:15', author: '周老师', useCount: 20
+        tags: ['HTTP', '协议'], createTime: '2026-01-13 11:15', author: '周老师', useCount: 20,
+        score: '1', explanation: 'HTTP协议本身是无状态的，服务器不会保存客户端的状态信息，每次请求都是独立的。',
+        correctAnswer: 'true'
       },
       {
         id: 'Q004', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
         content: 'SQL中用于查询数据的关键字是_____。',
-        tags: ['SQL', '查询'], createTime: '2026-01-14 09:30', author: '王老师', useCount: 15
+        tags: ['SQL', '查询'], createTime: '2026-01-14 09:30', author: '王老师', useCount: 15,
+        score: '2', explanation: 'SELECT是SQL中最基本的查询语句，用于从数据库表中检索数据。',
+        blanks: [{ index: 1, answer: 'SELECT', score: 2 }]
       },
       {
         id: 'Q005', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '请简述栈和队列的区别。',
-        tags: ['数据结构', '栈', '队列'], createTime: '2026-01-13 16:20', author: '赵老师', useCount: 10
+        tags: ['数据结构', '栈', '队列'], createTime: '2026-01-13 16:20', author: '赵老师', useCount: 10,
+        score: '5', explanation: '栈和队列都是线性数据结构，但操作方式不同。',
+        referenceAnswer: '栈是后进先出（LIFO）的数据结构，只能在栈顶进行插入和删除操作；队列是先进先出（FIFO）的数据结构，在队尾插入，在队头删除。'
       },
       {
         id: 'Q006', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
         difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
         content: 'Java面向对象编程特性包括封装、继承和多态。封装是将数据和操作数据的方法绑定在一起，隐藏对象的内部细节；继承允许子类继承父类的属性和方法，实现代码复用；多态则是指同一个方法调用可以有不同的执行结果，主要通过方法重载和方法重写实现。',
         tags: ['Java', '面向对象'], isComposite: true, subCount: 5,
-        createTime: '2026-01-14 16:45', author: '孙老师', useCount: 7
+        createTime: '2026-01-14 16:45', author: '孙老师', useCount: 7,
+        score: '10', explanation: 'Java面向对象三大特性是封装、继承、多态。',
+        blanks: [
+          { index: 1, answer: '封装', score: 2 },
+          { index: 2, answer: '继承', score: 2 },
+          { index: 3, answer: '多态', score: 2 },
+          { index: 4, answer: '重载', score: 2 },
+          { index: 5, answer: '重写', score: 2 }
+        ]
       },
       {
         id: 'Q007', type: 'materialAnalysis', typeName: '材料分析', typeIcon: 'fa-layer-group', typeColor: 'purple',
         difficulty: 4, difficultyName: '四级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: '某公司数据库设计方案：用户表包含30个字段，包括姓名、身份证号、电话、地址、邮箱等信息。订单表包含订单编号、用户ID、订单时间、订单金额、商品详情、收货地址、支付方式等。请分析该设计是否符合数据库范式要求，并指出存在的问题及优化建议。',
         tags: ['数据库设计', '范式'], isComposite: true, subCount: 3,
-        createTime: '2026-01-14 09:30', author: '赵老师', useCount: 6
+        createTime: '2026-01-14 09:30', author: '赵老师', useCount: 6,
+        score: '15', explanation: '数据库设计应遵循范式要求，避免数据冗余。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '该设计违反了第几范式？', score: 3, options: [{ label: 'A', text: '第一范式' }, { label: 'B', text: '第二范式' }, { label: 'C', text: '第三范式' }, { label: 'D', text: '都不违反' }], correctAnswers: ['C'], explanation: '收货地址在订单表中重复存储，违反第三范式。' },
+          { id: 2, type: 'short', content: '请指出用户表设计存在的问题。', score: 5, referenceAnswer: '用户表字段过多，应该进行垂直拆分，将常用字段和不常用字段分开存储。', explanation: '' },
+          { id: 3, type: 'short', content: '请给出优化建议。', score: 7, referenceAnswer: '1. 将用户表拆分为基本信息表和扩展信息表；2. 将收货地址单独建表，通过外键关联；3. 商品详情应该关联商品表而不是直接存储。', explanation: '' }
+        ]
       },
       {
         id: 'Q008', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 1, difficultyName: '一级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
         content: '以下哪个不是操作系统的功能？',
-        tags: ['操作系统'], createTime: '2026-01-12 14:30', author: '张老师', useCount: 18
+        tags: ['操作系统'], createTime: '2026-01-12 14:30', author: '张老师', useCount: 18,
+        score: '2', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理等。',
+        options: [
+          { label: 'A', text: '进程管理' },
+          { label: 'B', text: '内存管理' },
+          { label: 'C', text: '编译程序' },
+          { label: 'D', text: '文件管理' }
+        ],
+        correctAnswers: ['C']
       },
       // 新增30道题目
       {
         id: 'Q009', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
         content: 'Python中哪个数据类型是不可变的？',
-        tags: ['Python', '数据类型'], createTime: '2026-01-16 09:15', author: '李老师', useCount: 5
+        tags: ['Python', '数据类型'], createTime: '2026-01-16 09:15', author: '李老师', useCount: 5,
+        score: '2', explanation: '元组(tuple)是Python中的不可变数据类型，一旦创建就不能修改。',
+        options: [{ label: 'A', text: '列表(list)' }, { label: 'B', text: '字典(dict)' }, { label: 'C', text: '元组(tuple)' }, { label: 'D', text: '集合(set)' }],
+        correctAnswers: ['C']
       },
       {
         id: 'Q010', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
         content: '以下哪些是SQL的聚合函数？',
-        tags: ['SQL', '聚合函数'], createTime: '2026-01-16 10:20', author: '王老师', useCount: 9
+        tags: ['SQL', '聚合函数'], createTime: '2026-01-16 10:20', author: '王老师', useCount: 9,
+        score: '3', explanation: 'SQL聚合函数包括COUNT、SUM、AVG、MAX、MIN等。',
+        options: [{ label: 'A', text: 'COUNT' }, { label: 'B', text: 'SUM' }, { label: 'C', text: 'SELECT' }, { label: 'D', text: 'AVG' }],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q011', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
         content: 'CPU是计算机的核心部件，负责执行指令和处理数据。',
-        tags: ['CPU', '硬件'], createTime: '2026-01-16 11:30', author: '张老师', useCount: 14
+        tags: ['CPU', '硬件'], createTime: '2026-01-16 11:30', author: '张老师', useCount: 14,
+        score: '1', explanation: 'CPU（中央处理器）是计算机的核心，负责执行程序指令和处理数据。',
+        correctAnswer: 'true'
       },
       {
         id: 'Q012', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
         content: 'Java中的_____关键字用于定义常量。',
-        tags: ['Java', '关键字'], createTime: '2026-01-16 13:45', author: '孙老师', useCount: 11
+        tags: ['Java', '关键字'], createTime: '2026-01-16 13:45', author: '孙老师', useCount: 11,
+        score: '2', explanation: 'final关键字用于定义常量，被final修饰的变量不能被重新赋值。',
+        blanks: [{ index: 1, answer: 'final', score: 2 }]
       },
       {
         id: 'Q013', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '二叉搜索树的中序遍历结果是什么顺序？',
-        tags: ['数据结构', '二叉树'], createTime: '2026-01-16 14:10', author: '赵老师', useCount: 7
+        tags: ['数据结构', '二叉树'], createTime: '2026-01-16 14:10', author: '赵老师', useCount: 7,
+        score: '2', explanation: '二叉搜索树的中序遍历会按照升序输出所有节点。',
+        options: [{ label: 'A', text: '随机顺序' }, { label: 'B', text: '升序' }, { label: 'C', text: '降序' }, { label: 'D', text: '层序' }],
+        correctAnswers: ['B']
       },
       {
         id: 'Q014', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
         content: '以下哪些属于应用层协议？',
-        tags: ['网络协议', '应用层'], createTime: '2026-01-16 15:25', author: '周老师', useCount: 13
+        tags: ['网络协议', '应用层'], createTime: '2026-01-16 15:25', author: '周老师', useCount: 13,
+        score: '3', explanation: 'HTTP、FTP、SMTP都是应用层协议，TCP是传输层协议。',
+        options: [{ label: 'A', text: 'HTTP' }, { label: 'B', text: 'FTP' }, { label: 'C', text: 'TCP' }, { label: 'D', text: 'SMTP' }],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q015', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
         content: 'Python是一种解释型编程语言。',
-        tags: ['Python', '语言特性'], createTime: '2026-01-16 16:40', author: '李老师', useCount: 16
+        tags: ['Python', '语言特性'], createTime: '2026-01-16 16:40', author: '李老师', useCount: 16,
+        score: '1', explanation: 'Python是解释型语言，代码在运行时由解释器逐行执行。',
+        correctAnswer: 'true'
       },
       {
         id: 'Q016', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 3, difficultyName: '三级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: '请简述数据库三大范式的主要内容。',
-        tags: ['数据库设计', '范式'], createTime: '2026-01-17 09:00', author: '王老师', useCount: 8
+        tags: ['数据库设计', '范式'], createTime: '2026-01-17 09:00', author: '王老师', useCount: 8,
+        score: '5', explanation: '数据库范式是设计关系型数据库的规范。',
+        referenceAnswer: '第一范式(1NF)：属性不可再分；第二范式(2NF)：在1NF基础上，非主属性完全依赖于主键；第三范式(3NF)：在2NF基础上，非主属性不传递依赖于主键。'
       },
       {
         id: 'Q017', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
         content: '以下哪个不是进程调度算法？',
-        tags: ['操作系统', '调度'], createTime: '2026-01-17 10:15', author: '张老师', useCount: 10
+        tags: ['操作系统', '调度'], createTime: '2026-01-17 10:15', author: '张老师', useCount: 10,
+        score: '2', explanation: '冒泡排序是排序算法，不是进程调度算法。',
+        options: [{ label: 'A', text: '先来先服务(FCFS)' }, { label: 'B', text: '短作业优先(SJF)' }, { label: 'C', text: '冒泡排序' }, { label: 'D', text: '时间片轮转' }],
+        correctAnswers: ['C']
       },
       {
         id: 'Q018', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
         content: 'JavaScript中使用_____关键字声明块级作用域变量。',
-        tags: ['JavaScript', '变量'], createTime: '2026-01-17 11:30', author: '李老师', useCount: 12
+        tags: ['JavaScript', '变量'], createTime: '2026-01-17 11:30', author: '李老师', useCount: 12,
+        score: '2', explanation: 'let和const都可以声明块级作用域变量，let是最常用的。',
+        blanks: [{ index: 1, answer: 'let', score: 2 }]
       },
       {
         id: 'Q019', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '以下哪些是线性数据结构？',
-        tags: ['数据结构', '线性结构'], createTime: '2026-01-17 13:20', author: '赵老师', useCount: 6
+        tags: ['数据结构', '线性结构'], createTime: '2026-01-17 13:20', author: '赵老师', useCount: 6,
+        score: '3', explanation: '数组、链表、栈、队列都是线性数据结构，二叉树是非线性结构。',
+        options: [{ label: 'A', text: '数组' }, { label: 'B', text: '链表' }, { label: 'C', text: '二叉树' }, { label: 'D', text: '栈' }],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q020', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
         content: 'SELECT语句中WHERE子句用于分组。',
-        tags: ['SQL', '查询'], createTime: '2026-01-17 14:40', author: '王老师', useCount: 15
+        tags: ['SQL', '查询'], createTime: '2026-01-17 14:40', author: '王老师', useCount: 15,
+        score: '1', explanation: 'WHERE子句用于过滤条件，GROUP BY子句用于分组。',
+        correctAnswer: 'false'
       },
       {
         id: 'Q021', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
         content: '以下哪种加密算法是非对称加密？',
-        tags: ['网络安全', '加密'], createTime: '2026-01-17 15:50', author: '周老师', useCount: 9
+        tags: ['网络安全', '加密'], createTime: '2026-01-17 15:50', author: '周老师', useCount: 9,
+        score: '2', explanation: 'RSA是非对称加密算法，使用公钥和私钥进行加解密。',
+        options: [{ label: 'A', text: 'AES' }, { label: 'B', text: 'DES' }, { label: 'C', text: 'RSA' }, { label: 'D', text: 'MD5' }],
+        correctAnswers: ['C']
       },
       {
         id: 'Q022', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
         content: '计算机的五大基本组成部分包括：运算器、控制器、存储器、_____和输出设备。',
-        tags: ['计算机系统', '组成'], createTime: '2026-01-18 09:10', author: '张老师', useCount: 11
+        tags: ['计算机系统', '组成'], createTime: '2026-01-18 09:10', author: '张老师', useCount: 11,
+        score: '2', explanation: '计算机五大部件：运算器、控制器、存储器、输入设备、输出设备。',
+        blanks: [{ index: 1, answer: '输入设备', score: 2 }]
       },
       {
         id: 'Q023', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
         content: 'Java中的访问修饰符有哪些？',
-        tags: ['Java', '访问控制'], createTime: '2026-01-18 10:25', author: '孙老师', useCount: 8
+        tags: ['Java', '访问控制'], createTime: '2026-01-18 10:25', author: '孙老师', useCount: 8,
+        score: '3', explanation: 'Java有四种访问修饰符：public、protected、default(无修饰符)、private。',
+        options: [{ label: 'A', text: 'public' }, { label: 'B', text: 'protected' }, { label: 'C', text: 'private' }, { label: 'D', text: 'static' }],
+        correctAnswers: ['A', 'B', 'C']
       },
       {
         id: 'Q024', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 4, difficultyName: '四级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
         content: '请解释操作系统中的死锁及其产生的四个必要条件。',
-        tags: ['操作系统', '死锁'], createTime: '2026-01-18 11:40', author: '张老师', useCount: 5
+        tags: ['操作系统', '死锁'], createTime: '2026-01-18 11:40', author: '张老师', useCount: 5,
+        score: '6', explanation: '死锁是操作系统中的重要概念。',
+        referenceAnswer: '死锁是指两个或多个进程在执行过程中，因争夺资源而造成的一种互相等待的现象。四个必要条件：1.互斥条件；2.请求与保持条件；3.不可剥夺条件；4.循环等待条件。'
       },
       {
         id: 'Q025', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
         content: 'JavaScript是一种单线程语言。',
-        tags: ['JavaScript', '特性'], createTime: '2026-01-18 13:15', author: '李老师', useCount: 17
+        tags: ['JavaScript', '特性'], createTime: '2026-01-18 13:15', author: '李老师', useCount: 17,
+        score: '1', explanation: 'JavaScript是单线程语言，但通过事件循环机制可以实现异步操作。',
+        correctAnswer: 'true'
       },
       {
         id: 'Q026', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: '以下哪个不是关系型数据库的特点？',
-        tags: ['数据库', '关系型'], createTime: '2026-01-18 14:30', author: '王老师', useCount: 10
+        tags: ['数据库', '关系型'], createTime: '2026-01-18 14:30', author: '王老师', useCount: 10,
+        score: '2', explanation: '关系型数据库使用表格存储数据，支持SQL查询，有严格的数据模式。',
+        options: [{ label: 'A', text: '使用表格存储数据' }, { label: 'B', text: '支持SQL查询' }, { label: 'C', text: '无模式设计' }, { label: 'D', text: '支持事务' }],
+        correctAnswers: ['C']
       },
       {
         id: 'Q027', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
         content: 'TCP/IP模型中，负责端到端通信的是_____层。',
-        tags: ['网络协议', 'TCP/IP'], createTime: '2026-01-18 15:45', author: '周老师', useCount: 13
+        tags: ['网络协议', 'TCP/IP'], createTime: '2026-01-18 15:45', author: '周老师', useCount: 13,
+        score: '2', explanation: '传输层负责端到端的通信，主要协议有TCP和UDP。',
+        blanks: [{ index: 1, answer: '传输', score: 2 }]
       },
       {
         id: 'Q028', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
         content: 'Python中以下哪些是可迭代对象？',
-        tags: ['Python', '迭代'], createTime: '2026-01-19 09:00', author: '李老师', useCount: 7
+        tags: ['Python', '迭代'], createTime: '2026-01-19 09:00', author: '李老师', useCount: 7,
+        score: '3', explanation: '列表、字符串、字典都是可迭代对象，整数不是。',
+        options: [{ label: 'A', text: '列表' }, { label: 'B', text: '字符串' }, { label: 'C', text: '整数' }, { label: 'D', text: '字典' }],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q029', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '链表是一种顺序存储的数据结构。',
-        tags: ['数据结构', '链表'], createTime: '2026-01-19 10:20', author: '赵老师', useCount: 12
+        tags: ['数据结构', '链表'], createTime: '2026-01-19 10:20', author: '赵老师', useCount: 12,
+        score: '1', explanation: '链表是链式存储结构，不是顺序存储。数组才是顺序存储。',
+        correctAnswer: 'false'
       },
       {
         id: 'Q030', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
         content: '请说明SQL中JOIN的几种类型及其区别。',
-        tags: ['SQL', 'JOIN'], createTime: '2026-01-19 11:35', author: '王老师', useCount: 9
+        tags: ['SQL', 'JOIN'], createTime: '2026-01-19 11:35', author: '王老师', useCount: 9,
+        score: '5', explanation: 'JOIN是SQL中用于连接多个表的操作。',
+        referenceAnswer: 'INNER JOIN：返回两表匹配的行；LEFT JOIN：返回左表所有行，右表匹配的行；RIGHT JOIN：返回右表所有行，左表匹配的行；FULL JOIN：返回两表所有行。'
       },
       {
         id: 'Q031', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
         content: 'Java中的垃圾回收机制主要针对什么内存区域？',
-        tags: ['Java', 'GC'], createTime: '2026-01-19 13:10', author: '孙老师', useCount: 6
+        tags: ['Java', 'GC'], createTime: '2026-01-19 13:10', author: '孙老师', useCount: 6,
+        score: '2', explanation: 'Java垃圾回收主要针对堆内存中不再使用的对象。',
+        options: [{ label: 'A', text: '栈内存' }, { label: 'B', text: '堆内存' }, { label: 'C', text: '方法区' }, { label: 'D', text: '程序计数器' }],
+        correctAnswers: ['B']
       },
       {
         id: 'Q032', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
         content: '_____是一种用于验证用户身份的安全机制。',
-        tags: ['网络安全', '认证'], createTime: '2026-01-19 14:25', author: '周老师', useCount: 11
+        tags: ['网络安全', '认证'], createTime: '2026-01-19 14:25', author: '周老师', useCount: 11,
+        score: '2', explanation: '身份认证是验证用户身份的安全机制。',
+        blanks: [{ index: 1, answer: '身份认证', score: 2 }]
       },
       {
         id: 'Q033', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
         content: '以下哪些是操作系统的主要功能？',
-        tags: ['操作系统', '功能'], createTime: '2026-01-19 15:40', author: '张老师', useCount: 8
+        tags: ['操作系统', '功能'], createTime: '2026-01-19 15:40', author: '张老师', useCount: 8,
+        score: '3', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理。',
+        options: [{ label: 'A', text: '进程管理' }, { label: 'B', text: '内存管理' }, { label: 'C', text: '编译程序' }, { label: 'D', text: '文件管理' }],
+        correctAnswers: ['A', 'B', 'D']
       },
       {
         id: 'Q034', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: 'NoSQL数据库不支持事务处理。',
-        tags: ['数据库', 'NoSQL'], createTime: '2026-01-19 16:55', author: '王老师', useCount: 14
+        tags: ['数据库', 'NoSQL'], createTime: '2026-01-19 16:55', author: '王老师', useCount: 14,
+        score: '1', explanation: '部分NoSQL数据库支持事务处理，如MongoDB 4.0+支持多文档事务。',
+        correctAnswer: 'false'
       },
       {
         id: 'Q035', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 4, difficultyName: '四级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
         content: '请解释JavaScript中的事件循环机制。',
-        tags: ['JavaScript', '事件循环'], createTime: '2026-01-19 17:20', author: '李老师', useCount: 4
+        tags: ['JavaScript', '事件循环'], createTime: '2026-01-19 17:20', author: '李老师', useCount: 4,
+        score: '6', explanation: '事件循环是JavaScript实现异步的核心机制。',
+        referenceAnswer: '事件循环是JavaScript的执行机制。主线程执行同步代码，异步任务放入任务队列。主线程空闲时，从任务队列取出任务执行。宏任务包括setTimeout、setInterval等，微任务包括Promise.then等，微任务优先于宏任务执行。'
       },
       {
         id: 'Q036', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
         content: '以下哪个是主存储器？',
-        tags: ['计算机系统', '存储'], createTime: '2026-01-19 18:05', author: '张老师', useCount: 15
+        tags: ['计算机系统', '存储'], createTime: '2026-01-19 18:05', author: '张老师', useCount: 15,
+        score: '2', explanation: '内存(RAM)是主存储器，硬盘、U盘、光盘是外存储器。',
+        options: [{ label: 'A', text: '硬盘' }, { label: 'B', text: '内存' }, { label: 'C', text: 'U盘' }, { label: 'D', text: '光盘' }],
+        correctAnswers: ['B']
       },
       {
         id: 'Q037', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
         content: 'Python中使用_____函数可以获取列表的长度。',
-        tags: ['Python', '列表'], createTime: '2026-01-19 19:15', author: '李老师', useCount: 10
+        tags: ['Python', '列表'], createTime: '2026-01-19 19:15', author: '李老师', useCount: 10,
+        score: '2', explanation: 'len()函数用于获取序列（列表、字符串等）的长度。',
+        blanks: [{ index: 1, answer: 'len', score: 2 }]
       },
       {
         id: 'Q038', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
         difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
         content: '以下哪些是传输层协议？',
-        tags: ['网络协议', '传输层'], createTime: '2026-01-19 20:30', author: '周老师', useCount: 7
+        tags: ['网络协议', '传输层'], createTime: '2026-01-19 20:30', author: '周老师', useCount: 7,
+        score: '3', explanation: 'TCP和UDP是传输层协议，HTTP和FTP是应用层协议。',
+        options: [{ label: 'A', text: 'TCP' }, { label: 'B', text: 'UDP' }, { label: 'C', text: 'HTTP' }, { label: 'D', text: 'FTP' }],
+        correctAnswers: ['A', 'B']
+      },
+      // ==================== 包含图片和公式的示例题目 ====================
+      {
+        id: 'Q039', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '观察下图所示的二叉树结构：<br><br><img src="images/binary-tree.svg" alt="二叉树结构图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>该二叉树的中序遍历结果是？<br><br>已知前序遍历为：A, B, D, E, C, F<br>后序遍历为：D, E, B, F, C, A',
+        tags: ['二叉树', '遍历', '图片题'], createTime: '2026-01-20 09:00', author: '张老师', useCount: 3,
+        score: '3', explanation: '中序遍历顺序为：左子树 → 根节点 → 右子树。<br><br><img src="images/binary-tree.svg" alt="中序遍历示意图" style="max-width:100%;border-radius:8px;">',
+        options: [
+          { label: 'A', text: 'D, B, E, A, F, C' },
+          { label: 'B', text: 'A, B, D, E, C, F' },
+          { label: 'C', text: 'D, E, B, F, C, A' },
+          { label: 'D', text: 'A, B, C, D, E, F' }
+        ],
+        correctAnswers: ['A']
+      },
+      {
+        id: 'Q040', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '根据下图所示的图结构，回答问题：<br><br><img src="images/graph-structure.svg" alt="带权图结构" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>以下关于该图的描述，正确的有哪些？<br><br>图中边的权重公式为：<code>W(u,v) = |u - v| × 2</code>',
+        tags: ['图论', '最短路径', '图片题'], createTime: '2026-01-20 09:30', author: '李老师', useCount: 5,
+        score: '4', explanation: '图的分析需要考虑连通性、权重和路径。<br><br>最短路径算法公式：<br><code>d[v] = min(d[v], d[u] + w(u,v))</code><br><br><img src="images/graph-structure.svg" alt="Dijkstra算法示意" style="max-width:100%;border-radius:8px;">',
+        options: [
+          { label: 'A', text: '该图是连通图' },
+          { label: 'B', text: '该图是有向图' },
+          { label: 'C', text: '从A到E的最短路径经过B' },
+          { label: 'D', text: '该图包含环' }
+        ],
+        correctAnswers: ['A', 'C', 'D']
+      },
+      {
+        id: 'Q041', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '观察下图中的排序过程：<br><br><img src="images/sorting-process.svg" alt="排序过程示意图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>该排序算法的时间复杂度为 O(_______)，空间复杂度为 O(_______)。<br><br>时间复杂度计算公式：<code>T(n) = n × (n-1) / 2 = O(n²)</code>',
+        tags: ['排序', '复杂度', '图片题'], createTime: '2026-01-20 10:00', author: '王老师', useCount: 8,
+        score: '4', explanation: '从图中可以看出这是冒泡排序的过程。<br><br>复杂度分析：<br>• 时间复杂度：最坏情况下需要比较 <code>n(n-1)/2</code> 次<br>• 空间复杂度：只需要常数级别的额外空间<br><br><img src="images/sorting-process.svg" alt="冒泡排序复杂度" style="max-width:100%;border-radius:8px;">',
+        blanks: [
+          { index: 1, answer: 'n²', score: 2 },
+          { index: 2, answer: '1', score: 2 }
+        ]
+      },
+      {
+        id: 'Q042', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '观察下图所示的哈希表结构和冲突情况：<br><br><img src="images/hash-table.svg" alt="哈希表冲突示意图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>哈希函数为：<code>h(key) = key mod 10</code><br><br>请回答：<br>1. 分析图中哈希冲突产生的原因<br>2. 说明链地址法如何解决该冲突<br>3. 计算装载因子 α = n/m 对性能的影响',
+        tags: ['哈希表', '冲突处理', '图片题'], createTime: '2026-01-20 10:30', author: '赵老师', useCount: 4,
+        score: '10', explanation: '哈希冲突是哈希表设计中的核心问题。',
+        referenceAnswer: '1. 冲突原因分析：\n当不同的键值通过哈希函数 h(key) = key mod 10 计算后得到相同的哈希值时，就会产生冲突。如图所示，键值 13 和 23 都映射到桶 3。\n\n<img src="images/hash-table.svg" alt="哈希冲突示例" style="max-width:100%;border-radius:8px;margin:10px 0;">\n\n2. 链地址法解决方案：\n• 每个桶维护一个链表\n• 冲突的元素依次添加到链表末尾\n• 查找时遍历对应桶的链表\n\n3. 装载因子影响：\n• α = n/m（n为元素数，m为桶数）\n• α 越大，冲突概率越高\n• 建议保持 α < 0.75\n• 查找时间复杂度：O(1 + α)'
+      },
+      {
+        id: 'Q043', type: 'materialAnalysis', typeName: '材料分析', typeIcon: 'fa-layer-group', typeColor: 'purple',
+        difficulty: 5, difficultyName: '五级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【算法分析综合题】<br><br>阅读以下材料，观察图示，回答问题。<br><br><strong>材料：</strong>某电商平台需要实现商品推荐系统，使用图结构存储用户-商品关系。<br><br><img src="images/social-network.svg" alt="用户-商品关系图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>图中边的权重表示购买次数，推荐算法基于协同过滤：<br><code>Score(u,p) = Σ sim(u,v) × r(v,p)</code><br><br>其中 sim(u,v) 为用户相似度，r(v,p) 为用户v对商品p的评分。',
+        tags: ['图算法', '推荐系统', '综合题', '图片题'], isComposite: true, subCount: 4,
+        createTime: '2026-01-20 11:00', author: '钱老师', useCount: 2,
+        score: '20', explanation: '本题考查图结构在实际应用中的使用，以及算法复杂度分析能力。',
+        subQuestions: [
+          {
+            id: 1, type: 'single', content: '根据图示，该图结构属于什么类型？',
+            score: 3,
+            options: [
+              { label: 'A', text: '有向无权图' },
+              { label: 'B', text: '无向有权图' },
+              { label: 'C', text: '二分图（Bipartite Graph）' },
+              { label: 'D', text: '完全图' }
+            ],
+            correctAnswers: ['C'],
+            explanation: '用户和商品是两类不同的节点，边只存在于不同类节点之间，符合二分图定义。<br><img src="https://via.placeholder.com/300x150/dbeafe/1d4ed8?text=Bipartite+Graph" alt="二分图示意" style="max-width:100%;border-radius:8px;">'
+          },
+          {
+            id: 2, type: 'multiple', content: '以下关于该推荐算法的描述，正确的有？',
+            score: 4,
+            options: [
+              { label: 'A', text: '时间复杂度与用户数量相关' },
+              { label: 'B', text: '需要计算用户间的相似度矩阵' },
+              { label: 'C', text: '属于基于内容的推荐算法' },
+              { label: 'D', text: '可以发现用户的潜在兴趣' }
+            ],
+            correctAnswers: ['A', 'B', 'D'],
+            explanation: '协同过滤是基于用户行为的推荐算法，不是基于内容的。'
+          },
+          {
+            id: 3, type: 'blank', content: '如果用户数为 n，商品数为 m，计算所有用户相似度的时间复杂度为 O(_____)，空间复杂度为 O(_____)。',
+            score: 4,
+            blanks: [
+              { index: 1, answer: 'n²m', score: 2 },
+              { index: 2, answer: 'n²', score: 2 }
+            ],
+            explanation: '需要计算 n×n 的相似度矩阵，每次计算需要遍历 m 个商品。'
+          },
+          {
+            id: 4, type: 'shortAnswer', content: '请根据图示数据，说明如何优化该推荐系统的性能，并给出具体方案。',
+            score: 9,
+            referenceAnswer: '优化方案：\n\n1. 数据结构优化：\n<img src="https://via.placeholder.com/350x180/fef3c7/d97706?text=Sparse+Matrix+Storage" alt="稀疏矩阵存储" style="max-width:100%;border-radius:8px;margin:10px 0;">\n• 使用稀疏矩阵存储用户-商品关系\n• 采用邻接表代替邻接矩阵\n\n2. 算法优化：\n• 预计算用户相似度矩阵\n• 使用 LSH（局部敏感哈希）加速相似度计算\n• 只保留 Top-K 相似用户\n\n3. 系统优化：\n• 增量更新而非全量计算\n• 使用缓存存储热门推荐结果\n• 分布式计算处理大规模数据\n\n复杂度改进：\n• 时间：O(n²m) → O(nk·m)，k为相似用户数\n• 空间：O(n²) → O(nk)',
+            explanation: '推荐系统优化需要从数据结构、算法和系统架构多个层面考虑。'
+          }
+        ]
       }
     ];
 
@@ -880,11 +1219,17 @@
         leftDiv.appendChild(spacer);
       }
 
-      // 文件夹图标
-      const folderIcon = document.createElement('i');
+      // 图标：目录用文件夹，知识点用书本
+      const icon = document.createElement('i');
       const colors = ['text-warning-500', 'text-info-500', 'text-success-500', 'text-error-500', 'text-purple-500'];
-      folderIcon.className = `fas fa-folder ${colors[index % colors.length]}`;
-      leftDiv.appendChild(folderIcon);
+      if (node.type === 'knowledge') {
+        // 知识点用书本图标
+        icon.className = `fas fa-book text-primary-500`;
+      } else {
+        // 目录用文件夹图标
+        icon.className = `fas fa-folder ${colors[index % colors.length]}`;
+      }
+      leftDiv.appendChild(icon);
 
       // 名称（可编辑）
       const nameSpan = document.createElement('span');
@@ -935,9 +1280,17 @@
       actionsDiv.className = 'hidden group-hover:flex items-center space-x-1 ml-2';
       actionsDiv.onclick = (e) => e.stopPropagation();
 
-      // 添加子知识点
-      const addBtn = createActionButton('fa-plus', 'success', '添加子知识点', () => addChildNode(node.id));
-      actionsDiv.appendChild(addBtn);
+      // 如果是目录节点，显示添加子目录和添加知识点按钮
+      if (node.type === 'directory') {
+        // 添加子目录
+        const addDirBtn = createActionButton('fa-folder-plus', 'success', '添加子目录', () => addChildDirectory(node.id));
+        actionsDiv.appendChild(addDirBtn);
+
+        // 添加知识点
+        const addKnowledgeBtn = createActionButton('fa-plus', 'success', '添加知识点', () => addChildKnowledge(node.id));
+        actionsDiv.appendChild(addKnowledgeBtn);
+      }
+      // 知识点节点不显示添加按钮
 
       // 编辑
       const editBtn = createActionButton('fa-edit', 'info', '编辑', () => startEditing(node.id));
@@ -1005,11 +1358,12 @@
       }
     }
 
-    // 添加根知识点
-    function addRootKnowledge() {
+    // 添加根目录
+    function addRootDirectory() {
       const newNode = {
         id: nextId++,
         name: '',
+        type: 'directory',  // 根节点目录
         count: 0,
         collapsed: false,
         children: [],
@@ -1022,8 +1376,30 @@
       setTimeout(() => startEditing(newNode.id), 50);
     }
 
-    // 添加子知识点
-    function addChildNode(parentId) {
+    // 添加根知识点
+    function addRootKnowledgePoint() {
+      const newNode = {
+        id: nextId++,
+        name: '',
+        type: 'knowledge',  // 根节点知识点
+        count: 0,
+        children: [],  // 知识点没有子节点
+        isNew: true
+      };
+      knowledgeTree.push(newNode);
+      renderKnowledgeTree();
+
+      // 自动进入编辑状态
+      setTimeout(() => startEditing(newNode.id), 50);
+    }
+
+    // 兼容旧代码
+    function addRootKnowledge() {
+      addRootDirectory();
+    }
+
+    // 添加子目录
+    function addChildDirectory(parentId) {
       const parent = findNode(parentId);
       if (parent) {
         if (!parent.children) {
@@ -1032,6 +1408,7 @@
         const newNode = {
           id: nextId++,
           name: '',
+          type: 'directory',
           count: 0,
           collapsed: false,
           children: [],
@@ -1044,6 +1421,35 @@
         // 自动进入编辑状态
         setTimeout(() => startEditing(newNode.id), 50);
       }
+    }
+
+    // 添加知识点（叶子节点）
+    function addChildKnowledge(parentId) {
+      const parent = findNode(parentId);
+      if (parent) {
+        if (!parent.children) {
+          parent.children = [];
+        }
+        const newNode = {
+          id: nextId++,
+          name: '',
+          type: 'knowledge',  // 知识点类型
+          count: 0,
+          children: [],  // 知识点不能有子节点
+          isNew: true
+        };
+        parent.children.push(newNode);
+        parent.collapsed = false; // 展开父节点
+        renderKnowledgeTree();
+
+        // 自动进入编辑状态
+        setTimeout(() => startEditing(newNode.id), 50);
+      }
+    }
+
+    // 添加子知识点（兼容旧代码，实际调用 addChildKnowledge）
+    function addChildNode(parentId) {
+      addChildKnowledge(parentId);
     }
 
     // 开始编辑
@@ -1583,7 +1989,7 @@
                 <i class="fas fa-list-ol mr-1"></i>${q.subCount} 道子题
               </span>` : ''}
             </div>
-            <p class="text-gray-900 text-base leading-relaxed mb-3">${q.content}</p>
+            <div class="text-gray-900 text-base leading-relaxed mb-3 question-content">${q.content}</div>
             <div class="flex items-center gap-3 mb-2">
               ${tagsHtml}
             </div>
@@ -2242,13 +2648,322 @@
     }
 
     // 查看题目详情
+    let currentPreviewQuestion = null;
+
     function viewQuestion(questionId) {
-      window.location.href = `detail.html?id=${questionId}`;
+      // 查找题目数据
+      const question = allQuestions.find(q => q.id === questionId);
+      if (!question) {
+        alert('未找到题目数据');
+        return;
+      }
+
+      currentPreviewQuestion = question;
+
+      // 渲染题目预览内容
+      renderQuestionPreview(question);
+
+      // 显示侧滑面板
+      setTimeout(() => {
+        document.getElementById('previewOverlay').classList.add('active');
+        document.getElementById('previewDrawer').classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }, 10);
+    }
+
+    // 关闭预览面板
+    function closePreview() {
+      document.getElementById('previewOverlay').classList.remove('active');
+      document.getElementById('previewDrawer').classList.remove('active');
+      document.body.style.overflow = '';
+      currentPreviewQuestion = null;
+    }
+
+    // 渲染题目预览内容
+    function renderQuestionPreview(q) {
+      const content = document.getElementById('previewContent');
+
+      // 生成题型标签
+      const typeTag = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-${q.typeColor}-50 text-${q.typeColor}-700">
+        <i class="fas ${q.typeIcon} mr-1.5"></i>${q.typeName}
+      </span>`;
+
+      // 生成难度标签
+      const difficultyTag = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-warning-50 text-warning-700">
+        ${q.difficultyName}
+      </span>`;
+
+      // 生成标签列表
+      const tagsHtml = q.tags && q.tags.length > 0
+        ? q.tags.map(tag => `<span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">#${tag}</span>`).join(' ')
+        : '<span class="text-gray-400 text-sm">无标签</span>';
+
+      // 根据题型生成内容
+      let questionContent = '';
+
+      if (q.isComposite) {
+        // 复合题型
+        questionContent = renderCompositeQuestion(q);
+      } else if (q.type === 'single' || q.type === 'multiple') {
+        // 选择题
+        questionContent = renderChoiceQuestion(q);
+      } else if (q.type === 'judge') {
+        // 判断题
+        questionContent = renderJudgeQuestion(q);
+      } else if (q.type === 'blank') {
+        // 填空题
+        questionContent = renderBlankQuestion(q);
+      } else if (q.type === 'short') {
+        // 简答题
+        questionContent = renderShortQuestion(q);
+      }
+
+      content.innerHTML = `
+        <div class="space-y-6">
+          <!-- 基本信息 -->
+          <div class="flex items-center gap-3 flex-wrap">
+            ${typeTag}
+            ${difficultyTag}
+            ${q.isComposite ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+              <i class="fas fa-list-ol mr-1"></i>${q.subCount} 道子题
+            </span>` : ''}
+          </div>
+
+          ${questionContent}
+
+          <!-- 附加信息 -->
+          <div class="pt-6 border-t border-gray-200 space-y-3">
+            <div class="flex items-start">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">知识点：</span>
+              <span class="text-sm text-gray-900">${q.knowledgePath}</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">标签：</span>
+              <div class="flex items-center gap-2 flex-wrap">${tagsHtml}</div>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">默认分值：</span>
+              <span class="text-sm text-gray-900">${q.score} 分</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">创建时间：</span>
+              <span class="text-sm text-gray-600">${q.createTime}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">创建者：</span>
+              <span class="text-sm text-gray-600">${q.author}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">使用次数：</span>
+              <span class="text-sm text-gray-600">组卷 ${q.useCount} 次</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染选择题
+    function renderChoiceQuestion(q) {
+      const optionsHtml = q.options.map(opt => {
+        const isCorrect = q.correctAnswers.includes(opt.label);
+        return `
+          <div class="flex items-start py-2">
+            <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+            <span class="text-gray-900">${opt.text}</span>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">选项</div>
+            <div class="space-y-1">${optionsHtml}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">正确答案</div>
+            <div class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+              ${q.correctAnswers.join('、')}
+            </div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染判断题
+    function renderJudgeQuestion(q) {
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">正确答案</div>
+            <div class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+              ${q.correctAnswer ? '正确' : '错误'}
+            </div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染填空题
+    function renderBlankQuestion(q) {
+      const blanksHtml = q.blanks.map((blank, index) => `
+        <div class="flex items-center py-2">
+          <span class="text-sm font-medium text-gray-500 w-20">空 ${blank.index}：</span>
+          <span class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">${blank.answer}</span>
+          <span class="text-sm text-gray-500 ml-3">(${blank.score} 分)</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">参考答案</div>
+            <div class="space-y-1">${blanksHtml}</div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染简答题
+    function renderShortQuestion(q) {
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          ${q.referenceAnswer ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">参考答案</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-green-50 p-4 rounded-lg whitespace-pre-line">${q.referenceAnswer}</div>
+          </div>
+          ` : ''}
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染复合题
+    function renderCompositeQuestion(q) {
+      const subQuestionsHtml = q.subQuestions.map((sub, index) => {
+        let subContent = '';
+        if (sub.type === 'single' || sub.type === 'multiple') {
+          const optionsHtml = sub.options.map(opt => {
+            const isCorrect = sub.correctAnswers.includes(opt.label);
+            return `
+              <div class="flex items-start py-1">
+                <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+                <span class="text-gray-800 text-sm">${opt.text}</span>
+              </div>
+            `;
+          }).join('');
+          subContent = `
+            <div class="mt-2 space-y-2">
+              ${optionsHtml}
+              <div class="mt-2">
+                <span class="text-xs font-medium text-gray-500">答案：</span>
+                <span class="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+                  ${sub.correctAnswers.join('、')}
+                </span>
+                <span class="text-xs text-gray-500 ml-2">(${sub.score} 分)</span>
+              </div>
+            </div>
+          `;
+        } else {
+          subContent = `
+            <div class="mt-2">
+              <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
+              <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || '无'}</div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score} 分)</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="border-l-2 border-gray-300 pl-4 py-2">
+            <div class="text-sm font-medium text-gray-700 mb-1">
+              ${index + 1}）${sub.content}
+            </div>
+            ${subContent}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">材料</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed bg-amber-50 p-4 rounded-lg">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">子题目 (共 ${q.subCount} 道)</div>
+            <div class="space-y-3">${subQuestionsHtml}</div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 编辑当前预览的题目
+    function editCurrentQuestion() {
+      if (currentPreviewQuestion) {
+        closePreview();
+        editQuestion(currentPreviewQuestion.id);
+      }
+    }
+
+    // 删除当前预览的题目
+    function deleteCurrentQuestion() {
+      if (currentPreviewQuestion) {
+        const questionTitle = currentPreviewQuestion.content.replace(/<[^>]*>/g, '').substring(0, 30);
+        closePreview();
+        deleteQuestion(currentPreviewQuestion.id, questionTitle);
+      }
     }
 
     // 编辑题目
     function editQuestion(questionId) {
-      window.location.href = `add-standard.html?mode=edit&id=${questionId}`;
+      window.location.href = `add.html?id=${questionId}`;
     }
 
     // 删除题目
@@ -2263,13 +2978,23 @@
       // 加载题型配置
       loadQuestionTypesFromStorage();
 
-      // 从 localStorage 读取新增的题目
-      const savedQuestions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
+      // 从 localStorage 读取已保存的题目
+      let savedQuestions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
 
-      if (savedQuestions.length > 0) {
-        // 合并到 allQuestions 数组
-        allQuestions = allQuestions.concat(savedQuestions);
+      // 检查内置题目是否已保存到 localStorage
+      // 通过检查是否存在 Q001 来判断
+      const hasBuiltInQuestions = savedQuestions.some(q => q.id === 'Q001');
+
+      if (!hasBuiltInQuestions) {
+        // 首次加载：将内置题目保存到 localStorage
+        // 内置题目放在前面，用户添加的题目放在后面
+        const mergedQuestions = [...allQuestions, ...savedQuestions];
+        localStorage.setItem('examQuestions', JSON.stringify(mergedQuestions));
+        savedQuestions = mergedQuestions;
       }
+
+      // 使用 localStorage 中的数据作为数据源
+      allQuestions = savedQuestions;
 
       // 重新初始化 filteredQuestions
       filteredQuestions = [...allQuestions];

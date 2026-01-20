@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+  <defs>
+    <style>
+      .user-node { fill: #3b82f6; stroke: #1e40af; stroke-width: 2; }
+      .user-text { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; }
+      .connection { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 5,5; }
+      .label { fill: #333; font-family: Arial, sans-serif; font-size: 12px; }
+    </style>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="500" height="350" fill="#f0f9ff"/>
+
+  <!-- 标题 -->
+  <text x="250" y="25" class="label" style="font-size: 18px; font-weight: bold; text-anchor: middle;">社交网络图结构</text>
+
+  <!-- 连接线 -->
+  <line x1="250" y1="100" x2="150" y2="180" class="connection"/>
+  <line x1="250" y1="100" x2="350" y2="180" class="connection"/>
+  <line x1="250" y1="100" x2="250" y2="220" class="connection"/>
+  <line x1="150" y1="180" x2="100" y2="280" class="connection"/>
+  <line x1="150" y1="180" x2="200" y2="280" class="connection"/>
+  <line x1="350" y1="180" x2="300" y2="280" class="connection"/>
+  <line x1="350" y1="180" x2="400" y2="280" class="connection"/>
+  <line x1="250" y1="220" x2="200" y2="280" class="connection"/>
+  <line x1="250" y1="220" x2="300" y2="280" class="connection"/>
+
+  <!-- 中心节点 -->
+  <circle cx="250" cy="100" r="35" class="user-node"/>
+  <text x="250" y="95" class="user-text">用户A</text>
+  <text x="250" y="112" class="user-text" style="font-size: 10px;">(中心)</text>
+
+  <!-- 第二层节点 -->
+  <circle cx="150" cy="180" r="30" class="user-node" style="fill: #8b5cf6;"/>
+  <text x="150" y="187" class="user-text">用户B</text>
+
+  <circle cx="350" cy="180" r="30" class="user-node" style="fill: #8b5cf6;"/>
+  <text x="350" y="187" class="user-text">用户C</text>
+
+  <circle cx="250" cy="220" r="30" class="user-node" style="fill: #8b5cf6;"/>
+  <text x="250" y="227" class="user-text">用户D</text>
+
+  <!-- 第三层节点 -->
+  <circle cx="100" cy="280" r="25" class="user-node" style="fill: #06b6d4;"/>
+  <text x="100" y="286" class="user-text" style="font-size: 12px;">用户E</text>
+
+  <circle cx="200" cy="280" r="25" class="user-node" style="fill: #06b6d4;"/>
+  <text x="200" y="286" class="user-text" style="font-size: 12px;">用户F</text>
+
+  <circle cx="300" cy="280" r="25" class="user-node" style="fill: #06b6d4;"/>
+  <text x="300" y="286" class="user-text" style="font-size: 12px;">用户G</text>
+
+  <circle cx="400" cy="280" r="25" class="user-node" style="fill: #06b6d4;"/>
+  <text x="400" y="286" class="user-text" style="font-size: 12px;">用户H</text>
+
+  <!-- 说明 -->
+  <text x="250" y="325" class="label" style="font-size: 12px; text-anchor: middle;">节点表示用户 | 边表示好友关系 | 可用于推荐算法和社区发现</text>
+</svg>

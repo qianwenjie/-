@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 300">
+  <defs>
+    <style>
+      .node { fill: #ca8a04; stroke: #92631f; stroke-width: 2; }
+      .node-text { fill: white; font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; }
+      .edge { stroke: #666; stroke-width: 2; }
+      .weight { fill: #dc2626; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; background: white; }
+      .label { fill: #333; font-family: Arial, sans-serif; font-size: 14px; }
+    </style>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="450" height="300" fill="#fefce8"/>
+
+  <!-- 边和权重 -->
+  <line x1="100" y1="80" x2="200" y2="80" class="edge"/>
+  <rect x="140" y="65" width="30" height="20" fill="white"/>
+  <text x="155" y="79" class="weight">2</text>
+
+  <line x1="200" y1="80" x2="350" y2="80" class="edge"/>
+  <rect x="265" y="65" width="30" height="20" fill="white"/>
+  <text x="280" y="79" class="weight">4</text>
+
+  <line x1="100" y1="80" x2="100" y2="200" class="edge"/>
+  <rect x="85" y="130" width="30" height="20" fill="white"/>
+  <text x="100" y="144" class="weight">3</text>
+
+  <line x1="100" y1="200" x2="225" y2="200" class="edge"/>
+  <rect x="150" y="185" width="30" height="20" fill="white"/>
+  <text x="165" y="199" class="weight">5</text>
+
+  <line x1="225" y1="200" x2="350" y2="80" class="edge"/>
+  <rect x="280" y="130" width="30" height="20" fill="white"/>
+  <text x="295" y="144" class="weight">6</text>
+
+  <line x1="200" y1="80" x2="225" y2="200" class="edge"/>
+  <rect x="202" y="130" width="30" height="20" fill="white"/>
+  <text x="217" y="144" class="weight">3</text>
+
+  <!-- 节点 -->
+  <circle cx="100" cy="80" r="25" class="node"/>
+  <text x="100" y="88" class="node-text">A</text>
+
+  <circle cx="200" cy="80" r="25" class="node"/>
+  <text x="200" y="88" class="node-text">B</text>
+
+  <circle cx="350" cy="80" r="25" class="node"/>
+  <text x="350" y="88" class="node-text">C</text>
+
+  <circle cx="100" cy="200" r="25" class="node"/>
+  <text x="100" y="208" class="node-text">D</text>
+
+  <circle cx="225" cy="200" r="25" class="node"/>
+  <text x="225" y="208" class="node-text">E</text>
+
+  <!-- 标题 -->
+  <text x="225" y="260" class="label" style="font-size: 16px; font-weight: bold; text-anchor: middle;">带权图结构</text>
+  <text x="225" y="280" class="label" style="font-size: 12px; text-anchor: middle;">节点: A, B, C, D, E | 边权重如图所示</text>
+</svg>

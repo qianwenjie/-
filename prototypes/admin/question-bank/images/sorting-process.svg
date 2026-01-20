@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200">
+  <defs>
+    <style>
+      .box { fill: #7c3aed; stroke: #5b21b6; stroke-width: 2; }
+      .box-sorted { fill: #16a34a; stroke: #15803d; stroke-width: 2; }
+      .text { fill: white; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+      .label { fill: #333; font-family: Arial, sans-serif; font-size: 14px; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666"/>
+    </marker>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="500" height="200" fill="#f5f3ff"/>
+
+  <!-- 原始数组 -->
+  <text x="30" y="50" class="label" style="font-weight: bold;">排序前:</text>
+  <rect x="100" y="30" width="50" height="40" class="box"/>
+  <text x="125" y="56" class="text">5</text>
+
+  <rect x="160" y="30" width="50" height="40" class="box"/>
+  <text x="185" y="56" class="text">2</text>
+
+  <rect x="220" y="30" width="50" height="40" class="box"/>
+  <text x="245" y="56" class="text">8</text>
+
+  <rect x="280" y="30" width="50" height="40" class="box"/>
+  <text x="305" y="56" class="text">1</text>
+
+  <rect x="340" y="30" width="50" height="40" class="box"/>
+  <text x="365" y="56" class="text">9</text>
+
+  <!-- 箭头 -->
+  <path d="M 250 90 L 250 110" class="arrow"/>
+
+  <!-- 排序后数组 -->
+  <text x="30" y="140" class="label" style="font-weight: bold;">排序后:</text>
+  <rect x="100" y="120" width="50" height="40" class="box-sorted"/>
+  <text x="125" y="146" class="text">1</text>
+
+  <rect x="160" y="120" width="50" height="40" class="box-sorted"/>
+  <text x="185" y="146" class="text">2</text>
+
+  <rect x="220" y="120" width="50" height="40" class="box-sorted"/>
+  <text x="245" y="146" class="text">5</text>
+
+  <rect x="280" y="120" width="50" height="40" class="box-sorted"/>
+  <text x="305" y="146" class="text">8</text>
+
+  <rect x="340" y="120" width="50" height="40" class="box-sorted"/>
+  <text x="365" y="146" class="text">9</text>
+
+  <!-- 说明 -->
+  <text x="250" y="185" class="label" style="font-size: 12px; text-anchor: middle;">冒泡排序过程示意 | 时间复杂度: O(n²)</text>
+</svg>

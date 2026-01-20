@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280">
+  <defs>
+    <style>
+      .hash-slot { fill: white; stroke: #6366f1; stroke-width: 2; }
+      .hash-index { fill: #6366f1; stroke: #4f46e5; stroke-width: 2; }
+      .node { fill: #10b981; stroke: #059669; stroke-width: 2; }
+      .text { fill: #333; font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .text-white { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; }
+      .line { stroke: #666; stroke-width: 2; }
+      .label { fill: #333; font-family: Arial, sans-serif; font-size: 14px; }
+    </style>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="400" height="280" fill="#fef3c7"/>
+
+  <!-- 标题 -->
+  <text x="200" y="25" class="label" style="font-size: 16px; font-weight: bold; text-anchor: middle;">哈希表结构 - 链地址法处理冲突</text>
+
+  <!-- 哈希表槽位 -->
+  <rect x="50" y="50" width="40" height="40" class="hash-index"/>
+  <text x="70" y="75" class="text-white">0</text>
+  <rect x="100" y="50" width="120" height="40" class="hash-slot"/>
+  <text x="160" y="75" class="text">key: 10 | val: A</text>
+
+  <rect x="50" y="100" width="40" height="40" class="hash-index"/>
+  <text x="70" y="125" class="text-white">1</text>
+  <rect x="100" y="100" width="120" height="40" class="hash-slot"/>
+  <text x="160" y="125" class="text">key: 21 | val: B</text>
+  <line x1="230" y1="120" x2="270" y2="120" class="line"/>
+  <rect x="270" y="100" width="80" height="40" class="node"/>
+  <text x="310" y="125" class="text">key: 31</text>
+
+  <rect x="50" y="150" width="40" height="40" class="hash-index"/>
+  <text x="70" y="175" class="text-white">2</text>
+  <rect x="100" y="150" width="120" height="40" class="hash-slot"/>
+  <text x="160" y="175" class="text">NULL</text>
+
+  <rect x="50" y="200" width="40" height="40" class="hash-index"/>
+  <text x="70" y="225" class="text-white">3</text>
+  <rect x="100" y="200" width="120" height="40" class="hash-slot"/>
+  <text x="160" y="225" class="text">key: 13 | val: C</text>
+
+  <!-- 说明 -->
+  <text x="200" y="265" class="label" style="font-size: 12px; text-anchor: middle;">哈希函数: h(key) = key % 10 | 冲突解决: 链地址法</text>
+</svg>

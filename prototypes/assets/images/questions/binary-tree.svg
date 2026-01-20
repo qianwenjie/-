@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">
+  <defs>
+    <style>
+      .node { fill: #0066cc; stroke: #004080; stroke-width: 2; }
+      .node-text { fill: white; font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; }
+      .line { stroke: #666; stroke-width: 2; }
+      .label { fill: #333; font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="400" height="250" fill="#f0f9ff"/>
+
+  <!-- 连接线 -->
+  <line x1="200" y1="50" x2="100" y2="110" class="line"/>
+  <line x1="200" y1="50" x2="300" y2="110" class="line"/>
+  <line x1="100" y1="110" x2="60" y2="170" class="line"/>
+  <line x1="100" y1="110" x2="140" y2="170" class="line"/>
+  <line x1="300" y1="110" x2="280" y2="170" class="line"/>
+
+  <!-- 节点 -->
+  <circle cx="200" cy="50" r="20" class="node"/>
+  <text x="200" y="56" class="node-text">A</text>
+
+  <circle cx="100" cy="110" r="20" class="node"/>
+  <text x="100" y="116" class="node-text">B</text>
+
+  <circle cx="300" cy="110" r="20" class="node"/>
+  <text x="300" y="116" class="node-text">C</text>
+
+  <circle cx="60" cy="170" r="20" class="node"/>
+  <text x="60" y="176" class="node-text">D</text>
+
+  <circle cx="140" cy="170" r="20" class="node"/>
+  <text x="140" y="176" class="node-text">E</text>
+
+  <circle cx="280" cy="170" r="20" class="node"/>
+  <text x="280" y="176" class="node-text">F</text>
+
+  <!-- 标题 -->
+  <text x="200" y="220" class="label" style="font-size: 16px; font-weight: bold;">二叉树结构示意图</text>
+  <text x="200" y="240" class="label">前序: A,B,D,E,C,F | 后序: D,E,B,F,C,A</text>
+</svg>

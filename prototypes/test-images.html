@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片测试 - 考试系统</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #00B96B;
+      padding-bottom: 10px;
+    }
+    .image-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .image-card h2 {
+      color: #00B96B;
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+    .image-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #00B96B;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+    .back-link:hover {
+      background: #00A35C;
+    }
+  </style>
+</head>
+<body>
+  <h1>📷 题目图片显示测试</h1>
+
+  <p><span class="status success">✓ 所有图片已本地化</span></p>
+
+  <div class="image-card">
+    <h2>1️⃣ 二叉树结构图 (binary-tree.svg)</h2>
+    <img src="assets/images/questions/binary-tree.svg" alt="二叉树结构图">
+  </div>
+
+  <div class="image-card">
+    <h2>2️⃣ 带权图结构 (graph-structure.svg)</h2>
+    <img src="assets/images/questions/graph-structure.svg" alt="带权图结构">
+  </div>
+
+  <div class="image-card">
+    <h2>3️⃣ 排序过程示意图 (sorting-process.svg)</h2>
+    <img src="assets/images/questions/sorting-process.svg" alt="排序过程示意图">
+  </div>
+
+  <div class="image-card">
+    <h2>4️⃣ 哈希表结构 (hash-table.svg)</h2>
+    <img src="assets/images/questions/hash-table.svg" alt="哈希表结构">
+  </div>
+
+  <div class="image-card">
+    <h2>5️⃣ 社交网络图 (social-network.svg)</h2>
+    <img src="assets/images/questions/social-network.svg" alt="社交网络图">
+  </div>
+
+  <a href="admin/question-bank/list.html" class="back-link">← 返回题目列表</a>
+</body>
+</html>

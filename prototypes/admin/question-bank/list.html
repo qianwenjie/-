@@ -156,9 +156,6 @@
   <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
     <div class="flex items-center justify-between h-full px-6">
       <div class="flex items-center space-x-4">
-        <a href="../dashboard.html" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
-          <i class="fas fa-arrow-left"></i>
-        </a>
         <div class="flex items-center space-x-2">
           <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
             <i class="fas fa-graduation-cap text-white"></i>
@@ -235,6 +232,10 @@
             <button onclick="openQuestionTypeSettings()" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-cog mr-2"></i>
               题型设置
+            </button>
+            <button onclick="window.location.href='add-simple.html'" class="px-4 py-2.5 border border-primary-500 text-primary-500 rounded-lg font-medium text-sm flex items-center space-x-2 hover:bg-primary-50 transition-colors">
+              <i class="fas fa-keyboard"></i>
+              <span>简便录入</span>
             </button>
             <button onclick="addNewQuestion()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center space-x-2 shadow-sm">
               <i class="fas fa-plus"></i>
@@ -1359,6 +1360,48 @@
       return btn;
     }
 
+    // ==================== 数据持久化 ====================
+
+    // 保存知识点树到 localStorage
+    function saveKnowledgeTreeToStorage() {
+      try {
+        localStorage.setItem('knowledgePoints', JSON.stringify(knowledgeTree));
+        console.log('知识点树已保存到 localStorage');
+      } catch (e) {
+        console.error('保存知识点树失败:', e);
+      }
+    }
+
+    // 从 localStorage 加载知识点树
+    function loadKnowledgeTreeFromStorage() {
+      try {
+        const saved = localStorage.getItem('knowledgePoints');
+        if (saved) {
+          knowledgeTree = JSON.parse(saved);
+          console.log('从 localStorage 加载知识点树:', knowledgeTree);
+
+          // 更新 nextId，确保不会产生重复ID
+          let maxId = 0;
+          function findMaxId(nodes) {
+            nodes.forEach(node => {
+              if (node.id > maxId) maxId = node.id;
+              if (node.children && node.children.length > 0) {
+                findMaxId(node.children);
+              }
+            });
+          }
+          findMaxId(knowledgeTree);
+          nextId = maxId + 1;
+        } else {
+          console.log('localStorage 中没有知识点数据，使用默认数据');
+          // 首次加载时保存默认数据
+          saveKnowledgeTreeToStorage();
+        }
+      } catch (e) {
+        console.error('加载知识点树失败:', e);
+      }
+    }
+
     // ==================== 节点操作 ====================
 
     // 切换展开/收起
@@ -1382,6 +1425,7 @@
         isNew: true
       };
       knowledgeTree.push(newNode);
+      saveKnowledgeTreeToStorage(); // 保存到 localStorage
       renderKnowledgeTree();
 
       // 自动进入编辑状态
@@ -1399,6 +1443,7 @@
         isNew: true
       };
       knowledgeTree.push(newNode);
+      saveKnowledgeTreeToStorage(); // 保存到 localStorage
       renderKnowledgeTree();
 
       // 自动进入编辑状态
@@ -1428,6 +1473,7 @@
         };
         parent.children.push(newNode);
         parent.collapsed = false; // 展开父节点
+        saveKnowledgeTreeToStorage(); // 保存到 localStorage
         renderKnowledgeTree();
 
         // 自动进入编辑状态
@@ -1452,6 +1498,7 @@
         };
         parent.children.push(newNode);
         parent.collapsed = false; // 展开父节点
+        saveKnowledgeTreeToStorage(); // 保存到 localStorage
         renderKnowledgeTree();
 
         // 自动进入编辑状态
@@ -1490,6 +1537,7 @@
             node.name = newName;
             node.isNew = false;
             nameSpan.textContent = newName;
+            saveKnowledgeTreeToStorage(); // 保存到 localStorage
           }
         } else if (findNode(nodeId)?.isNew) {
           // 如果是新建节点且名称为空，删除它
@@ -1539,6 +1587,7 @@
       const rootIndex = knowledgeTree.findIndex(n => n.id === nodeId);
       if (rootIndex !== -1) {
         knowledgeTree.splice(rootIndex, 1);
+        saveKnowledgeTreeToStorage(); // 保存到 localStorage
         return true;
       }
 
@@ -1559,7 +1608,11 @@
         return false;
       }
 
-      return deleteFromChildren(knowledgeTree);
+      const result = deleteFromChildren(knowledgeTree);
+      if (result) {
+        saveKnowledgeTreeToStorage(); // 保存到 localStorage
+      }
+      return result;
     }
 
     // 查找节点（递归）
@@ -1606,6 +1659,7 @@
       targetNode.children.push(draggedNode);
       targetNode.collapsed = false;
 
+      saveKnowledgeTreeToStorage(); // 保存到 localStorage
       renderKnowledgeTree();
     }
 
@@ -1678,6 +1732,7 @@
         }
       }
 
+      saveKnowledgeTreeToStorage(); // 保存到 localStorage
       closeMoveModal();
       renderKnowledgeTree();
     }
@@ -3071,6 +3126,9 @@
 
     // 页面加载完成后初始化
     window.addEventListener('DOMContentLoaded', function() {
+      // 加载知识点树
+      loadKnowledgeTreeFromStorage();
+
       // 加载题型配置
       loadQuestionTypesFromStorage();
 

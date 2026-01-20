@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>简便录入 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 代码编辑器样式 */
+    .code-editor {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      line-height: 1.8;
+      tab-size: 2;
+    }
+
+    /* 自定义滚动条 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f9fafb;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+
+    /* 题目卡片样式 */
+    .question-card {
+      transition: all 0.2s ease;
+    }
+    .question-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* 错误提示样式 */
+    .error-text {
+      background-color: #FFF1F0;
+      color: #F53F3F;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* 单选框样式 */
+    .radio-option {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .radio-option:hover {
+      background-color: #f9fafb;
+    }
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    /* 知识点树样式 */
+    .knowledge-node {
+      margin-bottom: 2px;
+    }
+    .knowledge-node .children-container {
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <button onclick="history.back()" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">题库管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">简便录入</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <img src="https://via.placeholder.com/32" alt="用户" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700 font-medium">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <div class="pt-16 h-screen flex flex-col">
+    <!-- 顶部说明区 -->
+    <div class="bg-blue-50 border-b border-blue-100 px-6 py-4">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <h3 class="text-sm font-semibold text-gray-900 mb-2">
+            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+            试题录入说明：
+          </h3>
+          <p class="text-sm text-gray-700">
+            请手动输入或者粘贴内容到输入区（<a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 underline">支持粘贴图片和插入公式</a>），若有疑问可查看录入帮助
+            <a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 ml-1">
+              <i class="fas fa-question-circle"></i> 录入帮助
+            </a>
+          </p>
+        </div>
+        <div class="flex items-center space-x-3 ml-6">
+          <span class="flex items-center text-sm text-success-500" id="autoSaveStatus">
+            <i class="fas fa-check-circle mr-1.5"></i>
+            <span id="saveTime">16:33:56</span> 已保存
+          </span>
+          <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <i class="fas fa-save mr-2"></i>
+            保存草稿
+          </button>
+          <button id="errorButton" onclick="jumpToFirstError()" class="hidden px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            已有错误，请修改
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左右分栏内容区 -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- 左侧：输入区 -->
+      <div class="w-1/2 bg-white border-r border-gray-200 flex flex-col">
+        <!-- 输入区头部 -->
+        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center space-x-4">
+            <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-keyboard text-primary-500 mr-2"></i>
+              输入区
+            </h3>
+            <span class="text-xs text-gray-500">关联知识点：</span>
+            <button onclick="selectKnowledgePoints()" class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded text-xs font-medium transition-colors">
+              选择知识点
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="insertImage()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary-500 hover:bg-gray-100 rounded transition-colors" title="粘贴图片">
+              <i class="fas fa-image"></i>
+            </button>
+            <button onclick="insertFormula()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary-500 hover:bg-gray-100 rounded transition-colors" title="插入公式">
+              <i class="fas fa-function"></i>
+            </button>
+            <button onclick="clearInput()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-error-500 hover:bg-gray-100 rounded transition-colors" title="清空">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 提示链接 -->
+        <div class="px-6 py-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-4">
+            <a href="javascript:showInputExample()" class="text-primary-500 hover:text-primary-600 font-medium">
+              <i class="fas fa-eye mr-1"></i>
+              输入范例
+            </a>
+            <span class="text-gray-300">></span>
+            <a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 font-medium">
+              <i class="fas fa-book mr-1"></i>
+              输入规范
+            </a>
+          </div>
+        </div>
+
+        <!-- 文本输入框 -->
+        <div class="flex-1 overflow-hidden">
+          <textarea
+            id="inputText"
+            class="code-editor w-full h-full p-6 resize-none focus:outline-none custom-scrollbar text-sm"
+            placeholder="单选题&#10;4. 李白是哪个朝代的？&#10;A. 唐&#10;B. 宋&#10;C. 元&#10;D. 明&#10;答案：A&#10;答案解析：历史问题&#10;知识点：yunti001&#10;&#10;多选题&#10;5. 明清是中国小说史上的繁荣时期。以下作品属于明清时期四大名著的有?&#10;A. 红楼梦&#10;B. 三国演义&#10;C. 窦娥冤&#10;D. 西厢记&#10;答案：AB&#10;知识点：yunti001，yunti002&#10;&#10;判断题&#10;3. 扩散现象说明物质的分子在永不停息地做无规则运动&#10;答案：正确&#10;&#10;填空题&#10;2. 床前明月光，____。举头望明月，____。&#10;答案：疑是地上霜；低头思故乡&#10;&#10;简答题&#10;7. 请论述全球化对国家政治产生了哪些深刻的影响？&#10;答案：全球化对政府的治理提出了更高的要求。&#10;&#10;完形填空&#10;6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.&#10;1)  A. hoped  B. realized  C. told  D. speech&#10;2)  A. bad  B. interesting  C.new  D. good&#10;3)  A. long  B. short  C. high  D.training&#10;4)  A. or  B. but  C. and  D.offered&#10;答案：BDCA&#10;&#10;复合题&#10;生活中处处都有科学常识，掌握基础生活知识，有助于提高生活质量和安全意识。&#10;通过以下几道测试题，看看你对生活常识了解多少？&#10;[多选题]&#10;正确洗手可以有效预防疾病，洗手时应重点清洗哪些部位？&#10;A. 手心&#10;B. 手背&#10;C. 手指&#10;D. 指缝&#10;答案：ABCD"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- 右侧：检查区 -->
+      <div class="w-1/2 bg-gray-50 flex flex-col">
+        <!-- 检查区头部 -->
+        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white">
+          <div class="flex items-center space-x-4">
+            <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-clipboard-check text-primary-500 mr-2"></i>
+              检查区
+            </h3>
+            <span class="text-xs">
+              <span class="text-success-500 font-medium" id="successCountText">成功识别0题</span>
+              <span class="text-gray-400 mx-2">|</span>
+              <span class="text-error-500 font-medium" id="errorCountText">识别失败0题</span>
+            </span>
+            <button id="nextErrorBtn" onclick="jumpToNextError()" class="hidden px-3 py-1.5 bg-error-50 text-error-500 rounded text-xs font-medium hover:bg-error-100 transition-colors">
+              下一处错误
+            </button>
+          </div>
+          <button onclick="refreshPreview()" class="flex items-center space-x-1 text-xs text-gray-500 hover:text-primary-500 transition-colors">
+            <span>检查刷新</span>
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+
+        <!-- 检查区内容 -->
+        <div id="checkArea" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+          <!-- 初始空状态 -->
+          <div id="emptyState" class="flex flex-col items-center justify-center h-full text-center">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <i class="fas fa-clipboard-list text-3xl text-gray-300"></i>
+            </div>
+            <h3 class="text-base font-medium text-gray-900 mb-2">暂无解析结果</h3>
+            <p class="text-sm text-gray-500 max-w-md mb-4">
+              在左侧输入区按照规范格式输入题目，系统将自动实时解析
+            </p>
+            <button onclick="showInputExample()" class="text-sm text-primary-500 hover:text-primary-600 font-medium">
+              <i class="fas fa-eye mr-1"></i>
+              查看输入范例
+            </button>
+          </div>
+
+          <!-- 解析结果容器 -->
+          <div id="parsedQuestions" class="space-y-4" style="display:none;">
+            <!-- 动态生成题目卡片 -->
+          </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div id="bottomActions" class="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between" style="display:none;">
+          <div class="text-sm text-gray-600">
+            共 <span id="totalCount" class="font-semibold text-gray-900">0</span> 道题目
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <i class="fas fa-save mr-2"></i>
+              保存草稿
+            </button>
+            <button onclick="batchImport()" class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors">
+              <i class="fas fa-check mr-2"></i>
+              批量导入
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 格式说明弹窗 -->
+  <div id="formatGuideModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-book text-primary-500 mr-2"></i>
+          简便录入格式说明
+        </h3>
+        <button onclick="closeFormatGuide()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="overflow-y-auto custom-scrollbar p-6" style="max-height: calc(90vh - 140px);">
+        <div class="prose prose-sm max-w-none">
+          <h4 class="text-base font-semibold mb-3">基础规则</h4>
+          <ul class="text-sm space-y-2 mb-6">
+            <li>题目标号：支持 <code>1.</code> <code>1、</code> <code>1:</code> <code>1。</code> 四种格式</li>
+            <li>答案字段：客观题必须含有 <code>答案：</code> 或 <code>答：</code>，主观题可不填</li>
+            <li>解析字段：<code>答案解析：</code> 非必需</li>
+            <li>知识点字段：必填，格式为 <code>知识点：知识点编号</code></li>
+            <li>多知识点：知识点编号之间用 <code>，</code> <code>、</code> <code>；</code> 隔开</li>
+          </ul>
+
+          <h4 class="text-base font-semibold mb-3">题型特殊规则</h4>
+          <ul class="text-sm space-y-2 mb-6">
+            <li><strong>判断题：</strong>选项支持 正确/错误、对/错、是/否、T/F 等</li>
+            <li><strong>填空题：</strong>空位用 <code>____</code> 或 <code>（）</code> 标识；多空答案用 <code>；</code> 隔开；同义词用 <code>|||</code> 连接</li>
+            <li><strong>复合题：</strong>子题格式为 <code>1）【题型】题干内容</code></li>
+          </ul>
+
+          <h4 class="text-base font-semibold mb-3">完整示例</h4>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <pre class="code-editor text-xs whitespace-pre-wrap">单选题
+4. 李白是哪个朝代的？
+A. 唐
+B. 宋
+C. 元
+D. 明
+答案：A
+答案解析：历史问题
+知识点：yunti001
+
+多选题
+5. 明清是中国小说史上的繁荣时期。以下作品属于明清时期四大名著的有?
+A. 红楼梦
+B. 三国演义
+C. 窦娥冤
+D. 西厢记
+答案：AB
+知识点：yunti001，yunti002
+
+判断题
+3. 扩散现象说明物质的分子在永不停息地做无规则运动
+答案：正确
+
+填空题
+2. 床前明月光，____。举头望明月，____。
+答案：疑是地上霜；低头思故乡
+
+简答题
+7. 请论述全球化对国家政治产生了哪些深刻的影响？
+答案：全球化对政府的治理提出了更高的要求。
+
+完形填空
+6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
+1)  A. hoped  B. realized  C. told  D. speech
+2)  A. bad  B. interesting  C.new  D. good
+3)  A. long  B. short  C. high  D.training
+4)  A. or  B. but  C. and  D.offered
+答案：BDCA
+
+复合题
+生活中处处都有科学常识，掌握基础生活知识，有助于提高生活质量和安全意识。
+通过以下几道测试题，看看你对生活常识了解多少？
+[多选题]
+正确洗手可以有效预防疾病，洗手时应重点清洗哪些部位？
+A. 手心
+B. 手背
+C. 手指
+D. 指缝
+答案：ABCD</pre>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+        <button onclick="closeFormatGuide()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+          知道了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入范例弹窗 -->
+  <div id="exampleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-eye text-primary-500 mr-2"></i>
+          输入范例
+        </h3>
+        <button onclick="closeExample()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+          <pre class="code-editor text-sm whitespace-pre-wrap" id="exampleText">单选题
+4. 李白是哪个朝代的？
+A. 唐
+B. 宋
+C. 元
+D. 明
+答案：A
+答案解析：历史问题
+知识点：yunti001
+
+多选题
+5. 明清是中国小说史上的繁荣时期。以下作品属于明清时期四大名著的有?
+A. 红楼梦
+B. 三国演义
+C. 窦娥冤
+D. 西厢记
+答案：AB
+知识点：yunti001，yunti002
+
+判断题
+3. 扩散现象说明物质的分子在永不停息地做无规则运动
+答案：正确
+
+填空题
+2. 床前明月光，____。举头望明月，____。
+答案：疑是地上霜；低头思故乡
+
+简答题
+7. 请论述全球化对国家政治产生了哪些深刻的影响？
+答案：全球化对政府的治理提出了更高的要求。
+
+完形填空
+6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
+1)  A. hoped  B. realized  C. told  D. speech
+2)  A. bad  B. interesting  C.new  D. good
+3)  A. long  B. short  C. high  D.training
+4)  A. or  B. but  C. and  D.offered
+答案：BDCA
+
+复合题
+生活中处处都有科学常识，掌握基础生活知识，有助于提高生活质量和安全意识。
+通过以下几道测试题，看看你对生活常识了解多少？
+[多选题]
+正确洗手可以有效预防疾病，洗手时应重点清洗哪些部位？
+A. 手心
+B. 手背
+C. 手指
+D. 指缝
+答案：ABCD</pre>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3 flex-shrink-0">
+        <button onclick="closeExample()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button onclick="useExample()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+          <i class="fas fa-plus mr-2"></i>
+          使用此示例
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 知识点选择弹窗 -->
+  <div id="knowledgeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-sitemap text-primary-500 mr-2"></i>
+          选择知识点
+        </h3>
+        <button onclick="closeKnowledgeModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+        <!-- 搜索框 -->
+        <div class="mb-4">
+          <input
+            type="text"
+            id="knowledgeSearch"
+            placeholder="搜索知识点..."
+            oninput="filterKnowledge()"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+        </div>
+        <!-- 知识点树 -->
+        <div id="knowledgeTree" class="space-y-1">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center flex-shrink-0">
+        <div class="text-sm text-gray-600">
+          已选择：<span id="selectedKnowledgeCount" class="font-medium text-primary-500">0</span> 个知识点
+        </div>
+        <div class="flex space-x-3">
+          <button onclick="closeKnowledgeModal()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+            取消
+          </button>
+          <button onclick="confirmKnowledgeSelection()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+            <i class="fas fa-check mr-2"></i>
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let parsedData = [];
+    let errorIndexes = [];
+    let currentErrorIndex = 0;
+    let autoSaveTimer = null;
+    let knowledgePointsMap = {}; // id -> name 映射
+    let knowledgePointsNameMap = {}; // name -> id 映射
+    let knowledgePointsTree = []; // 知识点树结构
+    let selectedKnowledgePoints = []; // 当前选中的知识点
+    let knowledgeSelectionMode = 'all'; // 'all' 全局添加, 'single' 单个题目
+    let currentQuestionIndex = -1; // 当前操作的题目索引
+
+    // 页面加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+      // 加载知识点数据
+      loadKnowledgePoints();
+
+      // 监听输入变化，实时解析（300ms 防抖）
+      document.getElementById('inputText').addEventListener('input', debounce(handleInputChange, 300));
+    });
+
+    // 加载知识点数据
+    function loadKnowledgePoints() {
+      try {
+        const knowledgeData = localStorage.getItem('knowledgePoints');
+        console.log('加载知识点数据:', knowledgeData);
+        if (knowledgeData) {
+          knowledgePointsTree = JSON.parse(knowledgeData);
+          console.log('解析后的知识点树:', knowledgePointsTree);
+          // 递归遍历知识点树，建立映射
+          function traverse(nodes) {
+            nodes.forEach(node => {
+              knowledgePointsMap[node.id] = node.name;
+              knowledgePointsNameMap[node.name] = node.id;
+              if (node.children && node.children.length > 0) {
+                traverse(node.children);
+              }
+            });
+          }
+          traverse(knowledgePointsTree);
+          console.log('知识点映射表:', knowledgePointsMap);
+        } else {
+          console.warn('LocalStorage 中没有 knowledgePoints 数据');
+        }
+      } catch (e) {
+        console.error('加载知识点数据失败:', e);
+      }
+    }
+
+    // 验证知识点是否存在（支持id或name）
+    function validateKnowledgePoints(knowledgePoints) {
+      const invalidPoints = knowledgePoints.filter(kp => {
+        // 检查是否是有效的id或name
+        return !knowledgePointsMap[kp] && !knowledgePointsNameMap[kp];
+      });
+      if (invalidPoints.length > 0) {
+        return `知识点无法识别，"${invalidPoints.join('、')}" 不在知识点目录中`;
+      }
+      return null;
+    }
+
+    // 防抖函数
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // 处理输入变化
+    function handleInputChange() {
+      const text = document.getElementById('inputText').value.trim();
+
+      if (!text) {
+        showEmptyState();
+        return;
+      }
+
+      // 自动解析
+      parseAndDisplay(text);
+
+      // 自动保存
+      autoSave();
+    }
+
+    // 自动保存
+    function autoSave() {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+        document.getElementById('saveTime').textContent = timeStr;
+      }, 1000);
+    }
+
+    // 解析并显示
+    function parseAndDisplay(text) {
+      const result = parseQuestions(text);
+      parsedData = result.questions;
+      errorIndexes = result.errors;
+
+      updateStatistics();
+      displayQuestions();
+    }
+
+    // 解析题目
+    function parseQuestions(text) {
+      const questions = [];
+      const errors = [];
+      const lines = text.split('\n');
+
+      let currentQuestion = null;
+      let currentTypeHint = null; // 记录当前题型提示
+      let lineNumber = 0;
+      let questionCounter = 0; // 题目计数器
+
+      // 题型映射
+      const typeMap = {
+        '单选题': { type: 'single', typeName: '单选题' },
+        '多选题': { type: 'multiple', typeName: '多选题' },
+        '判断题': { type: 'judge', typeName: '判断题' },
+        '填空题': { type: 'blank', typeName: '填空题' },
+        '简答题': { type: 'essay', typeName: '简答题' },
+        '完形填空': { type: 'cloze', typeName: '完形填空' },
+        '复合题': { type: 'composite', typeName: '复合题' }
+      };
+
+      for (let line of lines) {
+        lineNumber++;
+        line = line.trim();
+        if (!line) continue;
+
+        // 识别题型标识
+        if (typeMap[line]) {
+          // 保存上一题
+          if (currentQuestion) {
+            questions.push(currentQuestion);
+          }
+
+          currentTypeHint = typeMap[line];
+          questionCounter++;
+
+          // 创建一个临时题目对象
+          currentQuestion = {
+            id: questionCounter.toString(),
+            content: '',
+            options: [],
+            answer: '',
+            explanation: '',
+            knowledgePoints: [],
+            type: currentTypeHint.type,
+            typeName: currentTypeHint.typeName,
+            typeHint: currentTypeHint,
+            hasError: false,
+            errorMessages: [],
+            isTemporary: true // 标记为临时题目
+          };
+          continue;
+        }
+
+        // 题目标号
+        const titleMatch = line.match(/^(\d+)[.、:。]\s*(.*)$/);
+        if (titleMatch) {
+          if (currentQuestion && !currentQuestion.isTemporary) {
+            // 保存非临时的上一题
+            questions.push(currentQuestion);
+          }
+
+          currentQuestion = {
+            id: titleMatch[1],
+            content: titleMatch[2], // 允许为空
+            options: [],
+            answer: '',
+            explanation: '',
+            knowledgePoints: [],
+            type: currentTypeHint ? currentTypeHint.type : 'unknown',
+            typeName: currentTypeHint ? currentTypeHint.typeName : '未知',
+            typeHint: currentTypeHint, // 保存题型提示
+            hasError: false,
+            errorMessages: [],
+            isTemporary: false
+          };
+          continue;
+        }
+
+        if (!currentQuestion) continue;
+
+        // 如果是临时题目，遇到非题号行时保持临时状态
+        if (currentQuestion.isTemporary) {
+          // 不处理其他内容，等待题号出现
+          continue;
+        }
+
+        // 选项
+        const optionMatch = line.match(/^([A-E])[.、:。：]\s*(.+)$/);
+        if (optionMatch) {
+          currentQuestion.options.push({ label: optionMatch[1], text: optionMatch[2] });
+          continue;
+        }
+
+        // 答案（支持"答案："、"答："、"正确答案："）
+        if (line.startsWith('答案：') || line.startsWith('答：') || line.startsWith('正确答案：')) {
+          currentQuestion.answer = line.replace(/^(正确)?答案?：/, '').trim();
+          continue;
+        }
+
+        // 解析
+        if (line.startsWith('答案解析：')) {
+          currentQuestion.explanation = line.replace('答案解析：', '').trim();
+          continue;
+        }
+
+        // 知识点
+        if (line.startsWith('知识点：')) {
+          const kps = line.replace('知识点：', '').trim();
+          currentQuestion.knowledgePoints = kps.split(/[，、；]/).map(k => k.trim());
+          continue;
+        }
+      }
+
+      // 最后一题
+      if (currentQuestion) {
+        questions.push(currentQuestion);
+      }
+
+      // 设置题目索引并检查错误
+      questions.forEach((q, index) => {
+        q.index = index;
+        q.contentError = null;    // 题目内容错误
+        q.optionsError = null;    // 选项错误
+        q.answerError = null;     // 答案错误
+        q.knowledgeError = null;  // 知识点错误
+
+        // 检查是否缺少题型标识
+        if (!q.typeHint) {
+          q.contentError = '缺少题型标识（需在题目前添加：单选题、多选题、判断题等）';
+        }
+
+        // 如果是临时题目（只有题型标识，没有题号）
+        if (q.isTemporary) {
+          q.contentError = '题目内容无法识别，题目标号支持1.、1:、1、和1。四种格式';
+          q.optionsError = '选项无法识别，选项格式为"A. 选项内容"';
+          q.answerError = '答案无法识别，题目必须包含"答案："字段，且不能为空';
+          q.knowledgeError = '知识点无法识别，题目必须有知识点属性。"知识点：知识点编号"';
+          q.hasError = true;
+          return; // 临时题目不需要继续检查
+        }
+
+        // 检查题目内容
+        if (!q.content || q.content.trim() === '') {
+          q.contentError = '题目内容无法识别，题目标号支持1.、1:、1、和1。四种格式';
+        }
+
+        // 对于有选项的题型，检查选项和答案
+        if (q.type === 'single' || q.type === 'multiple') {
+          if (q.options.length === 0) {
+            q.optionsError = '选项无法识别，选项格式为"A. 选项内容"';
+          }
+          if (!q.answer || q.answer.trim() === '') {
+            q.answerError = '答案无法识别，题目必须包含"答案："字段，且不能为空';
+          }
+        }
+
+        // 对于判断题，检查答案
+        if (q.type === 'judge') {
+          if (!q.answer || q.answer.trim() === '') {
+            q.answerError = '答案无法识别，判断题答案格式为"答案：正确"或"答案：错误"';
+          }
+        }
+
+        // 对于填空题和简答题，检查答案
+        if (q.type === 'blank' || q.type === 'essay') {
+          if (!q.answer || q.answer.trim() === '') {
+            q.answerError = '答案无法识别，题目必须包含"答案："字段，且不能为空';
+          }
+        }
+
+        // 检查知识点
+        if (q.knowledgePoints.length === 0 || !q.knowledgePoints[0]) {
+          q.knowledgeError = '知识点无法识别，题目必须有知识点属性。"知识点：知识点编号"';
+        } else {
+          // 验证知识点是否存在
+          q.knowledgeError = validateKnowledgePoints(q.knowledgePoints);
+        }
+
+        // 如果有任何错误，标记为错误题目
+        if (q.contentError || q.optionsError || q.answerError || q.knowledgeError) {
+          q.hasError = true;
+        }
+      });
+
+      return { questions, errors };
+    }
+
+    // 更新统计
+    function updateStatistics() {
+      const successCount = parsedData.filter(q => !q.hasError).length;
+      const errorCount = parsedData.filter(q => q.hasError).length;
+
+      document.getElementById('successCountText').textContent = `成功识别${successCount}题`;
+      document.getElementById('errorCountText').textContent = `识别失败${errorCount}题`;
+      document.getElementById('totalCount').textContent = parsedData.length;
+
+      if (errorCount > 0) {
+        document.getElementById('errorButton').classList.remove('hidden');
+        document.getElementById('nextErrorBtn').classList.remove('hidden');
+      } else {
+        document.getElementById('errorButton').classList.add('hidden');
+        document.getElementById('nextErrorBtn').classList.add('hidden');
+      }
+
+      if (parsedData.length > 0) {
+        document.getElementById('bottomActions').style.display = 'flex';
+      } else {
+        document.getElementById('bottomActions').style.display = 'none';
+      }
+    }
+
+    // 显示题目
+    function displayQuestions() {
+      const container = document.getElementById('parsedQuestions');
+
+      if (parsedData.length === 0) {
+        showEmptyState();
+        return;
+      }
+
+      document.getElementById('emptyState').style.display = 'none';
+      container.style.display = 'block';
+      container.innerHTML = '';
+
+      parsedData.forEach((q, index) => {
+        const card = createQuestionCard(q, index);
+        container.appendChild(card);
+      });
+    }
+
+    // 创建题目卡片
+    function createQuestionCard(q, index) {
+      const div = document.createElement('div');
+      div.className = 'question-card bg-white rounded-lg border-2 p-5 ' + (q.hasError ? 'border-error-200' : 'border-gray-200');
+      div.id = 'question-' + index;
+
+      let optionsHtml = '';
+      if (q.type === 'judge') {
+        optionsHtml = `
+          <div class="space-y-2 mb-4">
+            <div class="radio-option ${q.answer === '正确' || q.answer === '对' ? 'bg-primary-50' : ''}">
+              <input type="radio" name="judge-${index}" ${q.answer === '正确' || q.answer === '对' ? 'checked' : ''}>
+              <span class="text-sm text-gray-700">正确</span>
+            </div>
+            <div class="radio-option ${q.answer === '错误' || q.answer === '错' ? 'bg-primary-50' : ''}">
+              <input type="radio" name="judge-${index}" ${q.answer === '错误' || q.answer === '错' ? 'checked' : ''}>
+              <span class="text-sm text-gray-700">错误</span>
+            </div>
+          </div>
+        `;
+      } else if (q.options.length > 0) {
+        optionsHtml = '<div class="space-y-2 mb-4">';
+        q.options.forEach(opt => {
+          const isCorrect = q.answer && q.answer.includes(opt.label);
+          optionsHtml += `
+            <div class="flex items-start py-1">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${isCorrect ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}">${opt.label}</span>
+              <span class="text-sm text-gray-700">${opt.text}</span>
+            </div>
+          `;
+        });
+        optionsHtml += '</div>';
+      }
+
+      // 生成知识点标签 HTML
+      let knowledgeTagsHtml = '';
+      if (q.knowledgePoints.length > 0 && q.knowledgePoints[0]) {
+        knowledgeTagsHtml = '<div class="flex flex-wrap gap-2 mb-2">';
+        q.knowledgePoints.forEach((kp, kpIndex) => {
+          const kpName = knowledgePointsMap[kp] || kp;
+          knowledgeTagsHtml += `
+            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-primary-50 text-primary-700 border border-primary-200">
+              ${kpName}
+              <button onclick="removeKnowledgePoint(${index}, ${kpIndex})" class="ml-1.5 text-primary-500 hover:text-primary-700">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </span>
+          `;
+        });
+        knowledgeTagsHtml += '</div>';
+      }
+
+      div.innerHTML = `
+        <div class="flex items-start mb-3">
+          <div class="flex items-center space-x-2">
+            <h4 class="text-sm font-semibold text-gray-900">【${q.typeName}】</h4>
+            ${q.type === 'blank' ? '<label class="flex items-center text-xs text-gray-600 ml-3"><input type="checkbox" class="rounded border-gray-300 text-primary-500 focus:ring-primary-500 mr-1.5"> 设为无序填空</label>' : ''}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <p class="text-sm text-gray-900 leading-relaxed">${q.id}、${q.content || ''}</p>
+          ${q.contentError ? `<div class="error-text text-xs mt-2">${q.contentError}</div>` : ''}
+        </div>
+
+        ${optionsHtml}
+        ${q.optionsError ? `<div class="error-text text-xs mb-4">${q.optionsError}</div>` : ''}
+
+        <div class="mb-4">
+          <div class="flex items-start text-sm">
+            <span class="text-gray-500 mr-2 flex-shrink-0">答案：</span>
+            <span class="text-gray-900 font-medium">${q.answer || ''}</span>
+          </div>
+          ${q.answerError ? `<div class="error-text text-xs mt-2">${q.answerError}</div>` : ''}
+        </div>
+
+        <div class="flex items-start text-sm">
+          <span class="text-gray-500 mr-2 flex-shrink-0">知识点：</span>
+          <div class="flex-1">
+            ${knowledgeTagsHtml}
+            <button onclick="addKnowledgePoint(${index})" class="text-xs text-primary-500 hover:text-primary-600 border border-gray-300 rounded px-2 py-0.5">
+              <i class="fas fa-plus mr-1"></i>
+              添加知识点
+            </button>
+            ${q.knowledgeError ? `<div class="error-text text-xs mt-2">${q.knowledgeError}</div>` : ''}
+          </div>
+        </div>
+      `;
+
+      return div;
+    }
+
+    // 显示空状态
+    function showEmptyState() {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('parsedQuestions').style.display = 'none';
+      document.getElementById('bottomActions').style.display = 'none';
+      document.getElementById('successCountText').textContent = '成功识别0题';
+      document.getElementById('errorCountText').textContent = '识别失败0题';
+      document.getElementById('errorButton').classList.add('hidden');
+      document.getElementById('nextErrorBtn').classList.add('hidden');
+    }
+
+    // 删除题目
+    function deleteQuestion(index) {
+      parsedData.splice(index, 1);
+      updateStatistics();
+      displayQuestions();
+    }
+
+    // 跳转到第一个错误
+    function jumpToFirstError() {
+      const firstError = parsedData.findIndex(q => q.hasError);
+      if (firstError !== -1) {
+        const element = document.getElementById('question-' + firstError);
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 跳转到下一个错误
+    function jumpToNextError() {
+      const errors = parsedData.map((q, i) => q.hasError ? i : -1).filter(i => i !== -1);
+      if (errors.length === 0) return;
+
+      currentErrorIndex = (currentErrorIndex + 1) % errors.length;
+      const element = document.getElementById('question-' + errors[currentErrorIndex]);
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 选择知识点（全局）
+    function selectKnowledgePoints() {
+      knowledgeSelectionMode = 'all';
+      currentQuestionIndex = -1;
+      selectedKnowledgePoints = [];
+      openKnowledgeModal();
+    }
+
+    // 添加知识点（单个题目）
+    function addKnowledgePoint(index) {
+      knowledgeSelectionMode = 'single';
+      currentQuestionIndex = index;
+      // 预选当前题目已有的知识点
+      if (parsedData[index] && parsedData[index].knowledgePoints) {
+        selectedKnowledgePoints = [...parsedData[index].knowledgePoints];
+      } else {
+        selectedKnowledgePoints = [];
+      }
+      openKnowledgeModal();
+    }
+
+    // 删除知识点
+    function removeKnowledgePoint(questionIndex, knowledgeIndex) {
+      if (!parsedData[questionIndex]) return;
+
+      const question = parsedData[questionIndex];
+      const removedKnowledge = question.knowledgePoints[knowledgeIndex];
+      const removedKnowledgeName = knowledgePointsMap[removedKnowledge] || removedKnowledge;
+
+      // 从数组中删除该知识点
+      question.knowledgePoints.splice(knowledgeIndex, 1);
+
+      // 更新 textarea 中的知识点
+      removeKnowledgePointFromTextarea(questionIndex, removedKnowledgeName);
+    }
+
+    // 从 textarea 中删除知识点
+    function removeKnowledgePointFromTextarea(questionIndex, knowledgeName) {
+      const textarea = document.getElementById('inputText');
+      const lines = textarea.value.split('\n');
+      let newLines = [];
+      let questionIdx = -1;
+      let inQuestion = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // 检测题型标识
+        const typeMap = {
+          '单选题': { type: 'single', typeName: '单选题' },
+          '多选题': { type: 'multiple', typeName: '多选题' },
+          '判断题': { type: 'judge', typeName: '判断题' },
+          '填空题': { type: 'blank', typeName: '填空题' },
+          '简答题': { type: 'essay', typeName: '简答题' },
+          '完形填空': { type: 'cloze', typeName: '完形填空' },
+          '复合题': { type: 'composite', typeName: '复合题' }
+        };
+
+        if (typeMap[line]) {
+          inQuestion = true;
+          newLines.push(lines[i]);
+          continue;
+        }
+
+        // 检测题号
+        if (/^\d+[.、:。]\s*/.test(line) && inQuestion) {
+          questionIdx++;
+        }
+
+        // 检测知识点行
+        if (line.startsWith('知识点：') && inQuestion && questionIdx === questionIndex) {
+          // 这是要修改的题目的知识点行
+          const knowledgeText = line.replace(/^知识点：/, '');
+          const knowledges = knowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
+
+          // 删除指定的知识点
+          const updatedKnowledges = knowledges.filter(k => k !== knowledgeName);
+
+          // 如果还有剩余知识点，更新该行；否则跳过该行
+          if (updatedKnowledges.length > 0) {
+            newLines.push('知识点：' + updatedKnowledges.join('、'));
+          }
+          // 如果没有剩余知识点，不添加这一行（相当于删除整行）
+          continue;
+        }
+
+        // 其他行直接添加
+        newLines.push(lines[i]);
+      }
+
+      // 更新 textarea
+      textarea.value = newLines.join('\n');
+
+      // 重新解析
+      handleInputChange();
+    }
+
+    // 打开知识点选择弹窗
+    function openKnowledgeModal() {
+      console.log('打开知识点选择弹窗');
+      console.log('知识点树数据:', knowledgePointsTree);
+      document.getElementById('knowledgeModal').classList.remove('hidden');
+      renderKnowledgeTree();
+      updateSelectedCount();
+    }
+
+    // 关闭知识点选择弹窗
+    function closeKnowledgeModal() {
+      document.getElementById('knowledgeModal').classList.add('hidden');
+      document.getElementById('knowledgeSearch').value = '';
+      selectedKnowledgePoints = [];
+    }
+
+    // 渲染知识点树
+    function renderKnowledgeTree() {
+      console.log('开始渲染知识点树');
+      const container = document.getElementById('knowledgeTree');
+      container.innerHTML = '';
+
+      if (!knowledgePointsTree || knowledgePointsTree.length === 0) {
+        console.warn('知识点树为空');
+        container.innerHTML = '<div class="text-center text-gray-500 py-8">暂无知识点数据<br><small class="text-xs">请先在题库管理页面添加知识点</small></div>';
+        return;
+      }
+
+      console.log('知识点树节点数量:', knowledgePointsTree.length);
+
+      function renderNode(node, level = 0) {
+        const div = document.createElement('div');
+        div.className = 'knowledge-node';
+
+        const nodeContent = document.createElement('div');
+        nodeContent.style.paddingLeft = (level * 20) + 'px';
+        nodeContent.className = 'py-2 px-3 hover:bg-gray-50 rounded cursor-pointer flex items-center space-x-2';
+
+        // 如果有子节点，添加展开/折叠图标
+        if (node.children && node.children.length > 0) {
+          const toggleIcon = document.createElement('i');
+          toggleIcon.className = 'fas fa-chevron-down text-xs text-gray-400 transition-transform';
+          toggleIcon.style.width = '12px';
+          toggleIcon.onclick = (e) => {
+            e.stopPropagation();
+            const childrenContainer = div.querySelector('.children-container');
+            if (childrenContainer) {
+              const isHidden = childrenContainer.style.display === 'none';
+              childrenContainer.style.display = isHidden ? 'block' : 'none';
+              toggleIcon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+            }
+          };
+          nodeContent.appendChild(toggleIcon);
+        } else {
+          // 占位，保持对齐
+          const spacer = document.createElement('span');
+          spacer.style.width = '12px';
+          spacer.style.display = 'inline-block';
+          nodeContent.appendChild(spacer);
+        }
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'rounded border-gray-300 text-primary-500 focus:ring-primary-500';
+        checkbox.checked = selectedKnowledgePoints.includes(node.id);
+        checkbox.onclick = (e) => {
+          e.stopPropagation();
+        };
+        checkbox.onchange = (e) => {
+          if (e.target.checked) {
+            if (!selectedKnowledgePoints.includes(node.id)) {
+              selectedKnowledgePoints.push(node.id);
+              console.log('选中知识点:', node.name, node.id);
+            }
+          } else {
+            selectedKnowledgePoints = selectedKnowledgePoints.filter(id => id !== node.id);
+            console.log('取消选中知识点:', node.name, node.id);
+          }
+          updateSelectedCount();
+        };
+
+        const icon = document.createElement('i');
+        if (node.children && node.children.length > 0) {
+          icon.className = 'fas fa-folder text-warning-500 text-sm';
+        } else {
+          icon.className = 'fas fa-file-alt text-info-500 text-sm';
+        }
+
+        const label = document.createElement('span');
+        label.className = 'text-sm text-gray-700 flex-1';
+        label.textContent = node.name;
+
+        const count = document.createElement('span');
+        count.className = 'text-xs text-gray-400';
+        if (node.questionCount !== undefined && node.questionCount > 0) {
+          count.textContent = node.questionCount;
+        }
+
+        nodeContent.appendChild(checkbox);
+        nodeContent.appendChild(icon);
+        nodeContent.appendChild(label);
+        nodeContent.appendChild(count);
+
+        div.appendChild(nodeContent);
+
+        // 添加子节点容器
+        if (node.children && node.children.length > 0) {
+          const childrenContainer = document.createElement('div');
+          childrenContainer.className = 'children-container';
+          node.children.forEach(child => {
+            const childNode = renderNode(child, level + 1);
+            childrenContainer.appendChild(childNode);
+          });
+          div.appendChild(childrenContainer);
+        }
+
+        return div;
+      }
+
+      knowledgePointsTree.forEach(node => {
+        console.log('渲染节点:', node.name);
+        const nodeElement = renderNode(node);
+        container.appendChild(nodeElement);
+      });
+
+      console.log('知识点树渲染完成');
+    }
+
+    // 更新已选择数量
+    function updateSelectedCount() {
+      document.getElementById('selectedKnowledgeCount').textContent = selectedKnowledgePoints.length;
+    }
+
+    // 搜索过滤知识点
+    function filterKnowledge() {
+      const searchTerm = document.getElementById('knowledgeSearch').value.toLowerCase();
+      const allNodes = document.querySelectorAll('.knowledge-node');
+
+      allNodes.forEach(node => {
+        const label = node.querySelector('span.text-gray-700');
+        if (label) {
+          const text = label.textContent.toLowerCase();
+          if (text.includes(searchTerm) || searchTerm === '') {
+            node.style.display = 'block';
+          } else {
+            node.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    // 确认知识点选择
+    function confirmKnowledgeSelection() {
+      if (selectedKnowledgePoints.length === 0) {
+        alert('请至少选择一个知识点');
+        return;
+      }
+
+      // 获取选择的知识点名称
+      const selectedNames = selectedKnowledgePoints.map(id => knowledgePointsMap[id] || id);
+
+      // 将选择的知识点插入到输入框中
+      insertKnowledgePointsToTextarea(selectedNames);
+
+      // 关闭弹窗
+      closeKnowledgeModal();
+    }
+
+    // 将知识点插入到输入框
+    function insertKnowledgePointsToTextarea(knowledgeNames) {
+      const textarea = document.getElementById('inputText');
+      let text = textarea.value;
+      const lines = text.split('\n');
+      let newLines = [];
+      let questionIdx = -1;
+      let inQuestion = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // 检测题型标识
+        const typeMap = {
+          '单选题': { type: 'single', typeName: '单选题' },
+          '多选题': { type: 'multiple', typeName: '多选题' },
+          '判断题': { type: 'judge', typeName: '判断题' },
+          '填空题': { type: 'blank', typeName: '填空题' },
+          '简答题': { type: 'essay', typeName: '简答题' },
+          '完形填空': { type: 'cloze', typeName: '完形填空' },
+          '复合题': { type: 'composite', typeName: '复合题' }
+        };
+
+        if (typeMap[line]) {
+          inQuestion = true;
+          newLines.push(lines[i]);
+          continue;
+        }
+
+        // 检测题号
+        if (/^\d+[.、:。]\s*/.test(line) && inQuestion) {
+          questionIdx++;
+        }
+
+        // 检测答案行
+        if ((line.startsWith('答案：') || line.startsWith('答：') || line.startsWith('正确答案：')) && inQuestion) {
+          newLines.push(lines[i]);
+
+          // 查看下一行是否已经是知识点行
+          const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+          const hasKnowledgeLine = nextLine.startsWith('知识点：');
+
+          // 判断是否需要为当前题目添加知识点
+          const shouldAddKnowledge =
+            (knowledgeSelectionMode === 'all') ||
+            (knowledgeSelectionMode === 'single' && questionIdx === currentQuestionIndex);
+
+          if (shouldAddKnowledge) {
+            if (hasKnowledgeLine) {
+              // 如果已有知识点行，读取已有的知识点
+              i++; // 跳过原有的知识点行
+              const existingKnowledgeText = lines[i].trim().replace(/^知识点：/, '');
+              const existingKnowledges = existingKnowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
+
+              // 全局模式：合并知识点（去重）
+              // 单个模式：替换知识点
+              let finalKnowledges;
+              if (knowledgeSelectionMode === 'all') {
+                // 合并并去重
+                finalKnowledges = [...new Set([...existingKnowledges, ...knowledgeNames])];
+              } else {
+                // 替换
+                finalKnowledges = knowledgeNames;
+              }
+
+              newLines.push('知识点：' + finalKnowledges.join('、'));
+            } else {
+              // 如果没有知识点行，直接添加
+              newLines.push('知识点：' + knowledgeNames.join('、'));
+            }
+          } else if (hasKnowledgeLine) {
+            // 不需要添加知识点，但已有知识点行，保留原有的
+            i++;
+            newLines.push(lines[i]);
+          }
+          continue;
+        }
+
+        // 其他行直接添加
+        newLines.push(lines[i]);
+      }
+
+      // 更新 textarea
+      textarea.value = newLines.join('\n');
+
+      // 重新解析
+      handleInputChange();
+    }
+
+    // 插入图片
+    function insertImage() {
+      alert('插入图片功能待实现');
+    }
+
+    // 插入公式
+    function insertFormula() {
+      alert('插入公式功能待实现');
+    }
+
+    // 清空输入
+    function clearInput() {
+      if (confirm('确定要清空所有内容吗？')) {
+        document.getElementById('inputText').value = '';
+        parsedData = [];
+        showEmptyState();
+      }
+    }
+
+    // 刷新预览
+    function refreshPreview() {
+      const text = document.getElementById('inputText').value.trim();
+      if (text) {
+        parseAndDisplay(text);
+      }
+    }
+
+    // 保存草稿
+    function saveDraft() {
+      alert('草稿已保存');
+    }
+
+    // 批量导入
+    function batchImport() {
+      if (parsedData.length === 0) {
+        alert('没有可导入的题目');
+        return;
+      }
+
+      const errorCount = parsedData.filter(q => q.hasError).length;
+      if (errorCount > 0) {
+        alert(`还有 ${errorCount} 道题目存在错误，请修改后再导入`);
+        return;
+      }
+
+      if (confirm(`确定要导入 ${parsedData.length} 道题目吗？`)) {
+        alert(`成功导入 ${parsedData.length} 道题目！`);
+        window.location.href = 'list.html';
+      }
+    }
+
+    // 显示格式说明
+    function showFormatGuide() {
+      document.getElementById('formatGuideModal').classList.remove('hidden');
+    }
+
+    // 关闭格式说明
+    function closeFormatGuide() {
+      document.getElementById('formatGuideModal').classList.add('hidden');
+    }
+
+    // 显示输入范例
+    function showInputExample() {
+      document.getElementById('exampleModal').classList.remove('hidden');
+    }
+
+    // 关闭范例
+    function closeExample() {
+      document.getElementById('exampleModal').classList.add('hidden');
+    }
+
+    // 使用示例
+    function useExample() {
+      const exampleText = document.getElementById('exampleText').textContent;
+      document.getElementById('inputText').value = exampleText;
+      closeExample();
+      handleInputChange();
+    }
+
+    // 点击弹窗外部关闭
+    document.getElementById('formatGuideModal').addEventListener('click', function(e) {
+      if (e.target === this) closeFormatGuide();
+    });
+    document.getElementById('exampleModal').addEventListener('click', function(e) {
+      if (e.target === this) closeExample();
+    });
+  </script>
+</body>
+</html>

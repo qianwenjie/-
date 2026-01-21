@@ -210,20 +210,24 @@
             试题录入说明：
           </h3>
           <p class="text-sm text-gray-700">
-            请手动输入或者粘贴内容到输入区（<a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 underline">支持粘贴图片和插入公式</a>），若有疑问可查看录入帮助
+            请手动输入或者粘贴内容到输入区（支持粘贴图片和插入公式），若有疑问可查看录入帮助
             <a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 ml-1">
               <i class="fas fa-question-circle"></i> 录入帮助
             </a>
           </p>
         </div>
         <div class="flex items-center space-x-3 ml-6">
-          <span class="flex items-center text-sm text-success-500" id="autoSaveStatus">
-            <i class="fas fa-check-circle mr-1.5"></i>
-            <span id="saveTime">16:33:56</span> 已保存
+          <span id="draftSaveTime" class="text-xs text-gray-500 hidden">
+            <i class="fas fa-check-circle text-success-500 mr-1"></i>
+            <span id="draftTimeText"></span>
           </span>
           <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
             <i class="fas fa-save mr-2"></i>
             保存草稿
+          </button>
+          <button onclick="batchImport()" class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors">
+            <i class="fas fa-check mr-2"></i>
+            批量导入
           </button>
           <button id="errorButton" onclick="jumpToFirstError()" class="hidden px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium transition-colors">
             <i class="fas fa-exclamation-triangle mr-2"></i>
@@ -238,7 +242,7 @@
       <!-- 左侧：输入区 -->
       <div class="w-1/2 bg-white border-r border-gray-200 flex flex-col">
         <!-- 输入区头部 -->
-        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-gray-50" style="height: 49px;">
           <div class="flex items-center space-x-4">
             <h3 class="text-sm font-semibold text-gray-900 flex items-center">
               <i class="fas fa-keyboard text-primary-500 mr-2"></i>
@@ -259,21 +263,6 @@
             <button onclick="clearInput()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-error-500 hover:bg-gray-100 rounded transition-colors" title="清空">
               <i class="fas fa-trash-alt"></i>
             </button>
-          </div>
-        </div>
-
-        <!-- 提示链接 -->
-        <div class="px-6 py-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between text-xs">
-          <div class="flex items-center space-x-4">
-            <a href="javascript:showInputExample()" class="text-primary-500 hover:text-primary-600 font-medium">
-              <i class="fas fa-eye mr-1"></i>
-              输入范例
-            </a>
-            <span class="text-gray-300">></span>
-            <a href="javascript:showFormatGuide()" class="text-primary-500 hover:text-primary-600 font-medium">
-              <i class="fas fa-book mr-1"></i>
-              输入规范
-            </a>
           </div>
         </div>
 
@@ -346,7 +335,7 @@ D. 指缝
       <!-- 右侧：检查区 -->
       <div class="w-1/2 bg-gray-50 flex flex-col">
         <!-- 检查区头部 -->
-        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white">
+        <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white" style="height: 49px;">
           <div class="flex items-center space-x-4">
             <h3 class="text-sm font-semibold text-gray-900 flex items-center">
               <i class="fas fa-clipboard-check text-primary-500 mr-2"></i>
@@ -394,16 +383,6 @@ D. 指缝
         <div id="bottomActions" class="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-between" style="display:none;">
           <div class="text-sm text-gray-600">
             共 <span id="totalCount" class="font-semibold text-gray-900">0</span> 道题目
-          </div>
-          <div class="flex items-center space-x-3">
-            <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <i class="fas fa-save mr-2"></i>
-              保存草稿
-            </button>
-            <button onclick="batchImport()" class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors">
-              <i class="fas fa-check mr-2"></i>
-              批量导入
-            </button>
           </div>
         </div>
       </div>
@@ -830,6 +809,52 @@ D. 指缝
     </div>
   </div>
 
+  <!-- 分数设置弹窗 -->
+  <div id="scoreSettingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <!-- 标题栏 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-calculator text-primary-500 mr-2"></i>
+          分数设置
+        </h3>
+        <button onclick="closeScoreModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- 提示信息 -->
+      <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex-shrink-0">
+        <p class="text-sm text-gray-700">
+          <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+          请为每道题目设置分数，不同题型有不同的设置方式
+        </p>
+      </div>
+
+      <!-- 题目列表 -->
+      <div id="scoreQuestionList" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <!-- 动态生成 -->
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center flex-shrink-0">
+        <div class="text-sm text-gray-600">
+          共 <span id="totalScoreQuestions" class="font-semibold text-gray-900">0</span> 道题目
+        </div>
+        <div class="flex space-x-3">
+          <button onclick="importWithoutScore()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+            <i class="fas fa-times mr-2"></i>
+            不设置分数
+          </button>
+          <button onclick="confirmScoreAndImport()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+            <i class="fas fa-check mr-2"></i>
+            确认导入
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 全局变量
     let parsedData = [];
@@ -857,6 +882,9 @@ D. 指缝
     document.addEventListener('DOMContentLoaded', function() {
       // 加载知识点数据
       loadKnowledgePoints();
+
+      // 加载草稿数据
+      loadDraft();
 
       const inputDiv = document.getElementById('inputText');
 
@@ -1467,7 +1495,7 @@ D. 指缝
       autoSaveTimer = setTimeout(() => {
         const now = new Date();
         const timeStr = now.toTimeString().split(' ')[0];
-        document.getElementById('saveTime').textContent = timeStr;
+        // document.getElementById('saveTime').textContent = timeStr; // 已移除时间显示元素
       }, 1000);
     }
 
@@ -4665,9 +4693,21 @@ D. 指缝
 
     // 清空输入
     function clearInput() {
-      if (confirm('确定要清空所有内容吗？')) {
+      if (confirm('确定要清空所有内容吗？这将同时清除已保存的草稿。')) {
         document.getElementById('inputText').innerHTML = '';
         parsedData = [];
+        imageDataMap = {};
+        formulaDataMap = {};
+
+        // 清除草稿
+        localStorage.removeItem('questionDraft');
+
+        // 隐藏保存时间提示
+        const timeContainer = document.getElementById('draftSaveTime');
+        if (timeContainer) {
+          timeContainer.classList.add('hidden');
+        }
+
         showEmptyState();
       }
     }
@@ -4682,7 +4722,129 @@ D. 指缝
 
     // 保存草稿
     function saveDraft() {
-      alert('草稿已保存');
+      if (parsedData.length === 0) {
+        alert('当前没有可保存的题目');
+        return;
+      }
+
+      try {
+        // 获取当前输入区的 HTML 内容
+        const inputDiv = document.getElementById('inputText');
+        const inputHtml = inputDiv ? inputDiv.innerHTML : '';
+
+        // 准备保存的数据
+        const draftData = {
+          questions: parsedData,
+          errorIndexes: errorIndexes,
+          inputHtml: inputHtml,
+          imageDataMap: imageDataMap,
+          formulaDataMap: formulaDataMap,
+          saveTime: new Date().toISOString()
+        };
+
+        // 保存到 localStorage
+        localStorage.setItem('questionDraft', JSON.stringify(draftData));
+
+        // 更新保存时间显示
+        updateDraftSaveTime();
+
+        // 提示用户
+        alert(`草稿已保存！共 ${parsedData.length} 道题目`);
+      } catch (error) {
+        console.error('保存草稿失败:', error);
+        alert('保存草稿失败，请重试');
+      }
+    }
+
+    // 加载草稿
+    function loadDraft() {
+      try {
+        const draftJson = localStorage.getItem('questionDraft');
+        if (!draftJson) {
+          return false;
+        }
+
+        const draftData = JSON.parse(draftJson);
+
+        // 恢复数据
+        parsedData = draftData.questions || [];
+        errorIndexes = draftData.errorIndexes || [];
+        imageDataMap = draftData.imageDataMap || {};
+        formulaDataMap = draftData.formulaDataMap || {};
+
+        // 恢复输入区内容
+        if (draftData.inputHtml) {
+          const inputDiv = document.getElementById('inputText');
+          if (inputDiv) {
+            inputDiv.innerHTML = draftData.inputHtml;
+          }
+        }
+
+        // 更新显示
+        if (parsedData.length > 0) {
+          updateStatistics();
+          displayQuestions();
+          updateDraftSaveTime();
+
+          console.log('草稿加载成功，共', parsedData.length, '道题目');
+        }
+
+        return true;
+      } catch (error) {
+        console.error('加载草稿失败:', error);
+        return false;
+      }
+    }
+
+    // 更新草稿保存时间显示
+    function updateDraftSaveTime() {
+      try {
+        const draftJson = localStorage.getItem('questionDraft');
+        if (!draftJson) {
+          return;
+        }
+
+        const draftData = JSON.parse(draftJson);
+        if (!draftData.saveTime) {
+          return;
+        }
+
+        const saveTime = new Date(draftData.saveTime);
+        const now = new Date();
+        const diff = Math.floor((now - saveTime) / 1000); // 秒
+
+        let timeText = '';
+        if (diff < 60) {
+          timeText = '刚刚已保存';
+        } else if (diff < 3600) {
+          const minutes = Math.floor(diff / 60);
+          timeText = `${minutes}分钟前已保存`;
+        } else if (diff < 86400) {
+          const hours = Math.floor(diff / 3600);
+          timeText = `${hours}小时前已保存`;
+        } else {
+          const days = Math.floor(diff / 86400);
+          timeText = `${days}天前已保存`;
+        }
+
+        const timeElement = document.getElementById('draftTimeText');
+        const containerElement = document.getElementById('draftSaveTime');
+
+        if (timeElement && containerElement) {
+          timeElement.textContent = timeText;
+          containerElement.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('更新保存时间显示失败:', error);
+      }
+    }
+
+    // 清除草稿
+    function clearDraft() {
+      if (confirm('确定要清除所有草稿吗？')) {
+        localStorage.removeItem('questionDraft');
+        location.reload();
+      }
     }
 
     // 批量导入
@@ -4692,16 +4854,414 @@ D. 指缝
         return;
       }
 
+      // 检查是否有错误
       const errorCount = parsedData.filter(q => q.hasError).length;
       if (errorCount > 0) {
         alert(`还有 ${errorCount} 道题目存在错误，请修改后再导入`);
         return;
       }
 
-      if (confirm(`确定要导入 ${parsedData.length} 道题目吗？`)) {
-        alert(`成功导入 ${parsedData.length} 道题目！`);
-        window.location.href = 'list.html';
+      // 显示分数设置弹窗
+      showScoreSettingModal();
+    }
+
+    // 显示分数设置弹窗
+    function showScoreSettingModal() {
+      // 更新题目数量
+      document.getElementById('totalScoreQuestions').textContent = parsedData.length;
+
+      // 渲染题目列表
+      renderScoreQuestionList();
+
+      // 显示弹窗
+      document.getElementById('scoreSettingModal').classList.remove('hidden');
+    }
+
+    // 关闭分数设置弹窗
+    function closeScoreModal() {
+      document.getElementById('scoreSettingModal').classList.add('hidden');
+    }
+
+    // 渲染分数设置题目列表
+    function renderScoreQuestionList() {
+      const container = document.getElementById('scoreQuestionList');
+      let html = '<div class="space-y-4">';
+
+      parsedData.forEach((q, index) => {
+        html += `
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <div class="flex items-start mb-3">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mr-3 flex-shrink-0">${index + 1}</span>
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="inline-block px-2 py-0.5 bg-${getTypeColor(q.type)}-100 text-${getTypeColor(q.type)}-700 text-xs font-medium rounded mr-2">【${q.typeName}】</span>
+                  <span class="text-sm text-gray-900">${convertImagesToHTML(q.content).substring(0, 50)}${q.content.length > 50 ? '...' : ''}</span>
+                </div>
+                ${renderScoreInput(q, index)}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // 根据题型渲染分数输入框
+    function renderScoreInput(q, index) {
+      let html = '';
+
+      if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+        // 单选、多选、判断、简答、完形填空：每题一个分数
+        html = `
+          <div class="flex items-center space-x-3 mt-2">
+            <label class="text-sm text-gray-600">总分：</label>
+            <input type="number" id="score_${index}" class="w-24 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
+            <span class="text-xs text-gray-500">分</span>
+          </div>
+        `;
+      } else if (q.type === 'blank') {
+        // 填空题：每个空一个分数
+        const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+        html = '<div class="mt-2">';
+        html += '<div class="text-sm text-gray-600 mb-2">每空分数：</div>';
+        html += '<div class="grid grid-cols-5 gap-3">';
+        for (let i = 0; i < blankCount; i++) {
+          html += `
+            <div class="flex items-center space-x-2">
+              <label class="text-xs text-gray-500">第${i + 1}空：</label>
+              <input type="number" id="score_${index}_blank_${i}" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
+            </div>
+          `;
+        }
+        html += '</div>';
+        html += '</div>';
+      } else if (q.type === 'composite') {
+        // 复合题：每个小题一个分数
+        const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+        html = '<div class="mt-2">';
+        html += '<div class="text-sm text-gray-600 mb-2">每题分数：</div>';
+        html += '<div class="space-y-2">';
+        q.compositeSubQuestions.forEach((subQ, subIdx) => {
+          html += `
+            <div class="flex items-center space-x-3 bg-gray-50 px-3 py-2 rounded">
+              <label class="text-xs text-gray-700">第${subIdx + 1}题（${subQ.typeName}）：</label>
+              <input type="number" id="score_${index}_sub_${subIdx}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
+              <span class="text-xs text-gray-500">分</span>
+            </div>
+          `;
+        });
+        html += '</div>';
+        html += '</div>';
       }
+
+      return html;
+    }
+
+    // 不设置分数直接导入
+    function importWithoutScore() {
+      if (confirm(`确定不设置分数直接导入 ${parsedData.length} 道题目吗？\n\n未设置分数的题目在题库中将显示为"未设置"`)) {
+        // 关闭弹窗
+        closeScoreModal();
+
+        // 直接导入（不带分数）
+        performImport(false);
+      }
+    }
+
+    // 确认分数并导入
+    function confirmScoreAndImport() {
+      // 收集所有分数
+      const scores = {};
+      let hasEmptyScore = false;
+
+      parsedData.forEach((q, index) => {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+          // 单题分数
+          const scoreInput = document.getElementById(`score_${index}`);
+          const score = scoreInput ? parseFloat(scoreInput.value) : null;
+          if (!score || score <= 0) {
+            hasEmptyScore = true;
+          }
+          scores[index] = score;
+        } else if (q.type === 'blank') {
+          // 填空题每空分数
+          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+          scores[index] = [];
+          for (let i = 0; i < blankCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_blank_${i}`);
+            const score = scoreInput ? parseFloat(scoreInput.value) : null;
+            if (!score || score <= 0) {
+              hasEmptyScore = true;
+            }
+            scores[index].push(score);
+          }
+        } else if (q.type === 'composite') {
+          // 复合题每小题分数
+          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          scores[index] = [];
+          for (let i = 0; i < subCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_sub_${i}`);
+            const score = scoreInput ? parseFloat(scoreInput.value) : null;
+            if (!score || score <= 0) {
+              hasEmptyScore = true;
+            }
+            scores[index].push(score);
+          }
+        }
+      });
+
+      // 检查是否有未设置的分数
+      if (hasEmptyScore) {
+        if (!confirm('检测到部分题目未设置分数或分数无效，确定继续导入吗？\n\n未设置的题目将显示为"未设置"')) {
+          return;
+        }
+      }
+
+      // 关闭弹窗
+      closeScoreModal();
+
+      // 执行导入（带分数）
+      performImport(true, scores);
+    }
+
+    // 执行导入
+    function performImport(withScore, scores = {}) {
+      try {
+        // 从 localStorage 读取现有题目
+        const existingQuestionsJson = localStorage.getItem('allQuestions');
+        let existingQuestions = existingQuestionsJson ? JSON.parse(existingQuestionsJson) : [];
+
+        // 获取当前最大 ID 号
+        let maxId = 0;
+        existingQuestions.forEach(q => {
+          const idNum = parseInt(q.id.replace('Q', ''));
+          if (!isNaN(idNum) && idNum > maxId) {
+            maxId = idNum;
+          }
+        });
+
+        // 转换题目格式并添加到题库
+        const newQuestions = parsedData.map((q, index) => {
+          const newId = `Q${String(maxId + index + 1).padStart(3, '0')}`;
+          const now = new Date();
+          const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+          // 基础题目对象
+          const newQuestion = {
+            id: newId,
+            type: q.type,
+            typeName: q.typeName,
+            typeIcon: getTypeIcon(q.type),
+            typeColor: getTypeColor(q.type),
+            difficulty: q.difficulty || 2,
+            difficultyName: getDifficultyName(q.difficulty || 2),
+            knowledgeId: q.knowledgePoints[0] || '',
+            knowledgePath: q.knowledgePath || '',
+            content: q.content,
+            tags: q.tags || [],
+            createTime: timeStr,
+            author: '简便录入',
+            useCount: 0,
+            explanation: q.explanation || ''
+          };
+
+          // 根据题型添加特定字段
+          if (q.type === 'single' || q.type === 'multiple') {
+            newQuestion.options = q.options;
+            // 单选题答案是单个字母，多选题答案是多个字母
+            if (q.type === 'single') {
+              newQuestion.correctAnswers = [q.answer];
+            } else {
+              // 多选题：将 'ABD' 拆分为 ['A', 'B', 'D']
+              newQuestion.correctAnswers = q.answer.split('').filter(c => c.trim());
+            }
+
+            // 添加分数
+            if (withScore && scores[index]) {
+              newQuestion.score = String(scores[index]);
+            }
+          } else if (q.type === 'judge') {
+            newQuestion.correctAnswer = q.answer === '正确' ? 'true' : 'false';
+
+            // 添加分数
+            if (withScore && scores[index]) {
+              newQuestion.score = String(scores[index]);
+            }
+          } else if (q.type === 'blank') {
+            // 填空题
+            if (q.blankAnswers && q.blankAnswers.length > 0) {
+              newQuestion.blanks = q.blankAnswers.map((ans, idx) => {
+                const blankObj = {
+                  index: idx + 1,
+                  answer: ans.synonyms ? ans.synonyms.join('|||') : ans.text
+                };
+
+                // 添加分数
+                if (withScore && scores[index] && scores[index][idx]) {
+                  blankObj.score = scores[index][idx];
+                }
+
+                return blankObj;
+              });
+            } else {
+              const blankObj = {
+                index: 1,
+                answer: q.answer
+              };
+
+              // 添加分数
+              if (withScore && scores[index] && scores[index][0]) {
+                blankObj.score = scores[index][0];
+              }
+
+              newQuestion.blanks = [blankObj];
+            }
+          } else if (q.type === 'essay') {
+            // 简答题
+            newQuestion.referenceAnswer = q.answer;
+
+            // 添加分数
+            if (withScore && scores[index]) {
+              newQuestion.score = String(scores[index]);
+            }
+          } else if (q.type === 'cloze') {
+            // 完形填空
+            newQuestion.isComposite = true;
+            newQuestion.subCount = q.clozeSubQuestions ? q.clozeSubQuestions.length : 0;
+
+            // 构建填空答案数组
+            if (q.answer) {
+              const answers = q.answer.split('').map(letter => letter.trim()).filter(l => l);
+              newQuestion.blanks = answers.map((ans, idx) => ({
+                index: idx + 1,
+                answer: ans,
+                score: 0 // 完形填空的小分暂不支持单独设置
+              }));
+            }
+
+            // 添加总分
+            if (withScore && scores[index]) {
+              newQuestion.score = String(scores[index]);
+            }
+          } else if (q.type === 'composite') {
+            // 复合题（材料分析题）
+            newQuestion.type = 'materialAnalysis';
+            newQuestion.typeName = '材料分析';
+            newQuestion.typeIcon = 'fa-layer-group';
+            newQuestion.typeColor = 'purple';
+            newQuestion.isComposite = true;
+            newQuestion.subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+
+            // 转换子题
+            if (q.compositeSubQuestions) {
+              newQuestion.subQuestions = q.compositeSubQuestions.map((subQ, subIdx) => {
+                const subQuestion = {
+                  id: subIdx + 1,
+                  type: subQ.type,
+                  content: subQ.content,
+                  explanation: subQ.explanation || ''
+                };
+
+                // 添加子题分数
+                if (withScore && scores[index] && scores[index][subIdx]) {
+                  subQuestion.score = scores[index][subIdx];
+                }
+
+                if (subQ.type === 'single' || subQ.type === 'multiple') {
+                  subQuestion.options = subQ.options;
+                  // 单选题答案是单个字母，多选题答案是多个字母
+                  if (subQ.type === 'single') {
+                    subQuestion.correctAnswers = [subQ.answer];
+                  } else {
+                    // 多选题：将 'ABD' 拆分为 ['A', 'B', 'D']
+                    subQuestion.correctAnswers = subQ.answer.split('').filter(c => c.trim());
+                  }
+                } else if (subQ.type === 'judge') {
+                  subQuestion.correctAnswer = subQ.answer === '正确' ? 'true' : 'false';
+                } else if (subQ.type === 'blank') {
+                  if (subQ.blankAnswers && subQ.blankAnswers.length > 0) {
+                    subQuestion.blanks = subQ.blankAnswers.map((ans, idx) => ({
+                      index: idx + 1,
+                      answer: ans.synonyms ? ans.synonyms.join('|||') : ans.text
+                    }));
+                  } else {
+                    subQuestion.answer = subQ.answer;
+                  }
+                } else if (subQ.type === 'essay' || subQ.type === 'short') {
+                  subQuestion.referenceAnswer = subQ.answer;
+                }
+
+                return subQuestion;
+              });
+
+              // 计算总分
+              if (withScore && scores[index]) {
+                const totalScore = scores[index].reduce((sum, s) => sum + (s || 0), 0);
+                newQuestion.score = String(totalScore);
+              }
+            }
+          }
+
+          return newQuestion;
+        });
+
+        // 合并到现有题目列表
+        const allQuestions = [...existingQuestions, ...newQuestions];
+
+        // 保存到 localStorage
+        localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+        // 清除草稿
+        localStorage.removeItem('questionDraft');
+
+        alert(`成功导入 ${parsedData.length} 道题目！`);
+
+        // 跳转到题目列表页
+        window.location.href = 'list.html';
+      } catch (error) {
+        console.error('批量导入失败:', error);
+        alert('导入失败，请重试');
+      }
+    }
+
+    // 获取题型图标
+    function getTypeIcon(type) {
+      const iconMap = {
+        'single': 'fa-dot-circle',
+        'multiple': 'fa-check-double',
+        'judge': 'fa-check',
+        'blank': 'fa-pen',
+        'essay': 'fa-align-left',
+        'short': 'fa-align-left',
+        'cloze': 'fa-layer-group',
+        'composite': 'fa-layer-group',
+        'materialAnalysis': 'fa-layer-group'
+      };
+      return iconMap[type] || 'fa-question-circle';
+    }
+
+    // 获取题型颜色
+    function getTypeColor(type) {
+      const colorMap = {
+        'single': 'info',
+        'multiple': 'success',
+        'judge': 'warning',
+        'blank': 'primary',
+        'essay': 'purple',
+        'short': 'purple',
+        'cloze': 'indigo',
+        'composite': 'purple',
+        'materialAnalysis': 'purple'
+      };
+      return colorMap[type] || 'gray';
+    }
+
+    // 获取难度名称
+    function getDifficultyName(level) {
+      const names = ['', '一级', '二级', '三级', '四级', '五级'];
+      return names[level] || '二级';
     }
 
     // 显示格式说明

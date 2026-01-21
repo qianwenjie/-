@@ -3101,13 +3101,8 @@
           allQuestions.splice(index, 1);
         }
 
-        // 从 localStorage 中删除
-        const savedQuestions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
-        const savedIndex = savedQuestions.findIndex(q => q.id === questionId);
-        if (savedIndex > -1) {
-          savedQuestions.splice(savedIndex, 1);
-          localStorage.setItem('examQuestions', JSON.stringify(savedQuestions));
-        }
+        // 保存到 localStorage
+        localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
 
         // 从 filteredQuestions 数组中删除
         const filteredIndex = filteredQuestions.findIndex(q => q.id === questionId);
@@ -3133,7 +3128,7 @@
       loadQuestionTypesFromStorage();
 
       // 从 localStorage 读取已保存的题目
-      let savedQuestions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
+      let savedQuestions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
 
       // 检查内置题目是否已保存到 localStorage
       // 通过检查是否存在 Q001 来判断
@@ -3143,7 +3138,7 @@
         // 首次加载：将内置题目保存到 localStorage
         // 内置题目放在前面，用户添加的题目放在后面
         const mergedQuestions = [...allQuestions, ...savedQuestions];
-        localStorage.setItem('examQuestions', JSON.stringify(mergedQuestions));
+        localStorage.setItem('allQuestions', JSON.stringify(mergedQuestions));
         savedQuestions = mergedQuestions;
       }
 

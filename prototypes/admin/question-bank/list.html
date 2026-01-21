@@ -2808,7 +2808,10 @@
       // 根据题型生成内容
       let questionContent = '';
 
-      if (q.isComposite && q.type !== 'cloze') {
+      if (q.type === 'cloze') {
+        // 完形填空（特殊处理）
+        questionContent = renderClozeQuestion(q);
+      } else if (q.isComposite && q.type !== 'cloze') {
         // 复合题型（排除完形填空）
         questionContent = renderCompositeQuestion(q);
       } else if (q.type === 'single' || q.type === 'multiple') {
@@ -2999,6 +3002,61 @@
             <div class="question-content text-gray-700 text-sm leading-relaxed bg-green-50 p-4 rounded-lg whitespace-pre-line">${q.referenceAnswer}</div>
           </div>
           ` : ''}
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染完形填空
+    function renderClozeQuestion(q) {
+      // 检查是否有完形填空子题
+      if (!q.clozeSubQuestions || !Array.isArray(q.clozeSubQuestions) || q.clozeSubQuestions.length === 0) {
+        // 兼容旧格式：使用 blanks 字段
+        return renderBlankQuestion(q);
+      }
+
+      const subQuestionsHtml = q.clozeSubQuestions.map((subQ, index) => {
+        if (!subQ.options || subQ.options.length === 0) {
+          return `
+            <div class="border-l-2 border-gray-300 pl-4 py-2">
+              <div class="text-sm font-medium text-gray-700 mb-1">${subQ.index}）选项数据缺失</div>
+            </div>
+          `;
+        }
+
+        const optionsHtml = subQ.options.map(opt => {
+          const isCorrect = opt.label === subQ.correctAnswer;
+          return `
+            <div class="flex items-start py-2">
+              <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+              <span class="text-gray-900">${opt.text}</span>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="border-l-2 border-indigo-300 pl-4 py-3 mb-3">
+            <div class="text-sm font-medium text-gray-700 mb-2">${subQ.index}）</div>
+            <div class="space-y-1">${optionsHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">选项与答案（共 ${q.clozeSubQuestions.length} 个空）</div>
+            <div>${subQuestionsHtml}</div>
+          </div>
           ${q.explanation ? `
           <div>
             <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>

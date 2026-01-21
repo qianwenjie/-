@@ -5439,7 +5439,17 @@ D. 指缝
             newQuestion.isComposite = true;
             newQuestion.subCount = q.clozeSubQuestions ? q.clozeSubQuestions.length : 0;
 
-            // 构建填空答案数组
+            // 保存完形填空的子题（包含选项）
+            if (q.clozeSubQuestions && q.clozeSubQuestions.length > 0) {
+              const answers = q.answer ? q.answer.split('').map(letter => letter.trim()).filter(l => l) : [];
+              newQuestion.clozeSubQuestions = q.clozeSubQuestions.map((subQ, idx) => ({
+                index: subQ.index,
+                options: subQ.options,
+                correctAnswer: answers[idx] || ''
+              }));
+            }
+
+            // 构建填空答案数组（兼容旧格式）
             if (q.answer) {
               const answers = q.answer.split('').map(letter => letter.trim()).filter(l => l);
               newQuestion.blanks = answers.map((ans, idx) => ({

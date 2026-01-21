@@ -4957,9 +4957,10 @@ D. 指缝
                 <span class="text-xs text-gray-500 ml-2">分（自动）</span>
               </div>`;
         } else {
-          // 其他题型：直接输入总分
+          // 其他题型：直接输入总分，添加标签占位保持对齐
           html += `
               <div class="flex items-center">
+                <span class="text-xs text-gray-600 inline-block w-32 text-right mr-2">总分：</span>
                 <input type="number" id="score_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="总分">
                 <span class="text-xs text-gray-500 ml-2">分</span>
               </div>`;

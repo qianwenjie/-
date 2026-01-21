@@ -798,8 +798,17 @@
 
     // 填充表单数据
     function fillFormWithQuestionData(question) {
+      // 类型兼容映射：将旧的类型名转换为新的标准类型
+      const typeMapping = {
+        'essay': 'shortAnswer',  // 兼容旧数据
+        'short': 'shortAnswer'
+      };
+
+      // 应用类型映射
+      const mappedType = typeMapping[question.type] || question.type;
+
       // 1. 选择题型
-      const typeRadio = document.querySelector(`input[name="questionType"][value="${question.type}"]`);
+      const typeRadio = document.querySelector(`input[name="questionType"][value="${mappedType}"]`);
       if (typeRadio) {
         typeRadio.checked = true;
         handleTypeChange(); // 触发题型切换，显示对应的表单区域
@@ -943,6 +952,7 @@
 
       // 类型映射：将数据中的类型别名映射到配置中的标准类型
       const typeMapping = {
+        'essay': 'shortAnswer',  // 兼容旧数据
         'short': 'shortAnswer',
         'shortAnswer': 'shortAnswer',
         'single': 'single',

@@ -1741,7 +1741,7 @@ D. 指缝
         '多选题': { type: 'multiple', typeName: '多选题' },
         '判断题': { type: 'judge', typeName: '判断题' },
         '填空题': { type: 'blank', typeName: '填空题' },
-        '简答题': { type: 'essay', typeName: '简答题' },
+        '简答题': { type: 'shortAnswer', typeName: '简答题' },
         '完形填空': { type: 'cloze', typeName: '完形填空' },
         '复合题': { type: 'composite', typeName: '复合题' }
       };
@@ -1828,7 +1828,7 @@ D. 指缝
             '多选题': 'multiple',
             '判断题': 'judge',
             '填空题': 'blank',
-            '简答题': 'essay'
+            '简答题': 'shortAnswer'
           };
 
           const subType = subTypeMap[subTypeName];
@@ -2148,7 +2148,7 @@ D. 指缝
         }
 
         // 对于简答题，检查答案
-        if (q.type === 'essay') {
+        if (q.type === 'shortAnswer') {
           if (!q.answer || q.answer.trim() === '') {
             q.answerError = '答案无法识别，简答题必须包含"答案："字段，且不能为空';
           } else {
@@ -2312,7 +2312,7 @@ D. 指缝
                     }
                   }
                 }
-              } else if (subQ.type === 'essay') {
+              } else if (subQ.type === 'shortAnswer') {
                 // 简答题验证
                 if (!subQ.answer || subQ.answer.trim() === '') {
                   subQ.answerError = '缺少答案';
@@ -5072,7 +5072,7 @@ D. 指缝
       // 保存当前所有分数
       const scores = {};
       parsedData.forEach((q, idx) => {
-        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'shortAnswer' || q.type === 'cloze') {
           const scoreInput = document.getElementById(`score_${idx}`);
           if (scoreInput) {
             scores[`score_${idx}`] = scoreInput.value;
@@ -5175,7 +5175,7 @@ D. 指缝
         }
 
         // 为当前筛选的题型设置分数
-        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'shortAnswer' || q.type === 'cloze') {
           const scoreInput = document.getElementById(`score_${index}`);
           if (scoreInput) {
             scoreInput.value = batchScore;
@@ -5224,7 +5224,7 @@ D. 指缝
         }
 
         // 清除分数
-        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'shortAnswer' || q.type === 'cloze') {
           const scoreInput = document.getElementById(`score_${index}`);
           if (scoreInput) {
             scoreInput.value = '';
@@ -5259,7 +5259,7 @@ D. 指缝
       const scores = {};
 
       parsedData.forEach((q, index) => {
-        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'shortAnswer' || q.type === 'cloze') {
           // 单题分数
           const scoreInput = document.getElementById(`score_${index}`);
           const score = scoreInput ? parseFloat(scoreInput.value) : null;
@@ -5426,7 +5426,7 @@ D. 指缝
 
               newQuestion.blanks = [blankObj];
             }
-          } else if (q.type === 'essay') {
+          } else if (q.type === 'shortAnswer') {
             // 简答题
             newQuestion.referenceAnswer = q.answer;
 
@@ -5507,7 +5507,7 @@ D. 指缝
                   } else {
                     subQuestion.answer = subQ.answer;
                   }
-                } else if (subQ.type === 'essay' || subQ.type === 'short') {
+                } else if (subQ.type === 'shortAnswer') {
                   subQuestion.referenceAnswer = subQ.answer;
                 }
 
@@ -5567,8 +5567,7 @@ D. 指缝
         'multiple': 'fa-check-double',
         'judge': 'fa-check',
         'blank': 'fa-pen',
-        'essay': 'fa-align-left',
-        'short': 'fa-align-left',
+        'shortAnswer': 'fa-align-left',
         'cloze': 'fa-layer-group',
         'composite': 'fa-layer-group',
         'materialAnalysis': 'fa-layer-group'
@@ -5583,8 +5582,7 @@ D. 指缝
         'multiple': 'success',
         'judge': 'warning',
         'blank': 'primary',
-        'essay': 'purple',
-        'short': 'purple',
+        'shortAnswer': 'purple',
         'cloze': 'indigo',
         'composite': 'purple',
         'materialAnalysis': 'purple'
@@ -5599,8 +5597,7 @@ D. 指缝
         'multiple': 'inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded',
         'judge': 'inline-block px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded',
         'blank': 'inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded',
-        'essay': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
-        'short': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
+        'shortAnswer': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
         'cloze': 'inline-block px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded',
         'composite': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
         'materialAnalysis': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded'

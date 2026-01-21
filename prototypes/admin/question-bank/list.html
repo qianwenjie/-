@@ -2037,6 +2037,13 @@
       const card = document.createElement('div');
       card.className = 'apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer';
 
+      // 调试日志：仅对简便录入的题目输出
+      if (q.author === '简便录入') {
+        console.log('[渲染卡片] 简便录入题目:', q.id);
+        console.log('  - knowledgeIds:', q.knowledgeIds);
+        console.log('  - knowledgePath:', q.knowledgePath);
+      }
+
       // 生成标签HTML
       const tagsHtml = q.tags && q.tags.length > 0
         ? q.tags.map(tag => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">#${tag}</span>`).join(' ')
@@ -3129,6 +3136,19 @@
 
       // 从 localStorage 读取已保存的题目
       let savedQuestions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
+
+      console.log('===== list.html 加载题目 =====');
+      console.log('从localStorage读取题目数量:', savedQuestions.length);
+      if (savedQuestions.length > 0) {
+        const lastQuestion = savedQuestions[savedQuestions.length - 1];
+        console.log('最后一个题目:', lastQuestion);
+        console.log('  - ID:', lastQuestion.id);
+        console.log('  - 题型:', lastQuestion.type, lastQuestion.typeName);
+        console.log('  - 作者:', lastQuestion.author);
+        console.log('  - knowledgeIds:', lastQuestion.knowledgeIds);
+        console.log('  - knowledgePath:', lastQuestion.knowledgePath);
+      }
+      console.log('==============================');
 
       // 检查内置题目是否已保存到 localStorage
       // 通过检查是否存在 Q001 来判断

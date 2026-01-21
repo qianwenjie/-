@@ -1477,6 +1477,7 @@ D. 指缝
 
     // 根据知识点ID获取完整路径
     function getKnowledgePathById(targetId) {
+      console.log('[知识点路径] 查找ID:', targetId);
       const path = [];
 
       // 递归查找节点并构建路径
@@ -1496,8 +1497,10 @@ D. 指缝
         return false;
       }
 
-      findNode(knowledgePointsTree, targetId);
-      return path.join(' / ');
+      const found = findNode(knowledgePointsTree, targetId);
+      const result = path.join(' / ');
+      console.log('[知识点路径] 找到:', found, '路径:', result);
+      return result;
     }
 
     // 验证知识点是否存在（支持id或name）
@@ -1937,6 +1940,8 @@ D. 指缝
         if (line.startsWith('知识点：')) {
           const kps = line.replace('知识点：', '').trim();
           currentQuestion.knowledgePoints = kps.split(/[，、；]/).map(k => k.trim());
+          console.log('[解析] 知识点行:', line);
+          console.log('[解析] 提取的知识点:', currentQuestion.knowledgePoints);
           continue;
         }
 
@@ -5310,22 +5315,43 @@ D. 指缝
           const now = new Date();
           const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+          console.log('===== 转换题目 =====');
+          console.log('题目ID:', q.id);
+          console.log('题目类型:', q.type, q.typeName);
+          console.log('原始知识点:', q.knowledgePoints);
+
           // 转换知识点：名称 -> ID 和路径
           const knowledgeIds = [];
           const knowledgePaths = [];
           if (q.knowledgePoints && q.knowledgePoints.length > 0) {
-            q.knowledgePoints.forEach(name => {
+            console.log('[知识点转换] 开始转换', q.knowledgePoints.length, '个知识点');
+            console.log('[知识点转换] 知识点名称映射表:', knowledgePointsNameMap);
+
+            q.knowledgePoints.forEach((name, idx) => {
+              console.log(`[知识点转换] 第${idx + 1}个: 名称="${name}"`);
               const id = knowledgePointsNameMap[name];
+              console.log(`[知识点转换] 映射到ID: "${id}"`);
+
               if (id) {
                 knowledgeIds.push(id);
                 // 获取知识点的完整路径
                 const path = getKnowledgePathById(id);
                 if (path) {
                   knowledgePaths.push(path);
+                  console.log(`[知识点转换] 路径: "${path}"`);
+                } else {
+                  console.warn(`[知识点转换] 未找到路径`);
                 }
+              } else {
+                console.warn(`[知识点转换] 未找到ID映射，知识点名称="${name}"可能不存在`);
               }
             });
           }
+
+          console.log('[知识点转换] 最终结果:');
+          console.log('  - knowledgeIds:', knowledgeIds);
+          console.log('  - knowledgePaths:', knowledgePaths);
+          console.log('  - knowledgePath:', knowledgePaths.join(' / '));
 
           // 基础题目对象
           const newQuestion = {
@@ -5345,6 +5371,9 @@ D. 指缝
             useCount: 0,
             explanation: q.explanation || ''
           };
+
+          console.log('新题目对象:', newQuestion);
+          console.log('===================');
 
           // 根据题型添加特定字段
           if (q.type === 'single' || q.type === 'multiple') {
@@ -5493,8 +5522,20 @@ D. 指缝
         // 合并到现有题目列表
         const allQuestions = [...existingQuestions, ...newQuestions];
 
+        console.log('===== 准备保存到localStorage =====');
+        console.log('新题目数量:', newQuestions.length);
+        console.log('现有题目数量:', existingQuestions.length);
+        console.log('合并后总数:', allQuestions.length);
+        console.log('第一个新题目:', newQuestions[0]);
+        console.log('  - knowledgeIds:', newQuestions[0].knowledgeIds);
+        console.log('  - knowledgePath:', newQuestions[0].knowledgePath);
+
         // 保存到 localStorage
         localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+        console.log('✅ 已保存到localStorage');
+        console.log('验证读取:', JSON.parse(localStorage.getItem('allQuestions')).length, '道题目');
+        console.log('==================================');
 
         // 清除草稿
         localStorage.removeItem('questionDraft');

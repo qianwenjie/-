@@ -811,7 +811,7 @@ D. 指缝
 
   <!-- 分数设置弹窗 -->
   <div id="scoreSettingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
       <!-- 标题栏 -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
         <h3 class="text-lg font-semibold text-gray-900">
@@ -823,23 +823,60 @@ D. 指缝
         </button>
       </div>
 
-      <!-- 提示信息 -->
-      <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex-shrink-0">
-        <p class="text-sm text-gray-700">
-          <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-          请为每道题目设置分数，不同题型有不同的设置方式。如不填写分数直接导入，则题目不带分数
-        </p>
+      <!-- 工具栏 -->
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div class="flex items-center justify-between">
+          <!-- 左侧：题型筛选 -->
+          <div class="flex items-center space-x-4">
+            <span class="text-sm text-gray-600">题型筛选：</span>
+            <select id="scoreTypeFilter" onchange="filterScoreQuestions()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="all">全部题型</option>
+              <option value="single">单选题</option>
+              <option value="multiple">多选题</option>
+              <option value="judge">判断题</option>
+              <option value="blank">填空题</option>
+              <option value="essay">简答题</option>
+              <option value="cloze">完形填空</option>
+              <option value="composite">复合题</option>
+            </select>
+          </div>
+
+          <!-- 右侧：批量设置 -->
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-600">批量设置总分：</span>
+            <input type="number" id="batchScoreInput" placeholder="输入分数" min="0" step="0.5" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <button onclick="batchSetScore()" class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors">
+              <i class="fas fa-magic mr-1"></i>
+              应用
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- 题目列表 -->
-      <div id="scoreQuestionList" class="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <!-- 动态生成 -->
+      <!-- 题目列表（表格） -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <table class="w-full">
+          <thead class="bg-gray-50 sticky top-0 z-10">
+            <tr class="border-b border-gray-200">
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">序号</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">题型</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">题目</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-40">总分</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">操作</th>
+            </tr>
+          </thead>
+          <tbody id="scoreQuestionTableBody" class="divide-y divide-gray-200">
+            <!-- 动态生成 -->
+          </tbody>
+        </table>
       </div>
 
       <!-- 底部按钮 -->
       <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center flex-shrink-0">
         <div class="text-sm text-gray-600">
           共 <span id="totalScoreQuestions" class="font-semibold text-gray-900">0</span> 道题目
+          <span class="mx-2 text-gray-400">|</span>
+          <span class="text-gray-500">如不填写分数直接导入，则题目不带分数</span>
         </div>
         <div class="flex space-x-3">
           <button onclick="confirmScoreAndImport()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
@@ -4866,8 +4903,8 @@ D. 指缝
       // 更新题目数量
       document.getElementById('totalScoreQuestions').textContent = parsedData.length;
 
-      // 渲染题目列表
-      renderScoreQuestionList();
+      // 渲染题目列表（表格）
+      renderScoreQuestionTable();
 
       // 显示弹窗
       document.getElementById('scoreSettingModal').classList.remove('hidden');
@@ -4878,81 +4915,222 @@ D. 指缝
       document.getElementById('scoreSettingModal').classList.add('hidden');
     }
 
-    // 渲染分数设置题目列表
-    function renderScoreQuestionList() {
-      const container = document.getElementById('scoreQuestionList');
-      let html = '<div class="space-y-4">';
+    // 渲染分数设置题目表格
+    function renderScoreQuestionTable() {
+      const tbody = document.getElementById('scoreQuestionTableBody');
+      const filterType = document.getElementById('scoreTypeFilter').value;
+
+      let html = '';
+      let visibleIndex = 0;
 
       parsedData.forEach((q, index) => {
+        // 题型筛选
+        if (filterType !== 'all' && q.type !== filterType) {
+          return;
+        }
+
+        visibleIndex++;
+        const typeColorClass = getTypeColor(q.type);
+
+        // 主行
         html += `
-          <div class="bg-white border border-gray-200 rounded-lg p-4">
-            <div class="flex items-start mb-3">
-              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mr-3 flex-shrink-0">${index + 1}</span>
-              <div class="flex-1">
-                <div class="flex items-center mb-2">
-                  <span class="inline-block px-2 py-0.5 bg-${getTypeColor(q.type)}-100 text-${getTypeColor(q.type)}-700 text-xs font-medium rounded mr-2">【${q.typeName}】</span>
-                  <span class="text-sm text-gray-900">${convertImagesToHTML(q.content).substring(0, 50)}${q.content.length > 50 ? '...' : ''}</span>
+          <tr class="hover:bg-gray-50 transition-colors" data-index="${index}" data-type="${q.type}">
+            <td class="px-4 py-3 text-sm text-gray-900 font-medium">${visibleIndex}</td>
+            <td class="px-4 py-3">
+              <span class="inline-block px-2 py-1 bg-${typeColorClass}-100 text-${typeColorClass}-700 text-xs font-medium rounded">${q.typeName}</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-700">
+              ${convertImagesToHTML(q.content).substring(0, 80)}${q.content.length > 80 ? '...' : ''}
+            </td>
+            <td class="px-4 py-3">`;
+
+        if (q.type === 'blank' || q.type === 'composite') {
+          // 填空题和复合题：显示总分输入框（自动计算）
+          html += `
+              <div class="flex items-center space-x-2">
+                <input type="number" id="totalScore_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="总分" readonly>
+                <span class="text-xs text-gray-500">分（自动）</span>
+              </div>`;
+        } else {
+          // 其他题型：直接输入总分
+          html += `
+              <div class="flex items-center space-x-2">
+                <input type="number" id="score_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="总分">
+                <span class="text-xs text-gray-500">分</span>
+              </div>`;
+        }
+
+        html += `
+            </td>
+            <td class="px-4 py-3">`;
+
+        if (q.type === 'blank' || q.type === 'composite') {
+          html += `
+              <button onclick="toggleSubScores(${index})" class="text-primary-600 hover:text-primary-700 text-sm">
+                <i class="fas fa-angle-down" id="toggleIcon_${index}"></i>
+                <span id="toggleText_${index}">展开</span>
+              </button>`;
+        }
+
+        html += `
+            </td>
+          </tr>`;
+
+        // 子分数行（填空题/复合题）
+        if (q.type === 'blank') {
+          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+          html += `
+          <tr id="subScores_${index}" class="hidden bg-gray-50">
+            <td colspan="5" class="px-4 py-3">
+              <div class="pl-12">
+                <div class="text-xs text-gray-600 mb-2">每空分数：</div>
+                <div class="grid grid-cols-6 gap-3">`;
+          for (let i = 0; i < blankCount; i++) {
+            html += `
+                  <div class="flex items-center space-x-2">
+                    <label class="text-xs text-gray-600">第${i + 1}空：</label>
+                    <input type="number" id="score_${index}_blank_${i}" onchange="calculateTotalScore(${index}, 'blank')" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
+                  </div>`;
+          }
+          html += `
                 </div>
-                ${renderScoreInput(q, index)}
               </div>
-            </div>
-          </div>
-        `;
+            </td>
+          </tr>`;
+        } else if (q.type === 'composite') {
+          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          html += `
+          <tr id="subScores_${index}" class="hidden bg-gray-50">
+            <td colspan="5" class="px-4 py-3">
+              <div class="pl-12">
+                <div class="text-xs text-gray-600 mb-2">每题分数：</div>
+                <div class="space-y-2">`;
+          q.compositeSubQuestions.forEach((subQ, subIdx) => {
+            html += `
+                  <div class="flex items-center space-x-3">
+                    <span class="text-xs text-gray-600 w-32">第${subIdx + 1}题（${subQ.typeName}）：</span>
+                    <input type="number" id="score_${index}_sub_${subIdx}" onchange="calculateTotalScore(${index}, 'composite')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
+                    <span class="text-xs text-gray-500">分</span>
+                  </div>`;
+          });
+          html += `
+                </div>
+              </div>
+            </td>
+          </tr>`;
+        }
       });
 
-      html += '</div>';
-      container.innerHTML = html;
+      tbody.innerHTML = html;
     }
 
-    // 根据题型渲染分数输入框
-    function renderScoreInput(q, index) {
-      let html = '';
+    // 展开/折叠子分数
+    function toggleSubScores(index) {
+      const subScoresRow = document.getElementById(`subScores_${index}`);
+      const icon = document.getElementById(`toggleIcon_${index}`);
+      const text = document.getElementById(`toggleText_${index}`);
 
-      if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
-        // 单选、多选、判断、简答、完形填空：每题一个分数
-        html = `
-          <div class="flex items-center space-x-3 mt-2">
-            <label class="text-sm text-gray-600">总分：</label>
-            <input type="number" id="score_${index}" class="w-24 px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
-            <span class="text-xs text-gray-500">分</span>
-          </div>
-        `;
-      } else if (q.type === 'blank') {
-        // 填空题：每个空一个分数
+      if (subScoresRow.classList.contains('hidden')) {
+        subScoresRow.classList.remove('hidden');
+        icon.classList.remove('fa-angle-down');
+        icon.classList.add('fa-angle-up');
+        text.textContent = '收起';
+      } else {
+        subScoresRow.classList.add('hidden');
+        icon.classList.remove('fa-angle-up');
+        icon.classList.add('fa-angle-down');
+        text.textContent = '展开';
+      }
+    }
+
+    // 计算总分（填空题和复合题）
+    function calculateTotalScore(index, type) {
+      let total = 0;
+
+      if (type === 'blank') {
+        const q = parsedData[index];
         const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
-        html = '<div class="mt-2">';
-        html += '<div class="text-sm text-gray-600 mb-2">每空分数：</div>';
-        html += '<div class="grid grid-cols-5 gap-3">';
         for (let i = 0; i < blankCount; i++) {
-          html += `
-            <div class="flex items-center space-x-2">
-              <label class="text-xs text-gray-500">第${i + 1}空：</label>
-              <input type="number" id="score_${index}_blank_${i}" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
-            </div>
-          `;
+          const scoreInput = document.getElementById(`score_${index}_blank_${i}`);
+          const score = scoreInput ? parseFloat(scoreInput.value) : 0;
+          if (score > 0) {
+            total += score;
+          }
         }
-        html += '</div>';
-        html += '</div>';
-      } else if (q.type === 'composite') {
-        // 复合题：每个小题一个分数
+      } else if (type === 'composite') {
+        const q = parsedData[index];
         const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
-        html = '<div class="mt-2">';
-        html += '<div class="text-sm text-gray-600 mb-2">每题分数：</div>';
-        html += '<div class="space-y-2">';
-        q.compositeSubQuestions.forEach((subQ, subIdx) => {
-          html += `
-            <div class="flex items-center space-x-3 bg-gray-50 px-3 py-2 rounded">
-              <label class="text-xs text-gray-700">第${subIdx + 1}题（${subQ.typeName}）：</label>
-              <input type="number" id="score_${index}_sub_${subIdx}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
-              <span class="text-xs text-gray-500">分</span>
-            </div>
-          `;
-        });
-        html += '</div>';
-        html += '</div>';
+        for (let i = 0; i < subCount; i++) {
+          const scoreInput = document.getElementById(`score_${index}_sub_${i}`);
+          const score = scoreInput ? parseFloat(scoreInput.value) : 0;
+          if (score > 0) {
+            total += score;
+          }
+        }
       }
 
-      return html;
+      // 更新总分显示
+      const totalInput = document.getElementById(`totalScore_${index}`);
+      if (totalInput) {
+        totalInput.value = total > 0 ? total : '';
+      }
+    }
+
+    // 题型筛选
+    function filterScoreQuestions() {
+      renderScoreQuestionTable();
+    }
+
+    // 批量设置总分
+    function batchSetScore() {
+      const batchScore = parseFloat(document.getElementById('batchScoreInput').value);
+
+      if (!batchScore || batchScore <= 0) {
+        alert('请输入有效的分数');
+        return;
+      }
+
+      const filterType = document.getElementById('scoreTypeFilter').value;
+
+      parsedData.forEach((q, index) => {
+        // 题型筛选
+        if (filterType !== 'all' && q.type !== filterType) {
+          return;
+        }
+
+        // 为当前筛选的题型设置分数
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+          const scoreInput = document.getElementById(`score_${index}`);
+          if (scoreInput) {
+            scoreInput.value = batchScore;
+          }
+        } else if (q.type === 'blank') {
+          // 填空题：平均分配到每个空
+          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+          const perBlankScore = (batchScore / blankCount).toFixed(1);
+          for (let i = 0; i < blankCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_blank_${i}`);
+            if (scoreInput) {
+              scoreInput.value = perBlankScore;
+            }
+          }
+          calculateTotalScore(index, 'blank');
+        } else if (q.type === 'composite') {
+          // 复合题：平均分配到每个小题
+          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          const perSubScore = (batchScore / subCount).toFixed(1);
+          for (let i = 0; i < subCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_sub_${i}`);
+            if (scoreInput) {
+              scoreInput.value = perSubScore;
+            }
+          }
+          calculateTotalScore(index, 'composite');
+        }
+      });
+
+      // 清空批量输入框
+      document.getElementById('batchScoreInput').value = '';
     }
 
     // 确认分数并导入

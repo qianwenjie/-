@@ -1475,6 +1475,31 @@ D. 指缝
       }
     }
 
+    // 根据知识点ID获取完整路径
+    function getKnowledgePathById(targetId) {
+      const path = [];
+
+      // 递归查找节点并构建路径
+      function findNode(nodes, targetId) {
+        for (let node of nodes) {
+          if (node.id === targetId) {
+            path.unshift(node.name);
+            return true;
+          }
+          if (node.children && node.children.length > 0) {
+            if (findNode(node.children, targetId)) {
+              path.unshift(node.name);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      findNode(knowledgePointsTree, targetId);
+      return path.join(' / ');
+    }
+
     // 验证知识点是否存在（支持id或name）
     function validateKnowledgePoints(knowledgePoints) {
       const invalidPoints = knowledgePoints.filter(kp => {
@@ -5285,6 +5310,23 @@ D. 指缝
           const now = new Date();
           const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+          // 转换知识点：名称 -> ID 和路径
+          const knowledgeIds = [];
+          const knowledgePaths = [];
+          if (q.knowledgePoints && q.knowledgePoints.length > 0) {
+            q.knowledgePoints.forEach(name => {
+              const id = knowledgePointsNameMap[name];
+              if (id) {
+                knowledgeIds.push(id);
+                // 获取知识点的完整路径
+                const path = getKnowledgePathById(id);
+                if (path) {
+                  knowledgePaths.push(path);
+                }
+              }
+            });
+          }
+
           // 基础题目对象
           const newQuestion = {
             id: newId,
@@ -5294,8 +5336,8 @@ D. 指缝
             typeColor: getTypeColor(q.type),
             difficulty: q.difficulty || 2,
             difficultyName: getDifficultyName(q.difficulty || 2),
-            knowledgeIds: q.knowledgePoints || [],  // 改为数组格式
-            knowledgePath: q.knowledgePath || '',
+            knowledgeIds: knowledgeIds,  // ID数组
+            knowledgePath: knowledgePaths.join(' / '),  // 路径字符串
             content: q.content,
             tags: q.tags || [],
             createTime: timeStr,

@@ -849,6 +849,10 @@ D. 指缝
               <i class="fas fa-magic mr-1"></i>
               应用
             </button>
+            <button onclick="batchClearScore()" class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm transition-colors">
+              <i class="fas fa-eraser mr-1"></i>
+              清除
+            </button>
           </div>
         </div>
       </div>
@@ -859,9 +863,9 @@ D. 指缝
           <thead class="bg-gray-50 sticky top-0 z-10">
             <tr class="border-b border-gray-200">
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">序号</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">题型</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-32">题型</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">题目</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-40">总分</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-48">总分</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">操作</th>
             </tr>
           </thead>
@@ -4935,20 +4939,20 @@ D. 指缝
         // 主行
         html += `
           <tr class="hover:bg-gray-50 transition-colors" data-index="${index}" data-type="${q.type}">
-            <td class="px-4 py-3 text-sm text-gray-900 font-medium">${visibleIndex}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 text-sm text-gray-900 font-medium" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">${visibleIndex}</td>
+            <td class="px-4 py-3" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">
               <span class="inline-block px-2 py-1 bg-${typeColorClass}-100 text-${typeColorClass}-700 text-xs font-medium rounded">${q.typeName}</span>
             </td>
-            <td class="px-4 py-3 text-sm text-gray-700">
+            <td class="px-4 py-3 text-sm text-gray-700" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">
               ${convertImagesToHTML(q.content).substring(0, 80)}${q.content.length > 80 ? '...' : ''}
             </td>
             <td class="px-4 py-3">`;
 
         if (q.type === 'blank' || q.type === 'composite') {
-          // 填空题和复合题：显示总分输入框（自动计算）
+          // 填空题和复合题：显示总分（自动计算）
           html += `
               <div class="flex items-center space-x-2">
-                <input type="number" id="totalScore_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="总分" readonly>
+                <input type="number" id="totalScore_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50" min="0" step="0.5" placeholder="总分" readonly>
                 <span class="text-xs text-gray-500">分（自动）</span>
               </div>`;
         } else {
@@ -4962,13 +4966,13 @@ D. 指缝
 
         html += `
             </td>
-            <td class="px-4 py-3">`;
+            <td class="px-4 py-3" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">`;
 
         if (q.type === 'blank' || q.type === 'composite') {
           html += `
               <button onclick="toggleSubScores(${index})" class="text-primary-600 hover:text-primary-700 text-sm">
-                <i class="fas fa-angle-down" id="toggleIcon_${index}"></i>
-                <span id="toggleText_${index}">展开</span>
+                <i class="fas fa-angle-up" id="toggleIcon_${index}"></i>
+                <span id="toggleText_${index}">收起</span>
               </button>`;
         }
 
@@ -4976,48 +4980,35 @@ D. 指缝
             </td>
           </tr>`;
 
-        // 子分数行（填空题/复合题）
+        // 子分数行（填空题/复合题） - 默认展开
         if (q.type === 'blank') {
           const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
-          html += `
-          <tr id="subScores_${index}" class="hidden bg-gray-50">
-            <td colspan="5" class="px-4 py-3">
-              <div class="pl-12">
-                <div class="text-xs text-gray-600 mb-2">每空分数：</div>
-                <div class="grid grid-cols-6 gap-3">`;
           for (let i = 0; i < blankCount; i++) {
             html += `
-                  <div class="flex items-center space-x-2">
-                    <label class="text-xs text-gray-600">第${i + 1}空：</label>
-                    <input type="number" id="score_${index}_blank_${i}" onchange="calculateTotalScore(${index}, 'blank')" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
-                  </div>`;
-          }
-          html += `
-                </div>
+          <tr id="subScores_${index}_${i}" class="bg-gray-50 border-t border-gray-100">
+            <td class="px-4 py-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-600 w-16">第${i + 1}空：</span>
+                <input type="number" id="score_${index}_blank_${i}" onchange="calculateTotalScore(${index}, 'blank')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
+                <span class="text-xs text-gray-500">分</span>
               </div>
             </td>
           </tr>`;
+          }
         } else if (q.type === 'composite') {
           const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
-          html += `
-          <tr id="subScores_${index}" class="hidden bg-gray-50">
-            <td colspan="5" class="px-4 py-3">
-              <div class="pl-12">
-                <div class="text-xs text-gray-600 mb-2">每题分数：</div>
-                <div class="space-y-2">`;
           q.compositeSubQuestions.forEach((subQ, subIdx) => {
             html += `
-                  <div class="flex items-center space-x-3">
-                    <span class="text-xs text-gray-600 w-32">第${subIdx + 1}题（${subQ.typeName}）：</span>
-                    <input type="number" id="score_${index}_sub_${subIdx}" onchange="calculateTotalScore(${index}, 'composite')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分">
-                    <span class="text-xs text-gray-500">分</span>
-                  </div>`;
-          });
-          html += `
-                </div>
+          <tr id="subScores_${index}_${subIdx}" class="bg-gray-50 border-t border-gray-100">
+            <td class="px-4 py-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-600 w-32">第${subIdx + 1}题（${subQ.typeName}）：</span>
+                <input type="number" id="score_${index}_sub_${subIdx}" onchange="calculateTotalScore(${index}, 'composite')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
+                <span class="text-xs text-gray-500">分</span>
               </div>
             </td>
           </tr>`;
+          });
         }
       });
 
@@ -5026,17 +5017,35 @@ D. 指缝
 
     // 展开/折叠子分数
     function toggleSubScores(index) {
-      const subScoresRow = document.getElementById(`subScores_${index}`);
+      const q = parsedData[index];
       const icon = document.getElementById(`toggleIcon_${index}`);
       const text = document.getElementById(`toggleText_${index}`);
 
-      if (subScoresRow.classList.contains('hidden')) {
-        subScoresRow.classList.remove('hidden');
+      let subCount = 0;
+      if (q.type === 'blank') {
+        subCount = q.blankAnswers ? q.blankAnswers.length : 1;
+      } else if (q.type === 'composite') {
+        subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+      }
+
+      // 切换所有子行
+      const isCurrentlyHidden = document.getElementById(`subScores_${index}_0`).classList.contains('hidden');
+
+      for (let i = 0; i < subCount; i++) {
+        const subRow = document.getElementById(`subScores_${index}_${i}`);
+        if (isCurrentlyHidden) {
+          subRow.classList.remove('hidden');
+        } else {
+          subRow.classList.add('hidden');
+        }
+      }
+
+      // 更新按钮状态
+      if (isCurrentlyHidden) {
         icon.classList.remove('fa-angle-down');
         icon.classList.add('fa-angle-up');
         text.textContent = '收起';
       } else {
-        subScoresRow.classList.add('hidden');
         icon.classList.remove('fa-angle-up');
         icon.classList.add('fa-angle-down');
         text.textContent = '展开';
@@ -5131,6 +5140,50 @@ D. 指缝
 
       // 清空批量输入框
       document.getElementById('batchScoreInput').value = '';
+    }
+
+    // 批量清除分数
+    function batchClearScore() {
+      if (!confirm('确定清除当前筛选题型的所有分数吗？')) {
+        return;
+      }
+
+      const filterType = document.getElementById('scoreTypeFilter').value;
+
+      parsedData.forEach((q, index) => {
+        // 题型筛选
+        if (filterType !== 'all' && q.type !== filterType) {
+          return;
+        }
+
+        // 清除分数
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+          const scoreInput = document.getElementById(`score_${index}`);
+          if (scoreInput) {
+            scoreInput.value = '';
+          }
+        } else if (q.type === 'blank') {
+          // 填空题：清除每个空的分数
+          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+          for (let i = 0; i < blankCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_blank_${i}`);
+            if (scoreInput) {
+              scoreInput.value = '';
+            }
+          }
+          calculateTotalScore(index, 'blank');
+        } else if (q.type === 'composite') {
+          // 复合题：清除每个小题的分数
+          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          for (let i = 0; i < subCount; i++) {
+            const scoreInput = document.getElementById(`score_${index}_sub_${i}`);
+            if (scoreInput) {
+              scoreInput.value = '';
+            }
+          }
+          calculateTotalScore(index, 'composite');
+        }
+      });
     }
 
     // 确认分数并导入

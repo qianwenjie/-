@@ -4951,16 +4951,16 @@ D. 指缝
         if (q.type === 'blank' || q.type === 'composite') {
           // 填空题和复合题：显示总分（自动计算）
           html += `
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center">
                 <input type="number" id="totalScore_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50" min="0" step="0.5" placeholder="总分" readonly>
-                <span class="text-xs text-gray-500">分（自动）</span>
+                <span class="text-xs text-gray-500 ml-2">分（自动）</span>
               </div>`;
         } else {
           // 其他题型：直接输入总分
           html += `
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center">
                 <input type="number" id="score_${index}" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="总分">
-                <span class="text-xs text-gray-500">分</span>
+                <span class="text-xs text-gray-500 ml-2">分</span>
               </div>`;
         }
 
@@ -4987,10 +4987,10 @@ D. 指缝
             html += `
           <tr id="subScores_${index}_${i}" class="bg-gray-50 border-t border-gray-100">
             <td class="px-4 py-2">
-              <div class="flex items-center space-x-2">
-                <span class="text-xs text-gray-600 w-16">第${i + 1}空：</span>
+              <div class="flex items-center">
+                <span class="text-xs text-gray-600 inline-block w-32 text-right mr-2">第${i + 1}空：</span>
                 <input type="number" id="score_${index}_blank_${i}" onchange="calculateTotalScore(${index}, 'blank')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
-                <span class="text-xs text-gray-500">分</span>
+                <span class="text-xs text-gray-500 ml-2">分</span>
               </div>
             </td>
           </tr>`;
@@ -5001,10 +5001,10 @@ D. 指缝
             html += `
           <tr id="subScores_${index}_${subIdx}" class="bg-gray-50 border-t border-gray-100">
             <td class="px-4 py-2">
-              <div class="flex items-center space-x-2">
-                <span class="text-xs text-gray-600 w-32">第${subIdx + 1}题（${subQ.typeName}）：</span>
+              <div class="flex items-center">
+                <span class="text-xs text-gray-600 inline-block w-32 text-right mr-2">第${subIdx + 1}题（${subQ.typeName}）：</span>
                 <input type="number" id="score_${index}_sub_${subIdx}" onchange="calculateTotalScore(${index}, 'composite')" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" min="0" step="0.5" placeholder="分数">
-                <span class="text-xs text-gray-500">分</span>
+                <span class="text-xs text-gray-500 ml-2">分</span>
               </div>
             </td>
           </tr>`;

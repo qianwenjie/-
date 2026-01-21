@@ -2846,7 +2846,7 @@
             </div>
             <div class="flex items-center">
               <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">默认分值：</span>
-              <span class="text-sm text-gray-900">${q.score} 分</span>
+              <span class="text-sm text-gray-900">${q.score ? q.score + ' 分' : '--'}</span>
             </div>
             <div class="flex items-center">
               <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">创建时间：</span>
@@ -2954,7 +2954,7 @@
         <div class="flex items-center py-2">
           <span class="text-sm font-medium text-gray-500 w-20">空 ${blank.index}：</span>
           <span class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">${blank.answer}</span>
-          <span class="text-sm text-gray-500 ml-3">(${blank.score} 分)</span>
+          <span class="text-sm text-gray-500 ml-3">(${blank.score ? blank.score + ' 分' : '--'})</span>
         </div>
       `).join('');
 
@@ -3024,7 +3024,7 @@
                 <span class="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
                   ${sub.correctAnswers.join('、')}
                 </span>
-                <span class="text-xs text-gray-500 ml-2">(${sub.score} 分)</span>
+                <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
               </div>
             </div>
           `;
@@ -3033,7 +3033,7 @@
             <div class="mt-2">
               <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
               <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || '无'}</div>
-              <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score} 分)</span>
+              <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score ? sub.score + ' 分' : '--'})</span>
             </div>
           `;
         }

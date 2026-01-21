@@ -5294,7 +5294,7 @@ D. 指缝
             typeColor: getTypeColor(q.type),
             difficulty: q.difficulty || 2,
             difficultyName: getDifficultyName(q.difficulty || 2),
-            knowledgeId: q.knowledgePoints[0] || '',
+            knowledgeIds: q.knowledgePoints || [],  // 改为数组格式
             knowledgePath: q.knowledgePath || '',
             content: q.content,
             tags: q.tags || [],

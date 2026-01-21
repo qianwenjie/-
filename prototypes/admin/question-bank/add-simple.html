@@ -4919,6 +4919,9 @@ D. 指缝
       document.getElementById('scoreSettingModal').classList.add('hidden');
     }
 
+    // 记录展开/收起状态
+    const expandedStates = {};
+
     // 渲染分数设置题目表格
     function renderScoreQuestionTable() {
       const tbody = document.getElementById('scoreQuestionTableBody');
@@ -4935,14 +4938,31 @@ D. 指缝
 
         visibleIndex++;
 
+        // 初始化展开状态（默认展开）
+        if (expandedStates[index] === undefined) {
+          expandedStates[index] = true;
+        }
+
+        const isExpanded = expandedStates[index];
+
+        // 计算rowspan：收起时为1，展开时为1+子行数
+        let rowspanCount = 1;
+        if (isExpanded && (q.type === 'blank' || q.type === 'composite')) {
+          if (q.type === 'blank') {
+            rowspanCount += q.blankAnswers ? q.blankAnswers.length : 1;
+          } else if (q.type === 'composite') {
+            rowspanCount += q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          }
+        }
+
         // 主行
         html += `
           <tr class="hover:bg-gray-50 transition-colors" data-index="${index}" data-type="${q.type}">
-            <td class="px-4 py-3 text-sm text-gray-900 font-medium" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">${visibleIndex}</td>
-            <td class="px-4 py-3" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">
+            <td class="px-4 py-3 text-sm text-gray-900 font-medium" rowspan="${rowspanCount}">${visibleIndex}</td>
+            <td class="px-4 py-3" rowspan="${rowspanCount}">
               <span class="${getTypeTagClass(q.type)}">${q.typeName}</span>
             </td>
-            <td class="px-4 py-3 text-sm text-gray-700" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">
+            <td class="px-4 py-3 text-sm text-gray-700" rowspan="${rowspanCount}">
               ${convertImagesToHTML(q.content).substring(0, 80)}${q.content.length > 80 ? '...' : ''}
             </td>
             <td class="px-4 py-3">`;
@@ -4967,13 +4987,13 @@ D. 指缝
 
         html += `
             </td>
-            <td class="px-4 py-3" rowspan="${q.type === 'blank' ? (q.blankAnswers ? q.blankAnswers.length + 1 : 2) : (q.type === 'composite' ? (q.compositeSubQuestions ? q.compositeSubQuestions.length + 1 : 1) : 1)}">`;
+            <td class="px-4 py-3" rowspan="${rowspanCount}">`;
 
         if (q.type === 'blank' || q.type === 'composite') {
           html += `
               <button onclick="toggleSubScores(${index})" class="text-primary-600 hover:text-primary-700 text-sm">
-                <i class="fas fa-angle-up" id="toggleIcon_${index}"></i>
-                <span id="toggleText_${index}">收起</span>
+                <i class="fas fa-angle-${isExpanded ? 'up' : 'down'}" id="toggleIcon_${index}"></i>
+                <span id="toggleText_${index}">${isExpanded ? '收起' : '展开'}</span>
               </button>`;
         }
 
@@ -4981,12 +5001,13 @@ D. 指缝
             </td>
           </tr>`;
 
-        // 子分数行（填空题/复合题） - 默认展开
-        if (q.type === 'blank') {
-          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
-          for (let i = 0; i < blankCount; i++) {
-            html += `
-          <tr id="subScores_${index}_${i}" class="bg-gray-50 border-t border-gray-100">
+        // 子分数行（填空题/复合题） - 根据展开状态渲染
+        if (isExpanded) {
+          if (q.type === 'blank') {
+            const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+            for (let i = 0; i < blankCount; i++) {
+              html += `
+          <tr class="bg-gray-50 border-t border-gray-100" data-parent="${index}">
             <td class="px-4 py-2">
               <div class="flex items-center">
                 <span class="text-xs text-gray-600 inline-block w-32 text-right mr-2">第${i + 1}空：</span>
@@ -4995,12 +5016,11 @@ D. 指缝
               </div>
             </td>
           </tr>`;
-          }
-        } else if (q.type === 'composite') {
-          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
-          q.compositeSubQuestions.forEach((subQ, subIdx) => {
-            html += `
-          <tr id="subScores_${index}_${subIdx}" class="bg-gray-50 border-t border-gray-100">
+            }
+          } else if (q.type === 'composite') {
+            q.compositeSubQuestions.forEach((subQ, subIdx) => {
+              html += `
+          <tr class="bg-gray-50 border-t border-gray-100" data-parent="${index}">
             <td class="px-4 py-2">
               <div class="flex items-center">
                 <span class="text-xs text-gray-600 inline-block w-32 text-right mr-2">第${subIdx + 1}题（${subQ.typeName}）：</span>
@@ -5009,7 +5029,8 @@ D. 指缝
               </div>
             </td>
           </tr>`;
-          });
+            });
+          }
         }
       });
 
@@ -5018,39 +5039,54 @@ D. 指缝
 
     // 展开/折叠子分数
     function toggleSubScores(index) {
-      const q = parsedData[index];
-      const icon = document.getElementById(`toggleIcon_${index}`);
-      const text = document.getElementById(`toggleText_${index}`);
-
-      let subCount = 0;
-      if (q.type === 'blank') {
-        subCount = q.blankAnswers ? q.blankAnswers.length : 1;
-      } else if (q.type === 'composite') {
-        subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
-      }
-
-      // 切换所有子行
-      const isCurrentlyHidden = document.getElementById(`subScores_${index}_0`).classList.contains('hidden');
-
-      for (let i = 0; i < subCount; i++) {
-        const subRow = document.getElementById(`subScores_${index}_${i}`);
-        if (isCurrentlyHidden) {
-          subRow.classList.remove('hidden');
-        } else {
-          subRow.classList.add('hidden');
+      // 保存当前所有分数
+      const scores = {};
+      parsedData.forEach((q, idx) => {
+        if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
+          const scoreInput = document.getElementById(`score_${idx}`);
+          if (scoreInput) {
+            scores[`score_${idx}`] = scoreInput.value;
+          }
+        } else if (q.type === 'blank') {
+          const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
+          for (let i = 0; i < blankCount; i++) {
+            const scoreInput = document.getElementById(`score_${idx}_blank_${i}`);
+            if (scoreInput) {
+              scores[`score_${idx}_blank_${i}`] = scoreInput.value;
+            }
+          }
+          const totalInput = document.getElementById(`totalScore_${idx}`);
+          if (totalInput) {
+            scores[`totalScore_${idx}`] = totalInput.value;
+          }
+        } else if (q.type === 'composite') {
+          const subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
+          for (let i = 0; i < subCount; i++) {
+            const scoreInput = document.getElementById(`score_${idx}_sub_${i}`);
+            if (scoreInput) {
+              scores[`score_${idx}_sub_${i}`] = scoreInput.value;
+            }
+          }
+          const totalInput = document.getElementById(`totalScore_${idx}`);
+          if (totalInput) {
+            scores[`totalScore_${idx}`] = totalInput.value;
+          }
         }
-      }
+      });
 
-      // 更新按钮状态
-      if (isCurrentlyHidden) {
-        icon.classList.remove('fa-angle-down');
-        icon.classList.add('fa-angle-up');
-        text.textContent = '收起';
-      } else {
-        icon.classList.remove('fa-angle-up');
-        icon.classList.add('fa-angle-down');
-        text.textContent = '展开';
-      }
+      // 切换状态
+      expandedStates[index] = !expandedStates[index];
+
+      // 重新渲染表格
+      renderScoreQuestionTable();
+
+      // 恢复分数
+      Object.keys(scores).forEach(key => {
+        const input = document.getElementById(key);
+        if (input) {
+          input.value = scores[key];
+        }
+      });
     }
 
     // 计算总分（填空题和复合题）

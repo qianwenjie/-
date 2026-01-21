@@ -3011,35 +3011,96 @@
 
     // 渲染复合题
     function renderCompositeQuestion(q) {
+      // 检查 subQuestions 是否存在
+      if (!q.subQuestions || !Array.isArray(q.subQuestions) || q.subQuestions.length === 0) {
+        console.error('复合题缺少 subQuestions 字段:', q);
+        return `
+          <div class="text-center text-error-500 py-8">
+            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+            <p>题目数据异常：缺少子题目信息</p>
+          </div>
+        `;
+      }
+
       const subQuestionsHtml = q.subQuestions.map((sub, index) => {
         let subContent = '';
-        if (sub.type === 'single' || sub.type === 'multiple') {
-          const optionsHtml = sub.options.map(opt => {
-            const isCorrect = sub.correctAnswers.includes(opt.label);
-            return `
-              <div class="flex items-start py-1">
-                <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
-                <span class="text-gray-800 text-sm">${opt.text}</span>
-              </div>
-            `;
-          }).join('');
-          subContent = `
-            <div class="mt-2 space-y-2">
-              ${optionsHtml}
-              <div class="mt-2">
-                <span class="text-xs font-medium text-gray-500">答案：</span>
-                <span class="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
-                  ${sub.correctAnswers.join('、')}
-                </span>
-                <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
-              </div>
+
+        // 检查子题数据完整性
+        if (!sub || !sub.content) {
+          return `
+            <div class="border-l-2 border-error-300 pl-4 py-2">
+              <div class="text-sm text-error-600">第 ${index + 1} 题数据异常</div>
             </div>
           `;
+        }
+
+        if (sub.type === 'single' || sub.type === 'multiple') {
+          // 选择题子题
+          if (!sub.options || !Array.isArray(sub.options)) {
+            subContent = `<div class="text-xs text-error-600 mt-2">选项数据异常</div>`;
+          } else {
+            const optionsHtml = sub.options.map(opt => {
+              const isCorrect = sub.correctAnswers && sub.correctAnswers.includes(opt.label);
+              return `
+                <div class="flex items-start py-1">
+                  <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+                  <span class="text-gray-800 text-sm">${opt.text}</span>
+                </div>
+              `;
+            }).join('');
+            subContent = `
+              <div class="mt-2 space-y-2">
+                ${optionsHtml}
+                <div class="mt-2">
+                  <span class="text-xs font-medium text-gray-500">答案：</span>
+                  <span class="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+                    ${sub.correctAnswers ? sub.correctAnswers.join('、') : '无'}
+                  </span>
+                  <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+                </div>
+              </div>
+            `;
+          }
+        } else if (sub.type === 'judge') {
+          // 判断题子题
+          const answerText = sub.correctAnswer === 'true' ? '正确' : '错误';
+          subContent = `
+            <div class="mt-2">
+              <div class="text-xs font-medium text-gray-500 mb-1">答案：</div>
+              <div class="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded text-sm font-medium">${answerText}</div>
+              <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+            </div>
+          `;
+        } else if (sub.type === 'blank') {
+          // 填空题子题
+          if (sub.blanks && Array.isArray(sub.blanks)) {
+            const blanksHtml = sub.blanks.map(blank => `
+              <div class="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded text-sm mr-2">
+                空${blank.index}: ${blank.answer}
+              </div>
+            `).join('');
+            subContent = `
+              <div class="mt-2">
+                <div class="text-xs font-medium text-gray-500 mb-1">答案：</div>
+                ${blanksHtml}
+                <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+              </div>
+            `;
+          } else {
+            subContent = `
+              <div class="mt-2">
+                <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
+                <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || '无'}</div>
+                <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score ? sub.score + ' 分' : '--'})</span>
+              </div>
+            `;
+          }
         } else {
+          // 其他题型（简答等）
           subContent = `
             <div class="mt-2">
               <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
-              <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || '无'}</div>
+              <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || sub.referenceAnswer || '无'}</div>
               <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score ? sub.score + ' 分' : '--'})</span>
             </div>
           `;
@@ -3062,7 +3123,7 @@
             <div class="question-content text-gray-900 text-base leading-relaxed bg-amber-50 p-4 rounded-lg">${q.content}</div>
           </div>
           <div>
-            <div class="text-sm font-medium text-gray-500 mb-2">子题目 (共 ${q.subCount} 道)</div>
+            <div class="text-sm font-medium text-gray-500 mb-2">子题目 (共 ${q.subCount || q.subQuestions.length} 道)</div>
             <div class="space-y-3">${subQuestionsHtml}</div>
           </div>
           ${q.explanation ? `

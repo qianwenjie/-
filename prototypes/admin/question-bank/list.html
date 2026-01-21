@@ -2808,8 +2808,8 @@
       // 根据题型生成内容
       let questionContent = '';
 
-      if (q.isComposite) {
-        // 复合题型
+      if (q.isComposite && q.type !== 'cloze') {
+        // 复合题型（排除完形填空）
         questionContent = renderCompositeQuestion(q);
       } else if (q.type === 'single' || q.type === 'multiple') {
         // 选择题

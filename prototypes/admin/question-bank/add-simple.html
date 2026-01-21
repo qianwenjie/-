@@ -323,10 +323,10 @@ D. 西厢记
 
 完形填空
 6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
-1)  A. hoped  B. realized  C. told  D. speech
-2)  A. bad  B. interesting  C.new  D. good
-3)  A. long  B. short  C. high  D.training
-4)  A. or  B. but  C. and  D.offered
+1)A. hoped  B. realized  C. told  D. speech
+2)A. bad  B. interesting  C.new  D. good
+3)A. long  B. short  C. high  D.training
+4)A. or  B. but  C. and  D.offered
 答案：BDCA
 
 复合题
@@ -437,6 +437,7 @@ D. 指缝
           <ul class="text-sm space-y-2 mb-6">
             <li><strong>判断题：</strong>选项支持 正确/错误、对/错、是/否、T/F 等</li>
             <li><strong>填空题：</strong>空位用 <code>____</code> 或 <code>（）</code> 标识；多空答案用 <code>；</code> 隔开；同义词用 <code>|||</code> 连接</li>
+            <li><strong>完形填空：</strong>子题格式为 <code>1)A. 选项1  B. 选项2  C. 选项3  D. 选项4</code>（序号后不加空格）</li>
             <li><strong>复合题：</strong>子题格式为 <code>1）【题型】题干内容</code></li>
           </ul>
 
@@ -475,10 +476,10 @@ D. 西厢记
 
 完形填空
 6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
-1)  A. hoped  B. realized  C. told  D. speech
-2)  A. bad  B. interesting  C.new  D. good
-3)  A. long  B. short  C. high  D.training
-4)  A. or  B. but  C. and  D.offered
+1)A. hoped  B. realized  C. told  D. speech
+2)A. bad  B. interesting  C.new  D. good
+3)A. long  B. short  C. high  D.training
+4)A. or  B. but  C. and  D.offered
 答案：BDCA
 
 复合题
@@ -549,10 +550,10 @@ D. 西厢记
 
 完形填空
 6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
-1)  A. hoped  B. realized  C. told  D. speech
-2)  A. bad  B. interesting  C.new  D. good
-3)  A. long  B. short  C. high  D.training
-4)  A. or  B. but  C. and  D.offered
+1)A. hoped  B. realized  C. told  D. speech
+2)A. bad  B. interesting  C.new  D. good
+3)A. long  B. short  C. high  D.training
+4)A. or  B. but  C. and  D.offered
 答案：BDCA
 
 复合题
@@ -1722,21 +1723,102 @@ D. 指缝
           continue;
         }
 
-        // 选项
+        // 复合题的子题题型标记（格式：[单选题]、[多选题]、【判断题】等）
+        const compositeSubTypeMatch = line.match(/^\[(.+?)\](.*)$/) || line.match(/^【(.+?)】(.*)$/);
+        if (compositeSubTypeMatch && currentQuestion.type === 'composite') {
+          const subTypeName = compositeSubTypeMatch[1].trim();
+          const subContent = compositeSubTypeMatch[2].trim();
+
+          // 子题题型映射
+          const subTypeMap = {
+            '单选题': 'single',
+            '多选题': 'multiple',
+            '判断题': 'judge',
+            '填空题': 'blank',
+            '简答题': 'essay'
+          };
+
+          const subType = subTypeMap[subTypeName];
+          if (subType) {
+            if (!currentQuestion.compositeSubQuestions) {
+              currentQuestion.compositeSubQuestions = [];
+              currentQuestion.currentSubQuestion = null; // 当前正在处理的子题
+            }
+
+            // 创建新的子题
+            currentQuestion.currentSubQuestion = {
+              type: subType,
+              typeName: subTypeName,
+              content: subContent,
+              options: [],
+              answer: '',
+              explanation: ''
+            };
+
+            currentQuestion.compositeSubQuestions.push(currentQuestion.currentSubQuestion);
+            continue;
+          }
+        }
+
+        // 完形填空的子题选项（格式：1)A. xxx B. xxx C. xxx D. xxx 或 1）A. xxx B. xxx）
+        const clozeSubQuestionMatch = line.match(/^(\d+)[)）](.+)$/);
+        if (clozeSubQuestionMatch && currentQuestion.type === 'cloze') {
+          const subQuestionIndex = clozeSubQuestionMatch[1];
+          const optionsText = clozeSubQuestionMatch[2].trim();
+
+          // 解析选项（A. xxx B. xxx C. xxx D. xxx）
+          const optionRegex = /([A-E])\.\s*([^\s]+(?:\s+[^\s]+)*?)(?=\s+[A-E]\.|$)/g;
+          const subOptions = [];
+          let optMatch;
+
+          while ((optMatch = optionRegex.exec(optionsText)) !== null) {
+            subOptions.push({
+              label: optMatch[1],
+              text: optMatch[2].trim()
+            });
+          }
+
+          if (!currentQuestion.clozeSubQuestions) {
+            currentQuestion.clozeSubQuestions = [];
+          }
+
+          currentQuestion.clozeSubQuestions.push({
+            index: parseInt(subQuestionIndex),
+            options: subOptions
+          });
+          continue;
+        }
+
+        // 普通选项（单选题、多选题等）或复合题子题的选项
         const optionMatch = line.match(/^([A-E])[.、:。：]\s*(.+)$/);
         if (optionMatch) {
-          // 保留选项文本中的图片标记
-          currentQuestion.options.push({
-            label: optionMatch[1],
-            text: optionMatch[2]
-          });
+          // 如果是复合题且当前有子题，将选项添加到子题
+          if (currentQuestion.type === 'composite' && currentQuestion.currentSubQuestion) {
+            currentQuestion.currentSubQuestion.options.push({
+              label: optionMatch[1],
+              text: optionMatch[2]
+            });
+          } else {
+            // 否则添加到主题目
+            currentQuestion.options.push({
+              label: optionMatch[1],
+              text: optionMatch[2]
+            });
+          }
           continue;
         }
 
         // 答案（支持"答案："、"答："、"正确答案："）
         if (line.startsWith('答案：') || line.startsWith('答：') || line.startsWith('正确答案：')) {
           const answerText = line.replace(/^(正确)?答案?：/, '').trim();
-          currentQuestion.answer = answerText;
+
+          // 如果是复合题且当前有子题，将答案添加到子题
+          if (currentQuestion.type === 'composite' && currentQuestion.currentSubQuestion) {
+            currentQuestion.currentSubQuestion.answer = answerText;
+          } else {
+            // 否则添加到主题目
+            currentQuestion.answer = answerText;
+          }
           continue;
         }
 
@@ -1750,7 +1832,14 @@ D. 指缝
           } else if (line.startsWith('解析：')) {
             explanationText = line.replace('解析：', '').trim();
           }
-          currentQuestion.explanation = explanationText;
+
+          // 如果是复合题且当前有子题，将解析添加到子题
+          if (currentQuestion.type === 'composite' && currentQuestion.currentSubQuestion) {
+            currentQuestion.currentSubQuestion.explanation = explanationText;
+          } else {
+            // 否则添加到主题目
+            currentQuestion.explanation = explanationText;
+          }
           continue;
         }
 
@@ -1763,11 +1852,21 @@ D. 指缝
 
         // 其他行作为题目内容的一部分（多行题干）
         // 排除已知的关键词开头的行
-        const knownPrefixes = ['答案：', '答：', '正确答案：', '解析：', '答案解析：', '参考答案：', '知识点：', 'A.', 'B.', 'C.', 'D.', 'E.'];
+        const knownPrefixes = ['答案：', '答：', '正确答案：', '解析：', '答案解析：', '参考答案：', '知识点：', 'A.', 'B.', 'C.', 'D.', 'E.', '[', '【'];
         const isKnownLine = knownPrefixes.some(prefix => line.startsWith(prefix));
 
-        if (currentQuestion.content && line && !isKnownLine) {
-          currentQuestion.content += ' ' + line;
+        if (line && !isKnownLine) {
+          // 如果是复合题且当前有子题，将内容追加到子题
+          if (currentQuestion.type === 'composite' && currentQuestion.currentSubQuestion) {
+            if (currentQuestion.currentSubQuestion.content) {
+              currentQuestion.currentSubQuestion.content += ' ' + line;
+            } else {
+              currentQuestion.currentSubQuestion.content = line;
+            }
+          } else if (currentQuestion.content) {
+            // 否则追加到主题目
+            currentQuestion.content += ' ' + line;
+          }
         }
       }
 
@@ -1817,6 +1916,45 @@ D. 指缝
             const imageRegex = /\[图片:(img_\d+)\]/;
             if (imageRegex.test(q.answer)) {
               q.answerError = '答案无法识别，答案只能是选项字母（如A、B、AB等），不支持插入图片';
+            } else {
+              // 验证答案格式
+              const answer = q.answer.trim().toUpperCase();
+              const validOptions = q.options.map(opt => opt.label);
+
+              // 检查答案是否只包含字母
+              if (!/^[A-E]+$/.test(answer)) {
+                q.answerError = '答案格式错误，答案只能包含选项字母（A-E）';
+              } else {
+                // 单选题：答案必须是单个字母
+                if (q.type === 'single') {
+                  if (answer.length !== 1) {
+                    q.answerError = '单选题答案必须是单个字母（如A、B、C等）';
+                  } else if (!validOptions.includes(answer)) {
+                    q.answerError = `答案"${answer}"不在可选项范围内（${validOptions.join('、')}）`;
+                  }
+                }
+
+                // 多选题：答案可以是多个字母，且每个字母必须在选项范围内
+                if (q.type === 'multiple') {
+                  if (answer.length < 2) {
+                    q.answerError = '多选题答案至少需要2个选项（如AB、ABC等）';
+                  } else {
+                    // 检查每个字母是否在选项范围内
+                    const answerLetters = answer.split('');
+                    const invalidLetters = answerLetters.filter(letter => !validOptions.includes(letter));
+
+                    if (invalidLetters.length > 0) {
+                      q.answerError = `答案中的"${invalidLetters.join('、')}"不在可选项范围内（${validOptions.join('、')}）`;
+                    }
+
+                    // 检查是否有重复的字母
+                    const uniqueLetters = [...new Set(answerLetters)];
+                    if (uniqueLetters.length !== answerLetters.length) {
+                      q.answerError = '多选题答案不能包含重复的选项字母';
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -1825,13 +1963,272 @@ D. 指缝
         if (q.type === 'judge') {
           if (!q.answer || q.answer.trim() === '') {
             q.answerError = '答案无法识别，判断题答案格式为"答案：正确"或"答案：错误"';
+          } else {
+            // 判断题答案不支持插入图片
+            const imageRegex = /\[图片:(img_\d+)\]/;
+            if (imageRegex.test(q.answer)) {
+              q.answerError = '判断题答案不支持插入图片，只能是文字（正确/错误、对/错等）';
+            } else {
+              // 验证判断题答案格式
+              const answer = q.answer.trim();
+
+              // 定义有效的答案映射（支持多种表达方式）
+              const validAnswersMap = {
+                // 正确的表达
+                '正确': 'correct',
+                '对': 'correct',
+                '是': 'correct',
+                'T': 'correct',
+                't': 'correct',
+                'TRUE': 'correct',
+                'true': 'correct',
+                'True': 'correct',
+                '√': 'correct',
+                '✓': 'correct',
+                '✔': 'correct',
+                '对的': 'correct',
+                '正确的': 'correct',
+
+                // 错误的表达
+                '错误': 'wrong',
+                '错': 'wrong',
+                '否': 'wrong',
+                'F': 'wrong',
+                'f': 'wrong',
+                'FALSE': 'wrong',
+                'false': 'wrong',
+                'False': 'wrong',
+                '×': 'wrong',
+                '✗': 'wrong',
+                '✘': 'wrong',
+                '错的': 'wrong',
+                '错误的': 'wrong'
+              };
+
+              // 检查答案是否在有效范围内
+              if (!validAnswersMap[answer]) {
+                q.answerError = '答案格式错误，判断题答案支持：正确/错误、对/错、是/否、T/F、√/× 等格式';
+              } else {
+                // 标准化答案（统一转换为"正确"或"错误"，便于后续处理）
+                q.normalizedAnswer = validAnswersMap[answer] === 'correct' ? '正确' : '错误';
+              }
+            }
           }
         }
 
-        // 对于填空题和简答题，检查答案
-        if (q.type === 'blank' || q.type === 'essay') {
+        // 对于填空题，检查空位和答案
+        if (q.type === 'blank') {
           if (!q.answer || q.answer.trim() === '') {
-            q.answerError = '答案无法识别，题目必须包含"答案："字段，且不能为空';
+            q.answerError = '答案无法识别，填空题必须包含"答案："字段，且不能为空';
+          } else {
+            // 检查题干中是否有空位标记
+            const blankRegex1 = /_{2,}/g; // 匹配 ____ (两个或多个下划线)
+            const blankRegex2 = /[（(][^）)]*[）)]/g; // 匹配 （） 或 ()
+
+            const blanks1 = q.content.match(blankRegex1) || [];
+            const blanks2 = q.content.match(blankRegex2) || [];
+            const totalBlanks = blanks1.length + blanks2.length;
+
+            if (totalBlanks === 0) {
+              q.contentError = '填空题题干中必须包含空位标记（____或（））';
+            } else {
+              // 解析答案（支持分号、中文分号分隔）
+              const answers = q.answer.split(/[;；]/).map(a => a.trim()).filter(a => a);
+
+              // 检查答案数量是否匹配空位数量
+              if (answers.length !== totalBlanks) {
+                q.answerError = `答案数量（${answers.length}个）与空位数量（${totalBlanks}个）不匹配，多个答案请用"；"分隔`;
+              } else {
+                // 提取答案详情（同义词用|||分隔）
+                q.blankAnswers = answers.map(ans => {
+                  const synonyms = ans.split('|||').map(s => s.trim()).filter(s => s);
+                  return {
+                    text: ans,
+                    synonyms: synonyms
+                  };
+                });
+              }
+            }
+          }
+        }
+
+        // 对于简答题，检查答案
+        if (q.type === 'essay') {
+          if (!q.answer || q.answer.trim() === '') {
+            q.answerError = '答案无法识别，简答题必须包含"答案："字段，且不能为空';
+          } else {
+            // 简答题答案可以包含图片、多行文本等
+            // 只需要确保不为空即可
+            const answerWithoutImages = q.answer.replace(/\[图片:img_\d+\]/g, '').trim();
+            if (!answerWithoutImages && !q.answer.includes('[图片:')) {
+              q.answerError = '答案内容不能为空';
+            }
+          }
+        }
+
+        // 对于完形填空，检查子题和答案
+        if (q.type === 'cloze') {
+          // 检查是否有子题
+          if (!q.clozeSubQuestions || q.clozeSubQuestions.length === 0) {
+            q.optionsError = '完形填空必须包含子题，格式为"1)A. 选项1  B. 选项2  C. 选项3  D. 选项4"';
+          }
+
+          // 检查答案
+          if (!q.answer || q.answer.trim() === '') {
+            q.answerError = '答案无法识别，完形填空必须包含"答案："字段，且不能为空';
+          } else {
+            // 完形填空答案不支持插入图片
+            const imageRegex = /\[图片:(img_\d+)\]/;
+            if (imageRegex.test(q.answer)) {
+              q.answerError = '完形填空答案不支持插入图片，只能是连续的选项字母（如ABCD、BDCA等）';
+            } else {
+              const answer = q.answer.trim().toUpperCase();
+              const subQuestionsCount = q.clozeSubQuestions ? q.clozeSubQuestions.length : 0;
+
+              // 检查答案是否只包含字母
+              if (!/^[A-E]+$/.test(answer)) {
+                q.answerError = '答案格式错误，完形填空答案只能包含选项字母（A-E）';
+              } else if (answer.length !== subQuestionsCount) {
+                q.answerError = `答案长度（${answer.length}个字母）与子题数量（${subQuestionsCount}个）不匹配`;
+              } else if (subQuestionsCount > 0) {
+                // 检查每个答案字母是否在对应子题的选项范围内
+                const answerLetters = answer.split('');
+                let invalidAnswers = [];
+
+                for (let i = 0; i < answerLetters.length; i++) {
+                  const letter = answerLetters[i];
+                  const subQuestion = q.clozeSubQuestions[i];
+                  if (subQuestion) {
+                    const validOptions = subQuestion.options.map(opt => opt.label);
+                    if (!validOptions.includes(letter)) {
+                      invalidAnswers.push(`第${i + 1}题答案"${letter}"不在选项范围内（${validOptions.join('、')}）`);
+                    }
+                  }
+                }
+
+                if (invalidAnswers.length > 0) {
+                  q.answerError = invalidAnswers.join('；');
+                }
+              }
+            }
+          }
+        }
+
+        // 对于复合题，检查材料和子题
+        if (q.type === 'composite') {
+          // 检查是否有材料内容
+          if (!q.content || q.content.trim() === '') {
+            q.contentError = '复合题必须包含材料内容';
+          }
+
+          // 检查是否有子题
+          if (!q.compositeSubQuestions || q.compositeSubQuestions.length === 0) {
+            q.optionsError = '复合题必须包含至少1个子题，格式为"[题型]题干内容"';
+          } else {
+            // 验证每个子题
+            q.compositeSubQuestions.forEach((subQ, subIdx) => {
+              // 初始化子题的错误属性
+              subQ.contentError = '';
+              subQ.optionsError = '';
+              subQ.answerError = '';
+
+              // 检查子题内容
+              if (!subQ.content || subQ.content.trim() === '') {
+                subQ.contentError = '缺少题干内容';
+              }
+
+              // 根据子题类型验证
+              if (subQ.type === 'single' || subQ.type === 'multiple') {
+                // 检查选项
+                if (subQ.options.length === 0) {
+                  subQ.optionsError = '缺少选项';
+                }
+
+                // 检查答案
+                if (!subQ.answer || subQ.answer.trim() === '') {
+                  subQ.answerError = '缺少答案';
+                } else {
+                  const answer = subQ.answer.trim().toUpperCase();
+                  const validOptions = subQ.options.map(opt => opt.label);
+
+                  // 单选题验证
+                  if (subQ.type === 'single') {
+                    if (answer.length !== 1) {
+                      subQ.answerError = '答案必须是单个字母';
+                    } else if (!validOptions.includes(answer)) {
+                      subQ.answerError = `答案"${answer}"不在选项范围内`;
+                    }
+                  }
+
+                  // 多选题验证
+                  if (subQ.type === 'multiple') {
+                    if (answer.length < 2) {
+                      subQ.answerError = '答案至少需要2个字母';
+                    } else {
+                      const answerLetters = answer.split('');
+                      const invalidLetters = answerLetters.filter(letter => !validOptions.includes(letter));
+                      if (invalidLetters.length > 0) {
+                        subQ.answerError = `答案中的"${invalidLetters.join('、')}"不在选项范围内`;
+                      }
+                      // 检查是否有重复字母
+                      const uniqueLetters = [...new Set(answerLetters)];
+                      if (uniqueLetters.length !== answerLetters.length) {
+                        subQ.answerError = '答案中不能有重复字母';
+                      }
+                    }
+                  }
+                }
+              } else if (subQ.type === 'judge') {
+                // 判断题验证
+                if (!subQ.answer || subQ.answer.trim() === '') {
+                  subQ.answerError = '缺少答案';
+                }
+              } else if (subQ.type === 'blank') {
+                // 填空题验证
+                if (!subQ.answer || subQ.answer.trim() === '') {
+                  subQ.answerError = '缺少答案';
+                } else {
+                  // 检查题干中是否有空位标记
+                  const blankRegex1 = /_{2,}/g; // 匹配 ____ (两个或多个下划线)
+                  const blankRegex2 = /[（(][^）)]*[）)]/g; // 匹配 （） 或 ()
+
+                  const blanks1 = subQ.content.match(blankRegex1) || [];
+                  const blanks2 = subQ.content.match(blankRegex2) || [];
+                  const totalBlanks = blanks1.length + blanks2.length;
+
+                  if (totalBlanks === 0) {
+                    subQ.contentError = '题干中必须包含空位标记（____或（））';
+                  } else {
+                    // 解析答案（支持分号、中文分号分隔）
+                    const answers = subQ.answer.split(/[;；]/).map(a => a.trim()).filter(a => a);
+
+                    // 检查答案数量是否匹配空位数量
+                    if (answers.length !== totalBlanks) {
+                      subQ.answerError = `答案数量（${answers.length}个）与空位数量（${totalBlanks}个）不匹配`;
+                    } else {
+                      // 提取答案详情（同义词用|||分隔）
+                      subQ.blankAnswers = answers.map(ans => {
+                        const synonyms = ans.split('|||').map(s => s.trim()).filter(s => s);
+                        return {
+                          text: ans,
+                          synonyms: synonyms
+                        };
+                      });
+                    }
+                  }
+                }
+              } else if (subQ.type === 'essay') {
+                // 简答题验证
+                if (!subQ.answer || subQ.answer.trim() === '') {
+                  subQ.answerError = '缺少答案';
+                }
+              }
+
+              // 如果子题有任何错误，标记主题目有错误
+              if (subQ.contentError || subQ.optionsError || subQ.answerError) {
+                if (!q.answerError) q.answerError = '部分子题存在错误';
+              }
+            });
           }
         }
 
@@ -1903,18 +2300,46 @@ D. 指缝
 
       let optionsHtml = '';
       if (q.type === 'judge') {
+        // 使用标准化后的答案（如果有的话），否则使用原始答案
+        const displayAnswer = q.normalizedAnswer || q.answer;
+        const isCorrect = displayAnswer === '正确' || displayAnswer === '对' || displayAnswer === 'T' || displayAnswer === '是' || displayAnswer === '√' || displayAnswer === '✓';
+        const isWrong = displayAnswer === '错误' || displayAnswer === '错' || displayAnswer === 'F' || displayAnswer === '否' || displayAnswer === '×' || displayAnswer === '✗';
+
         optionsHtml = `
           <div class="space-y-2 mb-4">
-            <div class="radio-option ${q.answer === '正确' || q.answer === '对' ? 'bg-primary-50' : ''}">
-              <input type="radio" name="judge-${index}" ${q.answer === '正确' || q.answer === '对' ? 'checked' : ''}>
+            <div class="radio-option ${isCorrect ? 'bg-primary-50' : ''}">
+              <input type="radio" name="judge-${index}" ${isCorrect ? 'checked' : ''}>
               <span class="text-sm text-gray-700">正确</span>
             </div>
-            <div class="radio-option ${q.answer === '错误' || q.answer === '错' ? 'bg-primary-50' : ''}">
-              <input type="radio" name="judge-${index}" ${q.answer === '错误' || q.answer === '错' ? 'checked' : ''}>
+            <div class="radio-option ${isWrong ? 'bg-primary-50' : ''}">
+              <input type="radio" name="judge-${index}" ${isWrong ? 'checked' : ''}>
               <span class="text-sm text-gray-700">错误</span>
             </div>
           </div>
         `;
+      } else if (q.type === 'cloze' && q.clozeSubQuestions && q.clozeSubQuestions.length > 0) {
+        // 完形填空：显示子题列表
+        const answerLetters = q.answer ? q.answer.trim().toUpperCase().split('') : [];
+        optionsHtml = '<div class="space-y-2 mb-4">';
+        q.clozeSubQuestions.forEach((subQ, subIdx) => {
+          const correctAnswer = answerLetters[subIdx];
+          optionsHtml += `
+            <div class="flex items-start py-1">
+              <span class="text-xs font-medium text-gray-600 mr-3 flex-shrink-0 mt-0.5">${subQ.index}）</span>
+              <div class="flex flex-wrap gap-2 flex-1">
+                ${subQ.options.map(opt => {
+                  const isCorrect = opt.label === correctAnswer;
+                  return `
+                    <span class="inline-flex items-center px-2.5 py-1 rounded text-xs ${isCorrect ? 'bg-success-500 text-white font-medium' : 'bg-gray-100 text-gray-700'}">
+                      ${opt.label}. ${opt.text}
+                    </span>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+        optionsHtml += '</div>';
       } else if (q.options.length > 0) {
         optionsHtml = '<div class="space-y-2 mb-4">';
         q.options.forEach((opt, optIndex) => {
@@ -1931,6 +2356,76 @@ D. 指缝
                  ondrop="handleImageDrop(event, ${index}, 'option', ${optIndex})">
               <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${isCorrect ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600'}">${opt.label}</span>
               <span class="text-sm text-gray-700">${optionTextWithImages}</span>
+            </div>
+          `;
+        });
+        optionsHtml += '</div>';
+      } else if (q.type === 'composite' && q.compositeSubQuestions && q.compositeSubQuestions.length > 0) {
+        // 复合题：显示子题列表
+        optionsHtml = '<div class="space-y-4 mb-4 border-t border-gray-200 pt-4">';
+        q.compositeSubQuestions.forEach((subQ, subIdx) => {
+          let subOptionsHtml = '';
+
+          // 根据子题类型显示选项
+          if (subQ.type === 'single' || subQ.type === 'multiple') {
+            subOptionsHtml = '<div class="space-y-1.5 mt-2">';
+            subQ.options.forEach((opt) => {
+              const isCorrect = subQ.answer && subQ.answer.toUpperCase().includes(opt.label);
+              subOptionsHtml += `
+                <div class="flex items-start py-0.5">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${isCorrect ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600'}">${opt.label}</span>
+                  <span class="text-xs text-gray-700">${convertImagesToHTML(opt.text)}</span>
+                </div>
+              `;
+            });
+            subOptionsHtml += '</div>';
+          } else if (subQ.type === 'judge') {
+            const isCorrect = subQ.answer === '正确' || subQ.answer === '对' || subQ.answer === 'T';
+            const isWrong = subQ.answer === '错误' || subQ.answer === '错' || subQ.answer === 'F';
+            subOptionsHtml = `
+              <div class="flex gap-3 mt-2">
+                <span class="inline-flex items-center px-3 py-1 rounded text-xs ${isCorrect ? 'bg-success-500 text-white font-medium' : 'bg-gray-100 text-gray-700'}">正确</span>
+                <span class="inline-flex items-center px-3 py-1 rounded text-xs ${isWrong ? 'bg-success-500 text-white font-medium' : 'bg-gray-100 text-gray-700'}">错误</span>
+              </div>
+            `;
+          }
+
+          optionsHtml += `
+            <div class="bg-gray-50 rounded-lg p-4 border ${subQ.contentError || subQ.optionsError || subQ.answerError ? 'border-error-300' : 'border-gray-200'}">
+              <div class="flex items-start mb-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-xs font-medium mr-2 flex-shrink-0">${subIdx + 1}</span>
+                <div class="flex-1">
+                  <span class="inline-block px-2 py-0.5 bg-info-100 text-info-700 text-xs font-medium rounded mr-2">【${subQ.typeName}】</span>
+                  <span class="text-sm text-gray-900">${convertImagesToHTML(subQ.content || '')}</span>
+                  ${subQ.contentError ? `<div class="mt-1"><span class="text-xs text-error-600"><i class="fas fa-exclamation-circle mr-1"></i>${subQ.contentError}</span></div>` : ''}
+                </div>
+              </div>
+              ${subOptionsHtml}
+              ${subQ.optionsError ? `<div class="mt-2"><span class="text-xs text-error-600"><i class="fas fa-exclamation-circle mr-1"></i>${subQ.optionsError}</span></div>` : ''}
+              <div class="mt-2 text-xs">
+                <span class="text-gray-500">答案：</span>
+                ${subQ.type === 'blank' && subQ.blankAnswers && subQ.blankAnswers.length > 0 ?
+                  `<div class="block mt-1">
+                    ${subQ.blankAnswers.map((ans, idx) => `
+                      <div class="text-gray-900 ${idx > 0 ? 'mt-1' : ''}">
+                        <span class="inline-block w-4 text-gray-500">${idx + 1}.</span>
+                        <span class="font-medium">${convertImagesToHTML(ans.text)}</span>
+                        ${ans.synonyms.length > 1 ?
+                          `<span class="text-xs text-gray-500 ml-1">(同义词: ${ans.synonyms.join(' / ')})</span>` :
+                          ''}
+                      </div>
+                    `).join('')}
+                  </div>` :
+                  `<span class="text-gray-900 font-medium">${subQ.answer || ''}</span>`
+                }
+                ${subQ.answerError ? `<div class="mt-1"><span class="text-error-600"><i class="fas fa-exclamation-circle mr-1"></i>${subQ.answerError}</span></div>` : ''}
+              </div>
+              ${subQ.explanation ? `
+              <div class="mt-2 text-xs">
+                <span class="text-gray-500">解析：</span>
+                <span class="text-gray-700">${convertImagesToHTML(subQ.explanation)}</span>
+              </div>
+              ` : ''}
             </div>
           `;
         });
@@ -1957,10 +2452,7 @@ D. 指缝
 
       div.innerHTML = `
         <div class="flex items-start mb-3">
-          <div class="flex items-center space-x-2">
-            <h4 class="text-sm font-semibold text-gray-900">【${q.typeName}】</h4>
-            ${q.type === 'blank' ? '<label class="flex items-center text-xs text-gray-600 ml-3"><input type="checkbox" class="rounded border-gray-300 text-primary-500 focus:ring-primary-500 mr-1.5"> 设为无序填空</label>' : ''}
-          </div>
+          <h4 class="text-sm font-semibold text-gray-900">【${q.typeName}】</h4>
         </div>
 
         <div class="mb-4"
@@ -1976,15 +2468,34 @@ D. 指缝
         ${optionsHtml}
         ${q.optionsError ? `<div class="error-text text-xs mb-4">${q.optionsError}</div>` : ''}
 
+        ${q.type !== 'composite' ? `
         <div class="mb-4">
           <div class="flex items-start text-sm">
             <span class="text-gray-500 mr-2 flex-shrink-0">答案：</span>
-            <span class="text-gray-900 font-medium">${convertImagesToHTML(q.answer || '')}</span>
+            <div class="flex-1">
+              ${q.type === 'judge' && q.normalizedAnswer ?
+                `<span class="text-gray-900 font-medium">${q.normalizedAnswer}</span>` :
+                q.type === 'blank' && q.blankAnswers && q.blankAnswers.length > 0 ?
+                  `<div class="space-y-1">
+                    ${q.blankAnswers.map((ans, idx) => `
+                      <div class="text-gray-900">
+                        <span class="inline-block w-5 text-gray-500">${idx + 1}.</span>
+                        <span class="font-medium">${convertImagesToHTML(ans.text)}</span>
+                        ${ans.synonyms.length > 1 ?
+                          `<span class="text-xs text-gray-500 ml-2">(同义词: ${ans.synonyms.join(' / ')})</span>` :
+                          ''}
+                      </div>
+                    `).join('')}
+                  </div>` :
+                  `<span class="text-gray-900 font-medium">${convertImagesToHTML(q.answer || '')}</span>`
+              }
+            </div>
           </div>
           ${q.answerError ? `<div class="error-text text-xs mt-2">${q.answerError}</div>` : ''}
         </div>
+        ` : q.answerError ? `<div class="error-text text-xs mb-4">${q.answerError}</div>` : ''}
 
-        ${q.explanation ? `
+        ${q.explanation && q.type !== 'composite' ? `
         <div class="mb-4"
              data-drop-target="explanation"
              data-question-index="${index}"

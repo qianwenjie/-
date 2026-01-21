@@ -772,7 +772,7 @@
 
     // ==================== 加载题目数据用于编辑 ====================
     function loadQuestionForEdit(id) {
-      const questions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
+      const questions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
       const question = questions.find(q => q.id === id);
 
       if (!question) {
@@ -2625,7 +2625,7 @@
       }
 
       // 保存到 localStorage
-      let questions = JSON.parse(localStorage.getItem('examQuestions') || '[]');
+      let questions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
 
       if (isEditMode && editingQuestion) {
         // 编辑模式：更新现有题目
@@ -2638,7 +2638,7 @@
 
           // 更新题目
           questions[index] = formData;
-          localStorage.setItem('examQuestions', JSON.stringify(questions));
+          localStorage.setItem('allQuestions', JSON.stringify(questions));
 
           // 显示成功提示并返回列表
           alert('题目更新成功！');
@@ -2649,7 +2649,7 @@
       } else {
         // 新增模式：添加新题目
         questions.push(formData);
-        localStorage.setItem('examQuestions', JSON.stringify(questions));
+        localStorage.setItem('allQuestions', JSON.stringify(questions));
 
         // 显示成功提示
         showMessage('题目保存成功！', 'success');

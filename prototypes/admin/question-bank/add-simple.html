@@ -6,6 +6,9 @@
   <title>简便录入 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- KaTeX 公式渲染库 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -27,6 +30,15 @@
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
       line-height: 1.8;
       tab-size: 2;
+    }
+
+    /* contentEditable placeholder */
+    #inputText[contenteditable]:empty:before {
+      content: attr(data-placeholder);
+      color: #9ca3af;
+      pointer-events: none;
+      white-space: pre-wrap;
+      display: block;
     }
 
     /* 自定义滚动条 */
@@ -87,6 +99,74 @@
     }
     .knowledge-node .children-container {
       margin-top: 2px;
+    }
+
+    /* 拖拽光标指示器 */
+    .drop-cursor {
+      position: fixed;
+      width: 2px;
+      height: 1.2em;
+      background-color: #00B96B;
+      pointer-events: none;
+      z-index: 1000;
+      animation: blink 1s infinite;
+    }
+    .drop-cursor::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      width: 8px;
+      height: 8px;
+      background-color: #00B96B;
+      border-radius: 50%;
+    }
+    .drop-cursor::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: -3px;
+      width: 8px;
+      height: 8px;
+      background-color: #00B96B;
+      border-radius: 50%;
+    }
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.3; }
+    }
+
+    /* 内联公式样式 */
+    .inline-formula-editable {
+      display: inline-block;
+      margin: 0 2px;
+      padding: 2px 6px;
+      background: #e0f2fe;
+      border-radius: 3px;
+      vertical-align: middle;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    .inline-formula-editable:hover {
+      background: #bae6fd;
+    }
+
+    /* 内联图片样式 */
+    .inline-image-editable {
+      display: inline-block;
+      margin: 0 2px;
+      padding: 2px 6px;
+      background: #fef3c7;
+      border-radius: 3px;
+      color: #92400e;
+      font-size: 12px;
+      vertical-align: middle;
+      cursor: pointer;
+      user-select: none;
+    }
+    .inline-image-editable:hover {
+      background: #fde68a;
     }
   </style>
 </head>
@@ -174,7 +254,7 @@
               <i class="fas fa-image"></i>
             </button>
             <button onclick="insertFormula()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-primary-500 hover:bg-gray-100 rounded transition-colors" title="插入公式">
-              <i class="fas fa-function"></i>
+              <i class="fas fa-square-root-variable"></i>
             </button>
             <button onclick="clearInput()" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-error-500 hover:bg-gray-100 rounded transition-colors" title="清空">
               <i class="fas fa-trash-alt"></i>
@@ -198,12 +278,68 @@
         </div>
 
         <!-- 文本输入框 -->
-        <div class="flex-1 overflow-hidden">
+        <div class="flex-1 overflow-hidden relative">
+          <!-- 隐藏的 textarea 用于存储纯文本数据 -->
           <textarea
-            id="inputText"
-            class="code-editor w-full h-full p-6 resize-none focus:outline-none custom-scrollbar text-sm"
-            placeholder="单选题&#10;4. 李白是哪个朝代的？&#10;A. 唐&#10;B. 宋&#10;C. 元&#10;D. 明&#10;答案：A&#10;答案解析：历史问题&#10;知识点：yunti001&#10;&#10;多选题&#10;5. 明清是中国小说史上的繁荣时期。以下作品属于明清时期四大名著的有?&#10;A. 红楼梦&#10;B. 三国演义&#10;C. 窦娥冤&#10;D. 西厢记&#10;答案：AB&#10;知识点：yunti001，yunti002&#10;&#10;判断题&#10;3. 扩散现象说明物质的分子在永不停息地做无规则运动&#10;答案：正确&#10;&#10;填空题&#10;2. 床前明月光，____。举头望明月，____。&#10;答案：疑是地上霜；低头思故乡&#10;&#10;简答题&#10;7. 请论述全球化对国家政治产生了哪些深刻的影响？&#10;答案：全球化对政府的治理提出了更高的要求。&#10;&#10;完形填空&#10;6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.&#10;1)  A. hoped  B. realized  C. told  D. speech&#10;2)  A. bad  B. interesting  C.new  D. good&#10;3)  A. long  B. short  C. high  D.training&#10;4)  A. or  B. but  C. and  D.offered&#10;答案：BDCA&#10;&#10;复合题&#10;生活中处处都有科学常识，掌握基础生活知识，有助于提高生活质量和安全意识。&#10;通过以下几道测试题，看看你对生活常识了解多少？&#10;[多选题]&#10;正确洗手可以有效预防疾病，洗手时应重点清洗哪些部位？&#10;A. 手心&#10;B. 手背&#10;C. 手指&#10;D. 指缝&#10;答案：ABCD"
+            id="inputTextData"
+            class="hidden"
           ></textarea>
+          <!-- 可编辑的可视化区域 -->
+          <div
+            id="inputText"
+            class="code-editor w-full h-full p-6 resize-none focus:outline-none custom-scrollbar text-sm overflow-y-auto"
+            contenteditable="true"
+            style="white-space: pre-wrap; word-wrap: break-word; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; line-height: 1.5; color: #374151; min-height: 100%;"
+            data-placeholder="单选题
+4. 李白是哪个朝代的？
+A. 唐
+B. 宋
+C. 元
+D. 明
+答案：A
+答案解析：历史问题
+知识点：yunti001
+
+多选题
+5. 明清是中国小说史上的繁荣时期。以下作品属于明清时期四大名著的有?
+A. 红楼梦
+B. 三国演义
+C. 窦娥冤
+D. 西厢记
+答案：AB
+知识点：yunti001，yunti002
+
+判断题
+3. 扩散现象说明物质的分子在永不停息地做无规则运动
+答案：正确
+
+填空题
+2. 床前明月光，____。举头望明月，____。
+答案：疑是地上霜；低头思故乡
+
+简答题
+7. 请论述全球化对国家政治产生了哪些深刻的影响？
+答案：全球化对政府的治理提出了更高的要求。
+
+完形填空
+6. Most parents, I suppose, have had the experience of reading a bedtime story to their children. And they must have____how difficult it is to write a____children's book. Either the author has aimed too____, so that the children can't follow what is in his story, ____the story seems to be talking to the readers.
+1)  A. hoped  B. realized  C. told  D. speech
+2)  A. bad  B. interesting  C.new  D. good
+3)  A. long  B. short  C. high  D.training
+4)  A. or  B. but  C. and  D.offered
+答案：BDCA
+
+复合题
+生活中处处都有科学常识，掌握基础生活知识，有助于提高生活质量和安全意识。
+通过以下几道测试题，看看你对生活常识了解多少？
+[多选题]
+正确洗手可以有效预防疾病，洗手时应重点清洗哪些部位？
+A. 手心
+B. 手背
+C. 手指
+D. 指缝
+答案：ABCD"
+          ></div>
         </div>
       </div>
 
@@ -488,6 +624,211 @@ D. 指缝
     </div>
   </div>
 
+  <!-- 隐藏的文件输入框 -->
+  <input type="file" id="imageFileInput" accept="image/*" style="display:none;" />
+
+  <!-- 公式编辑器弹窗 -->
+  <div id="formulaEditorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200 flex-shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-square-root-variable text-primary-500 mr-2"></i>
+          可视化公式编辑器
+        </h3>
+        <button onclick="closeFormulaEditor()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-hidden">
+        <div class="h-full grid grid-cols-5 gap-4 p-6">
+          <!-- 左侧组件面板 - 可滚动 -->
+          <div class="col-span-2 space-y-3 overflow-y-auto pr-2" style="max-height: calc(85vh - 140px);">
+            <!-- 基础组件 -->
+            <div class="text-sm font-semibold text-gray-700 mb-2">基础组件</div>
+            <div class="grid grid-cols-3 gap-2">
+              <!-- 分数 -->
+              <button onclick="insertFormulaComponent('fraction')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">
+                  <span style="border-bottom: 1px solid black; padding: 0 6px;">a</span><br>
+                  <span style="padding: 0 6px;">b</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">分数</div>
+              </button>
+
+              <!-- 上标 -->
+              <button onclick="insertFormulaComponent('superscript')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">
+                  x<sup>n</sup>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">上标</div>
+              </button>
+
+              <!-- 下标 -->
+              <button onclick="insertFormulaComponent('subscript')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">
+                  x<sub>n</sub>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">下标</div>
+              </button>
+
+              <!-- 根号 -->
+              <button onclick="insertFormulaComponent('sqrt')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">
+                  √<span style="text-decoration: overline;">x</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">根号</div>
+              </button>
+
+              <!-- 求和 -->
+              <button onclick="insertFormulaComponent('sum')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-xl" style="font-family: serif;">Σ</div>
+                <div class="text-xs text-gray-600 mt-1">求和</div>
+              </button>
+
+              <!-- 积分 -->
+              <button onclick="insertFormulaComponent('integral')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-xl" style="font-family: serif;">∫</div>
+                <div class="text-xs text-gray-600 mt-1">积分</div>
+              </button>
+
+              <!-- 极限 -->
+              <button onclick="insertFormulaComponent('limit')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-sm" style="font-family: serif;">lim</div>
+                <div class="text-xs text-gray-600 mt-1">极限</div>
+              </button>
+
+              <!-- 括号 -->
+              <button onclick="insertFormulaComponent('parentheses')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">( )</div>
+                <div class="text-xs text-gray-600 mt-1">括号</div>
+              </button>
+
+              <!-- 矩阵 -->
+              <button onclick="insertFormulaComponent('matrix')" class="p-2 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-center">
+                <div class="text-lg" style="font-family: serif;">[ ]</div>
+                <div class="text-xs text-gray-600 mt-1">矩阵</div>
+              </button>
+            </div>
+
+            <!-- 常用公式模板 -->
+            <div class="text-sm font-semibold text-gray-700 mb-2 mt-4">常用公式</div>
+            <div class="space-y-2">
+              <!-- 勾股定理 -->
+              <button onclick="insertFormulaTemplate('pythagorean')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">勾股定理</div>
+                <div class="text-xs text-gray-600 mt-1">a² + b² = c²</div>
+              </button>
+
+              <!-- 二项式定理 -->
+              <button onclick="insertFormulaTemplate('binomial')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">二项式定理</div>
+                <div class="text-xs text-gray-600 mt-1">(a+b)ⁿ = Σ C(n,k)aⁿ⁻ᵏbᵏ</div>
+              </button>
+
+              <!-- 一元二次方程 -->
+              <button onclick="insertFormulaTemplate('quadratic')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">一元二次方程</div>
+                <div class="text-xs text-gray-600 mt-1">ax² + bx + c = 0</div>
+              </button>
+
+              <!-- 求根公式 -->
+              <button onclick="insertFormulaTemplate('quadratic_formula')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">求根公式</div>
+                <div class="text-xs text-gray-600 mt-1">x = (-b ± √(b²-4ac)) / 2a</div>
+              </button>
+
+              <!-- 等差数列 -->
+              <button onclick="insertFormulaTemplate('arithmetic')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">等差数列</div>
+                <div class="text-xs text-gray-600 mt-1">aₙ = a₁ + (n-1)d</div>
+              </button>
+
+              <!-- 等比数列 -->
+              <button onclick="insertFormulaTemplate('geometric')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">等比数列</div>
+                <div class="text-xs text-gray-600 mt-1">aₙ = a₁ · qⁿ⁻¹</div>
+              </button>
+
+              <!-- 导数定义 -->
+              <button onclick="insertFormulaTemplate('derivative')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">导数定义</div>
+                <div class="text-xs text-gray-600 mt-1">f'(x) = lim(Δx→0) [f(x+Δx)-f(x)]/Δx</div>
+              </button>
+
+              <!-- 圆的面积 -->
+              <button onclick="insertFormulaTemplate('circle_area')" class="w-full p-2 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors text-left">
+                <div class="text-sm font-medium text-gray-900">圆的面积</div>
+                <div class="text-xs text-gray-600 mt-1">S = πr²</div>
+              </button>
+            </div>
+
+            <!-- 希腊字母 -->
+            <div class="text-sm font-semibold text-gray-700 mb-2 mt-4">希腊字母</div>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="insertGreekLetter('alpha')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="α">α</button>
+              <button onclick="insertGreekLetter('beta')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="β">β</button>
+              <button onclick="insertGreekLetter('gamma')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="γ">γ</button>
+              <button onclick="insertGreekLetter('delta')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="δ">δ</button>
+              <button onclick="insertGreekLetter('pi')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="π">π</button>
+              <button onclick="insertGreekLetter('theta')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="θ">θ</button>
+              <button onclick="insertGreekLetter('lambda')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="λ">λ</button>
+              <button onclick="insertGreekLetter('mu')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="μ">μ</button>
+            </div>
+
+            <!-- 常用符号 -->
+            <div class="text-sm font-semibold text-gray-700 mb-2 mt-4">常用符号</div>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="insertSymbol('infty')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="无穷">∞</button>
+              <button onclick="insertSymbol('pm')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="正负">±</button>
+              <button onclick="insertSymbol('times')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="乘">×</button>
+              <button onclick="insertSymbol('div')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="除">÷</button>
+              <button onclick="insertSymbol('leq')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="小于等于">≤</button>
+              <button onclick="insertSymbol('geq')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="大于等于">≥</button>
+              <button onclick="insertSymbol('neq')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="不等于">≠</button>
+              <button onclick="insertSymbol('approx')" class="p-2 border border-gray-200 rounded hover:bg-gray-100 text-center" title="约等于">≈</button>
+            </div>
+          </div>
+
+          <!-- 右侧编辑和预览区域 - 固定不滚动 -->
+          <div class="col-span-3 flex flex-col gap-4">
+            <!-- 编辑区 -->
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">编辑区域</label>
+              <div id="formulaEditor" class="w-full h-[250px] px-4 py-3 border-2 border-gray-300 rounded-lg bg-white focus-within:border-primary-500 transition-colors overflow-hidden">
+                <div id="formulaElements" class="flex flex-wrap gap-2 items-center h-full overflow-y-auto"></div>
+              </div>
+              <div class="mt-2 flex gap-2">
+                <button onclick="clearFormulaEditor()" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">
+                  <i class="fas fa-eraser mr-1"></i>清空
+                </button>
+                <button onclick="undoLastElement()" class="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50">
+                  <i class="fas fa-undo mr-1"></i>撤销
+                </button>
+              </div>
+            </div>
+
+            <!-- 预览区 -->
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2">预览</label>
+              <div id="formulaPreview" class="w-full h-[180px] px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center text-3xl overflow-y-auto">
+                <span class="text-gray-400 text-sm">公式预览将显示在这里</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3 flex-shrink-0">
+        <button onclick="closeFormulaEditor()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+          取消
+        </button>
+        <button onclick="confirmFormulaInsert()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
+          <i class="fas fa-check mr-2"></i>
+          插入公式
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 全局变量
     let parsedData = [];
@@ -500,15 +841,545 @@ D. 指缝
     let selectedKnowledgePoints = []; // 当前选中的知识点
     let knowledgeSelectionMode = 'all'; // 'all' 全局添加, 'single' 单个题目
     let currentQuestionIndex = -1; // 当前操作的题目索引
+    let imageDataMap = {}; // 图片数据映射：imageId -> {width, height, data}
+    let imageIdCounter = 0; // 图片ID计数器
+    let formulaDataMap = {}; // 公式数据映射：formulaId -> {latex: '...'}
+    let formulaIdCounter = 0; // 公式ID计数器
+    let savedRange = null; // 保存的光标位置
+    let formulaElements = []; // 可视化公式编辑器的元素数组
+    let draggedImageId = null; // 当前拖拽的图片ID
+    let draggedSourceField = null; // 拖拽源字段信息 {questionIndex, fieldType, optionIndex}
+    let dropCursorElement = null; // 光标指示器元素
+    let dropTargetInfo = null; // 拖拽目标信息 {element, textNode, offset}
 
     // 页面加载完成
     document.addEventListener('DOMContentLoaded', function() {
       // 加载知识点数据
       loadKnowledgePoints();
 
-      // 监听输入变化，实时解析（300ms 防抖）
-      document.getElementById('inputText').addEventListener('input', debounce(handleInputChange, 300));
+      const inputDiv = document.getElementById('inputText');
+
+      // 初始化图片拖拽监听（已废弃，左侧输入框不再支持图片拖拽）
+      // initInputDivDragListeners();
+
+      // 创建防抖处理函数
+      const debouncedHandleInputChange = debounce(function() {
+        console.log('防抖后执行 handleInputChange');
+        handleInputChange();
+      }, 100);
+
+      // 全局图片粘贴防抖标志（避免重复处理）
+      let isProcessingImagePaste = false;
+      let pasteEventCounter = 0; // 追踪 paste 事件调用次数
+      let lastPasteTime = 0; // 上次粘贴时间戳（防止短时间内重复触发）
+
+      // 监听输入变化，实时解析（100ms 防抖，加快响应速度）
+      inputDiv.addEventListener('input', function(e) {
+        // 如果正在处理图片粘贴，不触发解析（因为 paste 事件会手动调用）
+        if (isProcessingImagePaste) {
+          console.log('%c  ⊗ INPUT 事件被阻止（正在处理图片）', 'color: orange;');
+          return;
+        }
+        console.log('%c  ⊙ INPUT 事件触发', 'color: gray;');
+        debouncedHandleInputChange();
+      });
+
+      // 监听粘贴事件，支持图片粘贴和纯文本粘贴
+      inputDiv.addEventListener('paste', function(event) {
+        pasteEventCounter++;
+        const currentTime = Date.now();
+
+        console.log('%c========== PASTE 事件 #' + pasteEventCounter + ' ==========', 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
+        console.log('当前时间:', currentTime, '上次粘贴时间:', lastPasteTime, '间隔:', currentTime - lastPasteTime, 'ms');
+
+        // 防止短时间内重复触发（200ms 内的重复 paste 事件直接忽略）
+        if (currentTime - lastPasteTime < 200) {
+          console.log('%c⊗⊗⊗ 200ms 内重复的 PASTE 事件，直接忽略！ ⊗⊗⊗', 'color: red; font-weight: bold; font-size: 16px; background: yellow;');
+          event.preventDefault();
+          return;
+        }
+
+        lastPasteTime = currentTime;
+
+        const clipboardData = event.clipboardData || window.clipboardData;
+        const items = clipboardData.items;
+
+        console.log('剪贴板项目数量:', items ? items.length : 0);
+        console.log('当前 isProcessingImagePaste:', isProcessingImagePaste);
+
+        // 首先检查是否有图片
+        let hasImage = false;
+
+        // 检查剪贴板中的所有项目类型
+        const imageItems = [];
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            imageItems.push({ index: i, type: items[i].type, item: items[i] });
+            console.log(`  [图片项 ${i}] 类型:`, items[i].type);
+          }
+        }
+
+        console.log('%c找到 ' + imageItems.length + ' 个图片项', 'color: blue; font-weight: bold;');
+
+        // 如果有图片且当前没有在处理中
+        if (imageItems.length > 0 && !isProcessingImagePaste) {
+          hasImage = true;
+          isProcessingImagePaste = true; // 立即设置为处理中
+          event.preventDefault();
+          console.log('%c[锁定] isProcessingImagePaste = true', 'color: red; font-weight: bold;');
+
+          // 只处理第一个图片项
+          const firstImageItem = imageItems[0];
+
+          const blob = firstImageItem.item.getAsFile();
+          if (!blob) {
+            console.error('❌ 无法获取图片文件');
+            isProcessingImagePaste = false;
+            return;
+          }
+
+          const reader = new FileReader();
+
+          reader.onload = function(e) {
+            try {
+              // 生成图片ID
+              imageIdCounter++;
+              const imageId = `img_${imageIdCounter}`;
+              console.log('%c[步骤1] 生成图片ID: ' + imageId, 'color: green; font-weight: bold;');
+
+              // 存储图片数据（默认宽度 200px）
+              imageDataMap[imageId] = {
+                data: e.target.result,
+                width: 200
+              };
+              console.log('%c[步骤2] 图片数据已保存到 imageDataMap', 'color: green;');
+
+              // 插入图片标记文本
+              console.log('%c[步骤3] 调用 insertImageElement...', 'color: orange;');
+              insertImageElement(imageId);
+              console.log('%c[步骤3完成] insertImageElement 返回', 'color: green;');
+
+              // 触发解析更新
+              console.log('%c[步骤4] 调用 handleInputChange...', 'color: orange;');
+              handleInputChange();
+              console.log('%c[步骤4完成] handleInputChange 返回', 'color: green;');
+
+              console.log('%c========== 图片粘贴完成 ==========', 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
+            } finally {
+              // 500ms 后重置标志，防止短时间内重复粘贴
+              setTimeout(() => {
+                isProcessingImagePaste = false;
+                console.log('%c[解锁] isProcessingImagePaste = false', 'color: green; font-weight: bold;');
+              }, 500);
+            }
+          };
+
+          reader.onerror = function() {
+            console.error('❌ 图片读取失败');
+            isProcessingImagePaste = false;
+          };
+
+          reader.readAsDataURL(blob);
+        } else if (imageItems.length > 0 && isProcessingImagePaste) {
+          // 如果正在处理图片，阻止事件
+          event.preventDefault();
+          console.log('%c⚠ 图片正在处理中，忽略此次粘贴事件', 'color: red; font-weight: bold;');
+        }
+
+        // 如果没有图片，处理文本粘贴
+        if (!hasImage) {
+          event.preventDefault();
+          console.log('✓ 检测到文本粘贴');
+
+          // 获取纯文本内容
+          const text = clipboardData.getData('text/plain');
+          console.log('粘贴的纯文本长度:', text ? text.length : 0);
+
+          if (!text) {
+            console.log('没有纯文本内容');
+            console.log('========== paste 结束（无内容）==========\n');
+            return;
+          }
+
+          // 获取当前内容
+          const currentText = getInputText();
+
+          // 获取光标位置
+          const sel = window.getSelection();
+          if (sel.rangeCount === 0) {
+            console.log('没有光标位置，直接追加到末尾');
+            // 如果没有光标，直接追加
+            const newText = currentText ? currentText + '\n' + text : text;
+            setInputText(newText);
+          } else {
+            // 有光标位置，在光标位置插入
+            const range = sel.getRangeAt(0);
+
+            // 删除选中的内容
+            range.deleteContents();
+
+            // 简单方法：直接插入纯文本，让浏览器处理
+            // 然后立即重新格式化整个内容
+            document.execCommand('insertText', false, text);
+          }
+
+          // 触发 input 事件以便重新解析
+          setTimeout(() => {
+            console.log('粘贴完成，规范化内容');
+            // 规范化 DOM 结构：提取文本后重新设置
+            const normalizedText = getInputText();
+
+            // 重新设置内容以确保 DOM 结构一致
+            setInputText(normalizedText);
+
+            // 触发解析
+            handleInputChange();
+            console.log('========== 文本粘贴完成 ==========\n');
+          }, 100);
+        }
+      });
     });
+
+    // ==================== ContentEditable 辅助函数 ====================
+
+    // 从 contentEditable 获取纯文本（包含标记）
+    let getInputTextCounter = 0; // 追踪调用次数
+    function getInputText() {
+      getInputTextCounter++;
+      const inputDiv = document.getElementById('inputText');
+      let text = '';
+
+      // 不输出详细日志，避免刷屏
+      // console.log('=== getInputText #' + getInputTextCounter + ' ===');
+
+      // 遍历所有子节点
+      function traverseNodes(node, isTopLevel = false, depth = 0) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          text += node.textContent;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          if (node.classList.contains('inline-formula-editable')) {
+            // 公式元素，提取 data-formula-id
+            const formulaId = node.getAttribute('data-formula-id');
+            text += `[公式:${formulaId}]`;
+          } else if (node.tagName === 'BR') {
+            text += '\n';
+          } else if (node.tagName === 'DIV' && isTopLevel) {
+            // 顶层 div 表示新行
+            if (text && !text.endsWith('\n')) {
+              text += '\n';
+            }
+            // 递归处理子节点
+            for (let child of node.childNodes) {
+              traverseNodes(child, false, depth + 1);
+            }
+          } else {
+            // 递归处理子节点
+            for (let child of node.childNodes) {
+              traverseNodes(child, isTopLevel, depth + 1);
+            }
+          }
+        }
+      }
+
+      for (let child of inputDiv.childNodes) {
+        traverseNodes(child, true, 0);
+      }
+
+      // 清理多余的换行
+      text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+      return text;
+    }
+
+    // 设置 contentEditable 的内容（渲染公式和图片）
+    function setInputText(text) {
+      const inputDiv = document.getElementById('inputText');
+      inputDiv.innerHTML = '';
+
+      if (!text || text.trim() === '') {
+        return;
+      }
+
+      // 按行分割
+      const lines = text.split('\n');
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        const lineDiv = document.createElement('div');
+
+        if (line.trim() === '') {
+          lineDiv.innerHTML = '<br>';
+        } else {
+          // 解析行中的公式和图片
+          let lastIndex = 0;
+          const imageRegex = /\[图片:(img_\d+)\]/g;
+          const formulaRegex = /\[公式:(formula_\d+)\]/g;
+
+          // 找到所有匹配项
+          const matches = [];
+          let match;
+
+          while ((match = imageRegex.exec(line)) !== null) {
+            matches.push({ type: 'image', index: match.index, length: match[0].length, id: match[1] });
+          }
+          while ((match = formulaRegex.exec(line)) !== null) {
+            matches.push({ type: 'formula', index: match.index, length: match[0].length, id: match[1] });
+          }
+
+          // 按位置排序
+          matches.sort((a, b) => a.index - b.index);
+
+          // 构建行内容
+          matches.forEach(m => {
+            // 添加前面的文本
+            if (m.index > lastIndex) {
+              const textNode = document.createTextNode(line.substring(lastIndex, m.index));
+              lineDiv.appendChild(textNode);
+            }
+
+            // 添加公式或图片元素
+            if (m.type === 'formula') {
+              lineDiv.appendChild(createFormulaElement(m.id));
+            } else if (m.type === 'image') {
+              lineDiv.appendChild(createImageElement(m.id));
+            }
+
+            lastIndex = m.index + m.length;
+          });
+
+          // 添加剩余文本
+          if (lastIndex < line.length) {
+            const textNode = document.createTextNode(line.substring(lastIndex));
+            lineDiv.appendChild(textNode);
+          }
+        }
+
+        inputDiv.appendChild(lineDiv);
+      }
+    }
+
+    // 创建公式元素
+    function createFormulaElement(formulaId) {
+      const formulaData = formulaDataMap[formulaId];
+      if (!formulaData) {
+        return document.createTextNode(`[公式:${formulaId}]`);
+      }
+
+      const span = document.createElement('span');
+      span.className = 'inline-formula-editable';
+      span.setAttribute('contenteditable', 'false');
+      span.setAttribute('data-formula-id', formulaId);
+
+      try {
+        katex.render(formulaData.latex, span, {
+          throwOnError: false,
+          displayMode: false,
+          errorColor: '#F53F3F'
+        });
+      } catch (e) {
+        span.textContent = '[公式错误]';
+        span.style.color = '#ef4444';
+      }
+
+      return span;
+    }
+
+    // 创建图片元素 - 左侧只显示纯文本标记
+    function createImageElement(imageId) {
+      // 左侧输入框不创建图片元素，只返回纯文本标记
+      // 这样可以避免与contentEditable的复杂交互问题
+      return document.createTextNode(`[图片:${imageId}]`);
+    }
+
+    // 在光标位置插入公式元素
+    function insertFormulaElement(formulaId) {
+      const inputDiv = document.getElementById('inputText');
+
+      if (!inputDiv) {
+        console.error('找不到 inputText 元素');
+        return;
+      }
+
+      // 确保输入区域有焦点
+      inputDiv.focus();
+
+      const sel = window.getSelection();
+      let range;
+
+      // 优先使用保存的光标位置
+      if (savedRange) {
+        console.log('使用保存的光标位置');
+        range = savedRange;
+        sel.removeAllRanges();
+        sel.addRange(range);
+        savedRange = null; // 使用后清空
+      } else if (!sel.rangeCount || !inputDiv.contains(sel.anchorNode)) {
+        // 如果没有保存的光标且当前没有有效选区，创建新的 range
+        console.log('创建新的 range，因为没有有效选区');
+        range = document.createRange();
+
+        // 如果 inputDiv 为空，创建一个空的 div
+        if (inputDiv.childNodes.length === 0) {
+          const div = document.createElement('div');
+          div.appendChild(document.createElement('br'));
+          inputDiv.appendChild(div);
+          console.log('inputDiv 为空，创建了新的 div');
+        }
+
+        // 设置 range 到最后一个子节点的末尾
+        const lastChild = inputDiv.lastChild;
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          range.setStart(lastChild, lastChild.length);
+          range.setEnd(lastChild, lastChild.length);
+        } else if (lastChild.tagName === 'DIV') {
+          // 如果最后一个是 div，在其内部最后位置插入
+          if (lastChild.childNodes.length === 0) {
+            const br = document.createElement('br');
+            lastChild.appendChild(br);
+          }
+          const lastDivChild = lastChild.lastChild;
+          if (lastDivChild.nodeType === Node.TEXT_NODE) {
+            range.setStart(lastDivChild, lastDivChild.length);
+            range.setEnd(lastDivChild, lastDivChild.length);
+          } else if (lastDivChild.tagName === 'BR') {
+            range.setStartBefore(lastDivChild);
+            range.setEndBefore(lastDivChild);
+          } else {
+            range.setStartAfter(lastDivChild);
+            range.setEndAfter(lastDivChild);
+          }
+        } else {
+          range.setStartAfter(lastChild);
+          range.setEndAfter(lastChild);
+        }
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        range = sel.getRangeAt(0);
+        console.log('使用现有选区');
+      }
+
+      // 删除选中的内容
+      range.deleteContents();
+
+      // 创建公式元素
+      const formulaElement = createFormulaElement(formulaId);
+      console.log('创建公式元素:', formulaElement);
+
+      // 插入公式元素
+      range.insertNode(formulaElement);
+
+      // 在公式后添加一个空格，方便继续输入
+      const spaceNode = document.createTextNode(' ');
+      range.setStartAfter(formulaElement);
+      range.insertNode(spaceNode);
+
+      // 移动光标到空格后面
+      range.setStartAfter(spaceNode);
+      range.setEndAfter(spaceNode);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      console.log('公式插入完成，inputDiv.innerHTML:', inputDiv.innerHTML);
+    }
+
+    // 在光标位置插入图片元素
+    let insertImageCallCounter = 0; // 追踪调用次数
+    function insertImageElement(imageId) {
+      insertImageCallCounter++;
+      console.log('%c  → insertImageElement #' + insertImageCallCounter + ': ' + imageId, 'color: blue;');
+
+      const inputDiv = document.getElementById('inputText');
+
+      if (!inputDiv) {
+        console.error('找不到 inputText 元素');
+        return;
+      }
+
+      // 确保输入区域有焦点
+      inputDiv.focus();
+
+      const sel = window.getSelection();
+      let range;
+
+      // 优先使用保存的光标位置
+      if (savedRange) {
+        console.log('使用保存的光标位置（图片）');
+        range = savedRange;
+        sel.removeAllRanges();
+        sel.addRange(range);
+        savedRange = null; // 使用后清空
+      } else if (!sel.rangeCount || !inputDiv.contains(sel.anchorNode)) {
+        // 如果没有保存的光标且当前没有有效选区，创建新的 range
+        console.log('创建新的 range，因为没有有效选区（图片）');
+        range = document.createRange();
+
+        // 如果 inputDiv 为空，创建一个空的 div
+        if (inputDiv.childNodes.length === 0) {
+          const div = document.createElement('div');
+          div.appendChild(document.createElement('br'));
+          inputDiv.appendChild(div);
+          console.log('inputDiv 为空，创建了新的 div');
+        }
+
+        // 设置 range 到最后一个子节点的末尾
+        const lastChild = inputDiv.lastChild;
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          range.setStart(lastChild, lastChild.length);
+          range.setEnd(lastChild, lastChild.length);
+        } else if (lastChild.tagName === 'DIV') {
+          // 如果最后一个是 div，在其内部最后位置插入
+          if (lastChild.childNodes.length === 0) {
+            const br = document.createElement('br');
+            lastChild.appendChild(br);
+          }
+          const lastDivChild = lastChild.lastChild;
+          if (lastDivChild.nodeType === Node.TEXT_NODE) {
+            range.setStart(lastDivChild, lastDivChild.length);
+            range.setEnd(lastDivChild, lastDivChild.length);
+          } else if (lastDivChild.tagName === 'BR') {
+            range.setStartBefore(lastDivChild);
+            range.setEndBefore(lastDivChild);
+          } else {
+            range.setStartAfter(lastDivChild);
+            range.setEndAfter(lastDivChild);
+          }
+        } else {
+          range.setStartAfter(lastChild);
+          range.setEndAfter(lastChild);
+        }
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        range = sel.getRangeAt(0);
+        console.log('使用现有选区（图片）');
+      }
+
+      // 删除选中的内容
+      range.deleteContents();
+
+      // 创建图片元素
+      const imageElement = createImageElement(imageId);
+      console.log('创建图片元素:', imageElement);
+
+      // 插入图片元素
+      range.insertNode(imageElement);
+
+      // 在图片后添加一个空格，方便继续输入
+      const spaceNode = document.createTextNode(' ');
+      range.setStartAfter(imageElement);
+      range.insertNode(spaceNode);
+
+      // 移动光标到空格后面
+      range.setStartAfter(spaceNode);
+      range.setEndAfter(spaceNode);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      console.log('    ✓ 图片标记已插入到 DOM');
+    }
 
     // 加载知识点数据
     function loadKnowledgePoints() {
@@ -564,19 +1435,29 @@ D. 指缝
     }
 
     // 处理输入变化
+    let handleInputChangeCounter = 0; // 追踪调用次数
     function handleInputChange() {
-      const text = document.getElementById('inputText').value.trim();
+      handleInputChangeCounter++;
+      console.log('%c  → handleInputChange #' + handleInputChangeCounter, 'color: purple;');
 
-      if (!text) {
+      const text = getInputText();
+
+      // 简化日志
+      console.log('    文本长度:', text.length, '包含图片标记:', text.match(/\[图片:img_\d+\]/g) ? text.match(/\[图片:img_\d+\]/g).length : 0);
+
+      if (!text || text.trim() === '') {
+        console.log('文本为空，显示空状态');
         showEmptyState();
         return;
       }
 
       // 自动解析
+      console.log('开始解析文本');
       parseAndDisplay(text);
 
       // 自动保存
       autoSave();
+      console.log('=== handleInputChange 结束 ===');
     }
 
     // 自动保存
@@ -591,13 +1472,163 @@ D. 指缝
 
     // 解析并显示
     function parseAndDisplay(text) {
+      console.log('=== parseAndDisplay 开始 ===');
+      console.log('待解析文本:', text);
       const result = parseQuestions(text);
       parsedData = result.questions;
       errorIndexes = result.errors;
 
+      console.log('解析结果 - 题目数量:', parsedData.length);
+      console.log('解析结果 - 错误数量:', errorIndexes.length);
+      console.log('解析后的题目数据:', parsedData);
+
       updateStatistics();
       displayQuestions();
+      console.log('=== parseAndDisplay 结束 ===');
     }
+
+    // 将文本中的图片和公式标记转换为HTML
+    function convertImagesToHTML(text) {
+      if (!text) return '';
+
+      // 1. 先处理图片标记 - 右侧支持拖拽和调整大小
+      const imageRegex = /\[图片:(img_\d+)\]/g;
+      text = text.replace(imageRegex, function(match, imageId) {
+        const imageData = imageDataMap[imageId];
+        if (imageData) {
+          // 右侧识别框显示图片（支持拖拽移动、调整大小和删除）
+          return '<span class="inline-image-wrapper" ' +
+                      'style="position: relative; display: inline-block; margin: 0 4px; vertical-align: middle;"' +
+                      'onmouseenter="showResizeHandles(this)" ' +
+                      'onmouseleave="hideResizeHandles(this)">' +
+                    '<img src="' + imageData.data + '"' +
+                         ' data-image-id="' + imageId + '"' +
+                         ' style="display: block; width: ' + imageData.width + 'px; height: auto; border-radius: 4px; transition: all 0.2s; cursor: move;"' +
+                         ' class="inline-image border-2 border-gray-300"' +
+                         ' draggable="true"' +
+                         ' ondragstart="handleImageDragStart(event, \'' + imageId + '\')"' +
+                         ' ondragend="handleImageDragEnd(event)">' +
+
+                    // 四个角的拖拽手柄
+                    '<span class="resize-handle" draggable="false" ' +
+                         'onmousedown="event.stopPropagation(); window.startInlineImageResize(event, \'' + imageId + '\', \'nw\')" ' +
+                         'style="position: absolute; top: -6px; left: -6px; width: 14px; height: 14px; background: white; border: 2px solid #00B96B; border-radius: 50%; cursor: nw-resize; display: none; z-index: 10;"></span>' +
+
+                    '<span class="resize-handle" draggable="false" ' +
+                         'onmousedown="event.stopPropagation(); window.startInlineImageResize(event, \'' + imageId + '\', \'ne\')" ' +
+                         'style="position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; background: white; border: 2px solid #00B96B; border-radius: 50%; cursor: ne-resize; display: none; z-index: 10;"></span>' +
+
+                    '<span class="resize-handle" draggable="false" ' +
+                         'onmousedown="event.stopPropagation(); window.startInlineImageResize(event, \'' + imageId + '\', \'sw\')" ' +
+                         'style="position: absolute; bottom: -6px; left: -6px; width: 14px; height: 14px; background: white; border: 2px solid #00B96B; border-radius: 50%; cursor: sw-resize; display: none; z-index: 10;"></span>' +
+
+                    '<span class="resize-handle" draggable="false" ' +
+                         'onmousedown="event.stopPropagation(); window.startInlineImageResize(event, \'' + imageId + '\', \'se\')" ' +
+                         'style="position: absolute; bottom: -6px; right: -6px; width: 14px; height: 14px; background: white; border: 2px solid #00B96B; border-radius: 50%; cursor: se-resize; display: none; z-index: 10;"></span>' +
+
+                    // 删除按钮
+                    '<button class="delete-btn" draggable="false"' +
+                            ' onclick="event.stopPropagation(); window.removeImageById(\'' + imageId + '\')"' +
+                            ' style="position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #ef4444; color: white; border: 2px solid white; font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 11;"' +
+                            ' title="删除图片">×</button>' +
+                  '</span>';
+        }
+        return match;
+      });
+
+      // 2. 再处理公式标记
+      const formulaRegex = /\[公式:(formula_\d+)\]/g;
+      text = text.replace(formulaRegex, function(match, formulaId) {
+        const formulaData = formulaDataMap[formulaId];
+        if (formulaData) {
+          // 创建一个临时容器用于 KaTeX 渲染
+          const tempDiv = document.createElement('div');
+          try {
+            katex.render(formulaData.latex, tempDiv, {
+              throwOnError: false,
+              displayMode: false, // 行内模式
+              errorColor: '#F53F3F'
+            });
+            // 将渲染后的公式包装在一个 span 中，添加删除按钮
+            return '<span class="inline-formula-wrapper" ' +
+                      'style="position: relative; display: inline-block; margin: 0 4px; vertical-align: middle; padding: 2px 6px; background: #f0f9ff; border-radius: 4px; border: 1px solid #bae6fd;" ' +
+                      'onmouseenter="showFormulaDelete(this)" ' +
+                      'onmouseleave="hideFormulaDelete(this)">' +
+                    '<span class="inline-formula" style="display: inline-block;">' + tempDiv.innerHTML + '</span>' +
+                    '<button class="formula-delete-btn"' +
+                            ' onclick="event.stopPropagation(); window.removeFormulaById(\'' + formulaId + '\')"' +
+                            ' style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: white; border: 2px solid white; font-size: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 11;"' +
+                            ' title="删除公式">×</button>' +
+                  '</span>';
+          } catch (e) {
+            return '<span class="text-error-500 text-sm">[公式错误]</span>';
+          }
+        }
+        return match;
+      });
+
+      return text;
+    }
+
+    // 显示公式删除按钮
+    window.showFormulaDelete = function(wrapper) {
+      const deleteBtn = wrapper.querySelector('.formula-delete-btn');
+      if (deleteBtn) {
+        deleteBtn.style.display = 'flex';
+      }
+      wrapper.style.background = '#dbeafe';
+      wrapper.style.borderColor = '#60a5fa';
+    };
+
+    // 隐藏公式删除按钮
+    window.hideFormulaDelete = function(wrapper) {
+      const deleteBtn = wrapper.querySelector('.formula-delete-btn');
+      if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+      }
+      wrapper.style.background = '#f0f9ff';
+      wrapper.style.borderColor = '#bae6fd';
+    };
+
+    // 显示拖拽手柄
+    window.showResizeHandles = function(wrapper) {
+      const handles = wrapper.querySelectorAll('.resize-handle');
+      const deleteBtn = wrapper.querySelector('.delete-btn');
+      const img = wrapper.querySelector('.inline-image');
+
+      handles.forEach(function(handle) {
+        handle.style.display = 'block';
+      });
+
+      if (deleteBtn) {
+        deleteBtn.style.display = 'flex';
+      }
+
+      if (img) {
+        img.style.boxShadow = '0 2px 8px rgba(0, 185, 107, 0.3)';
+        img.style.borderColor = '#00B96B';
+      }
+    };
+
+    // 隐藏拖拽手柄
+    window.hideResizeHandles = function(wrapper) {
+      const handles = wrapper.querySelectorAll('.resize-handle');
+      const deleteBtn = wrapper.querySelector('.delete-btn');
+      const img = wrapper.querySelector('.inline-image');
+
+      handles.forEach(function(handle) {
+        handle.style.display = 'none';
+      });
+
+      if (deleteBtn) {
+        deleteBtn.style.display = 'none';
+      }
+
+      if (img) {
+        img.style.boxShadow = '';
+        img.style.borderColor = '#d1d5db';
+      }
+    };
 
     // 解析题目
     function parseQuestions(text) {
@@ -664,7 +1695,7 @@ D. 指缝
 
           currentQuestion = {
             id: titleMatch[1],
-            content: titleMatch[2], // 允许为空
+            content: '',
             options: [],
             answer: '',
             explanation: '',
@@ -676,6 +1707,10 @@ D. 指缝
             errorMessages: [],
             isTemporary: false
           };
+
+          // 处理题目内容（保留图片标记）
+          const contentText = titleMatch[2];
+          currentQuestion.content = contentText;
           continue;
         }
 
@@ -690,19 +1725,32 @@ D. 指缝
         // 选项
         const optionMatch = line.match(/^([A-E])[.、:。：]\s*(.+)$/);
         if (optionMatch) {
-          currentQuestion.options.push({ label: optionMatch[1], text: optionMatch[2] });
+          // 保留选项文本中的图片标记
+          currentQuestion.options.push({
+            label: optionMatch[1],
+            text: optionMatch[2]
+          });
           continue;
         }
 
         // 答案（支持"答案："、"答："、"正确答案："）
         if (line.startsWith('答案：') || line.startsWith('答：') || line.startsWith('正确答案：')) {
-          currentQuestion.answer = line.replace(/^(正确)?答案?：/, '').trim();
+          const answerText = line.replace(/^(正确)?答案?：/, '').trim();
+          currentQuestion.answer = answerText;
           continue;
         }
 
-        // 解析
-        if (line.startsWith('答案解析：')) {
-          currentQuestion.explanation = line.replace('答案解析：', '').trim();
+        // 解析（支持"解析："、"答案解析："、"参考答案："）
+        if (line.startsWith('解析：') || line.startsWith('答案解析：') || line.startsWith('参考答案：')) {
+          let explanationText = line;
+          if (line.startsWith('答案解析：')) {
+            explanationText = line.replace('答案解析：', '').trim();
+          } else if (line.startsWith('参考答案：')) {
+            explanationText = line.replace('参考答案：', '').trim();
+          } else if (line.startsWith('解析：')) {
+            explanationText = line.replace('解析：', '').trim();
+          }
+          currentQuestion.explanation = explanationText;
           continue;
         }
 
@@ -711,6 +1759,15 @@ D. 指缝
           const kps = line.replace('知识点：', '').trim();
           currentQuestion.knowledgePoints = kps.split(/[，、；]/).map(k => k.trim());
           continue;
+        }
+
+        // 其他行作为题目内容的一部分（多行题干）
+        // 排除已知的关键词开头的行
+        const knownPrefixes = ['答案：', '答：', '正确答案：', '解析：', '答案解析：', '参考答案：', '知识点：', 'A.', 'B.', 'C.', 'D.', 'E.'];
+        const isKnownLine = knownPrefixes.some(prefix => line.startsWith(prefix));
+
+        if (currentQuestion.content && line && !isKnownLine) {
+          currentQuestion.content += ' ' + line;
         }
       }
 
@@ -752,8 +1809,15 @@ D. 指缝
           if (q.options.length === 0) {
             q.optionsError = '选项无法识别，选项格式为"A. 选项内容"';
           }
+
           if (!q.answer || q.answer.trim() === '') {
             q.answerError = '答案无法识别，题目必须包含"答案："字段，且不能为空';
+          } else {
+            // 单选题和多选题的答案不支持插入图片，只能是纯字母
+            const imageRegex = /\[图片:(img_\d+)\]/;
+            if (imageRegex.test(q.answer)) {
+              q.answerError = '答案无法识别，答案只能是选项字母（如A、B、AB等），不支持插入图片';
+            }
           }
         }
 
@@ -853,12 +1917,20 @@ D. 指缝
         `;
       } else if (q.options.length > 0) {
         optionsHtml = '<div class="space-y-2 mb-4">';
-        q.options.forEach(opt => {
+        q.options.forEach((opt, optIndex) => {
           const isCorrect = q.answer && q.answer.includes(opt.label);
+          // 使用convertImagesToHTML将选项中的图片标记转换为内联图片
+          const optionTextWithImages = convertImagesToHTML(opt.text);
           optionsHtml += `
-            <div class="flex items-start py-1">
-              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${isCorrect ? 'bg-success-100 text-success-700' : 'bg-gray-100 text-gray-600'}">${opt.label}</span>
-              <span class="text-sm text-gray-700">${opt.text}</span>
+            <div class="flex items-start py-1"
+                 data-drop-target="option"
+                 data-question-index="${index}"
+                 data-option-index="${optIndex}"
+                 ondragover="handleDragOver(event)"
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleImageDrop(event, ${index}, 'option', ${optIndex})">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${isCorrect ? 'bg-success-500 text-white' : 'bg-gray-100 text-gray-600'}">${opt.label}</span>
+              <span class="text-sm text-gray-700">${optionTextWithImages}</span>
             </div>
           `;
         });
@@ -891,8 +1963,13 @@ D. 指缝
           </div>
         </div>
 
-        <div class="mb-4">
-          <p class="text-sm text-gray-900 leading-relaxed">${q.id}、${q.content || ''}</p>
+        <div class="mb-4"
+             data-drop-target="content"
+             data-question-index="${index}"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleImageDrop(event, ${index}, 'content')">
+          <p class="text-sm text-gray-900 leading-relaxed">${q.id}、${convertImagesToHTML(q.content || '')}</p>
           ${q.contentError ? `<div class="error-text text-xs mt-2">${q.contentError}</div>` : ''}
         </div>
 
@@ -902,10 +1979,24 @@ D. 指缝
         <div class="mb-4">
           <div class="flex items-start text-sm">
             <span class="text-gray-500 mr-2 flex-shrink-0">答案：</span>
-            <span class="text-gray-900 font-medium">${q.answer || ''}</span>
+            <span class="text-gray-900 font-medium">${convertImagesToHTML(q.answer || '')}</span>
           </div>
           ${q.answerError ? `<div class="error-text text-xs mt-2">${q.answerError}</div>` : ''}
         </div>
+
+        ${q.explanation ? `
+        <div class="mb-4"
+             data-drop-target="explanation"
+             data-question-index="${index}"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleImageDrop(event, ${index}, 'explanation')">
+          <div class="flex items-start text-sm">
+            <span class="text-gray-500 mr-2 flex-shrink-0">解析：</span>
+            <span class="text-gray-700">${convertImagesToHTML(q.explanation)}</span>
+          </div>
+        </div>
+        ` : ''}
 
         <div class="flex items-start text-sm">
           <span class="text-gray-500 mr-2 flex-shrink-0">知识点：</span>
@@ -998,8 +2089,15 @@ D. 指缝
 
     // 从 textarea 中删除知识点
     function removeKnowledgePointFromTextarea(questionIndex, knowledgeName) {
-      const textarea = document.getElementById('inputText');
-      const lines = textarea.value.split('\n');
+      console.log('=== 删除知识点开始 ===');
+      console.log('题目索引:', questionIndex);
+      console.log('知识点名称:', knowledgeName);
+
+      const inputDiv = document.getElementById('inputText');
+      let text = getInputText(); // 使用 getInputText 获取文本
+      console.log('当前文本:', text);
+
+      const lines = text.split('\n');
       let newLines = [];
       let questionIdx = -1;
       let inQuestion = false;
@@ -1035,8 +2133,12 @@ D. 指缝
           const knowledgeText = line.replace(/^知识点：/, '');
           const knowledges = knowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
 
+          console.log('原知识点:', knowledges);
+
           // 删除指定的知识点
           const updatedKnowledges = knowledges.filter(k => k !== knowledgeName);
+
+          console.log('删除后知识点:', updatedKnowledges);
 
           // 如果还有剩余知识点，更新该行；否则跳过该行
           if (updatedKnowledges.length > 0) {
@@ -1050,11 +2152,14 @@ D. 指缝
         newLines.push(lines[i]);
       }
 
-      // 更新 textarea
-      textarea.value = newLines.join('\n');
+      // 更新内容，使用 setInputText
+      const newText = newLines.join('\n');
+      console.log('新文本:', newText);
+      setInputText(newText);
 
       // 重新解析
       handleInputChange();
+      console.log('=== 删除知识点完成 ===');
     }
 
     // 打开知识点选择弹窗
@@ -1227,8 +2332,15 @@ D. 指缝
 
     // 将知识点插入到输入框
     function insertKnowledgePointsToTextarea(knowledgeNames) {
-      const textarea = document.getElementById('inputText');
-      let text = textarea.value;
+      console.log('=== 插入知识点开始 ===');
+      console.log('知识点名称:', knowledgeNames);
+      console.log('知识点选择模式:', knowledgeSelectionMode);
+      console.log('当前题目索引:', currentQuestionIndex);
+
+      const inputDiv = document.getElementById('inputText');
+      let text = getInputText(); // 使用 getInputText 获取文本
+      console.log('获取到的文本:', text);
+
       const lines = text.split('\n');
       let newLines = [];
       let questionIdx = -1;
@@ -1263,42 +2375,89 @@ D. 指缝
         if ((line.startsWith('答案：') || line.startsWith('答：') || line.startsWith('正确答案：')) && inQuestion) {
           newLines.push(lines[i]);
 
-          // 查看下一行是否已经是知识点行
+          // 检查下一行是否是答案解析
           const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
-          const hasKnowledgeLine = nextLine.startsWith('知识点：');
+          const isExplanation = nextLine.startsWith('答案解析：') || nextLine.startsWith('解析：');
 
-          // 判断是否需要为当前题目添加知识点
-          const shouldAddKnowledge =
-            (knowledgeSelectionMode === 'all') ||
-            (knowledgeSelectionMode === 'single' && questionIdx === currentQuestionIndex);
-
-          if (shouldAddKnowledge) {
-            if (hasKnowledgeLine) {
-              // 如果已有知识点行，读取已有的知识点
-              i++; // 跳过原有的知识点行
-              const existingKnowledgeText = lines[i].trim().replace(/^知识点：/, '');
-              const existingKnowledges = existingKnowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
-
-              // 全局模式：合并知识点（去重）
-              // 单个模式：替换知识点
-              let finalKnowledges;
-              if (knowledgeSelectionMode === 'all') {
-                // 合并并去重
-                finalKnowledges = [...new Set([...existingKnowledges, ...knowledgeNames])];
-              } else {
-                // 替换
-                finalKnowledges = knowledgeNames;
-              }
-
-              newLines.push('知识点：' + finalKnowledges.join('、'));
-            } else {
-              // 如果没有知识点行，直接添加
-              newLines.push('知识点：' + knowledgeNames.join('、'));
-            }
-          } else if (hasKnowledgeLine) {
-            // 不需要添加知识点，但已有知识点行，保留原有的
-            i++;
+          if (isExplanation) {
+            // 如果下一行是答案解析，先添加答案解析行
+            i++; // 移动到答案解析行
             newLines.push(lines[i]);
+
+            // 然后在答案解析后插入知识点
+            const nextNextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+            const hasKnowledgeLine = nextNextLine.startsWith('知识点：');
+
+            // 判断是否需要为当前题目添加知识点
+            const shouldAddKnowledge =
+              (knowledgeSelectionMode === 'all') ||
+              (knowledgeSelectionMode === 'single' && questionIdx === currentQuestionIndex);
+
+            if (shouldAddKnowledge) {
+              if (hasKnowledgeLine) {
+                // 如果已有知识点行，读取已有的知识点
+                i++; // 跳过原有的知识点行
+                const existingKnowledgeText = lines[i].trim().replace(/^知识点：/, '');
+                const existingKnowledges = existingKnowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
+
+                // 全局模式：合并知识点（去重）
+                // 单个模式：替换知识点
+                let finalKnowledges;
+                if (knowledgeSelectionMode === 'all') {
+                  // 合并并去重
+                  finalKnowledges = [...new Set([...existingKnowledges, ...knowledgeNames])];
+                } else {
+                  // 替换
+                  finalKnowledges = knowledgeNames;
+                }
+
+                newLines.push('知识点：' + finalKnowledges.join('、'));
+              } else {
+                // 如果没有知识点行，直接添加
+                newLines.push('知识点：' + knowledgeNames.join('、'));
+              }
+            } else if (hasKnowledgeLine) {
+              // 不需要添加知识点，但已有知识点行，保留原有的
+              i++;
+              newLines.push(lines[i]);
+            }
+          } else {
+            // 如果下一行不是答案解析，在答案后直接插入知识点
+            const hasKnowledgeLine = nextLine.startsWith('知识点：');
+
+            // 判断是否需要为当前题目添加知识点
+            const shouldAddKnowledge =
+              (knowledgeSelectionMode === 'all') ||
+              (knowledgeSelectionMode === 'single' && questionIdx === currentQuestionIndex);
+
+            if (shouldAddKnowledge) {
+              if (hasKnowledgeLine) {
+                // 如果已有知识点行，读取已有的知识点
+                i++; // 跳过原有的知识点行
+                const existingKnowledgeText = lines[i].trim().replace(/^知识点：/, '');
+                const existingKnowledges = existingKnowledgeText.split(/[、,，]/).map(k => k.trim()).filter(k => k);
+
+                // 全局模式：合并知识点（去重）
+                // 单个模式：替换知识点
+                let finalKnowledges;
+                if (knowledgeSelectionMode === 'all') {
+                  // 合并并去重
+                  finalKnowledges = [...new Set([...existingKnowledges, ...knowledgeNames])];
+                } else {
+                  // 替换
+                  finalKnowledges = knowledgeNames;
+                }
+
+                newLines.push('知识点：' + finalKnowledges.join('、'));
+              } else {
+                // 如果没有知识点行，直接添加
+                newLines.push('知识点：' + knowledgeNames.join('、'));
+              }
+            } else if (hasKnowledgeLine) {
+              // 不需要添加知识点，但已有知识点行，保留原有的
+              i++;
+              newLines.push(lines[i]);
+            }
           }
           continue;
         }
@@ -1307,27 +2466,1696 @@ D. 指缝
         newLines.push(lines[i]);
       }
 
-      // 更新 textarea
-      textarea.value = newLines.join('\n');
+      // 更新内容，使用 setInputText
+      const newText = newLines.join('\n');
+      console.log('新文本:', newText);
+      setInputText(newText);
+
+      // 重新解析
+      handleInputChange();
+      console.log('=== 插入知识点完成 ===');
+    }
+
+    // 插入图片
+    function insertImage() {
+      const inputDiv = document.getElementById('inputText');
+
+      // 保存当前光标位置
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0 && inputDiv.contains(sel.anchorNode)) {
+        savedRange = sel.getRangeAt(0).cloneRange();
+        console.log('保存了光标位置（图片）');
+      } else {
+        savedRange = null;
+        console.log('没有有效光标（图片），将使用默认位置');
+      }
+
+      const fileInput = document.getElementById('imageFileInput');
+      fileInput.onchange = handleImageSelect;
+      fileInput.click();
+    }
+
+    // 处理图片选择
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件');
+        return;
+      }
+
+      // 检查文件大小（限制 5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过 5MB');
+        return;
+      }
+
+      // 读取图片
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+
+        // 获取图片尺寸
+        const img = new Image();
+        img.onload = function() {
+          // 自动调整尺寸（最大宽度 400px）
+          let width = img.width;
+          let height = img.height;
+          const maxWidth = 400;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          // 插入图片标记到光标位置
+          insertImageMarkdown(base64Data, width, height);
+        };
+        img.src = base64Data;
+      };
+      reader.readAsDataURL(file);
+
+      // 清空 input 以便可以重复选择同一文件
+      event.target.value = '';
+    }
+
+    // 插入图片标记
+    function insertImageMarkdown(base64Data, width, height) {
+      // 生成唯一的图片ID
+      const imageId = 'img_' + (++imageIdCounter);
+
+      // 存储图片数据到映射中
+      imageDataMap[imageId] = {
+        width: Math.round(width),
+        height: Math.round(height),
+        data: base64Data
+      };
+
+      // 使用 insertImageElement 插入图片元素
+      insertImageElement(imageId);
 
       // 重新解析
       handleInputChange();
     }
 
-    // 插入图片
-    function insertImage() {
-      alert('插入图片功能待实现');
+    // 编辑内联图片大小（保留备用，确保全局可访问）
+    window.editInlineImage = function(imageId) {
+      const imageData = imageDataMap[imageId];
+      if (!imageData) return;
+
+      const currentWidth = imageData.width;
+      const newWidth = prompt(`调整图片宽度（当前：${currentWidth}px，范围：50-800px）：`, currentWidth);
+
+      if (newWidth === null) return; // 用户取消
+
+      const width = parseInt(newWidth);
+      if (isNaN(width) || width < 50 || width > 800) {
+        alert('请输入有效的宽度（50-800px）');
+        return;
+      }
+
+      // 保持宽高比
+      const aspectRatio = imageData.height / imageData.width;
+      const height = Math.round(width * aspectRatio);
+
+      // 更新映射数据
+      imageDataMap[imageId].width = width;
+      imageDataMap[imageId].height = height;
+
+      // 重新解析以更新显示
+      handleInputChange();
+    };
+
+    // 内联图片拖拽调整大小相关变量
+    let resizingInlineImage = null;
+    let inlineResizeStartX = 0;
+    let inlineResizeStartY = 0;
+    let inlineResizeStartWidth = 0;
+    let inlineResizeStartHeight = 0;
+    let inlineResizeDirection = '';
+    let inlineResizeImageId = '';
+
+    // 开始拖拽调整内联图片大小（确保全局可访问）
+    window.startInlineImageResize = function(event, imageId, direction) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const imageData = imageDataMap[imageId];
+      if (!imageData) {
+        console.error('Image data not found for:', imageId);
+        return;
+      }
+
+      console.log('开始调整图片大小:', imageId, direction);
+
+      // 记录初始状态
+      inlineResizeImageId = imageId;
+      inlineResizeStartX = event.clientX;
+      inlineResizeStartY = event.clientY;
+      inlineResizeStartWidth = imageData.width;
+      inlineResizeStartHeight = imageData.height;
+      inlineResizeDirection = direction;
+
+      // 找到图片容器 - 兼容两种类名
+      const container = event.target.closest('.inline-image-wrapper') || event.target.closest('.inline-image-editable');
+      if (container) {
+        const img = container.querySelector('.inline-image');
+        if (img) {
+          img.style.boxShadow = '0 4px 12px rgba(0, 185, 107, 0.5)';
+          img.style.borderColor = '#00B96B';
+        }
+        resizingInlineImage = container;
+      }
+
+      // 添加全局事件监听
+      document.addEventListener('mousemove', handleInlineImageResize);
+      document.addEventListener('mouseup', stopInlineImageResize);
+
+      // 防止文本选择
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = event.target.style.cursor;
+    };
+
+    // 处理拖拽调整内联图片大小
+    function handleInlineImageResize(event) {
+      if (!inlineResizeImageId || !imageDataMap[inlineResizeImageId]) return;
+
+      const deltaX = event.clientX - inlineResizeStartX;
+
+      let newWidth = inlineResizeStartWidth;
+
+      // 根据拖拽方向计算新尺寸
+      switch (inlineResizeDirection) {
+        case 'se': // 右下角
+          newWidth = inlineResizeStartWidth + deltaX;
+          break;
+        case 'sw': // 左下角
+          newWidth = inlineResizeStartWidth - deltaX;
+          break;
+        case 'ne': // 右上角
+          newWidth = inlineResizeStartWidth + deltaX;
+          break;
+        case 'nw': // 左上角
+          newWidth = inlineResizeStartWidth - deltaX;
+          break;
+      }
+
+      // 限制最小和最大尺寸
+      newWidth = Math.max(50, Math.min(800, newWidth));
+
+      // 保持宽高比
+      const aspectRatio = inlineResizeStartHeight / inlineResizeStartWidth;
+      const newHeight = Math.round(newWidth * aspectRatio);
+
+      // 更新映射中的数据
+      imageDataMap[inlineResizeImageId].width = Math.round(newWidth);
+      imageDataMap[inlineResizeImageId].height = newHeight;
+
+      // 实时更新显示
+      if (resizingInlineImage) {
+        const img = resizingInlineImage.querySelector('.inline-image');
+        if (img) {
+          img.style.width = Math.round(newWidth) + 'px';
+        }
+      }
     }
 
-    // 插入公式
+    // 停止拖拽调整内联图片大小
+    function stopInlineImageResize() {
+      if (resizingInlineImage) {
+        // 恢复图片样式
+        const img = resizingInlineImage.querySelector('.inline-image');
+        if (img) {
+          img.style.boxShadow = '';
+          img.style.borderColor = '#d1d5db';
+        }
+        resizingInlineImage = null;
+      }
+
+      // 移除全局事件监听
+      document.removeEventListener('mousemove', handleInlineImageResize);
+      document.removeEventListener('mouseup', stopInlineImageResize);
+
+      // 恢复样式
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+
+      // 清空状态
+      const wasResizing = !!inlineResizeImageId;
+      inlineResizeImageId = '';
+      inlineResizeStartX = 0;
+      inlineResizeStartY = 0;
+      inlineResizeStartWidth = 0;
+      inlineResizeStartHeight = 0;
+      inlineResizeDirection = '';
+
+      // 如果进行了调整，触发一次轻量级的重新渲染
+      // 这样可以确保数据和显示保持同步
+      if (wasResizing) {
+        // 不完全重新解析，只更新显示
+        displayQuestions();
+      }
+    }
+
+    // 图片拖拽调整大小相关变量（保留用于未来扩展）
+    let resizingImage = null;
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeStartWidth = 0;
+    let resizeStartHeight = 0;
+    let resizeDirection = '';
+
+    // 开始调整图片大小（暂时废弃，使用editInlineImage代替）
+    function startResize(event, questionIndex, imageIndex, direction, initialWidth, initialHeight, imageId) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // 记录初始状态
+      resizingImage = { questionIndex, imageIndex, imageId };
+      resizeStartX = event.clientX;
+      resizeStartY = event.clientY;
+      resizeStartWidth = initialWidth;
+      resizeStartHeight = initialHeight;
+      resizeDirection = direction;
+
+      // 添加全局事件监听
+      document.addEventListener('mousemove', handleResize);
+      document.addEventListener('mouseup', stopResize);
+
+      // 添加全局样式，防止文本选择
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = event.target.style.cursor;
+    }
+
+    // 处理拖拽调整大小
+    function handleResize(event) {
+      if (!resizingImage) return;
+
+      const { questionIndex, imageIndex, imageId } = resizingImage;
+      const deltaX = event.clientX - resizeStartX;
+
+      let newWidth = resizeStartWidth;
+
+      // 根据拖拽方向计算新尺寸
+      switch (resizeDirection) {
+        case 'se': // 右下角
+          newWidth = resizeStartWidth + deltaX;
+          break;
+        case 'sw': // 左下角
+          newWidth = resizeStartWidth - deltaX;
+          break;
+        case 'ne': // 右上角
+          newWidth = resizeStartWidth + deltaX;
+          break;
+        case 'nw': // 左上角
+          newWidth = resizeStartWidth - deltaX;
+          break;
+      }
+
+      // 限制最小和最大尺寸
+      newWidth = Math.max(100, Math.min(800, newWidth));
+
+      // 保持宽高比
+      const aspectRatio = resizeStartHeight / resizeStartWidth;
+      const newHeight = newWidth * aspectRatio;
+
+      // 更新映射中的数据
+      if (imageDataMap[imageId]) {
+        imageDataMap[imageId].width = Math.round(newWidth);
+        imageDataMap[imageId].height = Math.round(newHeight);
+      }
+
+      // 实时更新显示
+      const imgContainer = document.querySelector(`[data-question-index="${questionIndex}"][data-image-index="${imageIndex}"]`);
+      if (imgContainer) {
+        imgContainer.style.width = Math.round(newWidth) + 'px';
+        const sizeLabel = imgContainer.querySelector('.px-2.py-1');
+        if (sizeLabel) {
+          sizeLabel.textContent = Math.round(newWidth) + 'px';
+        }
+      }
+
+      // 重新解析以更新数据结构
+      handleInputChange();
+    }
+
+    // 停止调整大小
+    function stopResize() {
+      if (resizingImage) {
+        // 移除全局事件监听
+        document.removeEventListener('mousemove', handleResize);
+        document.removeEventListener('mouseup', stopResize);
+
+        // 恢复样式
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+
+        resizingImage = null;
+      }
+    }
+
+    // 删除图片（通过ID，确保全局可访问）
+    window.removeImageById = function(imageId) {
+      if (!confirm('确定要删除这张图片吗？')) return;
+
+      console.log('========== 删除图片 ==========');
+      console.log('删除图片ID:', imageId);
+
+      // 1. 从图片数据映射中删除
+      if (imageDataMap[imageId]) {
+        delete imageDataMap[imageId];
+        console.log('✓ 已从 imageDataMap 删除');
+      }
+
+      // 2. 从左侧输入框文本中删除图片标记 [图片:img_x]
+      const imageMarker = `[图片:${imageId}]`;
+      let text = getInputText();
+      console.log('删除前文本长度:', text.length);
+
+      if (text.includes(imageMarker)) {
+        text = text.replace(new RegExp(`\\[图片:${imageId}\\]`, 'g'), '');
+        console.log('✓ 已从文本中删除图片标记');
+        console.log('删除后文本长度:', text.length);
+
+        // 更新左侧输入框
+        setInputText(text);
+        console.log('✓ 已更新左侧输入框');
+      } else {
+        console.log('警告：文本中未找到图片标记');
+      }
+
+      // 3. 重新解析并更新显示
+      handleInputChange();
+      console.log('✓ 已重新解析');
+      console.log('========== 删除完成 ==========\n');
+    };
+
+    // 删除图片（旧版本，保留兼容）
+    function removeImage(questionIndex, imageIndex, imageId) {
+      removeImageById(imageId);
+    }
+
+    // 插入公式 - 打开可视化编辑器
     function insertFormula() {
-      alert('插入公式功能待实现');
+      const inputDiv = document.getElementById('inputText');
+      const modal = document.getElementById('formulaEditorModal');
+      const elementsContainer = document.getElementById('formulaElements');
+      const preview = document.getElementById('formulaPreview');
+
+      // 保存当前光标位置
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0 && inputDiv.contains(sel.anchorNode)) {
+        savedRange = sel.getRangeAt(0).cloneRange();
+        console.log('保存了光标位置');
+      } else {
+        // 如果没有有效光标，设置一个默认位置
+        savedRange = null;
+        console.log('没有有效光标，将使用默认位置');
+      }
+
+      // 清空编辑器状态
+      formulaElements = [];
+      elementsContainer.innerHTML = '';
+      preview.innerHTML = '<span class="text-gray-400 text-sm">公式预览将显示在这里</span>';
+
+      // 显示弹窗
+      modal.classList.remove('hidden');
+    }
+
+    // 插入公式组件
+    function insertFormulaComponent(type) {
+      const elementsContainer = document.getElementById('formulaElements');
+
+      switch(type) {
+        case 'fraction':
+          // 分数：创建两个输入框
+          const fractionEl = document.createElement('div');
+          fractionEl.className = 'inline-flex flex-col items-center border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          fractionEl.innerHTML = `
+            <input type="text" placeholder="分子" class="w-16 px-1 py-0.5 text-center border-b border-gray-300 text-sm focus:outline-none focus:border-primary-500" />
+            <div class="w-full h-px bg-gray-400 my-0.5"></div>
+            <input type="text" placeholder="分母" class="w-16 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" />
+          `;
+          elementsContainer.appendChild(fractionEl);
+          formulaElements.push({type: 'fraction', element: fractionEl});
+          // 自动聚焦到第一个输入框
+          fractionEl.querySelector('input').focus();
+          break;
+
+        case 'superscript':
+          // 上标
+          const superEl = document.createElement('div');
+          superEl.className = 'inline-flex items-start border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          superEl.innerHTML = `
+            <input type="text" placeholder="底数" class="w-12 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" />
+            <input type="text" placeholder="指数" class="w-8 px-1 text-center text-xs focus:outline-none focus:border-primary-500" style="vertical-align: super; font-size: 0.7em;" />
+          `;
+          elementsContainer.appendChild(superEl);
+          formulaElements.push({type: 'superscript', element: superEl});
+          superEl.querySelector('input').focus();
+          break;
+
+        case 'subscript':
+          // 下标
+          const subEl = document.createElement('div');
+          subEl.className = 'inline-flex items-end border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          subEl.innerHTML = `
+            <input type="text" placeholder="主体" class="w-12 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" />
+            <input type="text" placeholder="下标" class="w-8 px-1 text-center text-xs focus:outline-none focus:border-primary-500" style="vertical-align: sub; font-size: 0.7em;" />
+          `;
+          elementsContainer.appendChild(subEl);
+          formulaElements.push({type: 'subscript', element: subEl});
+          subEl.querySelector('input').focus();
+          break;
+
+        case 'sqrt':
+          // 根号
+          const sqrtEl = document.createElement('div');
+          sqrtEl.className = 'inline-flex items-center border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          sqrtEl.innerHTML = `
+            <span class="text-lg mr-1">√</span>
+            <input type="text" placeholder="内容" class="w-16 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" style="border-top: 1px solid #666;" />
+          `;
+          elementsContainer.appendChild(sqrtEl);
+          formulaElements.push({type: 'sqrt', element: sqrtEl});
+          sqrtEl.querySelector('input').focus();
+          break;
+
+        case 'sum':
+          // 求和
+          const sumEl = document.createElement('div');
+          sumEl.className = 'inline-flex flex-col items-center border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          sumEl.innerHTML = `
+            <input type="text" placeholder="上限" class="w-12 px-1 text-center text-xs mb-0.5 focus:outline-none focus:border-primary-500" />
+            <span class="text-2xl">Σ</span>
+            <input type="text" placeholder="下限" class="w-12 px-1 text-center text-xs mt-0.5 focus:outline-none focus:border-primary-500" />
+          `;
+          elementsContainer.appendChild(sumEl);
+          formulaElements.push({type: 'sum', element: sumEl});
+          sumEl.querySelector('input').focus();
+          break;
+
+        case 'integral':
+          // 积分
+          const integralEl = document.createElement('div');
+          integralEl.className = 'inline-flex flex-col items-center border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          integralEl.innerHTML = `
+            <input type="text" placeholder="上限" class="w-12 px-1 text-center text-xs mb-0.5 focus:outline-none focus:border-primary-500" />
+            <span class="text-2xl">∫</span>
+            <input type="text" placeholder="下限" class="w-12 px-1 text-center text-xs mt-0.5 focus:outline-none focus:border-primary-500" />
+          `;
+          elementsContainer.appendChild(integralEl);
+          formulaElements.push({type: 'integral', element: integralEl});
+          integralEl.querySelector('input').focus();
+          break;
+
+        case 'parentheses':
+          // 括号
+          const parenEl = document.createElement('div');
+          parenEl.className = 'inline-flex items-center border border-primary-300 rounded px-1 py-1 bg-primary-50';
+          parenEl.innerHTML = `
+            <span class="text-lg">(</span>
+            <input type="text" placeholder="内容" class="w-20 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" />
+            <span class="text-lg">)</span>
+          `;
+          elementsContainer.appendChild(parenEl);
+          formulaElements.push({type: 'parentheses', element: parenEl});
+          parenEl.querySelector('input').focus();
+          break;
+
+        case 'limit':
+          // 极限
+          const limitEl = document.createElement('div');
+          limitEl.className = 'inline-flex items-center gap-1 border border-primary-300 rounded px-2 py-1 bg-primary-50';
+          limitEl.innerHTML = `
+            <span class="text-sm">lim</span>
+            <div class="flex flex-col text-xs">
+              <input type="text" placeholder="x→" class="w-16 px-1 text-center focus:outline-none focus:border-primary-500" />
+            </div>
+          `;
+          elementsContainer.appendChild(limitEl);
+          formulaElements.push({type: 'limit', element: limitEl});
+          limitEl.querySelector('input').focus();
+          break;
+
+        case 'matrix':
+          // 矩阵
+          const matrixEl = document.createElement('div');
+          matrixEl.className = 'inline-flex items-center border border-primary-300 rounded px-1 py-1 bg-primary-50';
+          matrixEl.innerHTML = `
+            <span class="text-lg">[</span>
+            <input type="text" placeholder="内容" class="w-20 px-1 py-0.5 text-center text-sm focus:outline-none focus:border-primary-500" />
+            <span class="text-lg">]</span>
+          `;
+          elementsContainer.appendChild(matrixEl);
+          formulaElements.push({type: 'matrix', element: matrixEl});
+          matrixEl.querySelector('input').focus();
+          break;
+      }
+
+      // 添加监听器以更新预览
+      elementsContainer.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateVisualFormulaPreview);
+      });
+
+      // 更新预览
+      updateVisualFormulaPreview();
+    }
+
+    // 插入希腊字母
+    function insertGreekLetter(letter) {
+      const elementsContainer = document.getElementById('formulaElements');
+      const letterMap = {
+        'alpha': 'α', 'beta': 'β', 'gamma': 'γ',
+        'delta': 'δ', 'pi': 'π', 'theta': 'θ',
+        'lambda': 'λ', 'mu': 'μ'
+      };
+
+      const span = document.createElement('span');
+      span.className = 'inline-block px-2 py-1 border border-gray-300 rounded bg-gray-50 text-lg';
+      span.textContent = letterMap[letter] || letter;
+      elementsContainer.appendChild(span);
+
+      formulaElements.push({type: 'letter', element: span, value: letter});
+      updateVisualFormulaPreview();
+    }
+
+    // 插入常用符号
+    function insertSymbol(symbol) {
+      const elementsContainer = document.getElementById('formulaElements');
+      const symbolMap = {
+        'infty': '∞',
+        'pm': '±',
+        'times': '×',
+        'div': '÷',
+        'leq': '≤',
+        'geq': '≥',
+        'neq': '≠',
+        'approx': '≈'
+      };
+
+      const span = document.createElement('span');
+      span.className = 'inline-block px-2 py-1 border border-gray-300 rounded bg-gray-50 text-lg';
+      span.textContent = symbolMap[symbol] || symbol;
+      elementsContainer.appendChild(span);
+
+      formulaElements.push({type: 'symbol', element: span, value: symbol});
+      updateVisualFormulaPreview();
+    }
+
+    // 辅助函数：插入纯文本
+    function insertText(text) {
+      const elementsContainer = document.getElementById('formulaElements');
+      const span = document.createElement('span');
+      span.className = 'inline-block px-1 py-1 text-lg';
+      span.textContent = text;
+      elementsContainer.appendChild(span);
+      formulaElements.push({type: 'text', element: span, text: text});
+    }
+
+    // 插入公式模板
+    function insertFormulaTemplate(template) {
+      const elementsContainer = document.getElementById('formulaElements');
+
+      // 先清空编辑器
+      clearFormulaEditor();
+
+      switch(template) {
+        case 'pythagorean':
+          // 勾股定理: a² + b² = c²
+          insertText('a');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = '2';
+            }
+          }, 10);
+          insertText(' + b');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 4) {
+              inputs[inputs.length - 1].value = '2';
+            }
+          }, 20);
+          insertText(' = c');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 6) {
+              inputs[inputs.length - 1].value = '2';
+            }
+          }, 30);
+          break;
+
+        case 'binomial':
+          // 二项式定理: (a+b)ⁿ
+          insertText('(a+b)');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = 'n';
+            }
+          }, 10);
+          break;
+
+        case 'quadratic':
+          // 一元二次方程: ax² + bx + c = 0
+          insertText('ax');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = '2';
+            }
+          }, 10);
+          insertText(' + bx + c = 0');
+          break;
+
+        case 'quadratic_formula':
+          // 求根公式: x = (-b ± √(b²-4ac)) / 2a
+          insertText('x = ');
+          insertFormulaComponent('fraction');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 2].value = '-b ± √(b²-4ac)';
+              inputs[inputs.length - 1].value = '2a';
+            }
+          }, 10);
+          break;
+
+        case 'arithmetic':
+          // 等差数列: aₙ = a₁ + (n-1)d
+          insertText('a');
+          insertFormulaComponent('subscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = 'n';
+            }
+          }, 10);
+          insertText(' = a');
+          insertFormulaComponent('subscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 4) {
+              inputs[inputs.length - 1].value = '1';
+            }
+          }, 20);
+          insertText(' + (n-1)d');
+          break;
+
+        case 'geometric':
+          // 等比数列: aₙ = a₁ · qⁿ⁻¹
+          insertText('a');
+          insertFormulaComponent('subscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = 'n';
+            }
+          }, 10);
+          insertText(' = a');
+          insertFormulaComponent('subscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 4) {
+              inputs[inputs.length - 1].value = '1';
+            }
+          }, 20);
+          insertText(' · q');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 6) {
+              inputs[inputs.length - 1].value = 'n-1';
+            }
+          }, 30);
+          break;
+
+        case 'derivative':
+          // 导数定义: f'(x) = lim(Δx→0) [f(x+Δx)-f(x)]/Δx
+          insertText("f'(x) = ");
+          insertFormulaComponent('limit');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 1) {
+              inputs[inputs.length - 1].value = 'Δx→0';
+            }
+          }, 10);
+          insertFormulaComponent('fraction');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 3) {
+              inputs[inputs.length - 2].value = 'f(x+Δx)-f(x)';
+              inputs[inputs.length - 1].value = 'Δx';
+            }
+          }, 20);
+          break;
+
+        case 'circle_area':
+          // 圆的面积: S = πr²
+          insertText('S = πr');
+          insertFormulaComponent('superscript');
+          setTimeout(() => {
+            const inputs = elementsContainer.querySelectorAll('input');
+            if (inputs.length >= 2) {
+              inputs[inputs.length - 1].value = '2';
+            }
+          }, 10);
+          break;
+      }
+
+      // 延迟更新预览
+      setTimeout(() => {
+        updateVisualFormulaPreview();
+      }, 50);
+    }
+
+    // 更新可视化公式预览
+    function updateVisualFormulaPreview() {
+      const preview = document.getElementById('formulaPreview');
+      const latex = generateLatexFromElements();
+
+      if (!latex || latex.trim() === '') {
+        preview.innerHTML = '<span class="text-gray-400 text-sm">公式预览将显示在这里</span>';
+        return;
+      }
+
+      try {
+        preview.innerHTML = '';
+        katex.render(latex, preview, {
+          throwOnError: false,
+          displayMode: true,
+          errorColor: '#F53F3F'
+        });
+      } catch (e) {
+        preview.innerHTML = '<span class="text-error-500 text-sm">公式格式错误</span>';
+      }
+    }
+
+    // 从可视化元素生成LaTeX
+    function generateLatexFromElements() {
+      let latex = '';
+
+      formulaElements.forEach(el => {
+        const inputs = el.element.querySelectorAll('input');
+
+        switch(el.type) {
+          case 'fraction':
+            const numerator = inputs[0]?.value || 'a';
+            const denominator = inputs[1]?.value || 'b';
+            latex += `\\frac{${numerator}}{${denominator}}`;
+            break;
+
+          case 'superscript':
+            const base = inputs[0]?.value || 'x';
+            const exp = inputs[1]?.value || 'n';
+            latex += `${base}^{${exp}}`;
+            break;
+
+          case 'subscript':
+            const main = inputs[0]?.value || 'x';
+            const sub = inputs[1]?.value || 'n';
+            latex += `${main}_{${sub}}`;
+            break;
+
+          case 'sqrt':
+            const content = inputs[0]?.value || 'x';
+            latex += `\\sqrt{${content}}`;
+            break;
+
+          case 'sum':
+            const sumUpper = inputs[0]?.value || 'n';
+            const sumLower = inputs[1]?.value || 'i=1';
+            latex += `\\sum_{${sumLower}}^{${sumUpper}}`;
+            break;
+
+          case 'integral':
+            const intUpper = inputs[0]?.value || 'b';
+            const intLower = inputs[1]?.value || 'a';
+            latex += `\\int_{${intLower}}^{${intUpper}}`;
+            break;
+
+          case 'parentheses':
+            const parenContent = inputs[0]?.value || '';
+            latex += `(${parenContent})`;
+            break;
+
+          case 'letter':
+            const letterMap = {
+              'alpha': '\\alpha', 'beta': '\\beta', 'gamma': '\\gamma',
+              'delta': '\\delta', 'pi': '\\pi', 'theta': '\\theta'
+            };
+            latex += letterMap[el.value] || el.value;
+            break;
+        }
+      });
+
+      return latex;
+    }
+
+    // 清空公式编辑器
+    function clearFormulaEditor() {
+      formulaElements = [];
+      document.getElementById('formulaElements').innerHTML = '';
+      document.getElementById('formulaPreview').innerHTML = '<span class="text-gray-400 text-sm">公式预览将显示在这里</span>';
+    }
+
+    // 撤销最后一个元素
+    function undoLastElement() {
+      if (formulaElements.length > 0) {
+        formulaElements.pop();
+        const container = document.getElementById('formulaElements');
+        if (container.lastChild) {
+          container.removeChild(container.lastChild);
+        }
+        updateVisualFormulaPreview();
+      }
+    }
+
+    // 更新公式预览（保留旧函数兼容）
+    function updateFormulaPreview() {
+      updateVisualFormulaPreview();
+    }
+
+    // 关闭公式编辑器
+    function closeFormulaEditor() {
+      const modal = document.getElementById('formulaEditorModal');
+      modal.classList.add('hidden');
+    }
+
+    // 确认插入公式
+    function confirmFormulaInsert() {
+      // 从可视化编辑器生成 LaTeX
+      const latex = generateLatexFromElements();
+
+      if (!latex || latex.trim() === '') {
+        alert('请先添加公式元素');
+        return;
+      }
+
+      // 生成公式ID
+      formulaIdCounter++;
+      const formulaId = `formula_${formulaIdCounter}`;
+
+      // 存储公式数据
+      formulaDataMap[formulaId] = { latex: latex };
+
+      // 清空可视化编辑器
+      clearFormulaEditor();
+
+      // 关闭弹窗
+      closeFormulaEditor();
+
+      // 插入公式元素（该函数内部会处理焦点）
+      insertFormulaElement(formulaId);
+
+      // 触发解析更新
+      handleInputChange();
+    }
+
+    // 删除公式（从文本中删除标记并清理数据）
+    window.removeFormulaById = function(formulaId) {
+      // 从映射中删除数据
+      delete formulaDataMap[formulaId];
+
+      // 从 contentEditable 删除公式元素
+      const inputDiv = document.getElementById('inputText');
+      const formulaElements = inputDiv.querySelectorAll(`[data-formula-id="${formulaId}"]`);
+      formulaElements.forEach(el => el.remove());
+
+      // 触发重新解析
+      handleInputChange();
+    };
+
+    // ==================== 内联图片拖拽移动相关函数 ====================
+
+    let draggedInlineImageElement = null;
+    let draggedInlineImageId = null;
+
+    // 内联图片拖拽开始
+    // ==================== 左侧输入框图片拖拽功能已废弃 ====================
+    // 左侧输入框现在只显示图片占位符，不再支持拖拽功能
+    // 所有图片的拖拽和调整大小功能都在右侧识别框中进行
+
+    // function handleInlineImageDragStart(event, imageId) {
+    //   console.log('开始拖拽图片:', imageId);
+    //   draggedInlineImageElement = event.target;
+    //   draggedInlineImageId = imageId;
+    //   event.dataTransfer.effectAllowed = 'move';
+    //   event.dataTransfer.setData('text/html', event.target.outerHTML);
+    //   setTimeout(() => {
+    //     if (draggedInlineImageElement) {
+    //       draggedInlineImageElement.style.opacity = '0.5';
+    //     }
+    //   }, 0);
+    // }
+
+    // function handleInlineImageDragEnd(event) {
+    //   console.log('拖拽结束');
+    //   if (event.target) {
+    //     event.target.style.opacity = '1';
+    //   }
+    //   draggedInlineImageElement = null;
+    //   draggedInlineImageId = null;
+    // }
+
+    // function handleInputDivDragOver(event) {
+    //   if (!draggedInlineImageId) return;
+    //   event.preventDefault();
+    //   event.dataTransfer.dropEffect = 'move';
+    // }
+
+    // function handleInputDivDrop(event) {
+    //   if (!draggedInlineImageId || !draggedInlineImageElement) {
+    //     return;
+    //   }
+    //   event.preventDefault();
+    //   event.stopPropagation();
+    //   // ... 省略具体实现
+    // }
+
+    // function initInputDivDragListeners() {
+    //   const inputDiv = document.getElementById('inputText');
+    //   if (inputDiv) {
+    //     inputDiv.addEventListener('dragover', handleInputDivDragOver);
+    //     inputDiv.addEventListener('drop', handleInputDivDrop);
+    //     console.log('inputDiv 拖拽监听已初始化');
+    //   }
+    // }
+
+    // ==================== 图片拖拽相关函数（旧系统，已废弃）====================
+
+    // 图片拖拽开始
+    function handleImageDragStart(event, imageId) {
+      draggedImageId = imageId;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/html', event.target.outerHTML);
+
+      // 添加拖拽时的视觉反馈
+      event.target.style.opacity = '0.5';
+
+      // 查找图片在哪个字段中
+      const dropTargets = document.querySelectorAll('[data-drop-target]');
+      dropTargets.forEach(target => {
+        const targetElement = target.querySelector(`[data-image-id="${imageId}"]`);
+        if (targetElement) {
+          draggedSourceField = {
+            questionIndex: parseInt(target.getAttribute('data-question-index')),
+            fieldType: target.getAttribute('data-drop-target'),
+            optionIndex: target.getAttribute('data-option-index') ? parseInt(target.getAttribute('data-option-index')) : null
+          };
+        }
+      });
+    }
+
+    // 图片拖拽结束
+    function handleImageDragEnd(event) {
+      event.target.style.opacity = '1';
+
+      // 隐藏光标指示器
+      if (dropCursorElement) {
+        dropCursorElement.style.display = 'none';
+      }
+
+      // 清除所有拖拽状态
+      draggedImageId = null;
+      draggedSourceField = null;
+      dropTargetInfo = null;
+    }
+
+    // 拖拽经过目标区域 - 显示精确光标位置
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+
+      if (!draggedImageId) return;
+
+      const target = event.currentTarget;
+
+      // 创建或获取光标指示器
+      if (!dropCursorElement) {
+        dropCursorElement = document.createElement('div');
+        dropCursorElement.className = 'drop-cursor';
+        document.body.appendChild(dropCursorElement);
+      }
+
+      // 获取鼠标位置对应的文本位置
+      const range = getCaretRangeFromPoint(event.clientX, event.clientY);
+
+      if (range) {
+        const rect = range.getBoundingClientRect();
+
+        // 显示光标指示器 (使用 fixed 定位，不需要 scrollY)
+        dropCursorElement.style.display = 'block';
+        dropCursorElement.style.left = rect.left + 'px';
+        dropCursorElement.style.top = rect.top + 'px';
+
+        // 保存目标信息
+        dropTargetInfo = {
+          element: target,
+          range: range,
+          questionIndex: parseInt(target.getAttribute('data-question-index')),
+          fieldType: target.getAttribute('data-drop-target'),
+          optionIndex: target.getAttribute('data-option-index') ? parseInt(target.getAttribute('data-option-index')) : null
+        };
+      }
+
+      // 添加视觉反馈
+      if (target.hasAttribute('data-drop-target')) {
+        target.style.background = '#f0f9ff';
+      }
+    }
+
+    // 获取鼠标位置对应的文本Range
+    function getCaretRangeFromPoint(x, y) {
+      if (document.caretRangeFromPoint) {
+        return document.caretRangeFromPoint(x, y);
+      } else if (document.caretPositionFromPoint) {
+        const position = document.caretPositionFromPoint(x, y);
+        if (position) {
+          const range = document.createRange();
+          range.setStart(position.offsetNode, position.offset);
+          range.setEnd(position.offsetNode, position.offset);
+          return range;
+        }
+      }
+      return null;
+    }
+
+    // 拖拽离开目标区域
+    function handleDragLeave(event) {
+      const target = event.currentTarget;
+      if (target.hasAttribute('data-drop-target')) {
+        target.style.background = '';
+      }
+
+      // 隐藏光标指示器
+      if (dropCursorElement) {
+        dropCursorElement.style.display = 'none';
+      }
+    }
+
+    // 辅助函数：计算光标在整个 contentEditable 元素中的绝对位置
+    // 这个函数需要处理右侧显示区域（包含 img 元素）和左侧输入区域（包含公式元素）
+    function getAbsoluteCaretOffset(range, containerElement) {
+      if (!range || !containerElement) return -1;
+
+      const startContainer = range.startContainer;
+      const startOffset = range.startOffset;
+
+      // 如果光标不在容器内，返回-1
+      if (!containerElement.contains(startContainer)) {
+        console.log('光标不在容器内');
+        return -1;
+      }
+
+      // 遍历容器的所有节点，计算绝对偏移量
+      let absoluteOffset = 0;
+      let found = false;
+
+      function traverseNodes(node) {
+        if (found) return;
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          // 如果是目标节点，加上偏移量后结束
+          if (node === startContainer) {
+            absoluteOffset += startOffset;
+            found = true;
+            console.log('找到目标文本节点，当前累计偏移量:', absoluteOffset);
+            return;
+          }
+          // 否则，累加整个文本节点的长度
+          const textLength = node.textContent.length;
+          absoluteOffset += textLength;
+          console.log(`文本节点: "${node.textContent.substring(0, 20)}...", 长度: ${textLength}, 累计: ${absoluteOffset}`);
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          // 处理图片元素（右侧显示区域）
+          if (node.tagName === 'IMG' && node.hasAttribute('data-image-id')) {
+            const imageId = node.getAttribute('data-image-id');
+            const markerLength = `[图片:${imageId}]`.length;
+            absoluteOffset += markerLength;
+            console.log(`图片元素: ${imageId}, 标记长度: ${markerLength}, 累计: ${absoluteOffset}`);
+
+            // 如果光标在图片元素之后（startContainer 是父节点，startOffset 指向图片后的位置）
+            if (startContainer === node.parentNode) {
+              let imageIndex = Array.from(node.parentNode.childNodes).indexOf(node);
+              if (startOffset === imageIndex + 1) {
+                found = true;
+                console.log('找到光标位置（图片之后），累计偏移量:', absoluteOffset);
+                return;
+              }
+            }
+            return; // 不递归进入 img 元素
+          }
+
+          // 处理公式元素（左侧输入区域）
+          if (node.classList && node.classList.contains('inline-formula-editable')) {
+            const formulaId = node.getAttribute('data-formula-id');
+            const markerLength = `[公式:${formulaId}]`.length;
+            absoluteOffset += markerLength;
+            console.log(`公式元素: ${formulaId}, 标记长度: ${markerLength}, 累计: ${absoluteOffset}`);
+            return; // 不递归进入公式元素
+          }
+
+          // 处理换行
+          if (node.tagName === 'BR') {
+            absoluteOffset += 1; // 换行符
+            console.log('换行符, 累计:', absoluteOffset);
+            return;
+          }
+
+          // 检查光标是否在当前元素的子节点之间
+          if (startContainer === node && node.childNodes.length > 0) {
+            // 遍历到 startOffset 位置的子节点
+            for (let i = 0; i < Math.min(startOffset, node.childNodes.length); i++) {
+              traverseNodes(node.childNodes[i]);
+              if (found) return;
+            }
+            // 如果遍历完了还没找到，说明光标就在 startOffset 位置
+            if (!found && startOffset <= node.childNodes.length) {
+              found = true;
+              console.log('找到光标位置（元素子节点之间），累计偏移量:', absoluteOffset);
+              return;
+            }
+          } else {
+            // 递归处理子节点
+            for (let i = 0; i < node.childNodes.length; i++) {
+              traverseNodes(node.childNodes[i]);
+              if (found) return;
+            }
+          }
+        }
+      }
+
+      console.log('开始遍历节点，容器:', containerElement.tagName, containerElement.className);
+      traverseNodes(containerElement);
+
+      console.log(`遍历完成，found: ${found}, absoluteOffset: ${absoluteOffset}`);
+      return found ? absoluteOffset : -1;
+    }
+
+    // 图片放置到目标区域 - 改进方案：直接修改 parsedData，避免重新解析
+    function handleImageDrop(event, questionIndex, fieldType, optionIndex) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // 清除视觉反馈
+      const target = event.currentTarget;
+      if (target) {
+        target.style.background = '';
+      }
+
+      // 隐藏光标指示器
+      if (dropCursorElement) {
+        dropCursorElement.style.display = 'none';
+      }
+
+      if (!draggedImageId || !draggedSourceField) {
+        console.log('拖拽取消：没有有效的拖拽源');
+        draggedImageId = null;
+        draggedSourceField = null;
+        dropTargetInfo = null;
+        return;
+      }
+
+      console.log('========== 图片拖拽开始 ==========');
+      console.log('拖拽的图片ID:', draggedImageId);
+      console.log('源位置:', draggedSourceField);
+      console.log('目标位置:', { questionIndex, fieldType, optionIndex });
+      console.log('当前 parsedData 长度:', parsedData ? parsedData.length : 'undefined');
+
+      // 如果拖到同一个位置，不处理
+      if (draggedSourceField.questionIndex === questionIndex &&
+          draggedSourceField.fieldType === fieldType &&
+          draggedSourceField.optionIndex === optionIndex) {
+        console.log('拖拽取消：拖到同一位置');
+        draggedImageId = null;
+        draggedSourceField = null;
+        dropTargetInfo = null;
+        return;
+      }
+
+      const imageMarker = `[图片:${draggedImageId}]`;
+
+      try {
+        // 验证 parsedData
+        if (!parsedData || !Array.isArray(parsedData) || parsedData.length === 0) {
+          throw new Error('parsedData 为空或无效');
+        }
+
+        console.log('开始修改 parsedData...');
+
+        // 1. 从源位置删除图片标记
+        const sourceQuestion = parsedData[draggedSourceField.questionIndex];
+        if (!sourceQuestion) {
+          throw new Error(`源题目不存在 (索引: ${draggedSourceField.questionIndex})`);
+        }
+
+        console.log('源题目:', sourceQuestion);
+
+        let removed = false;
+        if (draggedSourceField.fieldType === 'content') {
+          if (sourceQuestion.content && sourceQuestion.content.includes(imageMarker)) {
+            sourceQuestion.content = sourceQuestion.content.replace(imageMarker, '');
+            removed = true;
+            console.log('✓ 从题干删除图片');
+          }
+        } else if (draggedSourceField.fieldType === 'option' && draggedSourceField.optionIndex !== null) {
+          const opt = sourceQuestion.options ? sourceQuestion.options[draggedSourceField.optionIndex] : null;
+          if (opt && opt.text && opt.text.includes(imageMarker)) {
+            opt.text = opt.text.replace(imageMarker, '');
+            removed = true;
+            console.log('✓ 从选项删除图片');
+          }
+        } else if (draggedSourceField.fieldType === 'explanation') {
+          if (sourceQuestion.explanation && sourceQuestion.explanation.includes(imageMarker)) {
+            sourceQuestion.explanation = sourceQuestion.explanation.replace(imageMarker, '');
+            removed = true;
+            console.log('✓ 从解析删除图片');
+          }
+        }
+
+        if (!removed) {
+          throw new Error('未找到源图片标记');
+        }
+
+        // 2. 在目标位置添加图片标记（支持精确位置插入）
+        const targetQuestion = parsedData[questionIndex];
+        if (!targetQuestion) {
+          throw new Error(`目标题目不存在 (索引: ${questionIndex})`);
+        }
+
+        console.log('目标题目:', targetQuestion);
+
+        // 尝试获取精确插入位置（使用绝对偏移量计算）
+        let insertOffset = -1; // -1 表示插入到末尾
+        if (dropTargetInfo && dropTargetInfo.range && target) {
+          try {
+            const range = dropTargetInfo.range;
+
+            // 找到实际包含内容的元素
+            // target 是 data-drop-target 的容器，需要找到里面的 <p> 或其他内容元素
+            let containerElement = null;
+
+            // 首先，尝试从 range 的 startContainer 向上查找，直到找到 target 的直接子元素
+            let rangeContainer = range.startContainer;
+            if (rangeContainer.nodeType === Node.TEXT_NODE) {
+              rangeContainer = rangeContainer.parentNode;
+            }
+
+            // 向上遍历，找到 target 的子元素
+            while (rangeContainer && rangeContainer !== target && rangeContainer.parentNode) {
+              if (rangeContainer.parentNode === target) {
+                containerElement = rangeContainer;
+                break;
+              }
+              rangeContainer = rangeContainer.parentNode;
+            }
+
+            // 如果没找到，尝试直接查找 target 的第一个 <p> 或 contentEditable 元素
+            if (!containerElement) {
+              containerElement = target.querySelector('p') || target.querySelector('[contenteditable="true"]') || target;
+            }
+
+            if (containerElement) {
+              console.log('找到内容容器元素:', containerElement.tagName, containerElement.className);
+
+              // 使用新的辅助函数计算绝对偏移量
+              insertOffset = getAbsoluteCaretOffset(range, containerElement);
+              console.log('检测到精确插入位置，绝对偏移量:', insertOffset);
+
+              // 调试：获取目标字段的当前内容
+              let currentContent = '';
+              if (fieldType === 'content') {
+                currentContent = targetQuestion.content || '';
+              } else if (fieldType === 'option' && optionIndex !== null) {
+                const opt = targetQuestion.options ? targetQuestion.options[optionIndex] : null;
+                currentContent = opt ? (opt.text || '') : '';
+              } else if (fieldType === 'explanation') {
+                currentContent = targetQuestion.explanation || '';
+              }
+              console.log('当前字段内容:', currentContent);
+              console.log('当前字段内容长度:', currentContent.length);
+            } else {
+              console.log('未找到内容容器元素');
+            }
+          } catch (e) {
+            console.log('无法获取精确位置，将插入到末尾:', e.message);
+            console.error(e);
+          }
+        }
+
+        // 根据字段类型插入图片标记
+        if (fieldType === 'content') {
+          if (insertOffset >= 0) {
+            // 精确位置插入
+            const content = targetQuestion.content || '';
+            targetQuestion.content = content.substring(0, insertOffset) + imageMarker + content.substring(insertOffset);
+            console.log('✓ 精确位置插入到题干');
+          } else {
+            // 末尾插入
+            targetQuestion.content = (targetQuestion.content || '') + imageMarker;
+            console.log('✓ 末尾插入到题干');
+          }
+        } else if (fieldType === 'option' && optionIndex !== null) {
+          if (!targetQuestion.options || !Array.isArray(targetQuestion.options)) {
+            throw new Error('目标题目没有选项');
+          }
+          const opt = targetQuestion.options[optionIndex];
+          if (opt) {
+            if (insertOffset >= 0) {
+              // 精确位置插入
+              const text = opt.text || '';
+              opt.text = text.substring(0, insertOffset) + imageMarker + text.substring(insertOffset);
+              console.log('✓ 精确位置插入到选项');
+            } else {
+              // 末尾插入
+              opt.text = (opt.text || '') + imageMarker;
+              console.log('✓ 末尾插入到选项');
+            }
+          } else {
+            throw new Error(`目标选项不存在 (索引: ${optionIndex})`);
+          }
+        } else if (fieldType === 'explanation') {
+          if (insertOffset >= 0) {
+            // 精确位置插入
+            const explanation = targetQuestion.explanation || '';
+            targetQuestion.explanation = explanation.substring(0, insertOffset) + imageMarker + explanation.substring(insertOffset);
+            console.log('✓ 精确位置插入到解析');
+          } else {
+            // 末尾插入
+            targetQuestion.explanation = (targetQuestion.explanation || '') + imageMarker;
+            console.log('✓ 末尾插入到解析');
+          }
+        }
+
+        console.log('✓ parsedData 修改完成');
+
+        // 3. 同步更新左侧文本（从 parsedData 重建文本）
+        console.log('开始同步左侧文本...');
+        const newText = rebuildTextFromParsedData();
+        console.log('重建的文本长度:', newText.length);
+
+        if (!newText || newText.length === 0) {
+          throw new Error('重建的文本为空');
+        }
+
+        setInputText(newText);
+        console.log('✓ 左侧文本已同步');
+
+        // 4. 刷新右侧显示（传递文本参数）
+        parseAndDisplay(newText);
+        console.log('✓ 右侧显示已刷新');
+        console.log('✓✓✓ 图片移动成功！');
+
+      } catch (error) {
+        console.error('✗✗✗ 拖拽失败:', error.message);
+        console.error('错误堆栈:', error.stack);
+        alert('图片移动失败：' + error.message);
+      }
+
+      // 清空拖拽状态
+      draggedImageId = null;
+      draggedSourceField = null;
+      dropTargetInfo = null;
+      console.log('========== 图片拖拽结束 ==========\n');
+    }
+
+    // 从 parsedData 重建文本（用于图片拖拽后同步）
+    function rebuildTextFromParsedData() {
+      const lines = [];
+
+      parsedData.forEach((q, index) => {
+        // 题型标识（如果有）
+        if (index === 0 || parsedData[index - 1].type !== q.type) {
+          lines.push(q.typeName || '');
+        }
+
+        // 题干
+        lines.push(`${q.id || ''}. ${q.content || ''}`);
+
+        // 选项
+        if (q.options && Array.isArray(q.options) && q.options.length > 0) {
+          q.options.forEach(opt => {
+            if (opt && opt.label && opt.text !== undefined) {
+              lines.push(`${opt.label}. ${opt.text}`);
+            }
+          });
+        }
+
+        // 答案
+        if (q.answer) {
+          lines.push(`答案：${q.answer}`);
+        }
+
+        // 解析
+        if (q.explanation) {
+          lines.push(`答案解析：${q.explanation}`);
+        }
+
+        // 知识点
+        if (q.knowledgePoints && Array.isArray(q.knowledgePoints) && q.knowledgePoints.length > 0) {
+          const kpNames = q.knowledgePoints
+            .filter(id => id) // 过滤空值
+            .map(id => knowledgePointsMap[id] || id);
+          if (kpNames.length > 0) {
+            lines.push(`知识点：${kpNames.join('、')}`);
+          }
+        }
+
+        // 空行分隔
+        lines.push('');
+      });
+
+      const result = lines.join('\n').trim();
+      console.log('重建文本完成，长度:', result.length);
+      console.log('重建文本内容:', result);
+      return result;
+    }
+
+    // 在精确位置插入图片标记
+    function insertImageAtPreciseLocation(lines, targetInfo, imageMarker) {
+      if (!targetInfo || !targetInfo.range) return;
+
+      const questionIndex = targetInfo.questionIndex;
+      const fieldType = targetInfo.fieldType;
+      const optionIndex = targetInfo.optionIndex;
+
+      // 获取目标文本内容
+      const range = targetInfo.range;
+      let targetTextNode = range.startContainer;
+
+      // 如果是元素节点，获取其文本内容
+      if (targetTextNode.nodeType === Node.ELEMENT_NODE) {
+        targetTextNode = targetTextNode.childNodes[0] || targetTextNode;
+      }
+
+      // 获取完整的文本内容
+      let fullText = '';
+      let currentNode = targetTextNode;
+
+      // 向上找到包含完整文本的节点
+      while (currentNode && currentNode.nodeType === Node.TEXT_NODE) {
+        fullText = currentNode.textContent;
+        if (currentNode.parentNode && currentNode.parentNode.tagName === 'P') {
+          // 获取整个段落的文本
+          fullText = currentNode.parentNode.textContent;
+          break;
+        }
+        currentNode = currentNode.parentNode;
+      }
+
+      // 如果没有找到文本，使用默认插入方式
+      if (!fullText) {
+        addImageMarkerToField(lines, {
+          questionIndex: questionIndex,
+          fieldType: fieldType,
+          optionIndex: optionIndex
+        }, imageMarker);
+        return;
+      }
+
+      // 计算插入位置（相对于完整文本的偏移）
+      let insertOffset = range.startOffset;
+
+      // 获取光标前后的文本
+      const textBefore = fullText.substring(0, insertOffset);
+      const textAfter = fullText.substring(insertOffset);
+
+      // 在文本行中找到对应的行并插入
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // 根据字段类型查找对应行
+        let found = false;
+        if (fieldType === 'content') {
+          const questionMatch = line.match(/^(\d+)[.、:。：]\s*/);
+          if (questionMatch) {
+            // 提取题号后的内容
+            const prefix = questionMatch[0];
+            const content = lines[i].substring(lines[i].indexOf(prefix) + prefix.length);
+
+            // 检查是否匹配
+            if (content.includes(textBefore.trim()) || fullText.includes(content.trim())) {
+              // 找到位置并插入
+              const beforeMatch = lines[i].indexOf(textBefore.trim());
+              if (beforeMatch !== -1) {
+                const insertPos = beforeMatch + textBefore.trim().length;
+                lines[i] = lines[i].substring(0, insertPos) + imageMarker + lines[i].substring(insertPos);
+                return;
+              } else {
+                // 默认插入到行尾
+                lines[i] = lines[i] + imageMarker;
+                return;
+              }
+            }
+          }
+        } else if (fieldType === 'option' && optionIndex !== null) {
+          const optionLabel = String.fromCharCode(65 + optionIndex);
+          const optionMatch = line.match(new RegExp(`^${optionLabel}[.、:。：]\\s*`));
+          if (optionMatch) {
+            const prefix = optionMatch[0];
+            const content = lines[i].substring(lines[i].indexOf(prefix) + prefix.length);
+
+            if (content.includes(textBefore.trim()) || fullText.includes(content.trim())) {
+              const beforeMatch = lines[i].indexOf(textBefore.trim());
+              if (beforeMatch !== -1) {
+                const insertPos = beforeMatch + textBefore.trim().length;
+                lines[i] = lines[i].substring(0, insertPos) + imageMarker + lines[i].substring(insertPos);
+                return;
+              } else {
+                lines[i] = lines[i] + imageMarker;
+                return;
+              }
+            }
+          }
+        } else if (fieldType === 'explanation') {
+          if (line.startsWith('解析：') || line.startsWith('答案解析：') || line.startsWith('参考答案：')) {
+            const prefix = line.match(/^(解析：|答案解析：|参考答案：)/)[0];
+            const content = lines[i].substring(lines[i].indexOf(prefix) + prefix.length);
+
+            if (content.includes(textBefore.trim()) || fullText.includes(content.trim())) {
+              const beforeMatch = lines[i].indexOf(textBefore.trim());
+              if (beforeMatch !== -1) {
+                const insertPos = beforeMatch + textBefore.trim().length;
+                lines[i] = lines[i].substring(0, insertPos) + imageMarker + lines[i].substring(insertPos);
+                return;
+              } else {
+                lines[i] = lines[i] + imageMarker;
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // 如果没有找到精确位置，使用默认插入方式
+      addImageMarkerToField(lines, {
+        questionIndex: questionIndex,
+        fieldType: fieldType,
+        optionIndex: optionIndex
+      }, imageMarker);
+    }
+
+    // 从指定字段删除图片标记
+    function removeImageMarkerFromField(lines, fieldInfo, imageMarker) {
+      const question = parsedData[fieldInfo.questionIndex];
+      if (!question) return;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // 根据字段类型查找对应行
+        if (fieldInfo.fieldType === 'content') {
+          // 题目内容（题号那一行）
+          const questionMatch = line.match(/^(\d+)[.、:。：]\s*/);
+          if (questionMatch && lines[i].includes(imageMarker)) {
+            lines[i] = lines[i].replace(imageMarker, '');
+            return;
+          }
+        } else if (fieldInfo.fieldType === 'option' && fieldInfo.optionIndex !== null) {
+          // 选项
+          const optionLabel = String.fromCharCode(65 + fieldInfo.optionIndex); // A, B, C...
+          const optionMatch = line.match(new RegExp(`^${optionLabel}[.、:。：]\\s*`));
+          if (optionMatch && lines[i].includes(imageMarker)) {
+            lines[i] = lines[i].replace(imageMarker, '');
+            return;
+          }
+        } else if (fieldInfo.fieldType === 'explanation') {
+          // 解析
+          if ((line.startsWith('解析：') || line.startsWith('答案解析：') || line.startsWith('参考答案：')) &&
+              lines[i].includes(imageMarker)) {
+            lines[i] = lines[i].replace(imageMarker, '');
+            return;
+          }
+        }
+      }
+    }
+
+    // 向指定字段添加图片标记
+    function addImageMarkerToField(lines, fieldInfo, imageMarker) {
+      const question = parsedData[fieldInfo.questionIndex];
+      if (!question) return;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        if (fieldInfo.fieldType === 'content') {
+          // 题目内容（题号那一行）
+          const questionMatch = line.match(/^(\d+)[.、:。：]\s*/);
+          if (questionMatch) {
+            lines[i] = lines[i] + imageMarker;
+            return;
+          }
+        } else if (fieldInfo.fieldType === 'option' && fieldInfo.optionIndex !== null) {
+          // 选项
+          const optionLabel = String.fromCharCode(65 + fieldInfo.optionIndex); // A, B, C...
+          const optionMatch = line.match(new RegExp(`^${optionLabel}[.、:。：]\\s*`));
+          if (optionMatch) {
+            lines[i] = lines[i] + imageMarker;
+            return;
+          }
+        } else if (fieldInfo.fieldType === 'explanation') {
+          // 解析 - 查找解析行或创建解析行
+          let explanationLineIndex = -1;
+          for (let j = 0; j < lines.length; j++) {
+            const l = lines[j].trim();
+            if (l.startsWith('解析：') || l.startsWith('答案解析：') || l.startsWith('参考答案：')) {
+              explanationLineIndex = j;
+              break;
+            }
+          }
+
+          if (explanationLineIndex !== -1) {
+            // 已有解析行
+            lines[explanationLineIndex] = lines[explanationLineIndex] + imageMarker;
+          } else {
+            // 没有解析行，需要创建
+            // 找到答案行后面插入
+            for (let j = 0; j < lines.length; j++) {
+              const l = lines[j].trim();
+              if (l.startsWith('答案：') || l.startsWith('答：') || l.startsWith('正确答案：')) {
+                lines.splice(j + 1, 0, `解析：${imageMarker}`);
+                return;
+              }
+            }
+          }
+          return;
+        }
+      }
     }
 
     // 清空输入
     function clearInput() {
       if (confirm('确定要清空所有内容吗？')) {
-        document.getElementById('inputText').value = '';
+        document.getElementById('inputText').innerHTML = '';
         parsedData = [];
         showEmptyState();
       }
@@ -1335,7 +4163,7 @@ D. 指缝
 
     // 刷新预览
     function refreshPreview() {
-      const text = document.getElementById('inputText').value.trim();
+      const text = getInputText();
       if (text) {
         parseAndDisplay(text);
       }
@@ -1400,6 +4228,59 @@ D. 指缝
     document.getElementById('exampleModal').addEventListener('click', function(e) {
       if (e.target === this) closeExample();
     });
+
+    // 粘贴图片支持 - 已废弃，改用 DOMContentLoaded 中的统一处理
+    // 保留注释以便追踪历史代码
+    /*
+    document.getElementById('inputText').addEventListener('paste', function(e) {
+      const items = e.clipboardData.items;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        // 检查是否为图片类型
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault(); // 阻止默认粘贴行为
+
+          const file = item.getAsFile();
+          if (!file) continue;
+
+          // 检查文件大小（最大 5MB）
+          if (file.size > 5 * 1024 * 1024) {
+            alert('图片大小不能超过 5MB');
+            continue;
+          }
+
+          // 读取图片
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const base64Data = e.target.result;
+
+            // 获取图片尺寸
+            const img = new Image();
+            img.onload = function() {
+              // 自动调整尺寸（最大宽度 400px）
+              let width = img.width;
+              let height = img.height;
+              const maxWidth = 400;
+
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+
+              // 插入图片标记到光标位置
+              insertImageMarkdown(base64Data, width, height);
+            };
+            img.src = base64Data;
+          };
+          reader.readAsDataURL(file);
+
+          break; // 只处理第一张图片
+        }
+      }
+    });
+    */
   </script>
 </body>
 </html>

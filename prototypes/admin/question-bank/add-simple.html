@@ -827,7 +827,7 @@ D. 指缝
       <div class="px-6 py-3 bg-blue-50 border-b border-blue-100 flex-shrink-0">
         <p class="text-sm text-gray-700">
           <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-          请为每道题目设置分数，不同题型有不同的设置方式
+          请为每道题目设置分数，不同题型有不同的设置方式。如不填写分数直接导入，则题目不带分数
         </p>
       </div>
 
@@ -842,10 +842,6 @@ D. 指缝
           共 <span id="totalScoreQuestions" class="font-semibold text-gray-900">0</span> 道题目
         </div>
         <div class="flex space-x-3">
-          <button onclick="importWithoutScore()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium text-sm transition-colors">
-            <i class="fas fa-times mr-2"></i>
-            不设置分数
-          </button>
           <button onclick="confirmScoreAndImport()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">
             <i class="fas fa-check mr-2"></i>
             确认导入
@@ -4959,32 +4955,18 @@ D. 指缝
       return html;
     }
 
-    // 不设置分数直接导入
-    function importWithoutScore() {
-      if (confirm(`确定不设置分数直接导入 ${parsedData.length} 道题目吗？\n\n未设置分数的题目在题库中将显示为"未设置"`)) {
-        // 关闭弹窗
-        closeScoreModal();
-
-        // 直接导入（不带分数）
-        performImport(false);
-      }
-    }
-
     // 确认分数并导入
     function confirmScoreAndImport() {
       // 收集所有分数
       const scores = {};
-      let hasEmptyScore = false;
 
       parsedData.forEach((q, index) => {
         if (q.type === 'single' || q.type === 'multiple' || q.type === 'judge' || q.type === 'essay' || q.type === 'cloze') {
           // 单题分数
           const scoreInput = document.getElementById(`score_${index}`);
           const score = scoreInput ? parseFloat(scoreInput.value) : null;
-          if (!score || score <= 0) {
-            hasEmptyScore = true;
-          }
-          scores[index] = score;
+          // 允许分数为空或0，不做验证
+          scores[index] = score && score > 0 ? score : null;
         } else if (q.type === 'blank') {
           // 填空题每空分数
           const blankCount = q.blankAnswers ? q.blankAnswers.length : 1;
@@ -4992,10 +4974,7 @@ D. 指缝
           for (let i = 0; i < blankCount; i++) {
             const scoreInput = document.getElementById(`score_${index}_blank_${i}`);
             const score = scoreInput ? parseFloat(scoreInput.value) : null;
-            if (!score || score <= 0) {
-              hasEmptyScore = true;
-            }
-            scores[index].push(score);
+            scores[index].push(score && score > 0 ? score : null);
           }
         } else if (q.type === 'composite') {
           // 复合题每小题分数
@@ -5004,25 +4983,15 @@ D. 指缝
           for (let i = 0; i < subCount; i++) {
             const scoreInput = document.getElementById(`score_${index}_sub_${i}`);
             const score = scoreInput ? parseFloat(scoreInput.value) : null;
-            if (!score || score <= 0) {
-              hasEmptyScore = true;
-            }
-            scores[index].push(score);
+            scores[index].push(score && score > 0 ? score : null);
           }
         }
       });
 
-      // 检查是否有未设置的分数
-      if (hasEmptyScore) {
-        if (!confirm('检测到部分题目未设置分数或分数无效，确定继续导入吗？\n\n未设置的题目将显示为"未设置"')) {
-          return;
-        }
-      }
-
       // 关闭弹窗
       closeScoreModal();
 
-      // 执行导入（带分数）
+      // 执行导入（带分数，分数可以为null）
       performImport(true, scores);
     }
 
@@ -5078,15 +5047,15 @@ D. 指缝
               newQuestion.correctAnswers = q.answer.split('').filter(c => c.trim());
             }
 
-            // 添加分数
-            if (withScore && scores[index]) {
+            // 添加分数（如果有）
+            if (withScore && scores[index] !== null && scores[index] !== undefined) {
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'judge') {
             newQuestion.correctAnswer = q.answer === '正确' ? 'true' : 'false';
 
-            // 添加分数
-            if (withScore && scores[index]) {
+            // 添加分数（如果有）
+            if (withScore && scores[index] !== null && scores[index] !== undefined) {
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'blank') {
@@ -5098,8 +5067,8 @@ D. 指缝
                   answer: ans.synonyms ? ans.synonyms.join('|||') : ans.text
                 };
 
-                // 添加分数
-                if (withScore && scores[index] && scores[index][idx]) {
+                // 添加分数（如果有）
+                if (withScore && scores[index] && scores[index][idx] !== null && scores[index][idx] !== undefined) {
                   blankObj.score = scores[index][idx];
                 }
 
@@ -5111,8 +5080,8 @@ D. 指缝
                 answer: q.answer
               };
 
-              // 添加分数
-              if (withScore && scores[index] && scores[index][0]) {
+              // 添加分数（如果有）
+              if (withScore && scores[index] && scores[index][0] !== null && scores[index][0] !== undefined) {
                 blankObj.score = scores[index][0];
               }
 
@@ -5122,8 +5091,8 @@ D. 指缝
             // 简答题
             newQuestion.referenceAnswer = q.answer;
 
-            // 添加分数
-            if (withScore && scores[index]) {
+            // 添加分数（如果有）
+            if (withScore && scores[index] !== null && scores[index] !== undefined) {
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'cloze') {
@@ -5141,8 +5110,8 @@ D. 指缝
               }));
             }
 
-            // 添加总分
-            if (withScore && scores[index]) {
+            // 添加总分（如果有）
+            if (withScore && scores[index] !== null && scores[index] !== undefined) {
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'composite') {
@@ -5164,8 +5133,8 @@ D. 指缝
                   explanation: subQ.explanation || ''
                 };
 
-                // 添加子题分数
-                if (withScore && scores[index] && scores[index][subIdx]) {
+                // 添加子题分数（如果有）
+                if (withScore && scores[index] && scores[index][subIdx] !== null && scores[index][subIdx] !== undefined) {
                   subQuestion.score = scores[index][subIdx];
                 }
 
@@ -5196,10 +5165,14 @@ D. 指缝
                 return subQuestion;
               });
 
-              // 计算总分
+              // 计算总分（如果有设置分数）
               if (withScore && scores[index]) {
-                const totalScore = scores[index].reduce((sum, s) => sum + (s || 0), 0);
-                newQuestion.score = String(totalScore);
+                // 过滤掉 null 值，只计算有效分数
+                const validScores = scores[index].filter(s => s !== null && s !== undefined);
+                if (validScores.length > 0) {
+                  const totalScore = validScores.reduce((sum, s) => sum + s, 0);
+                  newQuestion.score = String(totalScore);
+                }
               }
             }
           }

@@ -725,6 +725,69 @@
       return div;
     }
 
+    // ==================== 知识点加载 ====================
+    // 从 localStorage 加载知识点数据并渲染到下拉框
+    function loadAndRenderKnowledgePoints() {
+      const select = document.getElementById('knowledgePoint');
+      if (!select) return;
+
+      // 清空现有选项，保留第一个"请选择"
+      select.innerHTML = '<option value="">请选择</option>';
+
+      // 从 localStorage 加载知识点数据
+      const saved = localStorage.getItem('knowledgePoints');
+      if (!saved) {
+        console.log('未找到知识点数据，使用默认选项');
+        // 添加默认选项
+        select.innerHTML += `
+          <optgroup label="计算机基础">
+            <option value="11">计算机系统</option>
+            <option value="12">操作系统</option>
+            <option value="13">数据结构</option>
+          </optgroup>
+          <optgroup label="编程语言">
+            <option value="21">Python基础</option>
+            <option value="22">Java基础</option>
+            <option value="23">JavaScript</option>
+          </optgroup>
+        `;
+        return;
+      }
+
+      const knowledgeTree = JSON.parse(saved);
+
+      // 递归渲染知识点树为 optgroup 和 option
+      function renderOptions(nodes, parentName = '') {
+        let html = '';
+        nodes.forEach(node => {
+          const hasChildren = node.children && node.children.length > 0;
+          if (hasChildren) {
+            // 有子节点的作为 optgroup
+            html += `<optgroup label="${node.name}">`;
+            // 递归渲染子节点
+            node.children.forEach(child => {
+              const childHasChildren = child.children && child.children.length > 0;
+              if (childHasChildren) {
+                // 子节点还有子节点，继续递归
+                html += renderOptions([child], node.name);
+              } else {
+                // 叶子节点作为 option
+                html += `<option value="${child.id}">${child.name}</option>`;
+              }
+            });
+            html += '</optgroup>';
+          } else {
+            // 没有子节点的直接作为 option
+            html += `<option value="${node.id}">${node.name}</option>`;
+          }
+        });
+        return html;
+      }
+
+      select.innerHTML += renderOptions(knowledgeTree);
+      console.log('知识点下拉框已从 localStorage 加载');
+    }
+
     // ==================== 编辑模式支持 ====================
     // 检测 URL 参数，判断是否为编辑模式
     const urlParams = new URLSearchParams(window.location.search);
@@ -739,6 +802,9 @@
       console.log('数组长度:', defaultQuestionTypes.length);
 
       document.getElementById('emptyState').style.display = 'flex';
+
+      // 加载知识点数据
+      loadAndRenderKnowledgePoints();
 
       // 渲染题型列表
       console.log('开始渲染题型列表...');
@@ -818,7 +884,17 @@
       setTimeout(() => {
         // 2. 填充基本信息
         document.getElementById('difficulty').value = question.difficulty;
-        document.getElementById('knowledgePoint').value = question.knowledgeId;
+
+        // 兼容两种知识点数据格式：knowledgeId（单个）和 knowledgeIds（数组）
+        let knowledgeId = question.knowledgeId;
+        if (!knowledgeId && question.knowledgeIds && question.knowledgeIds.length > 0) {
+          // 如果是数组格式，取第一个（add.html 只支持单选）
+          knowledgeId = question.knowledgeIds[0];
+        }
+        if (knowledgeId) {
+          document.getElementById('knowledgePoint').value = knowledgeId;
+        }
+
         document.getElementById('questionContent').value = question.content;
         document.getElementById('score').value = question.score || '';
         document.getElementById('explanation').value = question.explanation || '';
@@ -2404,9 +2480,15 @@
       // 获取知识点路径
       const knowledgeSelect = document.getElementById('knowledgePoint');
       const selectedOption = knowledgeSelect.options[knowledgeSelect.selectedIndex];
-      const knowledgePath = selectedOption.parentElement.label + ' / ' + selectedOption.text;
+      // 处理 optgroup 可能不存在的情况
+      const parentLabel = selectedOption.parentElement && selectedOption.parentElement.label
+        ? selectedOption.parentElement.label
+        : '';
+      const knowledgePath = parentLabel
+        ? parentLabel + ' / ' + selectedOption.text
+        : selectedOption.text;
 
-      // 收集表单数据
+      // 收集表单数据（同时保存 knowledgeId 和 knowledgeIds 以兼容两种格式）
       const formData = {
         id: 'Q' + String(Date.now()).slice(-3),
         type: selectedType,
@@ -2414,6 +2496,7 @@
         difficulty: parseInt(difficulty),
         difficultyName: ['一级', '二级', '三级', '四级', '五级'][parseInt(difficulty) - 1],
         knowledgeId: knowledge,
+        knowledgeIds: [knowledge],  // 数组格式，兼容 add-simple.html
         knowledgePath: knowledgePath,
         content: content,
         tags: tags,

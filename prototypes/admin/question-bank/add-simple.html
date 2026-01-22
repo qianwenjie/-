@@ -916,6 +916,12 @@ D. 指缝
       // 加载草稿数据
       loadDraft();
 
+      // 检查是否从 AI 出题跳转过来
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('from') === 'ai') {
+        loadAIGeneratedQuestions();
+      }
+
       const inputDiv = document.getElementById('inputText');
 
       // 初始化图片拖拽监听（已废弃，左侧输入框不再支持图片拖拽）
@@ -2797,12 +2803,15 @@ D. 指缝
 
         const nodeContent = document.createElement('div');
         nodeContent.style.paddingLeft = (level * 20) + 'px';
-        nodeContent.className = 'py-2 px-3 hover:bg-gray-50 rounded cursor-pointer flex items-center space-x-2';
+
+        const hasChildren = node.children && node.children.length > 0;
+        const isLeaf = !hasChildren;
 
         // 如果有子节点，添加展开/折叠图标
-        if (node.children && node.children.length > 0) {
+        if (hasChildren) {
+          nodeContent.className = 'py-2 px-3 hover:bg-gray-50 rounded flex items-center space-x-2';
           const toggleIcon = document.createElement('i');
-          toggleIcon.className = 'fas fa-chevron-down text-xs text-gray-400 transition-transform';
+          toggleIcon.className = 'fas fa-chevron-down text-xs text-gray-400 transition-transform cursor-pointer';
           toggleIcon.style.width = '12px';
           toggleIcon.onclick = (e) => {
             e.stopPropagation();
@@ -2815,6 +2824,7 @@ D. 指缝
           };
           nodeContent.appendChild(toggleIcon);
         } else {
+          nodeContent.className = 'py-2 px-3 hover:bg-gray-50 rounded cursor-pointer flex items-center space-x-2';
           // 占位，保持对齐
           const spacer = document.createElement('span');
           spacer.style.width = '12px';
@@ -2822,44 +2832,64 @@ D. 指缝
           nodeContent.appendChild(spacer);
         }
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'rounded border-gray-300 text-primary-500 focus:ring-primary-500';
-        checkbox.checked = selectedKnowledgePoints.includes(node.id);
-        checkbox.onclick = (e) => {
-          e.stopPropagation();
-        };
-        checkbox.onchange = (e) => {
-          if (e.target.checked) {
-            if (!selectedKnowledgePoints.includes(node.id)) {
-              selectedKnowledgePoints.push(node.id);
-              console.log('选中知识点:', node.name, node.id);
+        // 只有叶子节点才显示复选框
+        if (isLeaf) {
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'rounded border-gray-300 text-primary-500 focus:ring-primary-500';
+          checkbox.checked = selectedKnowledgePoints.includes(node.id);
+          checkbox.onclick = (e) => {
+            e.stopPropagation();
+          };
+          checkbox.onchange = (e) => {
+            if (e.target.checked) {
+              if (!selectedKnowledgePoints.includes(node.id)) {
+                selectedKnowledgePoints.push(node.id);
+                console.log('选中知识点:', node.name, node.id);
+              }
+            } else {
+              selectedKnowledgePoints = selectedKnowledgePoints.filter(id => id !== node.id);
+              console.log('取消选中知识点:', node.name, node.id);
             }
-          } else {
-            selectedKnowledgePoints = selectedKnowledgePoints.filter(id => id !== node.id);
-            console.log('取消选中知识点:', node.name, node.id);
-          }
-          updateSelectedCount();
-        };
+            updateSelectedCount();
+          };
+          nodeContent.appendChild(checkbox);
+        } else {
+          // 文件夹节点占位
+          const spacer = document.createElement('span');
+          spacer.style.width = '16px';
+          spacer.style.display = 'inline-block';
+          nodeContent.appendChild(spacer);
+        }
 
         const icon = document.createElement('i');
-        if (node.children && node.children.length > 0) {
+        if (hasChildren) {
           icon.className = 'fas fa-folder text-warning-500 text-sm';
         } else {
           icon.className = 'fas fa-file-alt text-info-500 text-sm';
         }
 
         const label = document.createElement('span');
-        label.className = 'text-sm text-gray-700 flex-1';
+        label.className = 'text-sm flex-1';
+        label.style.color = isLeaf ? '#374151' : '#6b7280';
         label.textContent = node.name;
+
+        // 叶子节点点击可以切换选中状态
+        if (isLeaf) {
+          nodeContent.onclick = () => {
+            const checkbox = nodeContent.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+              checkbox.checked = !checkbox.checked;
+              checkbox.dispatchEvent(new Event('change'));
+            }
+          };
+        }
 
         const count = document.createElement('span');
         count.className = 'text-xs text-gray-400';
         if (node.questionCount !== undefined && node.questionCount > 0) {
           count.textContent = node.questionCount;
         }
-
-        nodeContent.appendChild(checkbox);
         nodeContent.appendChild(icon);
         nodeContent.appendChild(label);
         nodeContent.appendChild(count);
@@ -4854,6 +4884,110 @@ D. 指缝
         console.error('加载草稿失败:', error);
         return false;
       }
+    }
+
+    // 加载 AI 出题生成的题目
+    function loadAIGeneratedQuestions() {
+      try {
+        const aiQuestions = localStorage.getItem('aiGeneratedQuestions');
+        if (!aiQuestions) {
+          return false;
+        }
+
+        // 清除 localStorage 中的 AI 数据（一次性使用）
+        localStorage.removeItem('aiGeneratedQuestions');
+
+        // 将 AI 生成的题目填充到输入区
+        const inputDiv = document.getElementById('inputText');
+        if (inputDiv) {
+          // 将文本转换为 HTML（保留换行）
+          const htmlContent = aiQuestions
+            .split('\n')
+            .map(line => line || '<br>')
+            .join('<br>');
+          inputDiv.innerHTML = htmlContent;
+
+          // 触发解析
+          setTimeout(() => {
+            handleInputChange();
+
+            // 检查是否有预选的知识点
+            const aiKnowledge = localStorage.getItem('aiSelectedKnowledge');
+            if (aiKnowledge) {
+              try {
+                const knowledge = JSON.parse(aiKnowledge);
+                localStorage.removeItem('aiSelectedKnowledge');
+
+                // 设置知识点（如果存在）
+                if (knowledge.id && knowledge.name) {
+                  // 找到对应的知识点并选中
+                  selectKnowledgeById(knowledge.id);
+                }
+              } catch (e) {
+                console.error('解析 AI 知识点失败:', e);
+              }
+            }
+
+            // 显示提示
+            showToast('AI 出题内容已加载到输入区，请检查后点击"全部录入"');
+          }, 100);
+        }
+
+        console.log('AI 出题内容加载成功');
+        return true;
+      } catch (error) {
+        console.error('加载 AI 出题内容失败:', error);
+        return false;
+      }
+    }
+
+    // 根据 ID 选择知识点
+    function selectKnowledgeById(knowledgeId) {
+      // 查找知识点
+      const findNode = (nodes, id) => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.children && node.children.length > 0) {
+            const found = findNode(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const node = findNode(knowledgePoints, knowledgeId);
+      if (node) {
+        selectedKnowledgeId = node.id;
+        selectedKnowledgePath = getKnowledgePath(node.id);
+        document.getElementById('knowledgeSelectBtn').innerHTML = `
+          <span class="text-gray-700 truncate">${selectedKnowledgePath}</span>
+          <i class="fas fa-chevron-down text-gray-400 text-xs flex-shrink-0"></i>
+        `;
+      }
+    }
+
+    // 显示 Toast 提示
+    function showToast(message, duration = 3000) {
+      // 移除已存在的 toast
+      const existingToast = document.querySelector('.ai-toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      const toast = document.createElement('div');
+      toast.className = 'ai-toast fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="fas fa-robot text-blue-400"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
     }
 
     // 更新草稿保存时间显示

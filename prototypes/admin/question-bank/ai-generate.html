@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI出题 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f9fafb; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    .ai-tab-btn {
+      padding: 10px 24px;
+      font-size: 14px;
+      color: #6b7280;
+      border: 1px solid #e5e7eb;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ai-tab-btn:first-child { border-radius: 8px 0 0 8px; }
+    .ai-tab-btn:last-child { border-radius: 0 8px 8px 0; }
+    .ai-tab-btn:not(:last-child) { border-right: none; }
+    .ai-tab-btn.active {
+      background: #EBF5FF;
+      color: #2563eb;
+      border-color: #2563eb;
+      font-weight: 500;
+    }
+    .ai-tab-btn:hover:not(.active) { background: #f9fafb; }
+
+    .ai-number-input {
+      width: 70px;
+      padding: 6px 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .ai-number-input:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .ai-generate-submit-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    .ai-generate-submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .ai-generate-submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .ai-result-area {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      min-height: 400px;
+      overflow-y: auto;
+    }
+
+    .ai-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      gap: 16px;
+    }
+    .ai-loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-loading-text { color: #6b7280; font-size: 14px; }
+    .ai-loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+
+    .file-upload-zone {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .file-upload-zone:hover {
+      border-color: #2563eb;
+      background: #f0f7ff;
+    }
+    .file-upload-zone.dragover {
+      border-color: #2563eb;
+      background: #EBF5FF;
+    }
+
+    .knowledge-node-folder { color: #6b7280; cursor: default; }
+    .knowledge-node-leaf { color: #374151; cursor: pointer; }
+    .knowledge-node-leaf:hover { background-color: #f3f4f6; }
+
+    /* AI水印样式 */
+    .ai-watermark-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .ai-watermark-pattern {
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      width: 300%;
+      height: 300%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='150'%3E%3Ctext x='50%25' y='50%25' font-size='14' fill='rgba(0,0,0,0.06)' text-anchor='middle' dominant-baseline='middle' font-family='system-ui, sans-serif' transform='rotate(-25, 150, 75)'%3E题目为AI出题 请仔细检查%3C/text%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">题库管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">AI出题</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <img src="https://via.placeholder.com/32" alt="用户" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700 font-medium">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="flex h-[calc(100vh-64px)]">
+      <!-- 左侧：输入区域 -->
+      <div class="w-1/2 p-6 border-r border-gray-200 overflow-y-auto custom-scrollbar bg-white flex flex-col items-center">
+        <div class="w-full max-w-xl">
+        <!-- Tab 切换 -->
+        <div class="flex justify-center mb-6">
+          <button class="ai-tab-btn active" data-tab="material" onclick="switchAITab('material')">根据材料出题</button>
+          <button class="ai-tab-btn" data-tab="file" onclick="switchAITab('file')">上传文件出题</button>
+          <button class="ai-tab-btn" data-tab="video" onclick="switchAITab('video')">根据课件视频出题
+            <i class="fas fa-question-circle text-gray-400 ml-1" title="选择已上传的课件视频，AI将根据视频内容生成题目"></i>
+          </button>
+        </div>
+
+        <!-- 数据保护提示 -->
+        <div class="flex items-start gap-2 mb-4 text-sm text-gray-500">
+          <span class="text-amber-500 mt-0.5">●</span>
+          <span>我们会依据相关法律法规保护您的材料数据，重要数据还请谨慎使用，以免数据泄露</span>
+        </div>
+
+        <!-- Tab 内容区域 -->
+        <div id="aiTabContent">
+          <!-- 根据材料出题 -->
+          <div id="materialTab" class="ai-tab-panel">
+            <textarea id="aiMaterialInput"
+                      class="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      placeholder="请输入学习材料内容，AI将根据材料内容生成题目..."></textarea>
+            <div class="text-right text-xs text-gray-400 mt-1">
+              <span id="materialCharCount">0</span>/6000
+            </div>
+          </div>
+
+          <!-- 上传文件出题 -->
+          <div id="fileTab" class="ai-tab-panel hidden">
+            <div id="fileUploadZone" class="file-upload-zone">
+              <div class="flex flex-col items-center">
+                <div class="w-20 h-20 mb-4 relative">
+                  <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="15" y="20" width="50" height="45" rx="4" fill="#E0EDFF"/>
+                    <rect x="20" y="15" width="40" height="40" rx="4" fill="#3B82F6"/>
+                    <path d="M40 25V45M30 35L40 25L50 35" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <div class="absolute -right-1 -bottom-1 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-plus text-blue-500"></i>
+                  </div>
+                </div>
+                <p class="text-gray-600 mb-2">
+                  支持拖拽 或 粘贴 (Ctrl+V) 文件到此处，或
+                  <span class="text-blue-500 cursor-pointer hover:underline" onclick="document.getElementById('fileInput').click()">点击上传</span>
+                </p>
+                <p class="text-xs text-gray-400">支持格式：doc、docx、xls、xlsx、ppt、pptx</p>
+                <p class="text-xs text-gray-400">文件大小不超过40MB，文件内字数不超过5万字</p>
+              </div>
+              <input type="file" id="fileInput" class="hidden" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx" onchange="handleFileSelect(event)">
+            </div>
+            <div id="selectedFileInfo" class="hidden mt-4 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-file-alt text-blue-500"></i>
+                <span id="selectedFileName" class="text-sm text-gray-700"></span>
+              </div>
+              <button onclick="clearSelectedFile()" class="text-gray-400 hover:text-red-500">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 根据课件视频出题 -->
+          <div id="videoTab" class="ai-tab-panel hidden">
+            <div class="flex items-center gap-3 mb-4">
+              <label class="text-sm text-gray-600 whitespace-nowrap">课件</label>
+              <select id="videoCourseSelect" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">请选择</option>
+                <option value="course1">建筑工程基础 - 第一章.mp4</option>
+                <option value="course2">建筑工程基础 - 第二章.mp4</option>
+                <option value="course3">结构力学入门.mp4</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 知识点选择（多选） -->
+        <div class="mt-4 mb-4">
+          <div class="flex items-start gap-3">
+            <label class="text-sm text-gray-600 whitespace-nowrap mt-2">知识点</label>
+            <div class="relative flex-1">
+              <button type="button" id="aiKnowledgeDropdownBtn" onclick="toggleAIKnowledgeDropdown()"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white flex items-center justify-between hover:bg-gray-50 transition-colors min-h-[38px]">
+                <span id="aiKnowledgeLabel" class="text-gray-500 text-left flex-1">请选择知识点（可选，可多选）</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs ml-2"></i>
+              </button>
+              <!-- 已选知识点标签 -->
+              <div id="aiSelectedKnowledgeTags" class="flex flex-wrap gap-1 mt-2 hidden"></div>
+              <div id="aiKnowledgeDropdown" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto custom-scrollbar">
+                <div class="p-2" id="aiKnowledgeTreeContainer">
+                  <!-- 知识点树将通过JS渲染 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 题型数量设置 -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 whitespace-nowrap">单选题</label>
+            <input type="number" id="aiSingleCount" class="ai-number-input" min="0" max="20" placeholder="数量">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 whitespace-nowrap">多选题</label>
+            <input type="number" id="aiMultipleCount" class="ai-number-input" min="0" max="20" placeholder="数量">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 whitespace-nowrap">判断题</label>
+            <input type="number" id="aiJudgeCount" class="ai-number-input" min="0" max="20" placeholder="数量">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 whitespace-nowrap">填空题</label>
+            <input type="number" id="aiBlankCount" class="ai-number-input" min="0" max="20" placeholder="数量">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600 whitespace-nowrap">简答题</label>
+            <input type="number" id="aiShortAnswerCount" class="ai-number-input" min="0" max="20" placeholder="数量">
+          </div>
+        </div>
+
+        <!-- 使用须知 -->
+        <div class="bg-amber-50 rounded-lg p-3 mb-6">
+          <div class="flex items-start gap-2 text-sm">
+            <i class="fas fa-exclamation-circle text-amber-500 mt-0.5"></i>
+            <div class="text-gray-600">
+              <p class="font-medium text-gray-700 mb-1">使用须知：</p>
+              <p>1. 每次最多出50道题。</p>
+              <p>2. 注意：偶有AI返回的数据不完整是正常情况，受限于AI模型能力，请自行确认AI出题结果是否存在谬误。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 开始出题按钮 -->
+        <button id="aiGenerateSubmitBtn" onclick="startAIGenerate()" class="ai-generate-submit-btn">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>开始出题</span>
+        </button>
+        </div>
+      </div>
+
+      <!-- 右侧：结果区域 -->
+      <div class="w-1/2 p-6 flex flex-col bg-gray-50">
+        <!-- 结果头部 -->
+        <div class="flex items-start justify-between mb-4 flex-shrink-0 gap-4">
+          <div class="flex-1 min-w-0">
+            <span class="text-gray-700 font-medium whitespace-nowrap">AI出题结果：</span>
+            <span id="aiResultSummary" class="text-sm text-gray-500"></span>
+          </div>
+          <div id="aiResultActions" class="hidden flex items-center gap-3 flex-shrink-0">
+            <button onclick="importAllToSimple()" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors whitespace-nowrap">
+              全部录入
+            </button>
+          </div>
+        </div>
+
+        <!-- 结果内容区域 -->
+        <div id="aiResultArea" class="ai-result-area flex-1 p-4 relative">
+          <div class="flex items-center justify-center h-full text-gray-400">
+            <span>AI出题结果将在此显示</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 知识点数据
+    let knowledgeTree = [
+      {
+        id: 1,
+        name: '计算机基础',
+        type: 'directory',
+        count: 45,
+        collapsed: false,
+        children: [
+          { id: 11, name: '计算机系统', type: 'knowledge', count: 15, children: [] },
+          { id: 12, name: '操作系统', type: 'knowledge', count: 18, children: [] },
+          { id: 13, name: '数据结构', type: 'knowledge', count: 12, children: [] }
+        ]
+      },
+      {
+        id: 2,
+        name: '编程语言',
+        type: 'directory',
+        count: 38,
+        collapsed: true,
+        children: [
+          { id: 21, name: 'Python基础', type: 'knowledge', count: 20, children: [] },
+          { id: 22, name: 'Java基础', type: 'knowledge', count: 18, children: [] }
+        ]
+      },
+      {
+        id: 3,
+        name: '网络技术',
+        type: 'directory',
+        count: 32,
+        collapsed: true,
+        children: [
+          { id: 31, name: 'TCP/IP协议', type: 'knowledge', count: 16, children: [] },
+          { id: 32, name: 'HTTP协议', type: 'knowledge', count: 16, children: [] }
+        ]
+      },
+      {
+        id: 4,
+        name: '建筑工程',
+        type: 'directory',
+        count: 50,
+        collapsed: false,
+        children: [
+          { id: 41, name: '建筑结构基础', type: 'knowledge', count: 25, children: [] },
+          { id: 42, name: '地基与基础', type: 'knowledge', count: 15, children: [] },
+          { id: 43, name: '建筑材料', type: 'knowledge', count: 10, children: [] }
+        ]
+      }
+    ];
+
+    // AI出题状态
+    let aiGenerateState = {
+      currentTab: 'material',
+      selectedFile: null,
+      selectedKnowledgePoints: [], // 改为数组支持多选
+      isGenerating: false,
+      generatedQuestions: []
+    };
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadKnowledgeTreeFromStorage();
+      renderAIKnowledgeTree();
+      initMaterialInput();
+      initFileUploadZone();
+    });
+
+    // 从 localStorage 加载知识点树
+    function loadKnowledgeTreeFromStorage() {
+      try {
+        const saved = localStorage.getItem('knowledgePoints');
+        if (saved) {
+          knowledgeTree = JSON.parse(saved);
+          console.log('从 localStorage 加载知识点树:', knowledgeTree);
+        } else {
+          console.log('localStorage 中没有知识点数据，使用默认数据');
+        }
+      } catch (e) {
+        console.error('加载知识点失败:', e);
+      }
+    }
+
+    // 初始化材料输入
+    function initMaterialInput() {
+      const input = document.getElementById('aiMaterialInput');
+      input.addEventListener('input', function() {
+        const count = this.value.length;
+        document.getElementById('materialCharCount').textContent = count;
+        if (count > 6000) {
+          this.value = this.value.substring(0, 6000);
+          document.getElementById('materialCharCount').textContent = '6000';
+        }
+      });
+    }
+
+    // 切换Tab
+    function switchAITab(tab) {
+      aiGenerateState.currentTab = tab;
+      document.querySelectorAll('.ai-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.querySelectorAll('.ai-tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+      });
+      document.getElementById(tab + 'Tab').classList.remove('hidden');
+    }
+
+    // 初始化文件上传区域
+    function initFileUploadZone() {
+      const zone = document.getElementById('fileUploadZone');
+      if (!zone) return;
+
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+      });
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          handleFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+      zone.addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+      });
+    }
+
+    function handleFileSelect(event) {
+      if (event.target.files[0]) {
+        handleFileUpload(event.target.files[0]);
+      }
+    }
+
+    function handleFileUpload(file) {
+      const allowedTypes = ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowedTypes.includes(ext)) {
+        alert('不支持的文件格式');
+        return;
+      }
+      if (file.size > 40 * 1024 * 1024) {
+        alert('文件大小不能超过40MB');
+        return;
+      }
+      aiGenerateState.selectedFile = file;
+      document.getElementById('selectedFileName').textContent = file.name;
+      document.getElementById('selectedFileInfo').classList.remove('hidden');
+      document.getElementById('fileUploadZone').classList.add('hidden');
+    }
+
+    function clearSelectedFile() {
+      aiGenerateState.selectedFile = null;
+      document.getElementById('selectedFileInfo').classList.add('hidden');
+      document.getElementById('fileUploadZone').classList.remove('hidden');
+      document.getElementById('fileInput').value = '';
+    }
+
+    // 渲染知识点树（多选，只能选择叶子节点）
+    function renderAIKnowledgeTree() {
+      const container = document.getElementById('aiKnowledgeTreeContainer');
+      if (!container) return;
+
+      const renderNode = (node, level = 0) => {
+        const paddingLeft = level * 16;
+        const hasChildren = node.children && node.children.length > 0;
+        const isLeaf = !hasChildren;
+        const isSelected = aiGenerateState.selectedKnowledgePoints.some(k => k.id === node.id);
+
+        let html = '';
+        if (isLeaf) {
+          // 叶子节点可选择（多选）
+          html = `
+            <div class="flex items-center px-2 py-1.5 rounded cursor-pointer transition-colors hover:bg-gray-100 ${isSelected ? 'bg-blue-50' : ''}"
+                 style="padding-left: ${paddingLeft}px"
+                 onclick="toggleAIKnowledge('${node.id}', '${node.name}')">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} class="mr-2 pointer-events-none" />
+              <i class="fas fa-file-alt text-gray-400 mr-2 text-xs"></i>
+              <span class="text-sm">${node.name}</span>
+            </div>
+          `;
+        } else {
+          // 文件夹节点不可选择
+          html = `
+            <div class="flex items-center px-2 py-1.5 rounded knowledge-node-folder"
+                 style="padding-left: ${paddingLeft}px">
+              <i class="fas fa-folder text-amber-400 mr-2 text-xs"></i>
+              <span class="text-sm text-gray-600 font-medium">${node.name}</span>
+            </div>
+          `;
+          node.children.forEach(child => {
+            html += renderNode(child, level + 1);
+          });
+        }
+        return html;
+      };
+
+      // 清空选择按钮
+      let html = `
+        <div class="flex items-center justify-between px-2 py-1.5 border-b border-gray-100 mb-1">
+          <span class="text-xs text-gray-500">已选 <span id="aiKnowledgeSelectedCount">${aiGenerateState.selectedKnowledgePoints.length}</span> 个</span>
+          <button type="button" onclick="clearAIKnowledgeSelection()" class="text-xs text-blue-500 hover:text-blue-600">清空选择</button>
+        </div>
+      `;
+      knowledgeTree.forEach(node => {
+        html += renderNode(node);
+      });
+      container.innerHTML = html;
+    }
+
+    function toggleAIKnowledgeDropdown() {
+      document.getElementById('aiKnowledgeDropdown').classList.toggle('hidden');
+    }
+
+    // 切换知识点选择（多选）
+    function toggleAIKnowledge(id, name) {
+      const index = aiGenerateState.selectedKnowledgePoints.findIndex(k => k.id === id);
+      if (index > -1) {
+        // 已选中，取消选择
+        aiGenerateState.selectedKnowledgePoints.splice(index, 1);
+      } else {
+        // 未选中，添加选择
+        aiGenerateState.selectedKnowledgePoints.push({ id, name });
+      }
+      updateAIKnowledgeDisplay();
+      renderAIKnowledgeTree(); // 重新渲染以更新复选框状态
+    }
+
+    // 清空知识点选择
+    function clearAIKnowledgeSelection() {
+      aiGenerateState.selectedKnowledgePoints = [];
+      updateAIKnowledgeDisplay();
+      renderAIKnowledgeTree();
+    }
+
+    // 更新知识点显示
+    function updateAIKnowledgeDisplay() {
+      const selected = aiGenerateState.selectedKnowledgePoints;
+      const label = document.getElementById('aiKnowledgeLabel');
+      const tagsContainer = document.getElementById('aiSelectedKnowledgeTags');
+
+      if (selected.length === 0) {
+        label.textContent = '请选择知识点（可选，可多选）';
+        label.className = 'text-gray-500 text-left flex-1';
+        tagsContainer.classList.add('hidden');
+        tagsContainer.innerHTML = '';
+      } else {
+        label.textContent = `已选择 ${selected.length} 个知识点`;
+        label.className = 'text-gray-700 text-left flex-1';
+        // 显示标签
+        tagsContainer.classList.remove('hidden');
+        tagsContainer.innerHTML = selected.map(k => `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+            ${k.name}
+            <i class="fas fa-times cursor-pointer hover:text-blue-900" onclick="removeAIKnowledge('${k.id}')"></i>
+          </span>
+        `).join('');
+      }
+    }
+
+    // 移除单个知识点
+    function removeAIKnowledge(id) {
+      const index = aiGenerateState.selectedKnowledgePoints.findIndex(k => k.id === id);
+      if (index > -1) {
+        aiGenerateState.selectedKnowledgePoints.splice(index, 1);
+        updateAIKnowledgeDisplay();
+        renderAIKnowledgeTree();
+      }
+    }
+
+    // 点击外部关闭下拉
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('aiKnowledgeDropdown');
+      const btn = document.getElementById('aiKnowledgeDropdownBtn');
+      if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // 开始AI出题
+    function startAIGenerate() {
+      const tab = aiGenerateState.currentTab;
+      if (tab === 'material') {
+        if (!document.getElementById('aiMaterialInput').value.trim()) {
+          alert('请输入学习材料内容');
+          return;
+        }
+      } else if (tab === 'file') {
+        if (!aiGenerateState.selectedFile) {
+          alert('请上传文件');
+          return;
+        }
+      } else if (tab === 'video') {
+        if (!document.getElementById('videoCourseSelect').value) {
+          alert('请选择课件');
+          return;
+        }
+      }
+
+      const counts = {
+        single: parseInt(document.getElementById('aiSingleCount').value) || 0,
+        multiple: parseInt(document.getElementById('aiMultipleCount').value) || 0,
+        judge: parseInt(document.getElementById('aiJudgeCount').value) || 0,
+        blank: parseInt(document.getElementById('aiBlankCount').value) || 0,
+        shortAnswer: parseInt(document.getElementById('aiShortAnswerCount').value) || 0
+      };
+
+      const totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (totalCount === 0) {
+        alert('请至少设置一种题型的数量');
+        return;
+      }
+      if (totalCount > 50) {
+        alert('每次最多出50道题');
+        return;
+      }
+
+      showAILoading();
+      setTimeout(() => generateMockQuestions(counts), 2000 + Math.random() * 2000);
+    }
+
+    function showAILoading() {
+      aiGenerateState.isGenerating = true;
+      document.getElementById('aiGenerateSubmitBtn').disabled = true;
+      document.getElementById('aiResultArea').innerHTML = `
+        <div class="ai-loading">
+          <div class="ai-loading-spinner"></div>
+          <div class="ai-loading-text">
+            <span>AI正在分析材料并生成题目</span>
+            <span class="ai-loading-dots"></span>
+          </div>
+        </div>
+      `;
+    }
+
+    // 生成模拟题目（使用简便录入可识别的格式）
+    function generateMockQuestions(counts) {
+      const questions = [];
+      let idx = 1;
+
+      // 单选题
+      for (let i = 0; i < counts.single; i++) {
+        questions.push({
+          type: '单选题',
+          content: `${idx}.根据材料内容，以下关于建筑结构的说法正确的是？`,
+          options: ['A. 基础是建筑物最下部的承重构件', 'B. 墙体只起围护作用', 'C. 屋顶不需要防水处理', 'D. 楼梯不属于建筑基本组成'],
+          answer: 'A'
+        });
+        idx++;
+      }
+
+      // 多选题
+      for (let i = 0; i < counts.multiple; i++) {
+        questions.push({
+          type: '多选题',
+          content: `${idx}.以下哪些属于建筑的附属构件？`,
+          options: ['A. 阳台', 'B. 墙', 'C. 雨篷', 'D. 散水'],
+          answer: 'ACD'
+        });
+        idx++;
+      }
+
+      // 判断题
+      for (let i = 0; i < counts.judge; i++) {
+        questions.push({
+          type: '判断题',
+          content: `${idx}.建筑物的基础是将荷载传递给地基的"根基"。`,
+          answer: '正确'
+        });
+        idx++;
+      }
+
+      // 填空题
+      for (let i = 0; i < counts.blank; i++) {
+        questions.push({
+          type: '填空题',
+          content: `${idx}.建筑由基础、墙或柱、楼地层、楼梯、____、门窗六大基本部分组成。`,
+          answer: '屋顶'
+        });
+        idx++;
+      }
+
+      // 简答题
+      for (let i = 0; i < counts.shortAnswer; i++) {
+        questions.push({
+          type: '简答题',
+          content: `${idx}.请简述建筑基础的作用和重要性。`,
+          answer: '建筑基础是建筑物最下部的承重构件，其主要作用是将建筑物的全部荷载传递给地基。'
+        });
+        idx++;
+      }
+
+      aiGenerateState.generatedQuestions = questions;
+      aiGenerateState.isGenerating = false;
+      document.getElementById('aiGenerateSubmitBtn').disabled = false;
+      displayAIResults(questions, counts);
+    }
+
+    // 显示AI出题结果
+    function displayAIResults(questions, counts) {
+      const summaryParts = [];
+      if (counts.single > 0) summaryParts.push(`单选题 <span class="text-blue-500 font-medium">${counts.single}</span> 道`);
+      if (counts.multiple > 0) summaryParts.push(`多选题 <span class="text-blue-500 font-medium">${counts.multiple}</span> 道`);
+      if (counts.judge > 0) summaryParts.push(`判断题 <span class="text-blue-500 font-medium">${counts.judge}</span> 道`);
+      if (counts.blank > 0) summaryParts.push(`填空题 <span class="text-blue-500 font-medium">${counts.blank}</span> 道`);
+      if (counts.shortAnswer > 0) summaryParts.push(`简答题 <span class="text-blue-500 font-medium">${counts.shortAnswer}</span> 道`);
+      document.getElementById('aiResultSummary').innerHTML = summaryParts.join('，');
+      document.getElementById('aiResultActions').classList.remove('hidden');
+
+      let html = '<div class="space-y-4 text-sm">';
+      const typeGroups = {};
+      questions.forEach(q => {
+        if (!typeGroups[q.type]) typeGroups[q.type] = [];
+        typeGroups[q.type].push(q);
+      });
+
+      for (const [type, qs] of Object.entries(typeGroups)) {
+        html += `<div class="font-medium text-gray-700 mt-4 first:mt-0">【${type}】</div>`;
+        qs.forEach(q => {
+          html += `<div class="bg-white p-3 rounded-lg border border-gray-200">`;
+          html += `<div class="text-gray-800 whitespace-pre-wrap">${q.content}</div>`;
+          if (q.options) {
+            html += `<div class="mt-2 space-y-1">`;
+            q.options.forEach(opt => {
+              html += `<div class="text-gray-600">${opt}</div>`;
+            });
+            html += `</div>`;
+          }
+          html += `<div class="mt-2 text-gray-500">参考答案：${q.answer}</div>`;
+          html += `</div>`;
+        });
+      }
+      html += '</div>';
+
+      // 更新结果区域内容（添加水印）
+      const resultArea = document.getElementById('aiResultArea');
+      resultArea.innerHTML = html + '<div class="ai-watermark-container"><div class="ai-watermark-pattern"></div></div>';
+    }
+
+    // 全部录入到简便录入
+    function importAllToSimple() {
+      const questions = aiGenerateState.generatedQuestions;
+      if (questions.length === 0) return;
+
+      // 将题目转换为简便录入可识别的格式（题型不带方括号）
+      let simpleText = '';
+      questions.forEach(q => {
+        simpleText += `${q.type}\n`;
+        simpleText += `${q.content}\n`;
+        if (q.options) {
+          q.options.forEach(opt => { simpleText += `${opt}\n`; });
+        }
+        simpleText += `答案：${q.answer}\n\n`;
+      });
+
+      localStorage.setItem('aiGeneratedQuestions', simpleText);
+
+      // 保存多选的知识点
+      if (aiGenerateState.selectedKnowledgePoints.length > 0) {
+        localStorage.setItem('aiSelectedKnowledgePoints', JSON.stringify(aiGenerateState.selectedKnowledgePoints));
+      } else {
+        localStorage.removeItem('aiSelectedKnowledgePoints');
+      }
+
+      window.location.href = 'add-simple.html?from=ai';
+    }
+  </script>
+</body>
+</html>

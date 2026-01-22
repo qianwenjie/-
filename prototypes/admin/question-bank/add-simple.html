@@ -5591,9 +5591,9 @@ D. 指缝
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'composite') {
-            // 复合题（材料分析题）
-            newQuestion.type = 'materialAnalysis';
-            newQuestion.typeName = '材料分析';
+            // 复合题
+            newQuestion.type = 'composite';
+            newQuestion.typeName = '复合题';
             newQuestion.typeIcon = 'fa-layer-group';
             newQuestion.typeColor = 'purple';
             newQuestion.isComposite = true;
@@ -5696,8 +5696,7 @@ D. 指缝
         'blank': 'fa-pen',
         'shortAnswer': 'fa-align-left',
         'cloze': 'fa-layer-group',
-        'composite': 'fa-layer-group',
-        'materialAnalysis': 'fa-layer-group'
+        'composite': 'fa-layer-group'
       };
       return iconMap[type] || 'fa-question-circle';
     }
@@ -5711,8 +5710,7 @@ D. 指缝
         'blank': 'primary',
         'shortAnswer': 'purple',
         'cloze': 'indigo',
-        'composite': 'purple',
-        'materialAnalysis': 'purple'
+        'composite': 'purple'
       };
       return colorMap[type] || 'gray';
     }
@@ -5726,8 +5724,7 @@ D. 指缝
         'blank': 'inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded',
         'shortAnswer': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
         'cloze': 'inline-block px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded',
-        'composite': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded',
-        'materialAnalysis': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded'
+        'composite': 'inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded'
       };
       return classMap[type] || 'inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded';
     }

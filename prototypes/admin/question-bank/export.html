@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题目导出 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 100: '#C3F0D8', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f9fafb; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    .knowledge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #EBF5FF;
+      color: #2563eb;
+      border-radius: 16px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .knowledge-tag:hover { background: #DBEAFE; }
+    .knowledge-tag .remove-btn {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .knowledge-tag .remove-btn:hover { opacity: 1; }
+    .export-progress-bar {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .export-progress-bar .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #00B96B, #14C9C9);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .question-preview {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .question-preview:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">题库管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">题目导出</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-gray-600">管理员</span>
+        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-user text-primary-500 text-sm"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 flex h-screen">
+    <!-- 左侧配置面板 -->
+    <aside class="w-80 bg-white border-r border-gray-200 flex flex-col h-full relative">
+      <div class="p-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">导出配置</h2>
+        <p class="text-sm text-gray-500 mt-1">选择知识点和导出选项</p>
+      </div>
+
+      <!-- 知识点选择 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-24">
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-medium text-gray-700">选择知识点</label>
+            <div class="flex items-center space-x-2">
+              <button onclick="selectAllKnowledge()" id="selectAllBtn" class="text-xs text-primary-500 hover:text-primary-600">
+                全选
+              </button>
+              <button onclick="clearAllKnowledge()" id="clearAllBtn" class="text-xs text-gray-400 hover:text-gray-600 hidden">
+                取消全选
+              </button>
+            </div>
+          </div>
+          <div id="knowledgeTree" class="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto custom-scrollbar bg-gray-50">
+            <!-- 知识点树将在这里渲染 -->
+          </div>
+        </div>
+
+        <!-- 已选知识点标签 -->
+        <div id="selectedKnowledgeTags" class="flex flex-wrap gap-2 mb-4 min-h-[32px]">
+          <!-- 选中的知识点标签 -->
+        </div>
+
+        <!-- 题型筛选 -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 mb-2 block">题型筛选</label>
+          <div class="space-y-2" id="questionTypeFilters">
+            <!-- 题型复选框将在这里渲染 -->
+          </div>
+        </div>
+
+        <!-- 导出格式 -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 mb-2 block">导出格式</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="radio" name="exportFormat" value="word" checked class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">Word 文档 (.docx)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 答案位置 -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 mb-2 block">答案位置</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="radio" name="answerPosition" value="after" checked class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">紧跟题后</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="answerPosition" value="end" class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">文末汇总</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="answerPosition" value="none" class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">不导出答案</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 排序方式 -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 mb-2 block">排序方式</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="radio" name="sortBy" value="knowledge" checked class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">按知识点排序</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="sortBy" value="type" class="text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">按题型排序</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 其他选项 -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 mb-2 block">其他选项</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <input type="checkbox" id="includeExplanation" checked class="rounded text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">包含解析</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" id="includeKnowledgePath" class="rounded text-primary-500 focus:ring-primary-500">
+              <span class="ml-2 text-sm text-gray-700">显示知识点路径</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作按钮 -->
+      <div class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+        <button onclick="previewExport()" id="previewBtn" class="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
+          <i class="fas fa-eye"></i>
+          <span>预览导出</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 右侧预览区域 -->
+    <section class="flex-1 flex flex-col overflow-hidden">
+      <div class="p-6 border-b border-gray-200 bg-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">导出预览</h2>
+            <p class="text-sm text-gray-500 mt-1" id="previewStats">请先选择知识点并点击预览</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="window.location.href='list.html'" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <i class="fas fa-arrow-left mr-2"></i>返回列表
+            </button>
+            <button onclick="downloadExport()" id="downloadBtn" disabled class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="fas fa-download mr-2"></i>下载文档
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 预览内容区 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50">
+        <!-- 初始状态 -->
+        <div id="initialState" class="flex flex-col items-center justify-center h-full text-gray-400">
+          <i class="fas fa-file-export text-6xl mb-4"></i>
+          <p class="text-lg">选择知识点后点击"预览导出"</p>
+          <p class="text-sm mt-2">支持导出为 Word 文档格式</p>
+        </div>
+
+        <!-- 导出进度 -->
+        <div id="progressArea" class="hidden">
+          <div class="bg-white rounded-xl p-8 shadow-sm max-w-md mx-auto mt-20">
+            <div class="text-center mb-6">
+              <i class="fas fa-cog fa-spin text-4xl text-primary-500 mb-4"></i>
+              <h3 class="text-lg font-medium text-gray-900">正在生成预览...</h3>
+              <p class="text-sm text-gray-500 mt-1">请稍候</p>
+            </div>
+            <div class="export-progress-bar">
+              <div class="progress" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p class="text-center text-sm text-gray-500 mt-3" id="progressPercent">0%</p>
+          </div>
+        </div>
+
+        <!-- 预览结果 -->
+        <div id="previewContainer" class="hidden space-y-4">
+          <!-- 预览内容将在这里渲染 -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ==================== 数据定义 ====================
+    let knowledgeTree = [];
+    let selectedKnowledgePoints = [];
+    let allQuestions = [];
+    let previewQuestions = [];
+    const MAX_EXPORT_COUNT = 20000;
+
+    // 默认题型
+    const defaultQuestionTypes = [
+      { id: 'single', name: '单选题' },
+      { id: 'multiple', name: '多选题' },
+      { id: 'judge', name: '判断题' },
+      { id: 'blank', name: '填空题' },
+      { id: 'shortAnswer', name: '简答题' },
+      { id: 'cloze', name: '完形填空' },
+      { id: 'composite', name: '复合题' }
+    ];
+
+    // 题型名称映射（兼容旧数据）
+    function getNormalizedTypeName(question) {
+      if (question.type === 'materialAnalysis') return '复合题';
+      return question.typeName || question.type;
+    }
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      loadKnowledgeTree();
+      loadQuestions();
+      renderKnowledgeTree();
+      renderQuestionTypeFilters();
+    });
+
+    // 加载知识点树
+    function loadKnowledgeTree() {
+      const saved = localStorage.getItem('knowledgePoints');
+      if (saved) {
+        knowledgeTree = JSON.parse(saved);
+      } else {
+        knowledgeTree = [
+          { id: 1, name: '计算机基础', children: [
+            { id: 11, name: '数据结构', children: [] },
+            { id: 12, name: '操作系统', children: [] }
+          ]},
+          { id: 2, name: '建筑工程', children: [
+            { id: 21, name: '施工技术', children: [] },
+            { id: 22, name: '工程管理', children: [] }
+          ]}
+        ];
+      }
+    }
+
+    // 加载题目
+    function loadQuestions() {
+      const saved = localStorage.getItem('allQuestions');
+      if (saved) {
+        allQuestions = JSON.parse(saved);
+      }
+    }
+
+    // ==================== 知识点渲染 ====================
+    function renderKnowledgeTree() {
+      const container = document.getElementById('knowledgeTree');
+      container.innerHTML = renderTreeNodes(knowledgeTree, 0);
+    }
+
+    function renderTreeNodes(nodes, level) {
+      if (!nodes || nodes.length === 0) return '';
+      return nodes.map(node => {
+        const hasChildren = node.children && node.children.length > 0;
+        const isSelected = selectedKnowledgePoints.some(k => k.id === node.id);
+        return `
+          <div class="knowledge-node" data-id="${node.id}">
+            <div class="flex items-center py-1 hover:bg-gray-100 rounded cursor-pointer" style="padding-left: ${level * 16}px" onclick="toggleKnowledge(${node.id}, '${escapeHtml(node.name)}')">
+              ${hasChildren ? '<i class="fas fa-chevron-right text-xs text-gray-400 mr-1 transition-transform"></i>' : '<span class="w-3 mr-1"></span>'}
+              <input type="checkbox" ${isSelected ? 'checked' : ''} class="rounded text-primary-500 mr-2" onclick="event.stopPropagation(); toggleKnowledge(${node.id}, '${escapeHtml(node.name)}')">
+              <span class="text-sm text-gray-700">${escapeHtml(node.name)}</span>
+            </div>
+            ${hasChildren ? `<div class="children">${renderTreeNodes(node.children, level + 1)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleKnowledge(id, name) {
+      const index = selectedKnowledgePoints.findIndex(k => k.id === id);
+      if (index > -1) {
+        selectedKnowledgePoints.splice(index, 1);
+      } else {
+        selectedKnowledgePoints.push({ id, name });
+      }
+      renderKnowledgeTree();
+      renderSelectedTags();
+      updateButtonVisibility();
+    }
+
+    function renderSelectedTags() {
+      const container = document.getElementById('selectedKnowledgeTags');
+      if (selectedKnowledgePoints.length === 0) {
+        container.innerHTML = '<span class="text-sm text-gray-400">未选择知识点</span>';
+        return;
+      }
+      container.innerHTML = selectedKnowledgePoints.map(k => `
+        <span class="knowledge-tag">
+          ${escapeHtml(k.name)}
+          <i class="fas fa-times remove-btn" onclick="removeKnowledge(${k.id})"></i>
+        </span>
+      `).join('');
+    }
+
+    function removeKnowledge(id) {
+      selectedKnowledgePoints = selectedKnowledgePoints.filter(k => k.id !== id);
+      renderKnowledgeTree();
+      renderSelectedTags();
+      updateButtonVisibility();
+    }
+
+    function selectAllKnowledge() {
+      selectedKnowledgePoints = [];
+      collectAllNodes(knowledgeTree);
+      renderKnowledgeTree();
+      renderSelectedTags();
+      updateButtonVisibility();
+    }
+
+    function collectAllNodes(nodes) {
+      nodes.forEach(node => {
+        selectedKnowledgePoints.push({ id: node.id, name: node.name });
+        if (node.children && node.children.length > 0) {
+          collectAllNodes(node.children);
+        }
+      });
+    }
+
+    function clearAllKnowledge() {
+      selectedKnowledgePoints = [];
+      renderKnowledgeTree();
+      renderSelectedTags();
+      updateButtonVisibility();
+    }
+
+    function updateButtonVisibility() {
+      const allCount = countAllNodes(knowledgeTree);
+      const selectedCount = selectedKnowledgePoints.length;
+      document.getElementById('selectAllBtn').classList.toggle('hidden', selectedCount === allCount);
+      document.getElementById('clearAllBtn').classList.toggle('hidden', selectedCount === 0);
+    }
+
+    function countAllNodes(nodes) {
+      let count = 0;
+      nodes.forEach(node => {
+        count++;
+        if (node.children) count += countAllNodes(node.children);
+      });
+      return count;
+    }
+
+    // ==================== 题型筛选 ====================
+    function renderQuestionTypeFilters() {
+      const container = document.getElementById('questionTypeFilters');
+      container.innerHTML = defaultQuestionTypes.map(type => `
+        <label class="flex items-center">
+          <input type="checkbox" value="${type.id}" checked class="type-filter rounded text-primary-500 focus:ring-primary-500">
+          <span class="ml-2 text-sm text-gray-700">${type.name}</span>
+        </label>
+      `).join('');
+    }
+
+    function getSelectedTypes() {
+      const checkboxes = document.querySelectorAll('.type-filter:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    // ==================== 预览导出 ====================
+    function previewExport() {
+      if (selectedKnowledgePoints.length === 0) {
+        alert('请先选择至少一个知识点');
+        return;
+      }
+
+      // 显示进度
+      document.getElementById('initialState').classList.add('hidden');
+      document.getElementById('previewContainer').classList.add('hidden');
+      document.getElementById('progressArea').classList.remove('hidden');
+
+      // 模拟进度
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 20;
+        if (progress > 90) progress = 90;
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+      }, 100);
+
+      // 筛选题目
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        document.getElementById('progressBar').style.width = '100%';
+        document.getElementById('progressPercent').textContent = '100%';
+
+        setTimeout(() => {
+          filterAndPreview();
+        }, 300);
+      }, 800);
+    }
+
+    function filterAndPreview() {
+      const selectedIds = selectedKnowledgePoints.map(k => k.id);
+      const selectedTypes = getSelectedTypes();
+
+      // 筛选题目
+      previewQuestions = allQuestions.filter(q => {
+        // 知识点筛选
+        const ids = q.knowledgeIds || (q.knowledgeId ? [q.knowledgeId] : []);
+        const matchKnowledge = ids.some(id =>
+          selectedIds.includes(id) || selectedIds.includes(parseInt(id)) || selectedIds.includes(String(id))
+        );
+        if (!matchKnowledge) return false;
+
+        // 题型筛选（兼容 materialAnalysis）
+        let type = q.type;
+        if (type === 'materialAnalysis') type = 'composite';
+        return selectedTypes.includes(type);
+      });
+
+      // 检查数量限制
+      if (previewQuestions.length > MAX_EXPORT_COUNT) {
+        alert(`导出题目数量超过上限（${MAX_EXPORT_COUNT}题），请缩小选择范围`);
+        document.getElementById('progressArea').classList.add('hidden');
+        document.getElementById('initialState').classList.remove('hidden');
+        return;
+      }
+
+      // 排序
+      const sortBy = document.querySelector('input[name="sortBy"]:checked').value;
+      if (sortBy === 'type') {
+        previewQuestions.sort((a, b) => (a.type || '').localeCompare(b.type || ''));
+      } else {
+        previewQuestions.sort((a, b) => (a.knowledgePath || '').localeCompare(b.knowledgePath || ''));
+      }
+
+      // 渲染预览
+      renderPreview();
+    }
+
+    function renderPreview() {
+      document.getElementById('progressArea').classList.add('hidden');
+      document.getElementById('previewContainer').classList.remove('hidden');
+      document.getElementById('downloadBtn').disabled = previewQuestions.length === 0;
+
+      // 更新统计
+      const stats = document.getElementById('previewStats');
+      stats.textContent = `共 ${previewQuestions.length} 道题目`;
+
+      const container = document.getElementById('previewContainer');
+      if (previewQuestions.length === 0) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i class="fas fa-inbox text-5xl mb-4"></i>
+            <p>没有符合条件的题目</p>
+          </div>
+        `;
+        return;
+      }
+
+      const answerPosition = document.querySelector('input[name="answerPosition"]:checked').value;
+      const includeExplanation = document.getElementById('includeExplanation').checked;
+      const includeKnowledgePath = document.getElementById('includeKnowledgePath').checked;
+
+      container.innerHTML = previewQuestions.map((q, idx) => `
+        <div class="question-preview p-4">
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-sm font-medium text-gray-900">${idx + 1}. 【${getNormalizedTypeName(q)}】</span>
+            ${includeKnowledgePath && q.knowledgePath ? `<span class="text-xs text-gray-400">${escapeHtml(q.knowledgePath)}</span>` : ''}
+          </div>
+          <div class="text-sm text-gray-700 mb-2">${escapeHtml(q.content)}</div>
+          ${renderQuestionOptions(q)}
+          ${answerPosition === 'after' ? renderAnswer(q, includeExplanation) : ''}
+        </div>
+      `).join('');
+
+      // 文末汇总答案
+      if (answerPosition === 'end') {
+        container.innerHTML += `
+          <div class="question-preview p-4 mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">参考答案</h3>
+            <div class="space-y-2">
+              ${previewQuestions.map((q, idx) => `
+                <div class="text-sm">
+                  <span class="font-medium">${idx + 1}.</span>
+                  <span class="text-primary-600">${getAnswerText(q)}</span>
+                  ${includeExplanation && q.explanation ? `<span class="text-gray-500 ml-2">（${escapeHtml(q.explanation)}）</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function renderQuestionOptions(q) {
+      if (!q.options || q.options.length === 0) return '';
+      return `
+        <div class="space-y-1 ml-4">
+          ${q.options.map(opt => `
+            <div class="text-sm text-gray-600">${opt.label}. ${escapeHtml(opt.text)}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderAnswer(q, includeExplanation) {
+      return `
+        <div class="mt-3 pt-3 border-t border-gray-100">
+          <span class="text-sm text-gray-500">答案：</span>
+          <span class="text-sm text-primary-600 font-medium">${getAnswerText(q)}</span>
+          ${includeExplanation && q.explanation ? `
+            <div class="mt-1 text-sm text-gray-500">
+              <span>解析：</span>${escapeHtml(q.explanation)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function getAnswerText(q) {
+      if (q.correctAnswers && q.correctAnswers.length > 0) {
+        return q.correctAnswers.join('、');
+      }
+      if (q.correctAnswer) return q.correctAnswer;
+      if (q.answer) return q.answer;
+      return '-';
+    }
+
+    // ==================== 下载导出 ====================
+    function downloadExport() {
+      if (previewQuestions.length === 0) {
+        alert('没有可导出的题目');
+        return;
+      }
+
+      // 模拟下载（原型阶段）
+      const answerPosition = document.querySelector('input[name="answerPosition"]:checked').value;
+      const includeExplanation = document.getElementById('includeExplanation').checked;
+      const includeKnowledgePath = document.getElementById('includeKnowledgePath').checked;
+
+      // 生成文本内容
+      let content = '题目导出\n';
+      content += '=' .repeat(50) + '\n\n';
+      content += `导出时间：${new Date().toLocaleString()}\n`;
+      content += `题目数量：${previewQuestions.length}\n\n`;
+      content += '=' .repeat(50) + '\n\n';
+
+      previewQuestions.forEach((q, idx) => {
+        content += `${idx + 1}. 【${getNormalizedTypeName(q)}】\n`;
+        if (includeKnowledgePath && q.knowledgePath) {
+          content += `知识点：${q.knowledgePath}\n`;
+        }
+        content += `${q.content}\n`;
+
+        if (q.options && q.options.length > 0) {
+          q.options.forEach(opt => {
+            content += `  ${opt.label}. ${opt.text}\n`;
+          });
+        }
+
+        if (answerPosition === 'after') {
+          content += `答案：${getAnswerText(q)}\n`;
+          if (includeExplanation && q.explanation) {
+            content += `解析：${q.explanation}\n`;
+          }
+        }
+        content += '\n';
+      });
+
+      if (answerPosition === 'end') {
+        content += '\n' + '=' .repeat(50) + '\n';
+        content += '参考答案\n';
+        content += '=' .repeat(50) + '\n\n';
+        previewQuestions.forEach((q, idx) => {
+          content += `${idx + 1}. ${getAnswerText(q)}`;
+          if (includeExplanation && q.explanation) {
+            content += ` （${q.explanation}）`;
+          }
+          content += '\n';
+        });
+      }
+
+      // 创建下载
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `题目导出_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // 提示
+      alert('导出成功！\n\n注：原型阶段暂时导出为文本格式，正式版本将支持 Word 文档格式。');
+    }
+
+    // ==================== 工具函数 ====================
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

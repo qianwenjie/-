@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题目查重 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f9fafb; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    .knowledge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #EBF5FF;
+      color: #2563eb;
+      border-radius: 16px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .knowledge-tag:hover {
+      background: #DBEAFE;
+    }
+    .knowledge-tag .remove-btn {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .knowledge-tag .remove-btn:hover {
+      opacity: 1;
+    }
+
+    .check-progress-bar {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .check-progress-bar .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #00B96B, #14C9C9);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .duplicate-pair {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .duplicate-pair:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .similarity-high { background: #FFECE8; color: #F53F3F; }
+    .similarity-medium { background: #FFF7E8; color: #FF7D00; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">题库管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">题目查重</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <img src="https://via.placeholder.com/32" alt="用户" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700 font-medium">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="flex h-[calc(100vh-64px)]">
+      <!-- 左侧：查重设置 -->
+      <div class="w-1/3 border-r border-gray-200 bg-white flex flex-col relative">
+        <div class="p-6 border-b border-gray-100">
+          <h2 class="text-lg font-semibold text-gray-900 mb-1">查重设置</h2>
+          <p class="text-sm text-gray-500">选择知识点范围，检测重复题目</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 pb-24">
+          <!-- 知识点选择 -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <label class="text-sm font-medium text-gray-700">选择知识点</label>
+              <div class="flex items-center space-x-2">
+                <button onclick="selectAllKnowledge()" id="selectAllBtn" class="text-xs text-primary-500 hover:text-primary-600">
+                  全选
+                </button>
+                <button onclick="clearAllKnowledge()" id="clearAllBtn" class="text-xs text-gray-400 hover:text-gray-600 hidden">
+                  取消全选
+                </button>
+              </div>
+            </div>
+
+            <!-- 已选知识点标签 -->
+            <div id="selectedKnowledgeTags" class="flex flex-wrap gap-2 mb-3 min-h-[32px]">
+              <span class="text-sm text-gray-400" id="noSelectionHint">未选择，将检测全部题目</span>
+            </div>
+
+            <!-- 知识点树 -->
+            <div class="border border-gray-200 rounded-lg max-h-80 overflow-y-auto custom-scrollbar">
+              <div id="knowledgeTreeContainer" class="p-2">
+                <!-- 知识点树将通过JS渲染 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 查重说明 -->
+          <div class="bg-blue-50 rounded-lg p-4">
+            <div class="flex items-start gap-2 text-sm">
+              <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+              <div class="text-gray-600">
+                <p class="font-medium text-gray-700 mb-1">查重说明：</p>
+                <p>1. 支持选择多个知识点进行查重</p>
+                <p>2. 不选择知识点则检测全部题目</p>
+                <p>3. 相似度 ≥80% 的题目将被标记</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 开始查重按钮 - 悬浮在底部 -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+          <button onclick="startDuplicateCheck()" id="startCheckBtn"
+                  class="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2">
+            <i class="fas fa-search"></i>
+            <span>开始查重</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 右侧：查重结果 -->
+      <div class="flex-1 flex flex-col bg-gray-50">
+        <!-- 结果头部 -->
+        <div id="resultHeader" class="hidden p-6 bg-white border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900" id="totalChecked">0</div>
+                <div class="text-xs text-gray-500">检测题目</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-warning-500" id="duplicateCount">0</div>
+                <div class="text-xs text-gray-500">疑似重复</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-error-500" id="duplicatePairs">0</div>
+                <div class="text-xs text-gray-500">重复对数</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="markAllAsNotDuplicate()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                <i class="fas fa-check-double mr-1"></i>全部标记为非重复
+              </button>
+              <button onclick="deleteAllDuplicates()" class="px-4 py-2 text-sm text-white bg-error-500 hover:bg-red-600 rounded-lg transition-colors">
+                <i class="fas fa-trash-alt mr-1"></i>一键删除重复
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div id="progressArea" class="hidden p-6 bg-white border-b border-gray-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600">正在检测题目相似度...</span>
+            <span id="progressPercent" class="text-sm font-medium text-primary-500">0%</span>
+          </div>
+          <div class="check-progress-bar">
+            <div id="progressBar" class="progress" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- 结果列表 -->
+        <div id="resultList" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+          <!-- 初始空状态 -->
+          <div id="emptyState" class="flex items-center justify-center h-full">
+            <div class="text-center">
+              <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-copy text-4xl text-gray-300"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-700 mb-2">选择知识点开始查重</h3>
+              <p class="text-sm text-gray-500">在左侧选择要检测的知识点范围</p>
+            </div>
+          </div>
+
+          <!-- 无重复状态 -->
+          <div id="noDuplicateState" class="hidden flex items-center justify-center h-full">
+            <div class="text-center">
+              <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check-circle text-4xl text-green-500"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">未发现重复题目</h3>
+              <p class="text-sm text-gray-500">当前范围内的题目均为唯一题目</p>
+            </div>
+          </div>
+
+          <!-- 重复题目列表 -->
+          <div id="duplicateListContainer" class="hidden space-y-4">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ==================== 状态管理 ====================
+    let knowledgeTree = [];
+    let selectedKnowledgePoints = []; // 已选知识点 [{id, name, path}]
+    let duplicateResults = []; // 查重结果
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      loadKnowledgeTree();
+      renderKnowledgeTree();
+    });
+
+    // 加载知识点树
+    function loadKnowledgeTree() {
+      const saved = localStorage.getItem('knowledgePoints');
+      if (saved) {
+        knowledgeTree = JSON.parse(saved);
+      } else {
+        // 默认数据
+        knowledgeTree = [
+          {
+            id: 1, name: '计算机基础', type: 'directory', children: [
+              { id: 11, name: '计算机系统', type: 'knowledge', children: [] },
+              { id: 12, name: '操作系统', type: 'knowledge', children: [] },
+              { id: 13, name: '数据结构', type: 'knowledge', children: [] }
+            ]
+          },
+          {
+            id: 2, name: '编程语言', type: 'directory', children: [
+              { id: 21, name: 'Python基础', type: 'knowledge', children: [] },
+              { id: 22, name: 'Java基础', type: 'knowledge', children: [] },
+              { id: 23, name: 'JavaScript', type: 'knowledge', children: [] }
+            ]
+          }
+        ];
+      }
+    }
+
+    // 渲染知识点树
+    function renderKnowledgeTree() {
+      const container = document.getElementById('knowledgeTreeContainer');
+      if (!container) return;
+
+      function renderNode(node, level = 0, parentPath = '') {
+        const paddingLeft = level * 16;
+        const hasChildren = node.children && node.children.length > 0;
+        const isLeaf = !hasChildren;
+        const currentPath = parentPath ? `${parentPath} / ${node.name}` : node.name;
+        const isSelected = selectedKnowledgePoints.some(k => k.id === node.id);
+
+        let html = '';
+        if (isLeaf) {
+          // 叶子节点可选择
+          html = `
+            <div class="flex items-center px-2 py-1.5 rounded cursor-pointer transition-colors hover:bg-gray-100 ${isSelected ? 'bg-blue-50' : ''}"
+                 style="padding-left: ${paddingLeft}px"
+                 onclick="toggleKnowledge(${node.id}, '${node.name}', '${currentPath.replace(/'/g, "\\'")}')">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} class="mr-2 pointer-events-none" />
+              <i class="fas fa-file-alt text-gray-400 mr-2 text-xs"></i>
+              <span class="text-sm">${node.name}</span>
+            </div>
+          `;
+        } else {
+          // 文件夹节点
+          html = `
+            <div class="flex items-center px-2 py-1.5 rounded"
+                 style="padding-left: ${paddingLeft}px">
+              <i class="fas fa-folder text-amber-400 mr-2 text-xs"></i>
+              <span class="text-sm text-gray-600 font-medium">${node.name}</span>
+            </div>
+          `;
+          node.children.forEach(child => {
+            html += renderNode(child, level + 1, currentPath);
+          });
+        }
+        return html;
+      }
+
+      let html = '';
+      knowledgeTree.forEach(node => {
+        html += renderNode(node);
+      });
+      container.innerHTML = html;
+    }
+
+    // 切换知识点选择
+    function toggleKnowledge(id, name, path) {
+      const index = selectedKnowledgePoints.findIndex(k => k.id === id);
+      if (index > -1) {
+        selectedKnowledgePoints.splice(index, 1);
+      } else {
+        selectedKnowledgePoints.push({ id, name, path });
+      }
+      updateSelectedTags();
+      renderKnowledgeTree();
+    }
+
+    // 更新已选标签显示
+    function updateSelectedTags() {
+      const container = document.getElementById('selectedKnowledgeTags');
+      const hint = document.getElementById('noSelectionHint');
+
+      if (selectedKnowledgePoints.length === 0) {
+        container.innerHTML = '<span class="text-sm text-gray-400" id="noSelectionHint">未选择，将检测全部题目</span>';
+      } else {
+        container.innerHTML = selectedKnowledgePoints.map(k => `
+          <span class="knowledge-tag">
+            ${k.name}
+            <i class="fas fa-times remove-btn" onclick="removeKnowledge(${k.id})"></i>
+          </span>
+        `).join('');
+      }
+
+      // 更新全选/取消全选按钮状态
+      updateSelectAllButtons();
+    }
+
+    // 移除知识点
+    function removeKnowledge(id) {
+      selectedKnowledgePoints = selectedKnowledgePoints.filter(k => k.id !== id);
+      updateSelectedTags();
+      renderKnowledgeTree();
+    }
+
+    // 全选知识点
+    function selectAllKnowledge() {
+      selectedKnowledgePoints = [];
+
+      function collectLeafNodes(nodes, parentPath = '') {
+        nodes.forEach(node => {
+          const currentPath = parentPath ? `${parentPath} / ${node.name}` : node.name;
+          if (node.children && node.children.length > 0) {
+            collectLeafNodes(node.children, currentPath);
+          } else {
+            selectedKnowledgePoints.push({ id: node.id, name: node.name, path: currentPath });
+          }
+        });
+      }
+
+      collectLeafNodes(knowledgeTree);
+      updateSelectedTags();
+      renderKnowledgeTree();
+    }
+
+    // 取消全选
+    function clearAllKnowledge() {
+      selectedKnowledgePoints = [];
+      updateSelectedTags();
+      renderKnowledgeTree();
+    }
+
+    // 更新全选/取消全选按钮显示
+    function updateSelectAllButtons() {
+      const selectAllBtn = document.getElementById('selectAllBtn');
+      const clearAllBtn = document.getElementById('clearAllBtn');
+
+      // 计算叶子节点总数
+      let totalLeafNodes = 0;
+      function countLeafNodes(nodes) {
+        nodes.forEach(node => {
+          if (node.children && node.children.length > 0) {
+            countLeafNodes(node.children);
+          } else {
+            totalLeafNodes++;
+          }
+        });
+      }
+      countLeafNodes(knowledgeTree);
+
+      // 根据选中数量显示不同按钮
+      if (selectedKnowledgePoints.length === 0) {
+        selectAllBtn.classList.remove('hidden');
+        clearAllBtn.classList.add('hidden');
+      } else if (selectedKnowledgePoints.length === totalLeafNodes) {
+        selectAllBtn.classList.add('hidden');
+        clearAllBtn.classList.remove('hidden');
+      } else {
+        // 部分选中时两个按钮都显示
+        selectAllBtn.classList.remove('hidden');
+        clearAllBtn.classList.remove('hidden');
+      }
+    }
+
+    // ==================== 查重逻辑 ====================
+
+    // 开始查重
+    function startDuplicateCheck() {
+      // 获取题目列表
+      let questions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
+
+      // 根据选择的知识点筛选
+      if (selectedKnowledgePoints.length > 0) {
+        const selectedIds = selectedKnowledgePoints.map(k => k.id);
+        questions = questions.filter(q => {
+          const ids = q.knowledgeIds || (q.knowledgeId ? [q.knowledgeId] : []);
+          return ids.some(id => selectedIds.includes(id) || selectedIds.includes(parseInt(id)) || selectedIds.includes(String(id)));
+        });
+      }
+
+      if (questions.length < 2) {
+        alert('当前范围内题目数量不足（至少需要2道题目），无法进行查重');
+        return;
+      }
+
+      // 显示进度
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('noDuplicateState').classList.add('hidden');
+      document.getElementById('duplicateListContainer').classList.add('hidden');
+      document.getElementById('resultHeader').classList.add('hidden');
+      document.getElementById('progressArea').classList.remove('hidden');
+      document.getElementById('startCheckBtn').disabled = true;
+
+      // 执行查重
+      performDuplicateCheck(questions);
+    }
+
+    // 执行查重
+    function performDuplicateCheck(questions) {
+      const totalPairs = (questions.length * (questions.length - 1)) / 2;
+      let checkedPairs = 0;
+      const duplicatePairs = [];
+      const threshold = 80; // 固定相似度阈值
+
+      // 计算相似度
+      function calculateSimilarity(str1, str2) {
+        if (!str1 || !str2) return 0;
+        str1 = str1.toLowerCase().replace(/\s+/g, '');
+        str2 = str2.toLowerCase().replace(/\s+/g, '');
+
+        if (str1 === str2) return 100;
+        if (str1.length === 0 || str2.length === 0) return 0;
+
+        // 基于字符匹配的相似度计算
+        const maxLen = Math.max(str1.length, str2.length);
+        const chars1 = str1.split('');
+        const chars2 = str2.split('');
+        const used = new Set();
+        let matches = 0;
+
+        chars1.forEach(c => {
+          const idx = chars2.findIndex((c2, i) => c2 === c && !used.has(i));
+          if (idx !== -1) {
+            matches++;
+            used.add(idx);
+          }
+        });
+
+        return Math.round((matches / maxLen) * 100);
+      }
+
+      // 分批处理
+      let i = 0, j = 1;
+
+      function processNextBatch() {
+        const batchSize = 100;
+        let processed = 0;
+
+        while (processed < batchSize && i < questions.length - 1) {
+          const q1 = questions[i];
+          const q2 = questions[j];
+
+          // 只比较相同题型
+          if (q1.type === q2.type) {
+            const similarity = calculateSimilarity(q1.content, q2.content);
+            if (similarity >= threshold) {
+              duplicatePairs.push({
+                question1: q1,
+                question2: q2,
+                similarity: similarity
+              });
+            }
+          }
+
+          checkedPairs++;
+          processed++;
+
+          j++;
+          if (j >= questions.length) {
+            i++;
+            j = i + 1;
+          }
+        }
+
+        // 更新进度
+        const progress = Math.round((checkedPairs / totalPairs) * 100);
+        document.getElementById('progressBar').style.width = progress + '%';
+        document.getElementById('progressPercent').textContent = progress + '%';
+
+        if (i < questions.length - 1) {
+          setTimeout(processNextBatch, 30);
+        } else {
+          showResults(questions.length, duplicatePairs);
+        }
+      }
+
+      processNextBatch();
+    }
+
+    // 显示结果
+    function showResults(totalChecked, duplicatePairs) {
+      duplicateResults = duplicatePairs;
+
+      document.getElementById('progressArea').classList.add('hidden');
+      document.getElementById('resultHeader').classList.remove('hidden');
+      document.getElementById('startCheckBtn').disabled = false;
+
+      // 更新统计
+      document.getElementById('totalChecked').textContent = totalChecked;
+      document.getElementById('duplicatePairs').textContent = duplicatePairs.length;
+
+      const duplicateIds = new Set();
+      duplicatePairs.forEach(pair => {
+        duplicateIds.add(pair.question1.id);
+        duplicateIds.add(pair.question2.id);
+      });
+      document.getElementById('duplicateCount').textContent = duplicateIds.size;
+
+      // 渲染结果
+      if (duplicatePairs.length === 0) {
+        document.getElementById('noDuplicateState').classList.remove('hidden');
+        document.getElementById('duplicateListContainer').classList.add('hidden');
+      } else {
+        document.getElementById('noDuplicateState').classList.add('hidden');
+        document.getElementById('duplicateListContainer').classList.remove('hidden');
+        renderDuplicateList();
+      }
+    }
+
+    // 渲染重复列表
+    function renderDuplicateList() {
+      const container = document.getElementById('duplicateListContainer');
+      container.innerHTML = duplicateResults.map((pair, index) => {
+        const similarityClass = pair.similarity >= 90 ? 'similarity-high' : 'similarity-medium';
+        return `
+          <div class="duplicate-pair" data-index="${index}">
+            <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <div class="flex items-center space-x-3">
+                <span class="px-3 py-1 ${similarityClass} rounded-full text-sm font-medium">
+                  相似度 ${pair.similarity}%
+                </span>
+                <span class="text-sm text-gray-500">题型：${getNormalizedTypeName(pair.question1)}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="markAsNotDuplicate(${index})" class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors">
+                  <i class="fas fa-check mr-1"></i>非重复
+                </button>
+                <button onclick="deleteDuplicate('${pair.question2.id}', ${index})" class="px-3 py-1.5 text-sm text-error-500 hover:bg-error-50 rounded transition-colors">
+                  <i class="fas fa-trash-alt mr-1"></i>删除重复
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 divide-x divide-gray-100">
+              <div class="p-4 bg-white">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-gray-400">ID: ${pair.question1.id}</span>
+                  <span class="text-xs text-gray-400">${pair.question1.createTime || ''}</span>
+                </div>
+                ${renderQuestionContent(pair.question1)}
+              </div>
+              <div class="p-4 bg-white">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-gray-400">ID: ${pair.question2.id}</span>
+                  <span class="text-xs text-gray-400">${pair.question2.createTime || ''}</span>
+                </div>
+                ${renderQuestionContent(pair.question2)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 获取规范化的题型名称（兼容旧数据）
+    function getNormalizedTypeName(question) {
+      const type = question.type;
+      // 将旧的 materialAnalysis 映射为"复合题"
+      if (type === 'materialAnalysis') {
+        return '复合题';
+      }
+      return question.typeName || type;
+    }
+
+    // 判断是否为复合题类型（兼容旧数据）
+    function isCompositeType(type) {
+      return type === 'composite' || type === 'materialAnalysis';
+    }
+
+    // 渲染题目内容（根据题型展示不同内容）
+    function renderQuestionContent(question) {
+      let html = `<div class="text-sm text-gray-800 leading-relaxed mb-2">${escapeHtml(question.content)}</div>`;
+
+      // 根据题型渲染不同内容
+      const type = question.type;
+
+      if (type === 'cloze') {
+        // 完形填空：展示空位选项
+        html += renderClozeContent(question);
+      } else if (isCompositeType(type)) {
+        // 复合题：展示材料和子题目
+        html += renderCompositeContent(question);
+      } else {
+        // 其他题型：展示选项
+        html += renderOptions(question.options);
+      }
+
+      return html;
+    }
+
+    // 渲染完形填空内容
+    function renderClozeContent(question) {
+      // 优先使用 clozeSubQuestions（新格式），兼容 blanks（旧格式）
+      if (question.clozeSubQuestions && question.clozeSubQuestions.length > 0) {
+        let html = '<div class="mt-3 space-y-2">';
+        question.clozeSubQuestions.forEach((subQ, idx) => {
+          html += `
+            <div class="bg-gray-50 rounded p-2">
+              <div class="text-xs text-gray-500 mb-1">第${subQ.index || (idx + 1)}空</div>
+              <div class="flex flex-wrap gap-1">
+                ${(subQ.options || []).map(opt => `
+                  <span class="text-xs px-2 py-0.5 rounded ${opt.label === subQ.correctAnswer ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">
+                    ${opt.label}. ${escapeHtml(opt.text)}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        return html;
+      }
+
+      // 兼容旧格式 blanks
+      if (question.blanks && question.blanks.length > 0) {
+        let html = '<div class="mt-3 space-y-2">';
+        question.blanks.forEach((blank, idx) => {
+          html += `
+            <div class="bg-gray-50 rounded p-2">
+              <div class="text-xs text-gray-500 mb-1">第${blank.index || (idx + 1)}空</div>
+              <div class="text-xs text-gray-700">答案：${escapeHtml(blank.answer || '')}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        return html;
+      }
+
+      return '';
+    }
+
+    // 渲染复合题内容
+    function renderCompositeContent(question) {
+      let html = '';
+
+      // 展示材料
+      if (question.material) {
+        html += `
+          <div class="mt-2 p-2 bg-blue-50 rounded text-xs text-gray-600">
+            <div class="font-medium text-gray-700 mb-1">材料：</div>
+            <div class="line-clamp-3">${escapeHtml(question.material)}</div>
+          </div>
+        `;
+      }
+
+      // 展示子题目
+      if (question.subQuestions && question.subQuestions.length > 0) {
+        html += '<div class="mt-2 space-y-2">';
+        question.subQuestions.forEach((sub, idx) => {
+          html += `
+            <div class="bg-gray-50 rounded p-2">
+              <div class="text-xs text-gray-500 mb-1">子题${idx + 1}（${sub.typeName || sub.type}）</div>
+              <div class="text-xs text-gray-700 line-clamp-2">${escapeHtml(sub.content)}</div>
+              ${sub.options && sub.options.length > 0 ? `
+                <div class="flex flex-wrap gap-1 mt-1">
+                  ${sub.options.slice(0, 4).map(opt => `
+                    <span class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">${opt.label}</span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+        html += '</div>';
+      }
+
+      return html;
+    }
+
+    // 渲染选项
+    function renderOptions(options) {
+      if (!options || options.length === 0) return '';
+      return `
+        <div class="mt-2 space-y-1">
+          ${options.map(opt => `
+            <div class="text-xs text-gray-600">${opt.label}. ${escapeHtml(opt.text)}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 标记为非重复
+    function markAsNotDuplicate(index) {
+      duplicateResults.splice(index, 1);
+      updateStats();
+      renderDuplicateList();
+      if (duplicateResults.length === 0) {
+        document.getElementById('noDuplicateState').classList.remove('hidden');
+        document.getElementById('duplicateListContainer').classList.add('hidden');
+      }
+    }
+
+    // 删除重复题目
+    function deleteDuplicate(questionId, index) {
+      if (!confirm('确定要删除这道题目吗？此操作不可恢复。')) return;
+
+      let questions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
+      questions = questions.filter(q => q.id !== questionId);
+      localStorage.setItem('allQuestions', JSON.stringify(questions));
+
+      duplicateResults.splice(index, 1);
+      updateStats();
+      renderDuplicateList();
+
+      if (duplicateResults.length === 0) {
+        document.getElementById('noDuplicateState').classList.remove('hidden');
+        document.getElementById('duplicateListContainer').classList.add('hidden');
+      }
+    }
+
+    // 更新统计
+    function updateStats() {
+      document.getElementById('duplicatePairs').textContent = duplicateResults.length;
+      const duplicateIds = new Set();
+      duplicateResults.forEach(pair => {
+        duplicateIds.add(pair.question1.id);
+        duplicateIds.add(pair.question2.id);
+      });
+      document.getElementById('duplicateCount').textContent = duplicateIds.size;
+    }
+
+    // 全部标记为非重复
+    function markAllAsNotDuplicate() {
+      if (duplicateResults.length === 0) return;
+      if (!confirm('确定要将所有结果标记为非重复吗？')) return;
+
+      duplicateResults = [];
+      updateStats();
+      document.getElementById('noDuplicateState').classList.remove('hidden');
+      document.getElementById('duplicateListContainer').classList.add('hidden');
+    }
+
+    // 一键删除所有重复
+    function deleteAllDuplicates() {
+      if (duplicateResults.length === 0) return;
+      if (!confirm(`确定要删除所有 ${duplicateResults.length} 对重复题目中的右侧题目吗？此操作不可恢复。`)) return;
+
+      const idsToDelete = new Set();
+      duplicateResults.forEach(pair => {
+        idsToDelete.add(pair.question2.id);
+      });
+
+      let questions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
+      questions = questions.filter(q => !idsToDelete.has(q.id));
+      localStorage.setItem('allQuestions', JSON.stringify(questions));
+
+      duplicateResults = [];
+      updateStats();
+      document.getElementById('noDuplicateState').classList.remove('hidden');
+      document.getElementById('duplicateListContainer').classList.add('hidden');
+
+      alert(`已删除 ${idsToDelete.size} 道重复题目`);
+    }
+  </script>
+</body>
+</html>

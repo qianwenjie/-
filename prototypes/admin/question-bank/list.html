@@ -419,11 +419,19 @@
             <p class="mt-1 text-sm text-gray-500">共 <span id="totalQuestions">128</span> 道题目</p>
           </div>
           <div class="flex items-center space-x-3">
+            <button onclick="window.location.href='duplicate-check.html'" class="px-4 py-2.5 border border-amber-500 text-amber-600 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors flex items-center space-x-2">
+              <i class="fas fa-copy"></i>
+              <span>题目查重</span>
+            </button>
             <button onclick="openQuestionTypeSettings()" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-cog mr-2"></i>
               题型设置
             </button>
-            <button onclick="window.location.href='add-simple.html'" class="px-4 py-2.5 border border-primary-500 text-primary-500 rounded-lg font-medium text-sm flex items-center space-x-2 hover:bg-primary-50 transition-colors">
+            <button onclick="window.location.href='export.html'" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2">
+              <i class="fas fa-file-export"></i>
+              <span>题目导出</span>
+            </button>
+            <button onclick="window.location.href='add-simple.html'" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center space-x-2 shadow-sm">
               <i class="fas fa-keyboard"></i>
               <span>简便录入</span>
             </button>
@@ -437,7 +445,7 @@
               <span>AI 出题</span>
               <span class="ai-sparkle">✨</span>
             </button>
-            <button onclick="addNewQuestion()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center space-x-2 shadow-sm">
+            <button onclick="addNewQuestion()" class="px-4 py-2.5 border border-primary-500 text-primary-500 rounded-lg font-medium text-sm flex items-center space-x-2 hover:bg-primary-50 transition-colors">
               <i class="fas fa-plus"></i>
               <span>新增题目</span>
             </button>
@@ -493,8 +501,8 @@
                     <span class="ml-2 text-sm text-gray-700">完形填空</span>
                   </label>
                   <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors">
-                    <input type="checkbox" value="materialAnalysis" class="question-type-checkbox rounded border-gray-300 text-primary-500 focus:ring-primary-500" onchange="updateQuestionTypeSelection()">
-                    <span class="ml-2 text-sm text-gray-700">材料分析</span>
+                    <input type="checkbox" value="composite" class="question-type-checkbox rounded border-gray-300 text-primary-500 focus:ring-primary-500" onchange="updateQuestionTypeSelection()">
+                    <span class="ml-2 text-sm text-gray-700">复合题</span>
                   </label>
                 </div>
               </div>
@@ -961,7 +969,7 @@
         ]
       },
       {
-        id: 'Q007', type: 'materialAnalysis', typeName: '材料分析', typeIcon: 'fa-layer-group', typeColor: 'purple',
+        id: 'Q007', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
         difficulty: 4, difficultyName: '四级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: '某公司数据库设计方案：用户表包含30个字段，包括姓名、身份证号、电话、地址、邮箱等信息。订单表包含订单编号、用户ID、订单时间、订单金额、商品详情、收货地址、支付方式等。请分析该设计是否符合数据库范式要求，并指出存在的问题及优化建议。',
         tags: ['数据库设计', '范式'], isComposite: true, subCount: 3,
@@ -1291,7 +1299,7 @@
         referenceAnswer: '1. 冲突原因分析：\n当不同的键值通过哈希函数 h(key) = key mod 10 计算后得到相同的哈希值时，就会产生冲突。如图所示，键值 13 和 23 都映射到桶 3。\n\n<img src="images/hash-table.svg" alt="哈希冲突示例" style="max-width:100%;border-radius:8px;margin:10px 0;">\n\n2. 链地址法解决方案：\n• 每个桶维护一个链表\n• 冲突的元素依次添加到链表末尾\n• 查找时遍历对应桶的链表\n\n3. 装载因子影响：\n• α = n/m（n为元素数，m为桶数）\n• α 越大，冲突概率越高\n• 建议保持 α < 0.75\n• 查找时间复杂度：O(1 + α)'
       },
       {
-        id: 'Q043', type: 'materialAnalysis', typeName: '材料分析', typeIcon: 'fa-layer-group', typeColor: 'purple',
+        id: 'Q043', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
         difficulty: 5, difficultyName: '五级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '【算法分析综合题】<br><br>阅读以下材料，观察图示，回答问题。<br><br><strong>材料：</strong>某电商平台需要实现商品推荐系统，使用图结构存储用户-商品关系。<br><br><img src="images/social-network.svg" alt="用户-商品关系图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>图中边的权重表示购买次数，推荐算法基于协同过滤：<br><code>Score(u,p) = Σ sim(u,v) × r(v,p)</code><br><br>其中 sim(u,v) 为用户相似度，r(v,p) 为用户v对商品p的评分。',
         tags: ['图算法', '推荐系统', '综合题', '图片题'], isComposite: true, subCount: 4,
@@ -2444,8 +2452,8 @@
       { id: 'cloze', name: '完形填空', icon: 'fa-layer-group', color: 'indigo', isDefault: true },
       { id: 'shortAnswer', name: '简答题', icon: 'fa-align-left', color: 'teal', isDefault: true },
       {
-        id: 'materialAnalysis',
-        name: '材料分析',
+        id: 'composite',
+        name: '复合题',
         icon: 'fa-list-alt',
         color: 'purple',
         isDefault: true,
@@ -3776,7 +3784,7 @@
       for (let i = 0; i < counts.composite; i++) {
         questions.push({
           type: '复合题',
-          content: `【材料分析题】\n阅读以下材料，回答问题：\n\n某建筑工程项目在施工过程中，发现地基土质较软，需要进行地基处理。项目部决定采用换填法进行处理，将软弱土层挖除，换填砂石等材料。\n\n(1) 换填法适用于哪些情况？\n(2) 换填材料的选择应考虑哪些因素？`,
+          content: `【复合题】\n阅读以下材料，回答问题：\n\n某建筑工程项目在施工过程中，发现地基土质较软，需要进行地基处理。项目部决定采用换填法进行处理，将软弱土层挖除，换填砂石等材料。\n\n(1) 换填法适用于哪些情况？\n(2) 换填材料的选择应考虑哪些因素？`,
           answer: '(1) 换填法适用于：浅层软弱地基、局部软弱土层、不均匀地基等情况。\n(2) 换填材料选择应考虑：材料的强度、压缩性、透水性、来源便利性、经济性等因素。'
         });
         questionIndex++;

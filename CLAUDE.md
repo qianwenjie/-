@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 当前状态
 - **阶段**: 原型开发中
-- **版本**: v0.1.5
-- **进度**: 题库模块 85% 完成
+- **版本**: v0.1.6
+- **进度**: 题库模块 90% 完成
 - **核心文档**: `考试系统功能清单.md`、`prototypes/IMPLEMENTATION_STATUS.md`
 
 ## 项目结构
@@ -259,16 +259,17 @@ wc -l prototypes/admin/question-bank/*.html
 - 管理页面: `prototypes/admin/question-bank/categories.html`
 - 树形结构渲染: categories.html 中的 renderKnowledgeTree 函数
 
-## 最近更新（v0.1.5）
+## 最近更新（v0.1.6）
 
-**更新日期**: 2026-01-20
+**更新日期**: 2026-01-22
 
-1. ✅ 修复题型编辑时原始名称显示问题
-2. ✅ 修复分页组件布局问题（left-64 → left-80）
-3. ✅ 优化题目卡片点击交互
-4. ✅ 去除返回首页箭头
+1. ✅ 修复复合题预览错误（增强子题类型处理）
+2. ✅ 修复完形填空预览错误（排除 cloze 类型的复合题路由）
+3. ✅ 完善完形填空预览功能（显示选项和正确答案）
+4. ✅ 修复简答题无法编辑的问题（统一 essay → shortAnswer 类型）
+5. ✅ 移除简便录入页面的"检查刷新"按钮和返回箭头
 
-**Git 提交**: `6706b3c`
+**Git 提交**: `a3b5c2c`
 
 ---
 

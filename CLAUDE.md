@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 当前状态
 - **阶段**: 原型开发中
-- **版本**: v0.1.6
-- **进度**: 题库模块 90% 完成
+- **版本**: v0.1.9
+- **进度**: 题库模块 98% 完成
 - **核心文档**: `考试系统功能清单.md`、`prototypes/IMPLEMENTATION_STATUS.md`
 
 ## 项目结构
@@ -33,9 +33,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │       └── question-bank/       # 题库模块
 │           ├── list.html        # 题目列表 ✅
 │           ├── add.html         # 添加/编辑题目 ✅
+│           ├── add-simple.html  # 简便录入 ✅
 │           ├── detail.html      # 题目详情 ✅
 │           ├── categories.html  # 知识点管理 ✅
 │           ├── statistics.html  # 题库统计 ✅
+│           ├── duplicate-check.html # 题目查重 ✅
+│           ├── export.html      # 题目导出 ✅
+│           ├── ai-generate.html # AI出题 ✅
 │           └── import.html      # 题目导入 🚧
 └── 参考资料/                    # 原始需求和参考文档
     ├── 功能清单.xlsx             # Excel 格式功能清单
@@ -45,26 +49,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 核心模块与完成状态
 
-### 题库模块 ✅ 85%
+### 题库模块 ✅ 95%
 
 #### 已完成功能
 - ✅ **知识点目录管理**: 树形结构、增删改查、搜索
 - ✅ **题目列表**: 筛选（题型/难度/知识点）、搜索、分页
-- ✅ **题目录入（标准）**: 支持10种题型（单选、多选、判断、填空、简答、完形填空、复合题等）
+- ✅ **题目录入（标准）**: 支持7种题型（单选、多选、判断、填空、简答、完形填空、复合题）
+- ✅ **题目录入（简便）**: 文本解析录入、批量导入
 - ✅ **题目编辑**: 复用录入页面，支持所有字段修改
 - ✅ **题目删除**: 带确认提示，引用检查
 - ✅ **题目预览**: 详情页完整展示
 - ✅ **题型设置**: 内置题型重命名、自定义题型创建
 - ✅ **题库统计**: 题型分布、难度分布（基础版）
+- ✅ **题目查重**: 相似度检测、批量处理
+- ✅ **题目导出**: 按知识点导出、答案配置
+- ✅ **AI出题**: AI生成题目（模拟）
 
 #### 进行中功能
 - 🚧 **题目导入**: 页面框架已完成（20%）
 
 #### 待开发功能
-- ⏳ **简便录入**: 文本解析录入（P0）
-- ⏳ **题目查重**: 相似度检测（P0）
-- ⏳ **题目导出**: 导出为 Word（P1）
-- ⏳ **AI出题**: AI生成题目（P1）
+- ⏳ **批量操作**: 批量删除、修改（P1）
 
 ### 试卷模块 🟡 10%
 - 仅列表页框架，核心功能未开发

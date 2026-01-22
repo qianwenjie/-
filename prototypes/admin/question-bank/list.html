@@ -328,6 +328,71 @@
       border-color: #2563eb;
       background: #EBF5FF;
     }
+
+    /* Message 消息提示样式 */
+    .message-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .message-item {
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      animation: messageSlideIn 0.3s ease-out;
+      pointer-events: auto;
+    }
+    .message-item.success {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .message-item.error {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+    .message-item.warning {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+    .message-item.info {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes messageSlideOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
   </style>
   <!-- iframe嵌入检测脚本 -->
   <script>
@@ -342,6 +407,9 @@
   </script>
 </head>
 <body class="bg-gray-50">
+  <!-- Message 消息提示容器 -->
+  <div id="messageContainer" class="message-container"></div>
+
   <!-- 顶部导航栏 -->
   <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
     <div class="flex items-center justify-between h-full px-6">
@@ -367,7 +435,7 @@
 
   <div class="pt-16 flex h-screen">
     <!-- 左侧知识点树 -->
-    <aside class="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <aside class="w-80 min-w-[320px] max-w-[320px] bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
       <!-- 搜索栏 -->
       <div class="p-4 border-b border-gray-200">
         <div class="relative mb-3">
@@ -379,10 +447,10 @@
           </button>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="addRootDirectory()" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+          <button onclick="addRootDirectory()" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
             <i class="fas fa-folder-plus mr-1.5"></i>添加目录
           </button>
-          <button onclick="addRootKnowledgePoint()" class="flex-1 bg-success-500 hover:bg-success-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+          <button onclick="addRootKnowledgePoint()" class="flex-1 bg-success-500 hover:bg-success-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
             <i class="fas fa-book mr-1.5"></i>添加知识点
           </button>
         </div>
@@ -453,14 +521,15 @@
         </div>
 
         <!-- 筛选栏（一行） -->
-        <div class="flex items-center gap-3 flex-wrap">
-          <!-- 全局搜索 -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <!-- 全局搜索 -->
           <div class="flex items-center gap-2">
             <label class="text-sm text-gray-600 whitespace-nowrap font-medium">搜索:</label>
             <div class="relative">
               <input type="text" id="globalSearchInput" placeholder="搜索题目内容..."
                      oninput="debouncedSearch()" onkeypress="handleEnterKey(event)"
-                     class="w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                     class="w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
               <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
           </div>
@@ -550,7 +619,7 @@
             <label class="text-sm text-gray-600 whitespace-nowrap font-medium">标签:</label>
             <input type="text" id="filterTag" placeholder="输入标签..."
                    oninput="debouncedSearch()" onkeypress="handleEnterKey(event)"
-                   class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white min-w-[120px]">
+                   class="w-36 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
           </div>
 
           <!-- 筛选和重置按钮 -->
@@ -560,6 +629,58 @@
           <button onclick="clearAllFilters()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
             重置
           </button>
+          </div>
+
+          <!-- 批量操作下拉菜单（右侧） -->
+          <div class="relative">
+            <button onclick="toggleBatchMenu()" id="batchMenuBtn" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center space-x-2">
+              <i class="fas fa-tasks"></i>
+              <span>批量操作</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="batchMenu" class="hidden absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+              <div class="py-1">
+                <button onclick="startBatchMode('delete')" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                  <i class="fas fa-trash text-red-500 w-4"></i>
+                  <span>批量删除</span>
+                </button>
+                <button onclick="startBatchMode('knowledge')" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                  <i class="fas fa-folder text-primary-500 w-4"></i>
+                  <span>批量修改知识点</span>
+                </button>
+                <button onclick="startBatchMode('difficulty')" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                  <i class="fas fa-signal text-warning-500 w-4"></i>
+                  <span>批量修改难度</span>
+                </button>
+                <button onclick="startBatchMode('tags')" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                  <i class="fas fa-tags text-info-500 w-4"></i>
+                  <span>批量设置标签</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 批量操作工具栏（选择模式时显示） -->
+      <div id="batchToolbar" class="hidden bg-indigo-50 border-b border-indigo-200 px-6 py-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+              <span class="text-sm text-gray-700 font-medium">全选当前页</span>
+            </label>
+            <span class="text-sm text-gray-600">已选择 <span id="selectedCount" class="font-semibold text-indigo-600">0</span> 道题目</span>
+            <span id="batchModeLabel" class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium"></span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="executeBatchAction()" id="executeBatchBtn" disabled class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-check mr-1.5"></i>确认操作
+            </button>
+            <button onclick="cancelBatchMode()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+              取消
+            </button>
+          </div>
         </div>
       </div>
 
@@ -847,7 +968,168 @@
     </div>
   </div>
 
+  <!-- 批量修改知识点弹窗 -->
+  <div id="batchKnowledgeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">批量修改知识点</h3>
+        <button onclick="closeBatchKnowledgeModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">将选中的 <span id="batchKnowledgeCount" class="font-semibold text-indigo-600">0</span> 道题目的知识点修改为：</p>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">选择知识点</label>
+          <select id="batchKnowledgeSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">请选择知识点</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <button onclick="closeBatchKnowledgeModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors">取消</button>
+        <button onclick="confirmBatchKnowledge()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量修改难度弹窗 -->
+  <div id="batchDifficultyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">批量修改难度</h3>
+        <button onclick="closeBatchDifficultyModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">将选中的 <span id="batchDifficultyCount" class="font-semibold text-indigo-600">0</span> 道题目的难度修改为：</p>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">选择难度</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="batchDifficulty" value="1" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">一级</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="batchDifficulty" value="2" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">二级</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="batchDifficulty" value="3" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">三级</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="batchDifficulty" value="4" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">四级</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input type="radio" name="batchDifficulty" value="5" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">五级</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <button onclick="closeBatchDifficultyModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors">取消</button>
+        <button onclick="confirmBatchDifficulty()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量设置标签弹窗 -->
+  <div id="batchTagsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">批量设置标签</h3>
+        <button onclick="closeBatchTagsModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">为选中的 <span id="batchTagsCount" class="font-semibold text-indigo-600">0</span> 道题目设置标签：</p>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">操作方式</label>
+          <div class="flex gap-4 mb-4">
+            <label class="flex items-center cursor-pointer">
+              <input type="radio" name="tagMode" value="add" checked class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">追加标签</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+              <input type="radio" name="tagMode" value="replace" class="mr-2 text-primary-500 focus:ring-primary-500">
+              <span class="text-sm">替换标签</span>
+            </label>
+          </div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">输入标签（多个标签用逗号分隔）</label>
+          <input type="text" id="batchTagsInput" placeholder="例如：重点,必考,基础" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <p class="text-xs text-gray-500 mt-1">提示：多个标签请用中文逗号或英文逗号分隔</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <button onclick="closeBatchTagsModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors">取消</button>
+        <button onclick="confirmBatchTags()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium text-sm transition-colors">确认设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量删除确认弹窗 -->
+  <div id="batchDeleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">确认批量删除</h3>
+        <button onclick="closeBatchDeleteModal()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="flex items-center justify-center mb-4">
+          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+          </div>
+        </div>
+        <p class="text-center text-gray-700 mb-2">确定要删除选中的 <span id="batchDeleteCount" class="font-semibold text-red-600">0</span> 道题目吗？</p>
+        <p class="text-center text-sm text-gray-500">此操作不可恢复，请谨慎操作</p>
+      </div>
+      <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+        <button onclick="closeBatchDeleteModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors">取消</button>
+        <button onclick="confirmBatchDelete()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors">确认删除</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ==================== Message 消息提示 ====================
+    const Message = {
+      show(text, type = 'info', duration = 3000) {
+        const container = document.getElementById('messageContainer');
+        const item = document.createElement('div');
+        item.className = `message-item ${type}`;
+
+        const icons = {
+          success: 'fa-check-circle',
+          error: 'fa-times-circle',
+          warning: 'fa-exclamation-circle',
+          info: 'fa-info-circle'
+        };
+
+        item.innerHTML = `
+          <i class="fas ${icons[type]}"></i>
+          <span>${text}</span>
+        `;
+
+        container.appendChild(item);
+
+        setTimeout(() => {
+          item.style.animation = 'messageSlideOut 0.3s ease-out forwards';
+          setTimeout(() => item.remove(), 300);
+        }, duration);
+      },
+      success(text, duration) { this.show(text, 'success', duration); },
+      error(text, duration) { this.show(text, 'error', duration); },
+      warning(text, duration) { this.show(text, 'warning', duration); },
+      info(text, duration) { this.show(text, 'info', duration); }
+    };
+
     // ==================== 知识点树数据结构 ====================
     // type: 'directory' 表示目录（可以包含子目录或知识点）
     // type: 'knowledge' 表示知识点（叶子节点，不能再包含子节点）
@@ -1393,7 +1675,7 @@
 
       // 主节点
       const nodeDiv = document.createElement('div');
-      nodeDiv.className = 'tree-item px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between group';
+      nodeDiv.className = 'tree-item px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between group relative';
       nodeDiv.draggable = true;
       nodeDiv.dataset.nodeId = node.id;
 
@@ -1417,7 +1699,7 @@
 
       // 左侧内容
       const leftDiv = document.createElement('div');
-      leftDiv.className = 'flex items-center space-x-2 flex-1';
+      leftDiv.className = 'flex items-center space-x-2 flex-1 min-w-0';
 
       // 如果有子节点，显示展开/收起图标
       if (node.children && node.children.length > 0) {
@@ -1454,7 +1736,7 @@
 
       // 名称（可编辑）
       const nameSpan = document.createElement('span');
-      nameSpan.className = 'text-sm node-name';
+      nameSpan.className = 'text-sm node-name truncate';
 
       // 如果有搜索关键词，高亮显示
       if (searchKeyword && node.name.toLowerCase().includes(searchKeyword)) {
@@ -1488,7 +1770,7 @@
 
       // 右侧操作按钮
       const rightDiv = document.createElement('div');
-      rightDiv.className = 'flex items-center space-x-2';
+      rightDiv.className = 'flex items-center space-x-2 flex-shrink-0';
 
       // 题目数量（悬停时隐藏）
       const countSpan = document.createElement('span');
@@ -1496,9 +1778,9 @@
       countSpan.textContent = node.count || 0;
       rightDiv.appendChild(countSpan);
 
-      // 操作按钮组（悬停显示）
+      // 操作按钮组（悬停显示，使用绝对定位避免撑开宽度）
       const actionsDiv = document.createElement('div');
-      actionsDiv.className = 'hidden group-hover:flex items-center space-x-1 ml-2';
+      actionsDiv.className = 'hidden group-hover:flex items-center space-x-1 absolute right-2 top-1/2 -translate-y-1/2 bg-white pl-2';
       actionsDiv.onclick = (e) => e.stopPropagation();
 
       // 如果是目录节点，显示添加子目录和添加知识点按钮
@@ -2244,6 +2526,7 @@
     function createQuestionCard(q) {
       const card = document.createElement('div');
       card.className = 'apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer';
+      card.setAttribute('data-question-id', q.id);
 
       // 调试日志：仅对简便录入的题目输出
       if (q.author === '简便录入') {
@@ -2257,9 +2540,22 @@
         ? q.tags.map(tag => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">#${tag}</span>`).join(' ')
         : '';
 
+      // 批量选择模式下的勾选框
+      const checkboxHtml = isBatchMode ? `
+        <div class="flex items-center mr-4 batch-checkbox-container">
+          <input type="checkbox"
+                 class="batch-question-checkbox w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                 data-question-id="${q.id}"
+                 onchange="toggleQuestionSelection('${q.id}')"
+                 onclick="event.stopPropagation()"
+                 ${selectedQuestions.has(q.id) ? 'checked' : ''}>
+        </div>
+      ` : '';
+
       card.innerHTML = `
         <div class="flex items-start justify-between">
-          <div class="flex-1 cursor-pointer" onclick="viewQuestion('${q.id}')">
+          ${checkboxHtml}
+          <div class="flex-1 cursor-pointer" onclick="${isBatchMode ? `toggleQuestionSelection('${q.id}')` : `viewQuestion('${q.id}')`}">
             <div class="flex items-center space-x-3 mb-3">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${q.typeColor}-50 text-${q.typeColor}-700">
                 <i class="fas ${q.typeIcon} mr-1.5"></i>${q.typeName}
@@ -2284,7 +2580,7 @@
               </span>
             </div>
           </div>
-          <div class="flex flex-col items-end space-y-2 ml-6">
+          <div class="flex flex-col items-end space-y-2 ml-6 ${isBatchMode ? 'hidden' : ''}">
             <button onclick="viewQuestion('${q.id}')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors" title="查看详情">
               <i class="fas fa-eye"></i>
             </button>
@@ -2297,6 +2593,11 @@
           </div>
         </div>
       `;
+
+      // 批量模式下，选中的卡片添加高亮样式
+      if (isBatchMode && selectedQuestions.has(q.id)) {
+        card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+      }
 
       return card;
     }
@@ -2739,7 +3040,7 @@
         if (editingQuestionType.isComposite) {
           const checkedSubtypes = Array.from(document.querySelectorAll('.composite-subtype:checked'));
           if (checkedSubtypes.length === 0) {
-            alert('请至少选择一个子题型');
+            Message.warning('请至少选择一个子题型');
             return;
           }
           modifications.hasMaterial = document.getElementById('hasMaterial').checked;
@@ -2761,11 +3062,11 @@
 
       // 以下是自定义题型的处理，名称必填
       if (!name) {
-        alert('请输入名称');
+        Message.warning('请输入名称');
         return;
       }
       if (!baseType) {
-        alert('请选择基础题型');
+        Message.warning('请选择基础题型');
         return;
       }
 
@@ -2773,7 +3074,7 @@
       if (baseType === 'composite') {
         const checkedSubtypes = Array.from(document.querySelectorAll('.composite-subtype:checked'));
         if (checkedSubtypes.length === 0) {
-          alert('请至少选择一个子题型');
+          Message.warning('请至少选择一个子题型');
           return;
         }
       }
@@ -2969,7 +3270,7 @@
       // 查找题目数据
       const question = allQuestions.find(q => q.id === questionId);
       if (!question) {
-        alert('未找到题目数据');
+        Message.error('未找到题目数据');
         return;
       }
 
@@ -3449,7 +3750,7 @@
         renderQuestions();
 
         // 显示成功提示
-        alert(`题目 ${questionId} 已成功删除！`);
+        Message.success(`题目 ${questionId} 已成功删除！`);
       }
     }
 
@@ -3572,12 +3873,12 @@
       const ext = '.' + file.name.split('.').pop().toLowerCase();
 
       if (!allowedTypes.includes(ext)) {
-        alert('不支持的文件格式，请上传 doc、docx、xls、xlsx、ppt、pptx 格式的文件');
+        Message.warning('不支持的文件格式，请上传 doc、docx、xls、xlsx、ppt、pptx 格式的文件');
         return;
       }
 
       if (file.size > 40 * 1024 * 1024) {
-        alert('文件大小不能超过40MB');
+        Message.warning('文件大小不能超过40MB');
         return;
       }
 
@@ -3659,18 +3960,18 @@
       if (tab === 'material') {
         const material = document.getElementById('aiMaterialInput').value.trim();
         if (!material) {
-          alert('请输入学习材料内容');
+          Message.warning('请输入学习材料内容');
           return;
         }
       } else if (tab === 'file') {
         if (!aiGenerateState.selectedFile) {
-          alert('请上传文件');
+          Message.warning('请上传文件');
           return;
         }
       } else if (tab === 'video') {
         const course = document.getElementById('videoCourseSelect').value;
         if (!course) {
-          alert('请选择课程');
+          Message.warning('请选择课程');
           return;
         }
       }
@@ -3687,11 +3988,11 @@
 
       const totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
       if (totalCount === 0) {
-        alert('请至少设置一种题型的数量');
+        Message.warning('请至少设置一种题型的数量');
         return;
       }
       if (totalCount > 50) {
-        alert('每次最多出50道题');
+        Message.warning('每次最多出50道题');
         return;
       }
 
@@ -3862,9 +4163,9 @@
       });
 
       navigator.clipboard.writeText(text).then(() => {
-        alert('已复制到剪贴板');
+        Message.success('已复制到剪贴板');
       }).catch(() => {
-        alert('复制失败，请手动复制');
+        Message.error('复制失败，请手动复制');
       });
     }
 
@@ -3899,6 +4200,448 @@
     }
 
     // ==================== AI出题功能结束 ====================
+
+    // ==================== 批量操作功能 ====================
+
+    // 批量操作状态
+    let isBatchMode = false;
+    let batchActionType = ''; // 'delete', 'knowledge', 'difficulty', 'tags'
+    let selectedQuestions = new Set();
+
+    // 批量操作类型标签映射
+    const batchModeLabels = {
+      'delete': '批量删除',
+      'knowledge': '批量修改知识点',
+      'difficulty': '批量修改难度',
+      'tags': '批量设置标签'
+    };
+
+    // 切换批量操作菜单
+    function toggleBatchMenu() {
+      const menu = document.getElementById('batchMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    // 点击其他地方关闭批量菜单
+    document.addEventListener('click', function(e) {
+      const menu = document.getElementById('batchMenu');
+      const btn = document.getElementById('batchMenuBtn');
+      if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    // 开始批量操作模式
+    function startBatchMode(actionType) {
+      isBatchMode = true;
+      batchActionType = actionType;
+      selectedQuestions.clear();
+
+      // 隐藏批量菜单
+      document.getElementById('batchMenu').classList.add('hidden');
+
+      // 显示批量工具栏
+      document.getElementById('batchToolbar').classList.remove('hidden');
+      document.getElementById('batchModeLabel').textContent = batchModeLabels[actionType];
+
+      // 更新选中计数
+      updateSelectedCount();
+
+      // 重新渲染题目列表（显示勾选框）
+      renderQuestions();
+    }
+
+    // 取消批量操作模式
+    function cancelBatchMode() {
+      isBatchMode = false;
+      batchActionType = '';
+      selectedQuestions.clear();
+
+      // 隐藏批量工具栏
+      document.getElementById('batchToolbar').classList.add('hidden');
+
+      // 重置全选复选框
+      document.getElementById('selectAllCheckbox').checked = false;
+
+      // 重新渲染题目列表（隐藏勾选框）
+      renderQuestions();
+    }
+
+    // 切换单个题目选择
+    function toggleQuestionSelection(questionId) {
+      if (selectedQuestions.has(questionId)) {
+        selectedQuestions.delete(questionId);
+      } else {
+        selectedQuestions.add(questionId);
+      }
+
+      // 更新卡片样式
+      const card = document.querySelector(`[data-question-id="${questionId}"]`);
+      if (card) {
+        const checkbox = card.querySelector('.batch-question-checkbox');
+        if (checkbox) {
+          checkbox.checked = selectedQuestions.has(questionId);
+        }
+        if (selectedQuestions.has(questionId)) {
+          card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+        } else {
+          card.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+        }
+      }
+
+      updateSelectedCount();
+      updateSelectAllCheckbox();
+    }
+
+    // 全选/取消全选当前页
+    function toggleSelectAll() {
+      const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+      const isChecked = selectAllCheckbox.checked;
+
+      // 获取当前页的题目ID
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, filteredQuestions.length);
+      const currentPageQuestions = filteredQuestions.slice(startIndex, endIndex);
+
+      currentPageQuestions.forEach(q => {
+        if (isChecked) {
+          selectedQuestions.add(q.id);
+        } else {
+          selectedQuestions.delete(q.id);
+        }
+      });
+
+      // 更新所有卡片的勾选状态和样式
+      document.querySelectorAll('.apple-card[data-question-id]').forEach(card => {
+        const qId = card.getAttribute('data-question-id');
+        const checkbox = card.querySelector('.batch-question-checkbox');
+        if (checkbox) {
+          checkbox.checked = selectedQuestions.has(qId);
+        }
+        if (selectedQuestions.has(qId)) {
+          card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+        } else {
+          card.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+        }
+      });
+
+      updateSelectedCount();
+    }
+
+    // 更新全选复选框状态
+    function updateSelectAllCheckbox() {
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, filteredQuestions.length);
+      const currentPageQuestions = filteredQuestions.slice(startIndex, endIndex);
+
+      const allSelected = currentPageQuestions.length > 0 &&
+        currentPageQuestions.every(q => selectedQuestions.has(q.id));
+
+      document.getElementById('selectAllCheckbox').checked = allSelected;
+    }
+
+    // 更新选中计数
+    function updateSelectedCount() {
+      document.getElementById('selectedCount').textContent = selectedQuestions.size;
+      document.getElementById('executeBatchBtn').disabled = selectedQuestions.size === 0;
+    }
+
+    // 执行批量操作
+    function executeBatchAction() {
+      if (selectedQuestions.size === 0) {
+        Message.warning('请先选择要操作的题目');
+        return;
+      }
+
+      switch (batchActionType) {
+        case 'delete':
+          openBatchDeleteModal();
+          break;
+        case 'knowledge':
+          openBatchKnowledgeModal();
+          break;
+        case 'difficulty':
+          openBatchDifficultyModal();
+          break;
+        case 'tags':
+          openBatchTagsModal();
+          break;
+      }
+    }
+
+    // ==================== 批量删除 ====================
+
+    function openBatchDeleteModal() {
+      document.getElementById('batchDeleteCount').textContent = selectedQuestions.size;
+      document.getElementById('batchDeleteModal').classList.remove('hidden');
+    }
+
+    function closeBatchDeleteModal() {
+      document.getElementById('batchDeleteModal').classList.add('hidden');
+    }
+
+    function confirmBatchDelete() {
+      // 保存选中数量（在清空前）
+      const count = selectedQuestions.size;
+
+      // 从 allQuestions 中删除选中的题目
+      allQuestions = allQuestions.filter(q => !selectedQuestions.has(q.id));
+
+      // 保存到 localStorage
+      localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+      // 更新 filteredQuestions
+      filteredQuestions = filteredQuestions.filter(q => !selectedQuestions.has(q.id));
+
+      // 关闭弹窗
+      closeBatchDeleteModal();
+
+      // 退出批量模式
+      cancelBatchMode();
+
+      // 更新知识点树计数
+      updateKnowledgeTreeCounts();
+      renderKnowledgeTree();
+
+      // 重新渲染
+      renderQuestions();
+
+      Message.success(`成功删除 ${count} 道题目`);
+    }
+
+    // ==================== 批量修改知识点 ====================
+
+    function openBatchKnowledgeModal() {
+      document.getElementById('batchKnowledgeCount').textContent = selectedQuestions.size;
+
+      // 填充知识点选择下拉框
+      const select = document.getElementById('batchKnowledgeSelect');
+      select.innerHTML = '<option value="">请选择知识点</option>';
+
+      function addKnowledgeOptions(nodes, prefix = '') {
+        nodes.forEach(node => {
+          if (node.type === 'knowledge') {
+            const option = document.createElement('option');
+            option.value = node.id;
+            option.textContent = prefix + node.name;
+            select.appendChild(option);
+          }
+          if (node.children && node.children.length > 0) {
+            addKnowledgeOptions(node.children, prefix + node.name + ' / ');
+          }
+        });
+      }
+
+      addKnowledgeOptions(knowledgeTree);
+
+      document.getElementById('batchKnowledgeModal').classList.remove('hidden');
+    }
+
+    function closeBatchKnowledgeModal() {
+      document.getElementById('batchKnowledgeModal').classList.add('hidden');
+    }
+
+    function confirmBatchKnowledge() {
+      const select = document.getElementById('batchKnowledgeSelect');
+      const knowledgeId = select.value;
+
+      if (!knowledgeId) {
+        Message.warning('请选择知识点');
+        return;
+      }
+
+      // 保存选中数量（在清空前）
+      const count = selectedQuestions.size;
+
+      // 获取知识点路径
+      const knowledgePath = getKnowledgePath(knowledgeId);
+
+      // 更新选中题目的知识点
+      allQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          q.knowledgeId = knowledgeId;
+          q.knowledgeIds = [knowledgeId];
+          q.knowledgePath = knowledgePath;
+        }
+      });
+
+      // 保存到 localStorage
+      localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+      // 更新 filteredQuestions
+      filteredQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          q.knowledgeId = knowledgeId;
+          q.knowledgeIds = [knowledgeId];
+          q.knowledgePath = knowledgePath;
+        }
+      });
+
+      // 关闭弹窗
+      closeBatchKnowledgeModal();
+
+      // 退出批量模式
+      cancelBatchMode();
+
+      // 更新知识点树计数
+      updateKnowledgeTreeCounts();
+      renderKnowledgeTree();
+
+      // 重新渲染
+      renderQuestions();
+
+      Message.success(`成功修改 ${count} 道题目的知识点`);
+    }
+
+    // 获取知识点路径
+    function getKnowledgePath(knowledgeId) {
+      function findPath(nodes, targetId, path = []) {
+        for (const node of nodes) {
+          const currentPath = [...path, node.name];
+          if (String(node.id) === String(targetId)) {
+            return currentPath.join(' / ');
+          }
+          if (node.children && node.children.length > 0) {
+            const result = findPath(node.children, targetId, currentPath);
+            if (result) return result;
+          }
+        }
+        return null;
+      }
+      return findPath(knowledgeTree, knowledgeId) || '未分类';
+    }
+
+    // ==================== 批量修改难度 ====================
+
+    function openBatchDifficultyModal() {
+      document.getElementById('batchDifficultyCount').textContent = selectedQuestions.size;
+      // 清除之前的选择
+      document.querySelectorAll('input[name="batchDifficulty"]').forEach(radio => {
+        radio.checked = false;
+      });
+      document.getElementById('batchDifficultyModal').classList.remove('hidden');
+    }
+
+    function closeBatchDifficultyModal() {
+      document.getElementById('batchDifficultyModal').classList.add('hidden');
+    }
+
+    function confirmBatchDifficulty() {
+      const selectedRadio = document.querySelector('input[name="batchDifficulty"]:checked');
+
+      if (!selectedRadio) {
+        Message.warning('请选择难度');
+        return;
+      }
+
+      // 保存选中数量（在清空前）
+      const count = selectedQuestions.size;
+
+      const difficulty = parseInt(selectedRadio.value);
+      const difficultyNames = { 1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级' };
+      const difficultyName = difficultyNames[difficulty];
+
+      // 更新选中题目的难度
+      allQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          q.difficulty = difficulty;
+          q.difficultyName = difficultyName;
+        }
+      });
+
+      // 保存到 localStorage
+      localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+      // 更新 filteredQuestions
+      filteredQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          q.difficulty = difficulty;
+          q.difficultyName = difficultyName;
+        }
+      });
+
+      // 关闭弹窗
+      closeBatchDifficultyModal();
+
+      // 退出批量模式
+      cancelBatchMode();
+
+      // 重新渲染
+      renderQuestions();
+
+      Message.success(`成功修改 ${count} 道题目的难度为 ${difficultyName}`);
+    }
+
+    // ==================== 批量设置标签 ====================
+
+    function openBatchTagsModal() {
+      document.getElementById('batchTagsCount').textContent = selectedQuestions.size;
+      document.getElementById('batchTagsInput').value = '';
+      document.querySelector('input[name="tagMode"][value="add"]').checked = true;
+      document.getElementById('batchTagsModal').classList.remove('hidden');
+    }
+
+    function closeBatchTagsModal() {
+      document.getElementById('batchTagsModal').classList.add('hidden');
+    }
+
+    function confirmBatchTags() {
+      const tagsInput = document.getElementById('batchTagsInput').value.trim();
+      const tagMode = document.querySelector('input[name="tagMode"]:checked').value;
+
+      if (!tagsInput) {
+        Message.warning('请输入标签');
+        return;
+      }
+
+      // 解析标签（支持中英文逗号分隔）
+      const newTags = tagsInput.split(/[,，]/).map(t => t.trim()).filter(t => t);
+
+      // 保存计数（在 cancelBatchMode 清空前）
+      const count = selectedQuestions.size;
+      const modeText = tagMode === 'replace' ? '替换' : '追加';
+
+      // 更新选中题目的标签
+      allQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          if (tagMode === 'replace') {
+            q.tags = newTags;
+          } else {
+            // 追加模式：合并并去重
+            const existingTags = q.tags || [];
+            q.tags = [...new Set([...existingTags, ...newTags])];
+          }
+        }
+      });
+
+      // 保存到 localStorage
+      localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+
+      // 更新 filteredQuestions
+      filteredQuestions.forEach(q => {
+        if (selectedQuestions.has(q.id)) {
+          if (tagMode === 'replace') {
+            q.tags = newTags;
+          } else {
+            const existingTags = q.tags || [];
+            q.tags = [...new Set([...existingTags, ...newTags])];
+          }
+        }
+      });
+
+      // 关闭弹窗
+      closeBatchTagsModal();
+
+      // 退出批量模式
+      cancelBatchMode();
+
+      // 重新渲染
+      renderQuestions();
+
+      Message.success(`成功为 ${count} 道题目${modeText}标签`);
+    }
+
+    // ==================== 批量操作功能结束 ====================
 
     // 页面加载完成后初始化
     window.addEventListener('DOMContentLoaded', function() {

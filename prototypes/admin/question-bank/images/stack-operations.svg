@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <!-- 背景 -->
+  <rect width="400" height="300" fill="#f8fafc"/>
+
+  <!-- 标题 -->
+  <text x="200" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">栈操作演示</text>
+
+  <!-- 栈容器 -->
+  <g id="stack">
+    <!-- 栈底 -->
+    <rect x="80" y="230" width="100" height="40" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+    <text x="130" y="255" text-anchor="middle" font-size="14" fill="#0369a1">10</text>
+
+    <!-- 栈元素 2 -->
+    <rect x="80" y="190" width="100" height="40" fill="#dbeafe" stroke="#0284c7" stroke-width="2"/>
+    <text x="130" y="215" text-anchor="middle" font-size="14" fill="#0369a1">20</text>
+
+    <!-- 栈元素 3 -->
+    <rect x="80" y="150" width="100" height="40" fill="#bfdbfe" stroke="#0284c7" stroke-width="2"/>
+    <text x="130" y="175" text-anchor="middle" font-size="14" fill="#0369a1">30</text>
+
+    <!-- 栈顶 -->
+    <rect x="80" y="110" width="100" height="40" fill="#93c5fd" stroke="#0284c7" stroke-width="2"/>
+    <text x="130" y="135" text-anchor="middle" font-size="14" fill="#1e3a8a">40</text>
+
+    <!-- 栈顶指针 -->
+    <path d="M 50 130 L 75 130" stroke="#dc2626" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="40" y="135" text-anchor="end" font-size="12" fill="#dc2626" font-weight="bold">top</text>
+
+    <!-- 空位 -->
+    <rect x="80" y="70" width="100" height="40" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5,5"/>
+  </g>
+
+  <!-- Push 操作 -->
+  <g id="push-operation">
+    <text x="220" y="100" font-size="14" font-weight="bold" fill="#059669">Push(50)</text>
+    <rect x="220" y="110" width="80" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+    <text x="260" y="135" text-anchor="middle" font-size="14" fill="#047857">50</text>
+
+    <!-- 箭头 -->
+    <path d="M 220 130 L 185 130" stroke="#059669" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+  </g>
+
+  <!-- Pop 操作 -->
+  <g id="pop-operation">
+    <text x="220" y="190" font-size="14" font-weight="bold" fill="#dc2626">Pop()</text>
+    <rect x="220" y="200" width="80" height="40" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+    <text x="260" y="225" text-anchor="middle" font-size="14" fill="#991b1b">40</text>
+
+    <!-- 箭头 -->
+    <path d="M 185 130 L 215 220" stroke="#dc2626" stroke-width="2" marker-end="url(#arrowhead-red)"/>
+  </g>
+
+  <!-- 说明文字 -->
+  <text x="200" y="275" text-anchor="middle" font-size="12" fill="#64748b">左侧：当前栈状态 | 右侧：栈操作</text>
+
+  <!-- 箭头标记定义 -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#dc2626"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#059669"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#dc2626"/>
+    </marker>
+  </defs>
+</svg>

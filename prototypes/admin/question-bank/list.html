@@ -6,6 +6,10 @@
   <title>题目列表 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- KaTeX CSS for formula rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <!-- KaTeX JS -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1181,8 +1185,9 @@
       }
     ];
 
-    // ==================== 题目数据（示例） ====================
+    // ==================== 题目数据（70道，每种题型10道） ====================
     let allQuestions = [
+      // ==================== 单选题（10道，含1道图片题Q009、1道公式题Q010）====================
       {
         id: 'Q001', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
@@ -1198,11 +1203,138 @@
         correctAnswers: ['B']
       },
       {
-        id: 'Q002', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        id: 'Q002', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '以下哪个不是操作系统的功能？',
+        tags: ['操作系统'], createTime: '2026-01-15 10:20', author: '张老师', useCount: 18,
+        score: '2', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理等。编译程序是应用软件。',
+        options: [
+          { label: 'A', text: '进程管理' },
+          { label: 'B', text: '内存管理' },
+          { label: 'C', text: '编译程序' },
+          { label: 'D', text: '文件管理' }
+        ],
+        correctAnswers: ['C']
+      },
+      {
+        id: 'Q003', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
         difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
-        content: '以下哪些是Python的特点？（多选）',
+        content: 'Python中哪个数据类型是不可变的？',
+        tags: ['Python', '数据类型'], createTime: '2026-01-16 09:15', author: '李老师', useCount: 5,
+        score: '2', explanation: '元组(tuple)是Python中的不可变数据类型，一旦创建就不能修改。',
+        options: [
+          { label: 'A', text: '列表(list)' },
+          { label: 'B', text: '字典(dict)' },
+          { label: 'C', text: '元组(tuple)' },
+          { label: 'D', text: '集合(set)' }
+        ],
+        correctAnswers: ['C']
+      },
+      {
+        id: 'Q004', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '二叉搜索树的中序遍历结果是什么顺序？',
+        tags: ['数据结构', '二叉树'], createTime: '2026-01-16 14:10', author: '赵老师', useCount: 7,
+        score: '2', explanation: '二叉搜索树的中序遍历会按照升序输出所有节点。',
+        options: [
+          { label: 'A', text: '随机顺序' },
+          { label: 'B', text: '升序' },
+          { label: 'C', text: '降序' },
+          { label: 'D', text: '层序' }
+        ],
+        correctAnswers: ['B']
+      },
+      {
+        id: 'Q005', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: 'SQL中用于删除表中所有数据但保留表结构的语句是？',
+        tags: ['SQL', '删除'], createTime: '2026-01-17 10:15', author: '王老师', useCount: 10,
+        score: '2', explanation: 'TRUNCATE TABLE删除所有数据但保留表结构，DROP TABLE会删除整个表。',
+        options: [
+          { label: 'A', text: 'DELETE TABLE' },
+          { label: 'B', text: 'DROP TABLE' },
+          { label: 'C', text: 'TRUNCATE TABLE' },
+          { label: 'D', text: 'REMOVE TABLE' }
+        ],
+        correctAnswers: ['C']
+      },
+      {
+        id: 'Q006', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: 'HTTP协议默认使用的端口号是？',
+        tags: ['HTTP', '端口'], createTime: '2026-01-17 15:50', author: '周老师', useCount: 9,
+        score: '2', explanation: 'HTTP默认端口80，HTTPS默认端口443。',
+        options: [
+          { label: 'A', text: '21' },
+          { label: 'B', text: '22' },
+          { label: 'C', text: '80' },
+          { label: 'D', text: '443' }
+        ],
+        correctAnswers: ['C']
+      },
+      {
+        id: 'Q007', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的垃圾回收机制主要针对什么内存区域？',
+        tags: ['Java', 'GC'], createTime: '2026-01-18 13:10', author: '孙老师', useCount: 6,
+        score: '2', explanation: 'Java垃圾回收主要针对堆内存中不再使用的对象。',
+        options: [
+          { label: 'A', text: '栈内存' },
+          { label: 'B', text: '堆内存' },
+          { label: 'C', text: '方法区' },
+          { label: 'D', text: '程序计数器' }
+        ],
+        correctAnswers: ['B']
+      },
+      {
+        id: 'Q008', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '以下哪种加密算法是非对称加密？',
+        tags: ['网络安全', '加密'], createTime: '2026-01-18 15:50', author: '周老师', useCount: 9,
+        score: '2', explanation: 'RSA是非对称加密算法，使用公钥和私钥进行加解密。AES、DES是对称加密，MD5是哈希算法。',
+        options: [
+          { label: 'A', text: 'AES' },
+          { label: 'B', text: 'DES' },
+          { label: 'C', text: 'RSA' },
+          { label: 'D', text: 'MD5' }
+        ],
+        correctAnswers: ['C']
+      },
+      {
+        id: 'Q009', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】观察下图所示的二叉树结构：<br><br><img src="https://via.placeholder.com/400x250/e0f2fe/0369a1?text=Binary+Tree%0A++++A%0A+++/+%5C%0A++B+++C%0A+/+%5C+++%5C%0AD+++E+++F" alt="二叉树结构图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>该二叉树的前序遍历结果是？',
+        tags: ['二叉树', '遍历', '图片题'], createTime: '2026-01-20 09:00', author: '张老师', useCount: 3,
+        score: '3', explanation: '前序遍历顺序为：根节点 → 左子树 → 右子树。从A开始，先访问A，然后访问左子树B及其子节点D、E，最后访问右子树C及其子节点F。',
+        options: [
+          { label: 'A', text: 'A, B, D, E, C, F' },
+          { label: 'B', text: 'D, B, E, A, C, F' },
+          { label: 'C', text: 'D, E, B, F, C, A' },
+          { label: 'D', text: 'A, B, C, D, E, F' }
+        ],
+        correctAnswers: ['A']
+      },
+      {
+        id: 'Q010', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】已知一个完全二叉树有 n 个节点，则该树的高度 h 为？<br><br>提示：完全二叉树高度公式为 <code>h = ⌊log₂n⌋ + 1</code>',
+        tags: ['二叉树', '公式题'], createTime: '2026-01-20 10:00', author: '赵老师', useCount: 4,
+        score: '3', explanation: '完全二叉树的高度计算公式：h = ⌊log₂n⌋ + 1，其中 ⌊x⌋ 表示向下取整。例如 n=10 时，h = ⌊log₂10⌋ + 1 = 3 + 1 = 4。',
+        options: [
+          { label: 'A', text: '⌊log₂n⌋' },
+          { label: 'B', text: '⌊log₂n⌋ + 1' },
+          { label: 'C', text: '⌈log₂n⌉' },
+          { label: 'D', text: 'log₂(n+1)' }
+        ],
+        correctAnswers: ['B']
+      },
+      // ==================== 多选题（10道）====================
+      {
+        id: 'Q011', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: '以下哪些是Python的特点？',
         tags: ['Python', '特性'], createTime: '2026-01-15 10:20', author: '李老师', useCount: 8,
-        score: '3', explanation: 'Python是一种解释型、面向对象、动态类型的高级编程语言，语法简洁易读。',
+        score: '3', explanation: 'Python是一种解释型、面向对象、动态类型的高级编程语言。',
         options: [
           { label: 'A', text: '解释型语言' },
           { label: 'B', text: '面向对象' },
@@ -1212,23 +1344,299 @@
         correctAnswers: ['A', 'B', 'D']
       },
       {
-        id: 'Q003', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        id: 'Q012', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: '以下哪些是SQL的聚合函数？',
+        tags: ['SQL', '聚合函数'], createTime: '2026-01-16 10:20', author: '王老师', useCount: 9,
+        score: '3', explanation: 'SQL聚合函数包括COUNT、SUM、AVG、MAX、MIN等。',
+        options: [
+          { label: 'A', text: 'COUNT' },
+          { label: 'B', text: 'SUM' },
+          { label: 'C', text: 'SELECT' },
+          { label: 'D', text: 'AVG' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
+      },
+      {
+        id: 'Q013', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '以下哪些属于应用层协议？',
+        tags: ['网络协议', '应用层'], createTime: '2026-01-16 15:25', author: '周老师', useCount: 13,
+        score: '3', explanation: 'HTTP、FTP、SMTP都是应用层协议，TCP是传输层协议。',
+        options: [
+          { label: 'A', text: 'HTTP' },
+          { label: 'B', text: 'FTP' },
+          { label: 'C', text: 'TCP' },
+          { label: 'D', text: 'SMTP' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
+      },
+      {
+        id: 'Q014', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '以下哪些是线性数据结构？',
+        tags: ['数据结构', '线性结构'], createTime: '2026-01-17 13:20', author: '赵老师', useCount: 6,
+        score: '3', explanation: '数组、链表、栈、队列都是线性数据结构，二叉树是非线性结构。',
+        options: [
+          { label: 'A', text: '数组' },
+          { label: 'B', text: '链表' },
+          { label: 'C', text: '二叉树' },
+          { label: 'D', text: '栈' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
+      },
+      {
+        id: 'Q015', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的访问修饰符有哪些？',
+        tags: ['Java', '访问控制'], createTime: '2026-01-18 10:25', author: '孙老师', useCount: 8,
+        score: '3', explanation: 'Java有四种访问修饰符：public、protected、default、private。static不是访问修饰符。',
+        options: [
+          { label: 'A', text: 'public' },
+          { label: 'B', text: 'protected' },
+          { label: 'C', text: 'private' },
+          { label: 'D', text: 'static' }
+        ],
+        correctAnswers: ['A', 'B', 'C']
+      },
+      {
+        id: 'Q016', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '以下哪些是操作系统的主要功能？',
+        tags: ['操作系统', '功能'], createTime: '2026-01-19 15:40', author: '张老师', useCount: 8,
+        score: '3', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理。',
+        options: [
+          { label: 'A', text: '进程管理' },
+          { label: 'B', text: '内存管理' },
+          { label: 'C', text: '编译程序' },
+          { label: 'D', text: '文件管理' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
+      },
+      {
+        id: 'Q017', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中以下哪些是可迭代对象？',
+        tags: ['Python', '迭代'], createTime: '2026-01-19 09:00', author: '李老师', useCount: 7,
+        score: '3', explanation: '列表、字符串、字典都是可迭代对象，整数不是。',
+        options: [
+          { label: 'A', text: '列表' },
+          { label: 'B', text: '字符串' },
+          { label: 'C', text: '整数' },
+          { label: 'D', text: '字典' }
+        ],
+        correctAnswers: ['A', 'B', 'D']
+      },
+      {
+        id: 'Q018', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '以下哪些是传输层协议？',
+        tags: ['网络协议', '传输层'], createTime: '2026-01-19 20:30', author: '周老师', useCount: 7,
+        score: '3', explanation: 'TCP和UDP是传输层协议，HTTP和FTP是应用层协议。',
+        options: [
+          { label: 'A', text: 'TCP' },
+          { label: 'B', text: 'UDP' },
+          { label: 'C', text: 'HTTP' },
+          { label: 'D', text: 'FTP' }
+        ],
+        correctAnswers: ['A', 'B']
+      },
+      {
+        id: 'Q019', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】根据下图所示的图结构，正确的描述有哪些？<br><br><img src="https://via.placeholder.com/400x200/dcfce7/166534?text=Graph+Structure%0AA--B--C%0A|++|++|%0AD--E--F" alt="图结构" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['图论', '图片题'], createTime: '2026-01-20 09:30', author: '李老师', useCount: 5,
+        score: '4', explanation: '图的分析需要考虑连通性、度数和路径。',
+        options: [
+          { label: 'A', text: '该图是连通图' },
+          { label: 'B', text: '该图是有向图' },
+          { label: 'C', text: '节点B的度为3' },
+          { label: 'D', text: '该图包含环' }
+        ],
+        correctAnswers: ['A', 'C', 'D']
+      },
+      {
+        id: 'Q020', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】关于排序算法的时间复杂度，以下说法正确的有？<br><br>快速排序平均：<code>O(n log n)</code><br>冒泡排序：<code>O(n²)</code><br>归并排序：<code>O(n log n)</code>',
+        tags: ['排序', '复杂度', '公式题'], createTime: '2026-01-20 10:30', author: '赵老师', useCount: 6,
+        score: '3', explanation: '不同排序算法有不同的时间复杂度特性。',
+        options: [
+          { label: 'A', text: '快速排序最坏情况是O(n²)' },
+          { label: 'B', text: '归并排序是稳定排序' },
+          { label: 'C', text: '冒泡排序最好情况是O(n)' },
+          { label: 'D', text: '堆排序空间复杂度是O(n)' }
+        ],
+        correctAnswers: ['A', 'B', 'C']
+      },
+      // ==================== 判断题（10道）====================
+      {
+        id: 'Q021', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
         difficulty: 1, difficultyName: '一级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
         content: 'HTTP协议是无状态协议。',
         tags: ['HTTP', '协议'], createTime: '2026-01-13 11:15', author: '周老师', useCount: 20,
-        score: '1', explanation: 'HTTP协议本身是无状态的，服务器不会保存客户端的状态信息，每次请求都是独立的。',
+        score: '1', explanation: 'HTTP协议本身是无状态的，服务器不会保存客户端的状态信息。',
         correctAnswer: 'true'
       },
       {
-        id: 'Q004', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        id: 'Q022', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
+        content: 'CPU是计算机的核心部件，负责执行指令和处理数据。',
+        tags: ['CPU', '硬件'], createTime: '2026-01-16 11:30', author: '张老师', useCount: 14,
+        score: '1', explanation: 'CPU（中央处理器）是计算机的核心，负责执行程序指令和处理数据。',
+        correctAnswer: 'true'
+      },
+      {
+        id: 'Q023', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python是一种解释型编程语言。',
+        tags: ['Python', '语言特性'], createTime: '2026-01-16 16:40', author: '李老师', useCount: 16,
+        score: '1', explanation: 'Python是解释型语言，代码在运行时由解释器逐行执行。',
+        correctAnswer: 'true'
+      },
+      {
+        id: 'Q024', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: 'SELECT语句中WHERE子句用于分组。',
+        tags: ['SQL', '查询'], createTime: '2026-01-17 14:40', author: '王老师', useCount: 15,
+        score: '1', explanation: 'WHERE子句用于过滤条件，GROUP BY子句用于分组。',
+        correctAnswer: 'false'
+      },
+      {
+        id: 'Q025', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'JavaScript是一种单线程语言。',
+        tags: ['JavaScript', '特性'], createTime: '2026-01-18 13:15', author: '李老师', useCount: 17,
+        score: '1', explanation: 'JavaScript是单线程语言，但通过事件循环机制可以实现异步操作。',
+        correctAnswer: 'true'
+      },
+      {
+        id: 'Q026', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '链表是一种顺序存储的数据结构。',
+        tags: ['数据结构', '链表'], createTime: '2026-01-19 10:20', author: '赵老师', useCount: 12,
+        score: '1', explanation: '链表是链式存储结构，不是顺序存储。数组才是顺序存储。',
+        correctAnswer: 'false'
+      },
+      {
+        id: 'Q027', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 1, difficultyName: '一级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: 'NoSQL数据库不支持事务处理。',
+        tags: ['数据库', 'NoSQL'], createTime: '2026-01-19 16:55', author: '王老师', useCount: 14,
+        score: '1', explanation: '部分NoSQL数据库支持事务处理，如MongoDB 4.0+支持多文档事务。',
+        correctAnswer: 'false'
+      },
+      {
+        id: 'Q028', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: 'HTTPS使用SSL/TLS协议进行加密传输。',
+        tags: ['HTTPS', '加密'], createTime: '2026-01-20 09:00', author: '周老师', useCount: 10,
+        score: '1', explanation: 'HTTPS = HTTP + SSL/TLS，通过加密保证数据传输安全。',
+        correctAnswer: 'true'
+      },
+      {
+        id: 'Q029', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】下图展示的是一棵平衡二叉树。<br><br><img src="https://via.placeholder.com/300x200/fef3c7/d97706?text=Binary+Tree%0A++++5%0A+++/+%5C%0A++3+++8%0A+/+%5C%0A1+++4" alt="二叉树" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['二叉树', '图片题'], createTime: '2026-01-20 10:00', author: '赵老师', useCount: 5,
+        score: '1', explanation: '该树左右子树高度差不超过1，是平衡二叉树（AVL树）。',
+        correctAnswer: 'true'
+      },
+      {
+        id: 'Q030', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】二分查找的时间复杂度为 <code>O(log n)</code>，其中 n 为数组长度。',
+        tags: ['查找', '复杂度', '公式题'], createTime: '2026-01-20 11:00', author: '赵老师', useCount: 8,
+        score: '1', explanation: '二分查找每次将搜索范围减半，时间复杂度为 O(log₂n)。',
+        correctAnswer: 'true'
+      },
+      // ==================== 填空题（10道）====================
+      {
+        id: 'Q031', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
         difficulty: 2, difficultyName: '二级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
         content: 'SQL中用于查询数据的关键字是_____。',
         tags: ['SQL', '查询'], createTime: '2026-01-14 09:30', author: '王老师', useCount: 15,
-        score: '2', explanation: 'SELECT是SQL中最基本的查询语句，用于从数据库表中检索数据。',
+        score: '2', explanation: 'SELECT是SQL中最基本的查询语句。',
         blanks: [{ index: 1, answer: 'SELECT', score: 2 }]
       },
       {
-        id: 'Q005', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        id: 'Q032', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: 'Java中的_____关键字用于定义常量。',
+        tags: ['Java', '关键字'], createTime: '2026-01-16 13:45', author: '孙老师', useCount: 11,
+        score: '2', explanation: 'final关键字用于定义常量，被final修饰的变量不能被重新赋值。',
+        blanks: [{ index: 1, answer: 'final', score: 2 }]
+      },
+      {
+        id: 'Q033', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
+        content: '计算机的五大基本组成部分包括：运算器、控制器、存储器、_____和输出设备。',
+        tags: ['计算机系统', '组成'], createTime: '2026-01-18 09:10', author: '张老师', useCount: 11,
+        score: '2', explanation: '计算机五大部件：运算器、控制器、存储器、输入设备、输出设备。',
+        blanks: [{ index: 1, answer: '输入设备', score: 2 }]
+      },
+      {
+        id: 'Q034', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: 'TCP/IP模型中，负责端到端通信的是_____层。',
+        tags: ['网络协议', 'TCP/IP'], createTime: '2026-01-18 15:45', author: '周老师', useCount: 13,
+        score: '2', explanation: '传输层负责端到端的通信，主要协议有TCP和UDP。',
+        blanks: [{ index: 1, answer: '传输', score: 2 }]
+      },
+      {
+        id: 'Q035', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中使用_____函数可以获取列表的长度。',
+        tags: ['Python', '列表'], createTime: '2026-01-19 19:15', author: '李老师', useCount: 10,
+        score: '2', explanation: 'len()函数用于获取序列的长度。',
+        blanks: [{ index: 1, answer: 'len', score: 2 }]
+      },
+      {
+        id: 'Q036', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '_____是一种用于验证用户身份的安全机制。',
+        tags: ['网络安全', '认证'], createTime: '2026-01-19 14:25', author: '周老师', useCount: 11,
+        score: '2', explanation: '身份认证是验证用户身份的安全机制。',
+        blanks: [{ index: 1, answer: '身份认证', score: 2 }]
+      },
+      {
+        id: 'Q037', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '操作系统中，_____是资源分配的基本单位，_____是CPU调度的基本单位。',
+        tags: ['操作系统', '进程', '线程'], createTime: '2026-01-20 08:30', author: '张老师', useCount: 9,
+        score: '4', explanation: '进程是资源分配的基本单位，线程是CPU调度的基本单位。',
+        blanks: [
+          { index: 1, answer: '进程', score: 2 },
+          { index: 2, answer: '线程', score: 2 }
+        ]
+      },
+      {
+        id: 'Q038', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: '数据库事务的四大特性是：原子性、_____、隔离性和持久性。',
+        tags: ['数据库', '事务', 'ACID'], createTime: '2026-01-20 09:15', author: '王老师', useCount: 7,
+        score: '2', explanation: 'ACID：原子性(Atomicity)、一致性(Consistency)、隔离性(Isolation)、持久性(Durability)。',
+        blanks: [{ index: 1, answer: '一致性', score: 2 }]
+      },
+      {
+        id: 'Q039', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】观察下图的栈操作过程，最终栈顶元素是_____。<br><br><img src="https://via.placeholder.com/350x200/e0e7ff/4338ca?text=Stack+Operations%0Apush(1)+push(2)+push(3)%0Apop()+push(4)" alt="栈操作" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['栈', '图片题'], createTime: '2026-01-20 10:00', author: '赵老师', useCount: 4,
+        score: '2', explanation: 'push(1),push(2),push(3)后栈为[1,2,3]，pop()后为[1,2]，push(4)后为[1,2,4]，栈顶是4。',
+        blanks: [{ index: 1, answer: '4', score: 2 }]
+      },
+      {
+        id: 'Q040', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】已知数组长度为n，使用二分查找最多需要比较_____次。<br><br>公式：<code>最大比较次数 = ⌊log₂n⌋ + 1</code>',
+        tags: ['查找', '公式题'], createTime: '2026-01-20 11:00', author: '赵老师', useCount: 6,
+        score: '2', explanation: '二分查找最大比较次数为 ⌊log₂n⌋ + 1。',
+        blanks: [{ index: 1, answer: '⌊log₂n⌋ + 1', score: 2 }]
+      },
+      // ==================== 简答题（10道）====================
+      {
+        id: 'Q041', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
         difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
         content: '请简述栈和队列的区别。',
         tags: ['数据结构', '栈', '队列'], createTime: '2026-01-13 16:20', author: '赵老师', useCount: 10,
@@ -1236,26 +1644,209 @@
         referenceAnswer: '栈是后进先出（LIFO）的数据结构，只能在栈顶进行插入和删除操作；队列是先进先出（FIFO）的数据结构，在队尾插入，在队头删除。'
       },
       {
-        id: 'Q006', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        id: 'Q042', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: '请简述数据库三大范式的主要内容。',
+        tags: ['数据库设计', '范式'], createTime: '2026-01-17 09:00', author: '王老师', useCount: 8,
+        score: '5', explanation: '数据库范式是设计关系型数据库的规范。',
+        referenceAnswer: '第一范式(1NF)：属性不可再分；第二范式(2NF)：在1NF基础上，非主属性完全依赖于主键；第三范式(3NF)：在2NF基础上，非主属性不传递依赖于主键。'
+      },
+      {
+        id: 'Q043', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '请解释操作系统中的死锁及其产生的四个必要条件。',
+        tags: ['操作系统', '死锁'], createTime: '2026-01-18 11:40', author: '张老师', useCount: 5,
+        score: '6', explanation: '死锁是操作系统中的重要概念。',
+        referenceAnswer: '死锁是指两个或多个进程在执行过程中，因争夺资源而造成的一种互相等待的现象。四个必要条件：1.互斥条件；2.请求与保持条件；3.不可剥夺条件；4.循环等待条件。'
+      },
+      {
+        id: 'Q044', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: '请说明SQL中JOIN的几种类型及其区别。',
+        tags: ['SQL', 'JOIN'], createTime: '2026-01-19 11:35', author: '王老师', useCount: 9,
+        score: '5', explanation: 'JOIN是SQL中用于连接多个表的操作。',
+        referenceAnswer: 'INNER JOIN：返回两表匹配的行；LEFT JOIN：返回左表所有行，右表匹配的行；RIGHT JOIN：返回右表所有行，左表匹配的行；FULL JOIN：返回两表所有行。'
+      },
+      {
+        id: 'Q045', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: '请解释JavaScript中的事件循环机制。',
+        tags: ['JavaScript', '事件循环'], createTime: '2026-01-19 17:20', author: '李老师', useCount: 4,
+        score: '6', explanation: '事件循环是JavaScript实现异步的核心机制。',
+        referenceAnswer: '事件循环是JavaScript的执行机制。主线程执行同步代码，异步任务放入任务队列。主线程空闲时，从任务队列取出任务执行。宏任务包括setTimeout等，微任务包括Promise.then等，微任务优先于宏任务执行。'
+      },
+      {
+        id: 'Q046', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '请简述TCP三次握手的过程。',
+        tags: ['TCP', '握手'], createTime: '2026-01-20 08:00', author: '周老师', useCount: 12,
+        score: '5', explanation: 'TCP三次握手是建立可靠连接的过程。',
+        referenceAnswer: '1. 客户端发送SYN包，进入SYN_SENT状态；2. 服务器收到SYN包，发送SYN+ACK包，进入SYN_RCVD状态；3. 客户端收到SYN+ACK包，发送ACK包，双方进入ESTABLISHED状态，连接建立。'
+      },
+      {
+        id: 'Q047', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: '请解释Python中的装饰器及其用途。',
+        tags: ['Python', '装饰器'], createTime: '2026-01-20 09:30', author: '李老师', useCount: 6,
+        score: '5', explanation: '装饰器是Python的高级特性。',
+        referenceAnswer: '装饰器是一种设计模式，用于在不修改原函数代码的情况下扩展函数功能。它本质上是一个接受函数作为参数并返回新函数的高阶函数。常用于日志记录、性能测试、权限验证等场景。'
+      },
+      {
+        id: 'Q048', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '请简述SQL注入攻击的原理及防范措施。',
+        tags: ['网络安全', 'SQL注入'], createTime: '2026-01-20 10:15', author: '周老师', useCount: 8,
+        score: '5', explanation: 'SQL注入是常见的Web安全漏洞。',
+        referenceAnswer: '原理：攻击者通过在输入中插入恶意SQL代码，使应用程序执行非预期的数据库操作。防范措施：1.使用参数化查询；2.输入验证和过滤；3.最小权限原则；4.使用ORM框架；5.定期安全审计。'
+      },
+      {
+        id: 'Q049', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】观察下图所示的哈希表结构，请分析哈希冲突的解决方法。<br><br><img src="https://via.placeholder.com/400x200/fef3c7/d97706?text=Hash+Table%0ABucket+0:+10+->+20%0ABucket+1:+11%0ABucket+2:+empty" alt="哈希表" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['哈希表', '图片题'], createTime: '2026-01-20 11:00', author: '赵老师', useCount: 4,
+        score: '6', explanation: '哈希冲突是哈希表设计中的核心问题。',
+        referenceAnswer: '图中使用链地址法解决冲突。当多个键映射到同一桶时，使用链表存储。其他方法包括：1.开放地址法（线性探测、二次探测）；2.再哈希法；3.建立公共溢出区。链地址法优点是删除方便，缺点是需要额外空间存储指针。'
+      },
+      {
+        id: 'Q050', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】请分析快速排序算法的时间复杂度。<br><br>递推公式：<code>T(n) = 2T(n/2) + O(n)</code>',
+        tags: ['排序', '复杂度', '公式题'], createTime: '2026-01-20 11:30', author: '赵老师', useCount: 5,
+        score: '6', explanation: '快速排序是重要的排序算法。',
+        referenceAnswer: '最好情况：每次划分均匀，T(n)=2T(n/2)+O(n)，由主定理得O(n log n)。最坏情况：每次划分极不均匀（已排序数组），T(n)=T(n-1)+O(n)，得O(n²)。平均情况：O(n log n)。空间复杂度：O(log n)到O(n)。'
+      },
+      // ==================== 完形填空（10道）====================
+      {
+        id: 'Q051', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
         difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
-        content: 'Java面向对象编程特性包括封装、继承和多态。封装是将数据和操作数据的方法绑定在一起，隐藏对象的内部细节；继承允许子类继承父类的属性和方法，实现代码复用；多态则是指同一个方法调用可以有不同的执行结果，主要通过方法重载和方法重写实现。',
-        tags: ['Java', '面向对象'], isComposite: true, subCount: 5,
+        content: 'Java面向对象编程特性包括_____、_____和_____。封装是将数据和操作数据的方法绑定在一起；继承允许子类继承父类的属性和方法；多态则是指同一个方法调用可以有不同的执行结果。',
+        tags: ['Java', '面向对象'], isComposite: true, subCount: 3,
         createTime: '2026-01-14 16:45', author: '孙老师', useCount: 7,
-        score: '10', explanation: 'Java面向对象三大特性是封装、继承、多态。',
+        score: '6', explanation: 'Java面向对象三大特性是封装、继承、多态。',
         blanks: [
           { index: 1, answer: '封装', score: 2 },
           { index: 2, answer: '继承', score: 2 },
-          { index: 3, answer: '多态', score: 2 },
-          { index: 4, answer: '重载', score: 2 },
-          { index: 5, answer: '重写', score: 2 }
+          { index: 3, answer: '多态', score: 2 }
         ]
       },
       {
-        id: 'Q007', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        id: 'Q052', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: 'OSI七层模型从下到上依次是：物理层、_____层、网络层、_____层、会话层、表示层和应用层。',
+        tags: ['网络协议', 'OSI'], isComposite: true, subCount: 2,
+        createTime: '2026-01-15 10:00', author: '周老师', useCount: 10,
+        score: '4', explanation: 'OSI七层模型是网络通信的标准参考模型。',
+        blanks: [
+          { index: 1, answer: '数据链路', score: 2 },
+          { index: 2, answer: '传输', score: 2 }
+        ]
+      },
+      {
+        id: 'Q053', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: 'Python中的基本数据类型包括：整数(_____)、浮点数(_____)、字符串(_____)和布尔值(bool)。',
+        tags: ['Python', '数据类型'], isComposite: true, subCount: 3,
+        createTime: '2026-01-16 09:30', author: '李老师', useCount: 8,
+        score: '6', explanation: 'Python的基本数据类型是编程基础。',
+        blanks: [
+          { index: 1, answer: 'int', score: 2 },
+          { index: 2, answer: 'float', score: 2 },
+          { index: 3, answer: 'str', score: 2 }
+        ]
+      },
+      {
+        id: 'Q054', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: 'SQL语句的基本结构：_____用于查询数据，_____用于插入数据，_____用于更新数据，DELETE用于删除数据。',
+        tags: ['SQL', '基础'], isComposite: true, subCount: 3,
+        createTime: '2026-01-17 14:00', author: '王老师', useCount: 12,
+        score: '6', explanation: 'SQL的四大基本操作：SELECT、INSERT、UPDATE、DELETE。',
+        blanks: [
+          { index: 1, answer: 'SELECT', score: 2 },
+          { index: 2, answer: 'INSERT', score: 2 },
+          { index: 3, answer: 'UPDATE', score: 2 }
+        ]
+      },
+      {
+        id: 'Q055', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
+        content: '进程的三种基本状态是：_____态、_____态和_____态。进程在这三种状态之间转换。',
+        tags: ['操作系统', '进程'], isComposite: true, subCount: 3,
+        createTime: '2026-01-18 11:00', author: '张老师', useCount: 9,
+        score: '6', explanation: '进程的三种基本状态：就绪、运行、阻塞。',
+        blanks: [
+          { index: 1, answer: '就绪', score: 2 },
+          { index: 2, answer: '运行', score: 2 },
+          { index: 3, answer: '阻塞', score: 2 }
+        ]
+      },
+      {
+        id: 'Q056', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '常见的排序算法包括：_____排序、_____排序、快速排序、归并排序等。其中冒泡排序的时间复杂度为O(n²)。',
+        tags: ['排序', '算法'], isComposite: true, subCount: 2,
+        createTime: '2026-01-19 10:30', author: '赵老师', useCount: 7,
+        score: '4', explanation: '排序算法是数据结构的重要内容。',
+        blanks: [
+          { index: 1, answer: '冒泡', score: 2 },
+          { index: 2, answer: '选择', score: 2 }
+        ]
+      },
+      {
+        id: 'Q057', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '常见的网络攻击类型包括：_____攻击、_____攻击、SQL注入攻击等。防范措施包括使用防火墙、加密传输等。',
+        tags: ['网络安全', '攻击'], isComposite: true, subCount: 2,
+        createTime: '2026-01-19 15:00', author: '周老师', useCount: 6,
+        score: '4', explanation: '了解网络攻击类型有助于做好安全防护。',
+        blanks: [
+          { index: 1, answer: 'DDoS', score: 2 },
+          { index: 2, answer: 'XSS', score: 2 }
+        ]
+      },
+      {
+        id: 'Q058', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 2, difficultyName: '二级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
+        content: '数据库的完整性约束包括：_____完整性、_____完整性和用户定义完整性。',
+        tags: ['数据库', '完整性'], isComposite: true, subCount: 2,
+        createTime: '2026-01-20 08:00', author: '王老师', useCount: 5,
+        score: '4', explanation: '数据库完整性是保证数据正确性的重要机制。',
+        blanks: [
+          { index: 1, answer: '实体', score: 2 },
+          { index: 2, answer: '参照', score: 2 }
+        ]
+      },
+      {
+        id: 'Q059', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】观察下图的二叉树，其前序遍历结果是：_____、B、D、E、_____、F。<br><br><img src="https://via.placeholder.com/300x180/e0f2fe/0369a1?text=Tree:+A-B-C%0AB:D,E++C:F" alt="二叉树" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['二叉树', '图片题'], isComposite: true, subCount: 2,
+        createTime: '2026-01-20 09:30', author: '赵老师', useCount: 4,
+        score: '4', explanation: '前序遍历：根-左-右。',
+        blanks: [
+          { index: 1, answer: 'A', score: 2 },
+          { index: 2, answer: 'C', score: 2 }
+        ]
+      },
+      {
+        id: 'Q060', type: 'cloze', typeName: '完形填空', typeIcon: 'fa-layer-group', typeColor: 'indigo',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】斐波那契数列的递推公式为：F(n) = F(_____) + F(_____)，其中F(0)=0，F(1)=1。',
+        tags: ['递归', '公式题'], isComposite: true, subCount: 2,
+        createTime: '2026-01-20 10:30', author: '赵老师', useCount: 5,
+        score: '4', explanation: '斐波那契数列：0,1,1,2,3,5,8,13...',
+        blanks: [
+          { index: 1, answer: 'n-1', score: 2 },
+          { index: 2, answer: 'n-2', score: 2 }
+        ]
+      },
+      // ==================== 复合题（10道，含1道图片题Q069、1道公式题Q070）====================
+      {
+        id: 'Q061', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
         difficulty: 4, difficultyName: '四级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
         content: '某公司数据库设计方案：用户表包含30个字段，包括姓名、身份证号、电话、地址、邮箱等信息。订单表包含订单编号、用户ID、订单时间、订单金额、商品详情、收货地址、支付方式等。请分析该设计是否符合数据库范式要求，并指出存在的问题及优化建议。',
         tags: ['数据库设计', '范式'], isComposite: true, subCount: 3,
-        createTime: '2026-01-14 09:30', author: '赵老师', useCount: 6,
+        createTime: '2026-01-14 09:30', author: '王老师', useCount: 6,
         score: '15', explanation: '数据库设计应遵循范式要求，避免数据冗余。',
         subQuestions: [
           { id: 1, type: 'single', content: '该设计违反了第几范式？', score: 3, options: [{ label: 'A', text: '第一范式' }, { label: 'B', text: '第二范式' }, { label: 'C', text: '第三范式' }, { label: 'D', text: '都不违反' }], correctAnswers: ['C'], explanation: '收货地址在订单表中重复存储，违反第三范式。' },
@@ -1264,369 +1855,120 @@
         ]
       },
       {
-        id: 'Q008', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
-        content: '以下哪个不是操作系统的功能？',
-        tags: ['操作系统'], createTime: '2026-01-12 14:30', author: '张老师', useCount: 18,
-        score: '2', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理等。',
-        options: [
-          { label: 'A', text: '进程管理' },
-          { label: 'B', text: '内存管理' },
-          { label: 'C', text: '编译程序' },
-          { label: 'D', text: '文件管理' }
-        ],
-        correctAnswers: ['C']
-      },
-      // 新增30道题目
-      {
-        id: 'Q009', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
-        content: 'Python中哪个数据类型是不可变的？',
-        tags: ['Python', '数据类型'], createTime: '2026-01-16 09:15', author: '李老师', useCount: 5,
-        score: '2', explanation: '元组(tuple)是Python中的不可变数据类型，一旦创建就不能修改。',
-        options: [{ label: 'A', text: '列表(list)' }, { label: 'B', text: '字典(dict)' }, { label: 'C', text: '元组(tuple)' }, { label: 'D', text: '集合(set)' }],
-        correctAnswers: ['C']
-      },
-      {
-        id: 'Q010', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
-        content: '以下哪些是SQL的聚合函数？',
-        tags: ['SQL', '聚合函数'], createTime: '2026-01-16 10:20', author: '王老师', useCount: 9,
-        score: '3', explanation: 'SQL聚合函数包括COUNT、SUM、AVG、MAX、MIN等。',
-        options: [{ label: 'A', text: 'COUNT' }, { label: 'B', text: 'SUM' }, { label: 'C', text: 'SELECT' }, { label: 'D', text: 'AVG' }],
-        correctAnswers: ['A', 'B', 'D']
-      },
-      {
-        id: 'Q011', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
-        content: 'CPU是计算机的核心部件，负责执行指令和处理数据。',
-        tags: ['CPU', '硬件'], createTime: '2026-01-16 11:30', author: '张老师', useCount: 14,
-        score: '1', explanation: 'CPU（中央处理器）是计算机的核心，负责执行程序指令和处理数据。',
-        correctAnswer: 'true'
-      },
-      {
-        id: 'Q012', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
-        content: 'Java中的_____关键字用于定义常量。',
-        tags: ['Java', '关键字'], createTime: '2026-01-16 13:45', author: '孙老师', useCount: 11,
-        score: '2', explanation: 'final关键字用于定义常量，被final修饰的变量不能被重新赋值。',
-        blanks: [{ index: 1, answer: 'final', score: 2 }]
-      },
-      {
-        id: 'Q013', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '二叉搜索树的中序遍历结果是什么顺序？',
-        tags: ['数据结构', '二叉树'], createTime: '2026-01-16 14:10', author: '赵老师', useCount: 7,
-        score: '2', explanation: '二叉搜索树的中序遍历会按照升序输出所有节点。',
-        options: [{ label: 'A', text: '随机顺序' }, { label: 'B', text: '升序' }, { label: 'C', text: '降序' }, { label: 'D', text: '层序' }],
-        correctAnswers: ['B']
-      },
-      {
-        id: 'Q014', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
-        content: '以下哪些属于应用层协议？',
-        tags: ['网络协议', '应用层'], createTime: '2026-01-16 15:25', author: '周老师', useCount: 13,
-        score: '3', explanation: 'HTTP、FTP、SMTP都是应用层协议，TCP是传输层协议。',
-        options: [{ label: 'A', text: 'HTTP' }, { label: 'B', text: 'FTP' }, { label: 'C', text: 'TCP' }, { label: 'D', text: 'SMTP' }],
-        correctAnswers: ['A', 'B', 'D']
-      },
-      {
-        id: 'Q015', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
-        content: 'Python是一种解释型编程语言。',
-        tags: ['Python', '语言特性'], createTime: '2026-01-16 16:40', author: '李老师', useCount: 16,
-        score: '1', explanation: 'Python是解释型语言，代码在运行时由解释器逐行执行。',
-        correctAnswer: 'true'
-      },
-      {
-        id: 'Q016', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
-        content: '请简述数据库三大范式的主要内容。',
-        tags: ['数据库设计', '范式'], createTime: '2026-01-17 09:00', author: '王老师', useCount: 8,
-        score: '5', explanation: '数据库范式是设计关系型数据库的规范。',
-        referenceAnswer: '第一范式(1NF)：属性不可再分；第二范式(2NF)：在1NF基础上，非主属性完全依赖于主键；第三范式(3NF)：在2NF基础上，非主属性不传递依赖于主键。'
-      },
-      {
-        id: 'Q017', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
-        content: '以下哪个不是进程调度算法？',
-        tags: ['操作系统', '调度'], createTime: '2026-01-17 10:15', author: '张老师', useCount: 10,
-        score: '2', explanation: '冒泡排序是排序算法，不是进程调度算法。',
-        options: [{ label: 'A', text: '先来先服务(FCFS)' }, { label: 'B', text: '短作业优先(SJF)' }, { label: 'C', text: '冒泡排序' }, { label: 'D', text: '时间片轮转' }],
-        correctAnswers: ['C']
-      },
-      {
-        id: 'Q018', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
-        content: 'JavaScript中使用_____关键字声明块级作用域变量。',
-        tags: ['JavaScript', '变量'], createTime: '2026-01-17 11:30', author: '李老师', useCount: 12,
-        score: '2', explanation: 'let和const都可以声明块级作用域变量，let是最常用的。',
-        blanks: [{ index: 1, answer: 'let', score: 2 }]
-      },
-      {
-        id: 'Q019', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '以下哪些是线性数据结构？',
-        tags: ['数据结构', '线性结构'], createTime: '2026-01-17 13:20', author: '赵老师', useCount: 6,
-        score: '3', explanation: '数组、链表、栈、队列都是线性数据结构，二叉树是非线性结构。',
-        options: [{ label: 'A', text: '数组' }, { label: 'B', text: '链表' }, { label: 'C', text: '二叉树' }, { label: 'D', text: '栈' }],
-        correctAnswers: ['A', 'B', 'D']
-      },
-      {
-        id: 'Q020', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
-        content: 'SELECT语句中WHERE子句用于分组。',
-        tags: ['SQL', '查询'], createTime: '2026-01-17 14:40', author: '王老师', useCount: 15,
-        score: '1', explanation: 'WHERE子句用于过滤条件，GROUP BY子句用于分组。',
-        correctAnswer: 'false'
-      },
-      {
-        id: 'Q021', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
-        content: '以下哪种加密算法是非对称加密？',
-        tags: ['网络安全', '加密'], createTime: '2026-01-17 15:50', author: '周老师', useCount: 9,
-        score: '2', explanation: 'RSA是非对称加密算法，使用公钥和私钥进行加解密。',
-        options: [{ label: 'A', text: 'AES' }, { label: 'B', text: 'DES' }, { label: 'C', text: 'RSA' }, { label: 'D', text: 'MD5' }],
-        correctAnswers: ['C']
-      },
-      {
-        id: 'Q022', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
-        content: '计算机的五大基本组成部分包括：运算器、控制器、存储器、_____和输出设备。',
-        tags: ['计算机系统', '组成'], createTime: '2026-01-18 09:10', author: '张老师', useCount: 11,
-        score: '2', explanation: '计算机五大部件：运算器、控制器、存储器、输入设备、输出设备。',
-        blanks: [{ index: 1, answer: '输入设备', score: 2 }]
-      },
-      {
-        id: 'Q023', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
-        content: 'Java中的访问修饰符有哪些？',
-        tags: ['Java', '访问控制'], createTime: '2026-01-18 10:25', author: '孙老师', useCount: 8,
-        score: '3', explanation: 'Java有四种访问修饰符：public、protected、default(无修饰符)、private。',
-        options: [{ label: 'A', text: 'public' }, { label: 'B', text: 'protected' }, { label: 'C', text: 'private' }, { label: 'D', text: 'static' }],
-        correctAnswers: ['A', 'B', 'C']
-      },
-      {
-        id: 'Q024', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
-        difficulty: 4, difficultyName: '四级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
-        content: '请解释操作系统中的死锁及其产生的四个必要条件。',
-        tags: ['操作系统', '死锁'], createTime: '2026-01-18 11:40', author: '张老师', useCount: 5,
-        score: '6', explanation: '死锁是操作系统中的重要概念。',
-        referenceAnswer: '死锁是指两个或多个进程在执行过程中，因争夺资源而造成的一种互相等待的现象。四个必要条件：1.互斥条件；2.请求与保持条件；3.不可剥夺条件；4.循环等待条件。'
-      },
-      {
-        id: 'Q025', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
-        content: 'JavaScript是一种单线程语言。',
-        tags: ['JavaScript', '特性'], createTime: '2026-01-18 13:15', author: '李老师', useCount: 17,
-        score: '1', explanation: 'JavaScript是单线程语言，但通过事件循环机制可以实现异步操作。',
-        correctAnswer: 'true'
-      },
-      {
-        id: 'Q026', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
-        content: '以下哪个不是关系型数据库的特点？',
-        tags: ['数据库', '关系型'], createTime: '2026-01-18 14:30', author: '王老师', useCount: 10,
-        score: '2', explanation: '关系型数据库使用表格存储数据，支持SQL查询，有严格的数据模式。',
-        options: [{ label: 'A', text: '使用表格存储数据' }, { label: 'B', text: '支持SQL查询' }, { label: 'C', text: '无模式设计' }, { label: 'D', text: '支持事务' }],
-        correctAnswers: ['C']
-      },
-      {
-        id: 'Q027', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
-        content: 'TCP/IP模型中，负责端到端通信的是_____层。',
-        tags: ['网络协议', 'TCP/IP'], createTime: '2026-01-18 15:45', author: '周老师', useCount: 13,
-        score: '2', explanation: '传输层负责端到端的通信，主要协议有TCP和UDP。',
-        blanks: [{ index: 1, answer: '传输', score: 2 }]
-      },
-      {
-        id: 'Q028', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
-        content: 'Python中以下哪些是可迭代对象？',
-        tags: ['Python', '迭代'], createTime: '2026-01-19 09:00', author: '李老师', useCount: 7,
-        score: '3', explanation: '列表、字符串、字典都是可迭代对象，整数不是。',
-        options: [{ label: 'A', text: '列表' }, { label: 'B', text: '字符串' }, { label: 'C', text: '整数' }, { label: 'D', text: '字典' }],
-        correctAnswers: ['A', 'B', 'D']
-      },
-      {
-        id: 'Q029', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '链表是一种顺序存储的数据结构。',
-        tags: ['数据结构', '链表'], createTime: '2026-01-19 10:20', author: '赵老师', useCount: 12,
-        score: '1', explanation: '链表是链式存储结构，不是顺序存储。数组才是顺序存储。',
-        correctAnswer: 'false'
-      },
-      {
-        id: 'Q030', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
-        content: '请说明SQL中JOIN的几种类型及其区别。',
-        tags: ['SQL', 'JOIN'], createTime: '2026-01-19 11:35', author: '王老师', useCount: 9,
-        score: '5', explanation: 'JOIN是SQL中用于连接多个表的操作。',
-        referenceAnswer: 'INNER JOIN：返回两表匹配的行；LEFT JOIN：返回左表所有行，右表匹配的行；RIGHT JOIN：返回右表所有行，左表匹配的行；FULL JOIN：返回两表所有行。'
-      },
-      {
-        id: 'Q031', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
-        content: 'Java中的垃圾回收机制主要针对什么内存区域？',
-        tags: ['Java', 'GC'], createTime: '2026-01-19 13:10', author: '孙老师', useCount: 6,
-        score: '2', explanation: 'Java垃圾回收主要针对堆内存中不再使用的对象。',
-        options: [{ label: 'A', text: '栈内存' }, { label: 'B', text: '堆内存' }, { label: 'C', text: '方法区' }, { label: 'D', text: '程序计数器' }],
-        correctAnswers: ['B']
-      },
-      {
-        id: 'Q032', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
-        content: '_____是一种用于验证用户身份的安全机制。',
-        tags: ['网络安全', '认证'], createTime: '2026-01-19 14:25', author: '周老师', useCount: 11,
-        score: '2', explanation: '身份认证是验证用户身份的安全机制。',
-        blanks: [{ index: 1, answer: '身份认证', score: 2 }]
-      },
-      {
-        id: 'Q033', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
+        id: 'Q062', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
         difficulty: 3, difficultyName: '三级', knowledgeId: '12', knowledgePath: '计算机基础 / 操作系统',
-        content: '以下哪些是操作系统的主要功能？',
-        tags: ['操作系统', '功能'], createTime: '2026-01-19 15:40', author: '张老师', useCount: 8,
-        score: '3', explanation: '操作系统的主要功能包括进程管理、内存管理、文件管理、设备管理。',
-        options: [{ label: 'A', text: '进程管理' }, { label: 'B', text: '内存管理' }, { label: 'C', text: '编译程序' }, { label: 'D', text: '文件管理' }],
-        correctAnswers: ['A', 'B', 'D']
-      },
-      {
-        id: 'Q034', type: 'judge', typeName: '判断题', typeIcon: 'fa-check', typeColor: 'warning',
-        difficulty: 1, difficultyName: '一级', knowledgeId: '32', knowledgePath: '数据库 / 数据库设计',
-        content: 'NoSQL数据库不支持事务处理。',
-        tags: ['数据库', 'NoSQL'], createTime: '2026-01-19 16:55', author: '王老师', useCount: 14,
-        score: '1', explanation: '部分NoSQL数据库支持事务处理，如MongoDB 4.0+支持多文档事务。',
-        correctAnswer: 'false'
-      },
-      {
-        id: 'Q035', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
-        difficulty: 4, difficultyName: '四级', knowledgeId: '23', knowledgePath: '编程语言 / JavaScript',
-        content: '请解释JavaScript中的事件循环机制。',
-        tags: ['JavaScript', '事件循环'], createTime: '2026-01-19 17:20', author: '李老师', useCount: 4,
-        score: '6', explanation: '事件循环是JavaScript实现异步的核心机制。',
-        referenceAnswer: '事件循环是JavaScript的执行机制。主线程执行同步代码，异步任务放入任务队列。主线程空闲时，从任务队列取出任务执行。宏任务包括setTimeout、setInterval等，微任务包括Promise.then等，微任务优先于宏任务执行。'
-      },
-      {
-        id: 'Q036', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '11', knowledgePath: '计算机基础 / 计算机系统',
-        content: '以下哪个是主存储器？',
-        tags: ['计算机系统', '存储'], createTime: '2026-01-19 18:05', author: '张老师', useCount: 15,
-        score: '2', explanation: '内存(RAM)是主存储器，硬盘、U盘、光盘是外存储器。',
-        options: [{ label: 'A', text: '硬盘' }, { label: 'B', text: '内存' }, { label: 'C', text: 'U盘' }, { label: 'D', text: '光盘' }],
-        correctAnswers: ['B']
-      },
-      {
-        id: 'Q037', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 2, difficultyName: '二级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
-        content: 'Python中使用_____函数可以获取列表的长度。',
-        tags: ['Python', '列表'], createTime: '2026-01-19 19:15', author: '李老师', useCount: 10,
-        score: '2', explanation: 'len()函数用于获取序列（列表、字符串等）的长度。',
-        blanks: [{ index: 1, answer: 'len', score: 2 }]
-      },
-      {
-        id: 'Q038', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
-        content: '以下哪些是传输层协议？',
-        tags: ['网络协议', '传输层'], createTime: '2026-01-19 20:30', author: '周老师', useCount: 7,
-        score: '3', explanation: 'TCP和UDP是传输层协议，HTTP和FTP是应用层协议。',
-        options: [{ label: 'A', text: 'TCP' }, { label: 'B', text: 'UDP' }, { label: 'C', text: 'HTTP' }, { label: 'D', text: 'FTP' }],
-        correctAnswers: ['A', 'B']
-      },
-      // ==================== 包含图片和公式的示例题目 ====================
-      {
-        id: 'Q039', type: 'single', typeName: '单选题', typeIcon: 'fa-dot-circle', typeColor: 'info',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '观察下图所示的二叉树结构：<br><br><img src="images/binary-tree.svg" alt="二叉树结构图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>该二叉树的中序遍历结果是？<br><br>已知前序遍历为：A, B, D, E, C, F<br>后序遍历为：D, E, B, F, C, A',
-        tags: ['二叉树', '遍历', '图片题'], createTime: '2026-01-20 09:00', author: '张老师', useCount: 3,
-        score: '3', explanation: '中序遍历顺序为：左子树 → 根节点 → 右子树。<br><br><img src="images/binary-tree.svg" alt="中序遍历示意图" style="max-width:100%;border-radius:8px;">',
-        options: [
-          { label: 'A', text: 'D, B, E, A, F, C' },
-          { label: 'B', text: 'A, B, D, E, C, F' },
-          { label: 'C', text: 'D, E, B, F, C, A' },
-          { label: 'D', text: 'A, B, C, D, E, F' }
-        ],
-        correctAnswers: ['A']
-      },
-      {
-        id: 'Q040', type: 'multiple', typeName: '多选题', typeIcon: 'fa-check-double', typeColor: 'success',
-        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '根据下图所示的图结构，回答问题：<br><br><img src="images/graph-structure.svg" alt="带权图结构" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>以下关于该图的描述，正确的有哪些？<br><br>图中边的权重公式为：<code>W(u,v) = |u - v| × 2</code>',
-        tags: ['图论', '最短路径', '图片题'], createTime: '2026-01-20 09:30', author: '李老师', useCount: 5,
-        score: '4', explanation: '图的分析需要考虑连通性、权重和路径。<br><br>最短路径算法公式：<br><code>d[v] = min(d[v], d[u] + w(u,v))</code><br><br><img src="images/graph-structure.svg" alt="Dijkstra算法示意" style="max-width:100%;border-radius:8px;">',
-        options: [
-          { label: 'A', text: '该图是连通图' },
-          { label: 'B', text: '该图是有向图' },
-          { label: 'C', text: '从A到E的最短路径经过B' },
-          { label: 'D', text: '该图包含环' }
-        ],
-        correctAnswers: ['A', 'C', 'D']
-      },
-      {
-        id: 'Q041', type: 'blank', typeName: '填空题', typeIcon: 'fa-pen', typeColor: 'primary',
-        difficulty: 3, difficultyName: '三级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '观察下图中的排序过程：<br><br><img src="images/sorting-process.svg" alt="排序过程示意图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>该排序算法的时间复杂度为 O(_______)，空间复杂度为 O(_______)。<br><br>时间复杂度计算公式：<code>T(n) = n × (n-1) / 2 = O(n²)</code>',
-        tags: ['排序', '复杂度', '图片题'], createTime: '2026-01-20 10:00', author: '王老师', useCount: 8,
-        score: '4', explanation: '从图中可以看出这是冒泡排序的过程。<br><br>复杂度分析：<br>• 时间复杂度：最坏情况下需要比较 <code>n(n-1)/2</code> 次<br>• 空间复杂度：只需要常数级别的额外空间<br><br><img src="images/sorting-process.svg" alt="冒泡排序复杂度" style="max-width:100%;border-radius:8px;">',
-        blanks: [
-          { index: 1, answer: 'n²', score: 2 },
-          { index: 2, answer: '1', score: 2 }
+        content: '阅读以下关于进程调度的材料，回答问题。<br><br>某操作系统采用时间片轮转调度算法，时间片大小为20ms。当前就绪队列中有三个进程P1、P2、P3，它们的到达时间和服务时间如下表所示。',
+        tags: ['操作系统', '进程调度'], isComposite: true, subCount: 3,
+        createTime: '2026-01-15 10:00', author: '张老师', useCount: 8,
+        score: '12', explanation: '时间片轮转是常用的进程调度算法。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '时间片轮转调度算法属于哪种类型？', score: 3, options: [{ label: 'A', text: '非抢占式调度' }, { label: 'B', text: '抢占式调度' }, { label: 'C', text: '优先级调度' }, { label: 'D', text: '批处理调度' }], correctAnswers: ['B'], explanation: '时间片轮转是抢占式调度，时间片用完后进程被强制切换。' },
+          { id: 2, type: 'blank', content: '如果时间片过小，会导致_____开销增大。', blanks: [{ index: 1, answer: '上下文切换', score: 3 }], explanation: '时间片过小会频繁切换进程，增加上下文切换开销。' },
+          { id: 3, type: 'short', content: '请分析时间片大小对系统性能的影响。', score: 6, referenceAnswer: '时间片过大：退化为FCFS，响应时间长；时间片过小：上下文切换频繁，系统开销大；合适的时间片：平衡响应时间和系统开销。', explanation: '' }
         ]
       },
       {
-        id: 'Q042', type: 'short', typeName: '简答题', typeIcon: 'fa-align-left', typeColor: 'purple',
-        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '观察下图所示的哈希表结构和冲突情况：<br><br><img src="images/hash-table.svg" alt="哈希表冲突示意图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>哈希函数为：<code>h(key) = key mod 10</code><br><br>请回答：<br>1. 分析图中哈希冲突产生的原因<br>2. 说明链地址法如何解决该冲突<br>3. 计算装载因子 α = n/m 对性能的影响',
-        tags: ['哈希表', '冲突处理', '图片题'], createTime: '2026-01-20 10:30', author: '赵老师', useCount: 4,
-        score: '10', explanation: '哈希冲突是哈希表设计中的核心问题。',
-        referenceAnswer: '1. 冲突原因分析：\n当不同的键值通过哈希函数 h(key) = key mod 10 计算后得到相同的哈希值时，就会产生冲突。如图所示，键值 13 和 23 都映射到桶 3。\n\n<img src="images/hash-table.svg" alt="哈希冲突示例" style="max-width:100%;border-radius:8px;margin:10px 0;">\n\n2. 链地址法解决方案：\n• 每个桶维护一个链表\n• 冲突的元素依次添加到链表末尾\n• 查找时遍历对应桶的链表\n\n3. 装载因子影响：\n• α = n/m（n为元素数，m为桶数）\n• α 越大，冲突概率越高\n• 建议保持 α < 0.75\n• 查找时间复杂度：O(1 + α)'
+        id: 'Q063', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '21', knowledgePath: '编程语言 / Python基础',
+        content: '阅读以下Python代码片段，回答问题。<br><br><pre>def process_data(data):\n    result = []\n    for item in data:\n        if item > 0:\n            result.append(item * 2)\n    return result</pre>',
+        tags: ['Python', '函数'], isComposite: true, subCount: 3,
+        createTime: '2026-01-16 09:15', author: '李老师', useCount: 5,
+        score: '10', explanation: '理解Python函数和列表操作。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '该函数的返回值类型是？', score: 2, options: [{ label: 'A', text: '整数' }, { label: 'B', text: '字符串' }, { label: 'C', text: '列表' }, { label: 'D', text: '字典' }], correctAnswers: ['C'], explanation: '函数返回result，是一个列表。' },
+          { id: 2, type: 'blank', content: '如果输入data=[1,-2,3,-4,5]，输出结果的长度是_____。', blanks: [{ index: 1, answer: '3', score: 3 }], explanation: '只有正数1,3,5会被处理，所以长度为3。' },
+          { id: 3, type: 'short', content: '请用列表推导式重写该函数。', score: 5, referenceAnswer: 'def process_data(data):\n    return [item * 2 for item in data if item > 0]', explanation: '' }
+        ]
       },
       {
-        id: 'Q043', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
-        difficulty: 5, difficultyName: '五级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
-        content: '【算法分析综合题】<br><br>阅读以下材料，观察图示，回答问题。<br><br><strong>材料：</strong>某电商平台需要实现商品推荐系统，使用图结构存储用户-商品关系。<br><br><img src="images/social-network.svg" alt="用户-商品关系图" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;"><br><br>图中边的权重表示购买次数，推荐算法基于协同过滤：<br><code>Score(u,p) = Σ sim(u,v) × r(v,p)</code><br><br>其中 sim(u,v) 为用户相似度，r(v,p) 为用户v对商品p的评分。',
-        tags: ['图算法', '推荐系统', '综合题', '图片题'], isComposite: true, subCount: 4,
-        createTime: '2026-01-20 11:00', author: '钱老师', useCount: 2,
-        score: '20', explanation: '本题考查图结构在实际应用中的使用，以及算法复杂度分析能力。',
+        id: 'Q064', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '31', knowledgePath: '数据库 / SQL语法',
+        content: '阅读以下SQL查询需求，回答问题。<br><br>有一个学生成绩表scores，包含字段：student_id, course_id, score。需要查询每个学生的平均成绩，并按平均成绩降序排列。',
+        tags: ['SQL', '聚合查询'], isComposite: true, subCount: 3,
+        createTime: '2026-01-16 10:20', author: '王老师', useCount: 9,
+        score: '12', explanation: 'SQL聚合查询是数据库操作的重要内容。',
         subQuestions: [
-          {
-            id: 1, type: 'single', content: '根据图示，该图结构属于什么类型？',
-            score: 3,
-            options: [
-              { label: 'A', text: '有向无权图' },
-              { label: 'B', text: '无向有权图' },
-              { label: 'C', text: '二分图（Bipartite Graph）' },
-              { label: 'D', text: '完全图' }
-            ],
-            correctAnswers: ['C'],
-            explanation: '用户和商品是两类不同的节点，边只存在于不同类节点之间，符合二分图定义。<br><img src="https://via.placeholder.com/300x150/dbeafe/1d4ed8?text=Bipartite+Graph" alt="二分图示意" style="max-width:100%;border-radius:8px;">'
-          },
-          {
-            id: 2, type: 'multiple', content: '以下关于该推荐算法的描述，正确的有？',
-            score: 4,
-            options: [
-              { label: 'A', text: '时间复杂度与用户数量相关' },
-              { label: 'B', text: '需要计算用户间的相似度矩阵' },
-              { label: 'C', text: '属于基于内容的推荐算法' },
-              { label: 'D', text: '可以发现用户的潜在兴趣' }
-            ],
-            correctAnswers: ['A', 'B', 'D'],
-            explanation: '协同过滤是基于用户行为的推荐算法，不是基于内容的。'
-          },
-          {
-            id: 3, type: 'blank', content: '如果用户数为 n，商品数为 m，计算所有用户相似度的时间复杂度为 O(_____)，空间复杂度为 O(_____)。',
-            score: 4,
-            blanks: [
-              { index: 1, answer: 'n²m', score: 2 },
-              { index: 2, answer: 'n²', score: 2 }
-            ],
-            explanation: '需要计算 n×n 的相似度矩阵，每次计算需要遍历 m 个商品。'
-          },
-          {
-            id: 4, type: 'shortAnswer', content: '请根据图示数据，说明如何优化该推荐系统的性能，并给出具体方案。',
-            score: 9,
-            referenceAnswer: '优化方案：\n\n1. 数据结构优化：\n<img src="https://via.placeholder.com/350x180/fef3c7/d97706?text=Sparse+Matrix+Storage" alt="稀疏矩阵存储" style="max-width:100%;border-radius:8px;margin:10px 0;">\n• 使用稀疏矩阵存储用户-商品关系\n• 采用邻接表代替邻接矩阵\n\n2. 算法优化：\n• 预计算用户相似度矩阵\n• 使用 LSH（局部敏感哈希）加速相似度计算\n• 只保留 Top-K 相似用户\n\n3. 系统优化：\n• 增量更新而非全量计算\n• 使用缓存存储热门推荐结果\n• 分布式计算处理大规模数据\n\n复杂度改进：\n• 时间：O(n²m) → O(nk·m)，k为相似用户数\n• 空间：O(n²) → O(nk)',
-            explanation: '推荐系统优化需要从数据结构、算法和系统架构多个层面考虑。'
-          }
+          { id: 1, type: 'single', content: '计算平均成绩应使用哪个聚合函数？', score: 2, options: [{ label: 'A', text: 'COUNT' }, { label: 'B', text: 'SUM' }, { label: 'C', text: 'AVG' }, { label: 'D', text: 'MAX' }], correctAnswers: ['C'], explanation: 'AVG函数用于计算平均值。' },
+          { id: 2, type: 'blank', content: '按学生分组应使用_____子句。', blanks: [{ index: 1, answer: 'GROUP BY', score: 3 }], explanation: 'GROUP BY用于分组聚合。' },
+          { id: 3, type: 'short', content: '请写出完整的SQL查询语句。', score: 7, referenceAnswer: 'SELECT student_id, AVG(score) as avg_score FROM scores GROUP BY student_id ORDER BY avg_score DESC;', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q065', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 3, difficultyName: '三级', knowledgeId: '41', knowledgePath: '网络技术 / 网络协议',
+        content: '阅读以下关于HTTP协议的材料，回答问题。<br><br>HTTP是超文本传输协议，是Web应用的基础。HTTP/1.1引入了持久连接，HTTP/2引入了多路复用，HTTP/3基于QUIC协议。',
+        tags: ['HTTP', '网络协议'], isComposite: true, subCount: 3,
+        createTime: '2026-01-17 14:00', author: '周老师', useCount: 7,
+        score: '10', explanation: 'HTTP协议是Web开发的基础知识。',
+        subQuestions: [
+          { id: 1, type: 'single', content: 'HTTP协议默认使用的端口号是？', score: 2, options: [{ label: 'A', text: '21' }, { label: 'B', text: '22' }, { label: 'C', text: '80' }, { label: 'D', text: '443' }], correctAnswers: ['C'], explanation: 'HTTP默认端口80，HTTPS默认端口443。' },
+          { id: 2, type: 'multiple', content: '以下哪些是HTTP请求方法？', score: 4, options: [{ label: 'A', text: 'GET' }, { label: 'B', text: 'POST' }, { label: 'C', text: 'SELECT' }, { label: 'D', text: 'DELETE' }], correctAnswers: ['A', 'B', 'D'], explanation: 'SELECT是SQL关键字，不是HTTP方法。' },
+          { id: 3, type: 'short', content: '请简述HTTP/2相比HTTP/1.1的主要改进。', score: 4, referenceAnswer: '1. 多路复用：单个连接可并行处理多个请求；2. 头部压缩：减少传输数据量；3. 服务器推送：主动推送资源；4. 二进制分帧：提高解析效率。', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q066', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '22', knowledgePath: '编程语言 / Java基础',
+        content: '阅读以下Java代码，分析其中的设计模式和面向对象特性。<br><br><pre>public interface Shape {\n    double area();\n}\n\npublic class Circle implements Shape {\n    private double radius;\n    public Circle(double r) { this.radius = r; }\n    public double area() { return Math.PI * radius * radius; }\n}</pre>',
+        tags: ['Java', '面向对象'], isComposite: true, subCount: 3,
+        createTime: '2026-01-18 10:00', author: '孙老师', useCount: 6,
+        score: '12', explanation: 'Java面向对象编程的核心概念。',
+        subQuestions: [
+          { id: 1, type: 'single', content: 'Shape是什么类型？', score: 3, options: [{ label: 'A', text: '抽象类' }, { label: 'B', text: '接口' }, { label: 'C', text: '普通类' }, { label: 'D', text: '枚举' }], correctAnswers: ['B'], explanation: 'interface关键字定义接口。' },
+          { id: 2, type: 'blank', content: 'Circle类通过_____关键字实现Shape接口。', blanks: [{ index: 1, answer: 'implements', score: 3 }], explanation: 'implements用于实现接口。' },
+          { id: 3, type: 'short', content: '请说明这种设计体现了哪些面向对象原则。', score: 6, referenceAnswer: '1. 接口隔离原则：Shape接口只定义必要的方法；2. 依赖倒置原则：依赖抽象而非具体实现；3. 开闭原则：可以添加新的Shape实现而不修改现有代码。', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q067', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '42', knowledgePath: '网络技术 / 网络安全',
+        content: '阅读以下关于Web安全的材料，回答问题。<br><br>某网站存在安全漏洞，攻击者可以在评论区输入恶意脚本，当其他用户浏览该页面时，脚本会在用户浏览器中执行。',
+        tags: ['网络安全', 'XSS'], isComposite: true, subCount: 3,
+        createTime: '2026-01-19 15:00', author: '周老师', useCount: 5,
+        score: '12', explanation: 'Web安全是开发者必须掌握的知识。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '这种攻击方式称为？', score: 3, options: [{ label: 'A', text: 'SQL注入' }, { label: 'B', text: 'XSS攻击' }, { label: 'C', text: 'CSRF攻击' }, { label: 'D', text: 'DDoS攻击' }], correctAnswers: ['B'], explanation: 'XSS（跨站脚本攻击）是在网页中注入恶意脚本。' },
+          { id: 2, type: 'multiple', content: '以下哪些是防范XSS的有效措施？', score: 4, options: [{ label: 'A', text: '输入过滤' }, { label: 'B', text: '输出编码' }, { label: 'C', text: '使用HTTPS' }, { label: 'D', text: 'CSP策略' }], correctAnswers: ['A', 'B', 'D'], explanation: 'HTTPS主要防止中间人攻击，对XSS防护有限。' },
+          { id: 3, type: 'short', content: '请说明存储型XSS和反射型XSS的区别。', score: 5, referenceAnswer: '存储型XSS：恶意脚本存储在服务器数据库中，每次访问页面都会执行；反射型XSS：恶意脚本通过URL参数传递，只在点击特定链接时执行。存储型危害更大，影响范围更广。', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q068', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '阅读以下关于排序算法的材料，回答问题。<br><br>快速排序是一种高效的排序算法，采用分治策略。选择一个基准元素，将数组分为两部分，左边小于基准，右边大于基准，然后递归排序。',
+        tags: ['排序', '算法'], isComposite: true, subCount: 3,
+        createTime: '2026-01-20 08:00', author: '赵老师', useCount: 8,
+        score: '12', explanation: '快速排序是重要的排序算法。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '快速排序的平均时间复杂度是？', score: 3, options: [{ label: 'A', text: 'O(n)' }, { label: 'B', text: 'O(n log n)' }, { label: 'C', text: 'O(n²)' }, { label: 'D', text: 'O(log n)' }], correctAnswers: ['B'], explanation: '快速排序平均时间复杂度为O(n log n)。' },
+          { id: 2, type: 'blank', content: '快速排序最坏情况发生在数组已经_____时。', blanks: [{ index: 1, answer: '有序', score: 3 }], explanation: '数组有序时，每次划分极不均匀，退化为O(n²)。' },
+          { id: 3, type: 'short', content: '请说明如何优化快速排序以避免最坏情况。', score: 6, referenceAnswer: '1. 随机选择基准：避免固定选择第一个或最后一个元素；2. 三数取中：取首、中、尾三个元素的中值作为基准；3. 小数组使用插入排序：当子数组较小时切换到插入排序。', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q069', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 4, difficultyName: '四级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【图片题】观察下图所示的二叉搜索树，回答问题。<br><br><img src="https://via.placeholder.com/400x250/e0f2fe/0369a1?text=BST%0A++++8%0A+++/+%5C%0A++3+++10%0A+/+%5C++++%5C%0A1+++6+++14" alt="二叉搜索树" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;">',
+        tags: ['二叉树', '图片题'], isComposite: true, subCount: 3,
+        createTime: '2026-01-20 09:00', author: '赵老师', useCount: 4,
+        score: '12', explanation: '二叉搜索树是重要的数据结构。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '该树的中序遍历结果是？', score: 3, options: [{ label: 'A', text: '8,3,1,6,10,14' }, { label: 'B', text: '1,3,6,8,10,14' }, { label: 'C', text: '1,6,3,14,10,8' }, { label: 'D', text: '8,3,10,1,6,14' }], correctAnswers: ['B'], explanation: '二叉搜索树的中序遍历结果是升序序列。' },
+          { id: 2, type: 'blank', content: '在该树中查找元素6需要比较_____次。', blanks: [{ index: 1, answer: '3', score: 3 }], explanation: '查找路径：8→3→6，共比较3次。' },
+          { id: 3, type: 'short', content: '请说明如何在该树中插入元素5。', score: 6, referenceAnswer: '插入步骤：1. 从根节点8开始，5<8，向左走到3；2. 5>3，向右走到6；3. 5<6，向左，发现左子树为空；4. 将5作为6的左子节点插入。最终5成为节点6的左孩子。', explanation: '' }
+        ]
+      },
+      {
+        id: 'Q070', type: 'composite', typeName: '复合题', typeIcon: 'fa-list-alt', typeColor: 'purple',
+        difficulty: 5, difficultyName: '五级', knowledgeId: '13', knowledgePath: '计算机基础 / 数据结构',
+        content: '【公式题】分析以下递归算法的时间复杂度。<br><br><pre>def fib(n):\n    if n <= 1:\n        return n\n    return fib(n-1) + fib(n-2)</pre><br><br>递推关系式：<code>T(n) = T(n-1) + T(n-2) + O(1)</code>',
+        tags: ['递归', '复杂度', '公式题'], isComposite: true, subCount: 3,
+        createTime: '2026-01-20 10:00', author: '赵老师', useCount: 5,
+        score: '15', explanation: '递归算法的复杂度分析是重要技能。',
+        subQuestions: [
+          { id: 1, type: 'single', content: '该算法的时间复杂度是？', score: 4, options: [{ label: 'A', text: 'O(n)' }, { label: 'B', text: 'O(n log n)' }, { label: 'C', text: 'O(2ⁿ)' }, { label: 'D', text: 'O(n²)' }], correctAnswers: ['C'], explanation: '递归树呈指数增长，时间复杂度为O(2ⁿ)。' },
+          { id: 2, type: 'blank', content: '使用动态规划优化后，时间复杂度可降为O(_____)。', blanks: [{ index: 1, answer: 'n', score: 4 }], explanation: '动态规划避免重复计算，时间复杂度为O(n)。' },
+          { id: 3, type: 'short', content: '请用动态规划重写该算法，并分析空间复杂度。', score: 7, referenceAnswer: 'def fib_dp(n):\n    if n <= 1: return n\n    dp = [0] * (n+1)\n    dp[1] = 1\n    for i in range(2, n+1):\n        dp[i] = dp[i-1] + dp[i-2]\n    return dp[n]\n\n空间复杂度O(n)。进一步优化只保留前两个值，空间复杂度可降为O(1)。', explanation: '' }
         ]
       }
     ];
@@ -1684,12 +2026,6 @@
       nodeDiv.addEventListener('dragover', (e) => handleDragOver(e));
       nodeDiv.addEventListener('drop', (e) => handleDrop(e, node));
       nodeDiv.addEventListener('dragend', () => handleDragEnd());
-
-      // 点击节点筛选题目
-      nodeDiv.addEventListener('click', function() {
-        selectKnowledgeNode(node.id, node.name);
-        nodeDiv.classList.add('active');
-      });
 
       // 点击节点筛选题目
       nodeDiv.addEventListener('click', function() {
@@ -2567,7 +2903,7 @@
                 <i class="fas fa-list-ol mr-1"></i>${q.subCount} 道子题
               </span>` : ''}
             </div>
-            <div class="text-gray-900 text-base leading-relaxed mb-3 question-content">${q.content}</div>
+            <div class="text-gray-900 text-base leading-relaxed mb-3 question-content" data-question-content></div>
             <div class="flex items-center gap-3 mb-2">
               ${tagsHtml}
             </div>
@@ -2593,6 +2929,12 @@
           </div>
         </div>
       `;
+
+      // 单独设置题目内容的innerHTML，以支持HTML渲染（图片、公式等）
+      const contentDiv = card.querySelector('[data-question-content]');
+      if (contentDiv) {
+        contentDiv.innerHTML = q.content || '';
+      }
 
       // 批量模式下，选中的卡片添加高亮样式
       if (isBatchMode && selectedQuestions.has(q.id)) {

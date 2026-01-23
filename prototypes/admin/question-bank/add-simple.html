@@ -5420,6 +5420,48 @@ D. 指缝
       performImport(true, scores);
     }
 
+    // 将图片和公式占位符替换为实际数据
+    function replaceMediaPlaceholders(text) {
+      if (!text) return '';
+
+      let result = text;
+
+      // 1. 替换图片占位符 [图片:img_1] -> <img> 标签
+      const imageRegex = /\[图片:(img_\d+)\]/g;
+      result = result.replace(imageRegex, (match, imageId) => {
+        const imageData = imageDataMap[imageId];
+        if (imageData) {
+          return `<img src="${imageData.data}" style="max-width: ${imageData.width}px; max-height: ${imageData.height}px; display: inline-block; vertical-align: middle; margin: 0 4px;" alt="图片" />`;
+        }
+        return match; // 如果找不到图片数据，保留原占位符
+      });
+
+      // 2. 替换公式占位符 [公式:formula_1] -> KaTeX HTML
+      const formulaRegex = /\[公式:(formula_\d+)\]/g;
+      result = result.replace(formulaRegex, (match, formulaId) => {
+        const formulaData = formulaDataMap[formulaId];
+        if (formulaData) {
+          // 将公式存储为特殊格式：包含latex代码和渲染后的HTML
+          const tempDiv = document.createElement('div');
+          try {
+            katex.render(formulaData.latex, tempDiv, {
+              throwOnError: false,
+              displayMode: false,
+              errorColor: '#F53F3F'
+            });
+            // 使用特殊标记保存latex代码，方便后续编辑
+            return `<span class="katex-formula" data-latex="${formulaData.latex.replace(/"/g, '&quot;')}" style="display: inline-block; margin: 0 4px; vertical-align: middle;">${tempDiv.innerHTML}</span>`;
+          } catch (e) {
+            console.error('KaTeX渲染失败:', e);
+            return `<span class="katex-error" style="color: #F53F3F;">[公式错误]</span>`;
+          }
+        }
+        return match; // 如果找不到公式数据，保留原占位符
+      });
+
+      return result;
+    }
+
     // 执行导入
     function performImport(withScore, scores = {}) {
       try {
@@ -5491,12 +5533,12 @@ D. 指缝
             difficultyName: getDifficultyName(q.difficulty || 2),
             knowledgeIds: knowledgeIds,  // ID数组
             knowledgePath: knowledgePaths.join(' / '),  // 路径字符串
-            content: q.content,
+            content: replaceMediaPlaceholders(q.content),  // 替换图片和公式占位符
             tags: q.tags || [],
             createTime: timeStr,
             author: '简便录入',
             useCount: 0,
-            explanation: q.explanation || ''
+            explanation: replaceMediaPlaceholders(q.explanation || '')  // 替换图片和公式占位符
           };
 
           console.log('新题目对象:', newQuestion);
@@ -5504,7 +5546,11 @@ D. 指缝
 
           // 根据题型添加特定字段
           if (q.type === 'single' || q.type === 'multiple') {
-            newQuestion.options = q.options;
+            // 处理选项中的图片和公式
+            newQuestion.options = q.options.map(opt => ({
+              label: opt.label,
+              text: replaceMediaPlaceholders(opt.text)
+            }));
             // 单选题答案是单个字母，多选题答案是多个字母
             if (q.type === 'single') {
               newQuestion.correctAnswers = [q.answer];
@@ -5525,12 +5571,12 @@ D. 指缝
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'blank') {
-            // 填空题
+            // 填空题 - 处理答案中的图片和公式
             if (q.blankAnswers && q.blankAnswers.length > 0) {
               newQuestion.blanks = q.blankAnswers.map((ans, idx) => {
                 const blankObj = {
                   index: idx + 1,
-                  answer: ans.synonyms ? ans.synonyms.join('|||') : ans.text
+                  answer: ans.synonyms ? ans.synonyms.map(syn => replaceMediaPlaceholders(syn)).join('|||') : replaceMediaPlaceholders(ans.text)
                 };
 
                 // 添加分数（如果有）
@@ -5543,7 +5589,7 @@ D. 指缝
             } else {
               const blankObj = {
                 index: 1,
-                answer: q.answer
+                answer: replaceMediaPlaceholders(q.answer)
               };
 
               // 添加分数（如果有）
@@ -5554,15 +5600,15 @@ D. 指缝
               newQuestion.blanks = [blankObj];
             }
           } else if (q.type === 'shortAnswer') {
-            // 简答题
-            newQuestion.referenceAnswer = q.answer;
+            // 简答题 - 处理参考答案中的图片和公式
+            newQuestion.referenceAnswer = replaceMediaPlaceholders(q.answer);
 
             // 添加分数（如果有）
             if (withScore && scores[index] !== null && scores[index] !== undefined) {
               newQuestion.score = String(scores[index]);
             }
           } else if (q.type === 'cloze') {
-            // 完形填空
+            // 完形填空 - 处理子题选项中的图片和公式
             newQuestion.isComposite = true;
             newQuestion.subCount = q.clozeSubQuestions ? q.clozeSubQuestions.length : 0;
 
@@ -5571,7 +5617,10 @@ D. 指缝
               const answers = q.answer ? q.answer.split('').map(letter => letter.trim()).filter(l => l) : [];
               newQuestion.clozeSubQuestions = q.clozeSubQuestions.map((subQ, idx) => ({
                 index: subQ.index,
-                options: subQ.options,
+                options: subQ.options.map(opt => ({
+                  label: opt.label,
+                  text: replaceMediaPlaceholders(opt.text)
+                })),
                 correctAnswer: answers[idx] || ''
               }));
             }
@@ -5599,14 +5648,14 @@ D. 指缝
             newQuestion.isComposite = true;
             newQuestion.subCount = q.compositeSubQuestions ? q.compositeSubQuestions.length : 0;
 
-            // 转换子题
+            // 转换子题 - 处理子题中的图片和公式
             if (q.compositeSubQuestions) {
               newQuestion.subQuestions = q.compositeSubQuestions.map((subQ, subIdx) => {
                 const subQuestion = {
                   id: subIdx + 1,
                   type: subQ.type,
-                  content: subQ.content,
-                  explanation: subQ.explanation || ''
+                  content: replaceMediaPlaceholders(subQ.content),
+                  explanation: replaceMediaPlaceholders(subQ.explanation || '')
                 };
 
                 // 添加子题分数（如果有）
@@ -5615,7 +5664,11 @@ D. 指缝
                 }
 
                 if (subQ.type === 'single' || subQ.type === 'multiple') {
-                  subQuestion.options = subQ.options;
+                  // 处理子题选项中的图片和公式
+                  subQuestion.options = subQ.options.map(opt => ({
+                    label: opt.label,
+                    text: replaceMediaPlaceholders(opt.text)
+                  }));
                   // 单选题答案是单个字母，多选题答案是多个字母
                   if (subQ.type === 'single') {
                     subQuestion.correctAnswers = [subQ.answer];
@@ -5629,13 +5682,13 @@ D. 指缝
                   if (subQ.blankAnswers && subQ.blankAnswers.length > 0) {
                     subQuestion.blanks = subQ.blankAnswers.map((ans, idx) => ({
                       index: idx + 1,
-                      answer: ans.synonyms ? ans.synonyms.join('|||') : ans.text
+                      answer: ans.synonyms ? ans.synonyms.map(syn => replaceMediaPlaceholders(syn)).join('|||') : replaceMediaPlaceholders(ans.text)
                     }));
                   } else {
-                    subQuestion.answer = subQ.answer;
+                    subQuestion.answer = replaceMediaPlaceholders(subQ.answer);
                   }
                 } else if (subQ.type === 'shortAnswer') {
-                  subQuestion.referenceAnswer = subQ.answer;
+                  subQuestion.referenceAnswer = replaceMediaPlaceholders(subQ.answer);
                 }
 
                 return subQuestion;

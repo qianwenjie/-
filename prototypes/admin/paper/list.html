@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>试卷列表 - 考试系统</title>
+  <title>试卷管理 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
@@ -11,7 +11,7 @@
       theme: {
         extend: {
           colors: {
-            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            primary: { 50: '#E6F9F0', 100: '#C3F0DB', 500: '#00B96B', 600: '#00A35C' },
             success: { 50: '#E8FFEA', 500: '#00B42A' },
             warning: { 50: '#FFF7E8', 500: '#FF7D00' },
             error: { 50: '#FFECE8', 500: '#F53F3F' },
@@ -21,162 +21,595 @@
       }
     }
   </script>
+  <style>
+    .message-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+    }
+    .message-item {
+      padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex; align-items: center; gap: 10px; font-size: 14px;
+      animation: messageSlideIn 0.3s ease-out; pointer-events: auto;
+    }
+    .message-item.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .message-item.error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+    .message-item.warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+    .message-item.info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+    @keyframes messageSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes messageSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+  </style>
 </head>
 <body class="bg-gray-50">
-  <div class="min-h-screen">
-    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-      <div class="flex items-center justify-between h-full px-6">
-        <div class="flex items-center space-x-4">
+  <div id="messageContainer" class="message-container"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
           <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
             <i class="fas fa-graduation-cap text-white"></i>
           </div>
           <span class="text-xl font-semibold text-gray-900">考试系统</span>
-          <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <a href="#" class="hover:text-primary-500">首页</a>
-            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
-            <span class="text-gray-900 font-medium">试卷管理</span>
-          </nav>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">试卷管理</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <img src="https://via.placeholder.com/32" alt="头像" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="p-6">
+      <!-- 页面标题和操作 -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">试卷管理</h1>
+          <p class="mt-1 text-sm text-gray-500">管理所有试卷，支持文档模式和抽题模式组卷</p>
+        </div>
+        <button onclick="openCreatePaperModal()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-plus mr-2"></i>新增试卷
+        </button>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">试卷总数</p>
+              <p class="text-2xl font-bold text-gray-900" id="totalCount">0</p>
+            </div>
+            <div class="w-10 h-10 bg-info-50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-file-alt text-info-500"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">已发布</p>
+              <p class="text-2xl font-bold text-primary-500" id="publishedCount">0</p>
+            </div>
+            <div class="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-check-circle text-primary-500"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">草稿</p>
+              <p class="text-2xl font-bold text-warning-500" id="draftCount">0</p>
+            </div>
+            <div class="w-10 h-10 bg-warning-50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-edit text-warning-500"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-500">已使用</p>
+              <p class="text-2xl font-bold text-success-500" id="usedCount">0</p>
+            </div>
+            <div class="w-10 h-10 bg-success-50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-clipboard-check text-success-500"></i>
+            </div>
+          </div>
         </div>
       </div>
-    </header>
 
-    <main class="pt-16">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-semibold text-gray-900">试卷列表</h1>
-            <p class="mt-1 text-sm text-gray-500">管理和查看所有试卷</p>
-          </div>
-          <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
-            <i class="fas fa-plus mr-2"></i>创建试卷
+      <!-- 筛选区域 -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div class="flex items-center gap-4">
+          <input type="text" id="searchInput" placeholder="搜索试卷名称或编号..." class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+          <select id="filterStatus" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="published">已发布</option>
+          </select>
+          <select id="filterMode" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">全部模式</option>
+            <option value="document">文档模式</option>
+            <option value="extraction">抽题模式</option>
+          </select>
+          <button onclick="filterPapers()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-search mr-2"></i>筛选
+          </button>
+          <button onclick="resetFilter()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-redo mr-2"></i>重置
           </button>
         </div>
+      </div>
 
-        <!-- 筛选区域 -->
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <select class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option>全部状态</option>
-              <option>草稿</option>
-              <option>已发布</option>
-              <option>已归档</option>
-            </select>
-            <input type="text" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="搜索试卷...">
-            <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
-              <i class="fas fa-search mr-2"></i>查询
-            </button>
-          </div>
+      <!-- 试卷列表表格 -->
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷信息</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组卷模式</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目/总分</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用次数</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            </tr>
+          </thead>
+          <tbody id="paperList" class="divide-y divide-gray-200">
+          </tbody>
+        </table>
+        <div id="emptyState" class="hidden py-16 text-center">
+          <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 mb-4">暂无试卷数据</p>
+          <button onclick="window.location.href='add.html'" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <i class="fas fa-plus mr-2"></i>创建第一份试卷
+          </button>
+        </div>
+      </div>
+
+      <!-- 分页 -->
+      <div class="flex items-center justify-between mt-4">
+        <p class="text-sm text-gray-500">共 <span id="totalItems">0</span> 份试卷</p>
+        <div class="flex items-center space-x-2">
+          <button onclick="prevPage()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50" id="prevBtn" disabled>
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span class="px-3 py-1 text-sm text-gray-700">第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</span>
+          <button onclick="nextPage()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50" id="nextBtn" disabled>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 删除确认弹窗 -->
+  <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-96 max-w-[90%]">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 bg-error-50 rounded-full flex items-center justify-center">
+          <i class="fas fa-exclamation-triangle text-error-500"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900">确认删除</h3>
+      </div>
+      <p class="text-gray-600 mb-6">确定要删除试卷 "<span id="deletePaperName"></span>" 吗？此操作不可恢复。</p>
+      <div class="flex justify-end space-x-3">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">取消</button>
+        <button onclick="confirmDelete()" class="px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Message 组件
+    const Message = {
+      show(text, type = 'info', duration = 3000) {
+        const container = document.getElementById('messageContainer');
+        const item = document.createElement('div');
+        item.className = `message-item ${type}`;
+        const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+        item.innerHTML = `<i class="fas ${icons[type]}"></i><span>${text}</span>`;
+        container.appendChild(item);
+        setTimeout(() => { item.style.animation = 'messageSlideOut 0.3s ease-out forwards'; setTimeout(() => item.remove(), 300); }, duration);
+      },
+      success(text, duration) { this.show(text, 'success', duration); },
+      error(text, duration) { this.show(text, 'error', duration); },
+      warning(text, duration) { this.show(text, 'warning', duration); },
+      info(text, duration) { this.show(text, 'info', duration); }
+    };
+
+    // 数据
+    let allPapers = JSON.parse(localStorage.getItem('allPapers')) || [];
+    let filteredPapers = [];
+    let currentPage = 1;
+    const pageSize = 10;
+    let deleteTargetId = null;
+
+    // 初始化示例数据
+    function initDemoData() {
+      if (allPapers.length === 0) {
+        allPapers = [
+          { id: 'P001', code: 'EXAM-2026-001', name: '2026年计算机基础期末考试', mode: 'extraction', totalScore: 100, questionCount: 50, status: 'published', usageCount: 3, createTime: '2026-01-10 10:00', creator: '张老师' },
+          { id: 'P002', code: 'EXAM-2026-002', name: '数学期中测验卷', mode: 'document', totalScore: 80, questionCount: 30, status: 'draft', usageCount: 0, createTime: '2026-01-12 14:30', creator: '李老师' },
+          { id: 'P003', code: 'EXAM-2026-003', name: '英语词汇测试', mode: 'extraction', totalScore: 60, questionCount: 40, status: 'published', usageCount: 5, createTime: '2026-01-08 09:00', creator: '王老师' },
+          { id: 'P004', code: 'EXAM-2026-004', name: '物理力学单元测试', mode: 'document', totalScore: 100, questionCount: 25, status: 'published', usageCount: 2, createTime: '2026-01-15 16:00', creator: '赵老师' },
+          { id: 'P005', code: 'EXAM-2026-005', name: '化学实验操作考核', mode: 'extraction', totalScore: 50, questionCount: 20, status: 'draft', usageCount: 0, createTime: '2026-01-18 11:00', creator: '钱老师' }
+        ];
+        localStorage.setItem('allPapers', JSON.stringify(allPapers));
+      }
+    }
+
+    // 更新统计
+    function updateStats() {
+      const total = allPapers.length;
+      const published = allPapers.filter(p => p.status === 'published').length;
+      const draft = allPapers.filter(p => p.status === 'draft').length;
+      const used = allPapers.filter(p => p.usageCount > 0).length;
+      document.getElementById('totalCount').textContent = total;
+      document.getElementById('publishedCount').textContent = published;
+      document.getElementById('draftCount').textContent = draft;
+      document.getElementById('usedCount').textContent = used;
+    }
+
+    // 筛选
+    function filterPapers() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('filterStatus').value;
+      const mode = document.getElementById('filterMode').value;
+      filteredPapers = allPapers.filter(p => {
+        const matchSearch = !search || p.name.toLowerCase().includes(search) || p.code.toLowerCase().includes(search);
+        const matchStatus = !status || p.status === status;
+        const matchMode = !mode || p.mode === mode;
+        return matchSearch && matchStatus && matchMode;
+      });
+      currentPage = 1;
+      renderList();
+    }
+
+    function resetFilter() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterStatus').value = '';
+      document.getElementById('filterMode').value = '';
+      filteredPapers = [...allPapers];
+      currentPage = 1;
+      renderList();
+    }
+
+    // 渲染列表
+    function renderList() {
+      const tbody = document.getElementById('paperList');
+      const emptyState = document.getElementById('emptyState');
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredPapers.slice(start, end);
+
+      if (filteredPapers.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex', 'flex-col');
+      } else {
+        emptyState.classList.add('hidden');
+        tbody.innerHTML = pageData.map(p => createPaperRow(p)).join('');
+      }
+      updatePagination();
+      document.getElementById('totalItems').textContent = filteredPapers.length;
+    }
+
+    function createPaperRow(paper) {
+      const modeText = paper.mode === 'document' ? '文档模式' : '抽题模式';
+      const modeClass = paper.mode === 'document' ? 'bg-info-50 text-info-600' : 'bg-purple-50 text-purple-600';
+      const statusText = paper.status === 'published' ? '已发布' : '草稿';
+      const statusClass = paper.status === 'published' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-600';
+      const canDelete = paper.usageCount === 0;
+      return `
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-4">
+            <div class="font-medium text-gray-900">${paper.name}</div>
+            <div class="text-sm text-gray-500">${paper.code}</div>
+          </td>
+          <td class="px-4 py-4"><span class="px-2 py-1 rounded text-xs font-medium ${modeClass}">${modeText}</span></td>
+          <td class="px-4 py-4"><span class="text-gray-900">${paper.questionCount} 题</span><span class="text-gray-400 mx-1">/</span><span class="text-gray-900">${paper.totalScore} 分</span></td>
+          <td class="px-4 py-4"><span class="px-2 py-1 rounded text-xs font-medium ${statusClass}">${statusText}</span></td>
+          <td class="px-4 py-4 text-gray-600">${paper.usageCount} 次</td>
+          <td class="px-4 py-4 text-gray-500 text-sm">${paper.createTime}</td>
+          <td class="px-4 py-4 text-center">
+            <div class="flex items-center justify-center space-x-2">
+              <button onclick="previewPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded" title="预览"><i class="fas fa-eye"></i></button>
+              <button onclick="editPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-info-500 hover:bg-info-50 rounded" title="编辑"><i class="fas fa-edit"></i></button>
+              <button onclick="copyPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-warning-500 hover:bg-warning-50 rounded" title="复制"><i class="fas fa-copy"></i></button>
+              <button onclick="deletePaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-error-500 hover:bg-error-50 rounded ${canDelete ? '' : 'opacity-50 cursor-not-allowed'}" title="${canDelete ? '删除' : '已被使用，无法删除'}" ${canDelete ? '' : 'disabled'}><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>`;
+    }
+
+    // 分页
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredPapers.length / pageSize) || 1;
+      document.getElementById('currentPage').textContent = currentPage;
+      document.getElementById('totalPages').textContent = totalPages;
+      document.getElementById('prevBtn').disabled = currentPage <= 1;
+      document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+
+    function prevPage() { if (currentPage > 1) { currentPage--; renderList(); } }
+    function nextPage() { const totalPages = Math.ceil(filteredPapers.length / pageSize); if (currentPage < totalPages) { currentPage++; renderList(); } }
+
+    // 操作函数
+    function previewPaper(id) { Message.info('预览功能开发中...'); }
+    function editPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (paper) {
+        if (paper.mode === 'document') {
+          // 文档模式跳转到 document.html
+          window.location.href = `document.html?id=${id}`;
+        } else {
+          // 抽题模式跳转到 add.html
+          window.location.href = `add.html?id=${id}`;
+        }
+      }
+    }
+    function copyPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (paper) {
+        const newPaper = { ...paper, id: 'P' + Date.now(), code: 'EXAM-' + Date.now(), name: paper.name + ' (副本)', status: 'draft', usageCount: 0, createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-') };
+        allPapers.unshift(newPaper);
+        localStorage.setItem('allPapers', JSON.stringify(allPapers));
+        filteredPapers = [...allPapers];
+        updateStats();
+        renderList();
+        Message.success('试卷复制成功');
+      }
+    }
+
+    function deletePaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (paper && paper.usageCount > 0) { Message.warning('该试卷已被使用，无法删除'); return; }
+      deleteTargetId = id;
+      document.getElementById('deletePaperName').textContent = paper ? paper.name : '';
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+      deleteTargetId = null;
+    }
+
+    function confirmDelete() {
+      if (deleteTargetId) {
+        allPapers = allPapers.filter(p => p.id !== deleteTargetId);
+        localStorage.setItem('allPapers', JSON.stringify(allPapers));
+        filteredPapers = filteredPapers.filter(p => p.id !== deleteTargetId);
+        updateStats();
+        renderList();
+        Message.success('试卷删除成功');
+        closeDeleteModal();
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      initDemoData();
+      filteredPapers = [...allPapers];
+      updateStats();
+      renderList();
+    });
+
+    // ========== 创建试卷弹窗相关函数 ==========
+
+    // 生成试卷编号（格式：EXAM + YYYYMMDD + 序号）
+    function generatePaperCode() {
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+      const todayPapers = papers.filter(p => p.code && p.code.startsWith('EXAM' + today));
+      const seq = (todayPapers.length + 1).toString().padStart(3, '0');
+      return `EXAM${today}${seq}`;
+    }
+
+    // 打开创建试卷弹窗
+    function openCreatePaperModal() {
+      // 生成试卷编号
+      document.getElementById('modalPaperCode').value = generatePaperCode();
+      // 清空试卷名称
+      document.getElementById('modalPaperName').value = '';
+      // 重置总分
+      document.getElementById('modalTotalScore').value = '100';
+      // 默认选中文档模式
+      document.querySelector('input[name="paperMode"][value="document"]').checked = true;
+      // 显示弹窗
+      document.getElementById('createPaperModal').classList.remove('hidden');
+    }
+
+    // 关闭创建试卷弹窗
+    function closeCreatePaperModal() {
+      document.getElementById('createPaperModal').classList.add('hidden');
+    }
+
+    // 验证表单
+    function validatePaperForm() {
+      const name = document.getElementById('modalPaperName').value.trim();
+      const code = document.getElementById('modalPaperCode').value.trim();
+      const totalScore = parseInt(document.getElementById('modalTotalScore').value);
+      const mode = document.querySelector('input[name="paperMode"]:checked')?.value;
+
+      // 验证试卷名称
+      if (!name) {
+        showMessage('请输入试卷名称', 'error');
+        return false;
+      }
+
+      // 验证试卷编号
+      if (!code) {
+        showMessage('请输入试卷编号', 'error');
+        return false;
+      }
+
+      // 验证编号唯一性
+      const papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+      if (papers.some(p => p.code === code)) {
+        showMessage('试卷编号已存在，请使用其他编号', 'error');
+        return false;
+      }
+
+      // 验证试卷总分
+      if (!totalScore || totalScore <= 0) {
+        showMessage('试卷总分必须大于0', 'error');
+        return false;
+      }
+
+      // 验证组卷模式
+      if (!mode) {
+        showMessage('请选择组卷模式', 'error');
+        return false;
+      }
+
+      return true;
+    }
+
+    // 确认创建试卷
+    function confirmCreatePaper() {
+      // 验证表单
+      if (!validatePaperForm()) {
+        return;
+      }
+
+      const name = document.getElementById('modalPaperName').value.trim();
+      const code = document.getElementById('modalPaperCode').value.trim();
+      const totalScore = parseInt(document.getElementById('modalTotalScore').value);
+      const mode = document.querySelector('input[name="paperMode"]:checked').value;
+
+      // 检查抽题模式
+      if (mode === 'random') {
+        showMessage('抽题模式功能开发中，敬请期待', 'warning');
+        return;
+      }
+
+      // 生成唯一ID
+      const paperId = 'P' + Date.now() + Math.random().toString(36).substr(2, 9);
+
+      // 创建试卷数据
+      const paperData = {
+        id: paperId,
+        name: name,
+        code: code,
+        totalScore: totalScore,
+        mode: mode,
+        status: 'draft',
+        createTime: new Date().toISOString()
+      };
+
+      // 保存到 LocalStorage（用于 document.html 读取）
+      localStorage.setItem('currentPaper', JSON.stringify(paperData));
+
+      // 关闭弹窗
+      closeCreatePaperModal();
+
+      // 跳转到对应页面
+      if (mode === 'document') {
+        window.location.href = 'document.html';
+      } else {
+        // 其他模式暂未实现
+        showMessage('该模式暂未实现', 'warning');
+      }
+    }
+
+    // 点击遮罩层关闭弹窗
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('createPaperModal');
+      if (e.target === modal) {
+        closeCreatePaperModal();
+      }
+    });
+  </script>
+
+  <!-- 创建试卷弹窗 -->
+  <div id="createPaperModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+      <!-- 标题 -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">创建试卷</h3>
+      </div>
+
+      <!-- 表单 -->
+      <div class="px-6 py-4 space-y-4">
+        <!-- 试卷名称 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            试卷名称 <span class="text-red-500">*</span>
+          </label>
+          <input type="text" id="modalPaperName" placeholder="请输入试卷名称"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
         </div>
 
-        <!-- 试卷卡片列表 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900 flex-1">2026年计算机基础期末考试</h3>
-                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium ml-2">已发布</span>
-              </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
-                  <span>共 50 题</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-trophy w-5 text-gray-400"></i>
-                  <span>总分 100 分</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-clock w-5 text-gray-400"></i>
-                  <span>考试时长 120 分钟</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-calendar w-5 text-gray-400"></i>
-                  <span>创建时间 2026-01-10</span>
-                </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-eye mr-1"></i>预览
-                </button>
-                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-edit mr-1"></i>编辑
-                </button>
-              </div>
-            </div>
-          </div>
+        <!-- 试卷编号 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            试卷编号 <span class="text-red-500">*</span>
+          </label>
+          <input type="text" id="modalPaperCode" placeholder="自动生成或手动输入"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <p class="mt-1 text-xs text-gray-500">系统已自动生成编号，您也可以手动修改</p>
+        </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900 flex-1">数学期中测验卷</h3>
-                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium ml-2">草稿</span>
-              </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
-                  <span>共 30 题</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-trophy w-5 text-gray-400"></i>
-                  <span>总分 80 分</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-clock w-5 text-gray-400"></i>
-                  <span>考试时长 90 分钟</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-calendar w-5 text-gray-400"></i>
-                  <span>创建时间 2026-01-12</span>
-                </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-eye mr-1"></i>预览
-                </button>
-                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-edit mr-1"></i>编辑
-                </button>
-              </div>
-            </div>
-          </div>
+        <!-- 试卷总分 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            试卷总分 <span class="text-red-500">*</span>
+          </label>
+          <input type="number" id="modalTotalScore" value="100" min="1"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900 flex-1">英语词汇测试</h3>
-                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium ml-2">已发布</span>
+        <!-- 组卷模式 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            组卷模式 <span class="text-red-500">*</span>
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 transition-colors">
+              <input type="radio" name="paperMode" value="document" checked
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500">
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">文档模式</div>
+                <div class="text-xs text-gray-500">上传 PDF/Word 文档，设置答题卡</div>
               </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-list-ul w-5 text-gray-400"></i>
-                  <span>共 40 题</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-trophy w-5 text-gray-400"></i>
-                  <span>总分 60 分</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-clock w-5 text-gray-400"></i>
-                  <span>考试时长 60 分钟</span>
-                </div>
-                <div class="flex items-center text-sm text-gray-600">
-                  <i class="fas fa-calendar w-5 text-gray-400"></i>
-                  <span>创建时间 2026-01-08</span>
-                </div>
+            </label>
+            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 transition-colors">
+              <input type="radio" name="paperMode" value="random"
+                class="w-4 h-4 text-primary-500 focus:ring-primary-500">
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">抽题模式</div>
+                <div class="text-xs text-gray-500">从题库中按规则抽取题目组卷</div>
               </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 hover:bg-primary-100 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-eye mr-1"></i>预览
-                </button>
-                <button class="flex-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  <i class="fas fa-edit mr-1"></i>编辑
-                </button>
-              </div>
-            </div>
+            </label>
           </div>
         </div>
       </div>
-    </main>
+
+      <!-- 按钮 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button onclick="closeCreatePaperModal()"
+          class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          取消
+        </button>
+        <button onclick="confirmCreatePaper()"
+          class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+          确定
+        </button>
+      </div>
+    </div>
   </div>
+
 </body>
 </html>

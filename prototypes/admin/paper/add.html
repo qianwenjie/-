@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增试卷 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 100: '#C3F0DB', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .message-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+    .message-item { padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; font-size: 14px; animation: messageSlideIn 0.3s ease-out; pointer-events: auto; }
+    .message-item.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .message-item.error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+    .message-item.warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+    .message-item.info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+    @keyframes messageSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes messageSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+    .mode-card { transition: all 0.2s; cursor: pointer; }
+    .mode-card:hover { border-color: #00B96B; }
+    .mode-card.active { border-color: #00B96B; background-color: #E6F9F0; }
+    .step-item { transition: all 0.2s; }
+    .step-item.active { color: #00B96B; }
+    .step-item.completed { color: #00B42A; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="messageContainer" class="message-container"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">试卷管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium" id="pageTitle">新增试卷</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+          <i class="fas fa-save mr-2"></i>保存草稿
+        </button>
+        <button onclick="publishPaper()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+          <i class="fas fa-paper-plane mr-2"></i>发布试卷
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="flex">
+      <!-- 左侧步骤导航 -->
+      <aside class="w-64 min-h-[calc(100vh-64px)] bg-white border-r border-gray-200 p-6 fixed left-0 top-16">
+        <h3 class="text-sm font-medium text-gray-500 mb-4">组卷步骤</h3>
+        <div class="space-y-4">
+          <div class="step-item active flex items-center space-x-3 cursor-pointer" onclick="goToStep(1)" data-step="1">
+            <div class="step-circle w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center text-sm font-medium">1</div>
+            <span class="step-text font-medium">基础信息</span>
+          </div>
+          <div class="step-item flex items-center space-x-3 cursor-pointer text-gray-400" onclick="goToStep(2)" data-step="2">
+            <div class="step-circle w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">2</div>
+            <span class="step-text font-medium">选择模式</span>
+          </div>
+          <div class="step-item flex items-center space-x-3 cursor-pointer text-gray-400" onclick="goToStep(3)" data-step="3">
+            <div class="step-circle w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">3</div>
+            <span class="step-text font-medium">组卷内容</span>
+          </div>
+          <div class="step-item flex items-center space-x-3 cursor-pointer text-gray-400" onclick="goToStep(4)" data-step="4">
+            <div class="step-circle w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">4</div>
+            <span class="step-text font-medium">预览确认</span>
+          </div>
+        </div>
+
+        <!-- 试卷信息摘要 -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <h4 class="text-sm font-medium text-gray-500 mb-3">试卷摘要</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between"><span class="text-gray-500">试卷名称</span><span class="font-medium text-gray-900" id="summaryName">--</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">试卷编号</span><span class="font-medium text-gray-900" id="summaryCode">--</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">试卷总分</span><span class="font-medium text-gray-900" id="summaryScore">--</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">组卷模式</span><span class="font-medium text-gray-900" id="summaryMode">--</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右侧内容区 -->
+      <div class="ml-64 flex-1 p-6">
+        <!-- 步骤1: 基础信息 -->
+        <div id="step1" class="step-content">
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">基础信息</h2>
+            <div class="space-y-6 max-w-2xl">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">试卷名称 <span class="text-error-500">*</span></label>
+                <input type="text" id="paperName" placeholder="请输入试卷名称" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">试卷编号 <span class="text-error-500">*</span></label>
+                <input type="text" id="paperCode" placeholder="系统自动生成" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">总分要求 <span class="text-error-500">*</span></label>
+                <input type="number" id="totalScore" placeholder="请输入试卷总分" min="1" max="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                <p class="mt-1 text-sm text-gray-500">组卷完成后，题目分数总和必须等于此值</p>
+              </div>
+              <div class="flex justify-end pt-4">
+                <button onclick="nextStep()" class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+                  下一步 <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤2: 选择模式 -->
+        <div id="step2" class="step-content hidden">
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">选择组卷模式</h2>
+            <div class="grid grid-cols-2 gap-6 max-w-3xl">
+              <div class="mode-card border-2 border-gray-200 rounded-xl p-6 cursor-pointer hover:border-primary-300 transition-colors" onclick="selectMode('document', this)" id="modeDocument">
+                <div class="flex items-center space-x-4 mb-4">
+                  <div class="w-12 h-12 bg-info-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-file-upload text-info-500 text-xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-gray-900">文档模式</h3>
+                    <p class="text-sm text-gray-500">上传试卷文档</p>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">上传 PDF 或 Word 文档，手动设置题型、答案和分数。</p>
+                <ul class="text-sm text-gray-500 space-y-1">
+                  <li><i class="fas fa-check text-primary-500 mr-2"></i>支持 PDF、Word 格式</li>
+                  <li><i class="fas fa-check text-primary-500 mr-2"></i>手动设置题目信息</li>
+                </ul>
+              </div>
+              <div class="mode-card border-2 border-gray-200 rounded-xl p-6 cursor-pointer hover:border-primary-300 transition-colors" onclick="selectMode('extraction', this)" id="modeExtraction">
+                <div class="flex items-center space-x-4 mb-4">
+                  <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-random text-purple-500 text-xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-gray-900">抽题模式</h3>
+                    <p class="text-sm text-gray-500">从题库选题组卷</p>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">从题库中选择固定题目或设置随机抽题规则。</p>
+                <ul class="text-sm text-gray-500 space-y-1">
+                  <li><i class="fas fa-check text-primary-500 mr-2"></i>固定题目 / 随机抽题</li>
+                  <li><i class="fas fa-check text-primary-500 mr-2"></i>支持个性化试卷</li>
+                </ul>
+              </div>
+            </div>
+            <div class="flex justify-between pt-6 max-w-3xl">
+              <button onclick="prevStep()" class="px-6 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>上一步
+              </button>
+              <button onclick="nextStep()" id="step2NextBtn" class="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed" disabled>
+                下一步 <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤3: 组卷内容 -->
+        <div id="step3" class="step-content hidden">
+          <!-- 文档模式内容 -->
+          <div id="documentModeContent" class="hidden">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">上传试卷文档</h2>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600 mb-2">拖拽文件到此处，或点击上传</p>
+                <p class="text-sm text-gray-400 mb-4">支持 PDF、Word (.docx/.doc) 格式</p>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx" class="hidden" onchange="handleFileUpload(event)">
+                <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+                  <i class="fas fa-upload mr-2"></i>选择文件
+                </button>
+              </div>
+              <div id="uploadedFile" class="hidden mt-4 p-4 bg-gray-50 rounded-lg flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <i class="fas fa-file-pdf text-2xl text-error-500"></i>
+                  <div>
+                    <p class="font-medium text-gray-900" id="fileName">文件名.pdf</p>
+                    <p class="text-sm text-gray-500" id="fileSize">1.2 MB</p>
+                  </div>
+                </div>
+                <button onclick="removeFile()" class="text-gray-400 hover:text-error-500"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+            <!-- 题型设置 -->
+            <div id="questionTypeSettings" class="bg-white rounded-lg border border-gray-200 p-6 mb-6 hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">题型设置</h2>
+                <button onclick="showAddQuestionTypeModal()" class="px-4 py-2 border border-primary-500 text-primary-500 rounded-lg text-sm font-medium hover:bg-primary-50">
+                  <i class="fas fa-plus mr-2"></i>添加题型
+                </button>
+              </div>
+              <div id="questionTypesList" class="space-y-3 mb-4">
+                <p class="text-gray-500 text-center py-4">暂无题型，请点击上方按钮添加</p>
+              </div>
+              <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <div class="flex items-center space-x-6 text-sm">
+                  <span class="text-gray-600">总题数: <span class="font-bold text-gray-900" id="documentTotalCount">0</span> 题</span>
+                  <span class="text-gray-600">计算总分: <span class="font-bold text-primary-600" id="documentCalculatedScore">0</span> 分</span>
+                </div>
+                <span class="text-sm text-gray-500">试卷总分: <span class="font-bold text-gray-900" id="documentTargetScore">100</span> 分</span>
+              </div>
+            </div>
+
+            <!-- 答案设置 -->
+            <div id="answerSettings" class="bg-white rounded-lg border border-gray-200 p-6 hidden">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">答案设置</h2>
+              <div class="space-y-3">
+                <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="answerOption" value="none" checked onchange="updateAnswerOption()" class="w-4 h-4 text-primary-500">
+                  <div class="ml-3">
+                    <p class="font-medium text-gray-900">不包含答案</p>
+                    <p class="text-sm text-gray-500">试卷中不显示答案</p>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="answerOption" value="inline" onchange="updateAnswerOption()" class="w-4 h-4 text-primary-500">
+                  <div class="ml-3">
+                    <p class="font-medium text-gray-900">答案在题目后</p>
+                    <p class="text-sm text-gray-500">每道题目后直接显示答案</p>
+                  </div>
+                </label>
+                <label class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="answerOption" value="separate" onchange="updateAnswerOption()" class="w-4 h-4 text-primary-500">
+                  <div class="ml-3">
+                    <p class="font-medium text-gray-900">答案单独页面</p>
+                    <p class="text-sm text-gray-500">答案在试卷末尾单独显示</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 抽题模式内容 -->
+          <div id="extractionModeContent" class="hidden">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">选择题目</h2>
+                <div class="flex items-center space-x-2">
+                  <button onclick="showFixedQuestions()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium" id="fixedBtn">固定题目</button>
+                  <button onclick="showRandomRules()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium" id="randomBtn">随机抽题</button>
+                </div>
+              </div>
+              <!-- 固定题目选择 -->
+              <div id="fixedQuestionsPanel">
+                <div class="flex items-center space-x-4 mb-4">
+                  <select id="filterQuestionType" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">全部题型</option>
+                    <option value="single">单选题</option>
+                    <option value="multiple">多选题</option>
+                    <option value="judge">判断题</option>
+                    <option value="fill">填空题</option>
+                    <option value="essay">简答题</option>
+                  </select>
+                  <input type="text" placeholder="搜索题目..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" id="searchQuestion">
+                  <button onclick="searchQuestions()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="questionList" class="border border-gray-200 rounded-lg max-h-80 overflow-y-auto">
+                  <div class="p-4 text-center text-gray-500">从题库加载题目中...</div>
+                </div>
+              </div>
+              <!-- 随机抽题规则 -->
+              <div id="randomRulesPanel" class="hidden">
+                <div class="mb-4">
+                  <button onclick="addRandomRule()" class="px-4 py-2 border border-primary-500 text-primary-500 rounded-lg text-sm font-medium hover:bg-primary-50">
+                    <i class="fas fa-plus mr-2"></i>添加抽题规则
+                  </button>
+                </div>
+                <div id="randomRulesList" class="space-y-4">
+                  <p class="text-gray-500 text-center py-4">暂无抽题规则，请点击上方按钮添加</p>
+                </div>
+              </div>
+            </div>
+            <!-- 已选题目 -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">已选题目 (<span id="selectedCount">0</span>)</h2>
+                <span class="text-sm">当前总分: <span class="font-bold text-primary-500" id="currentTotalScore">0</span> / <span id="targetTotalScore">--</span> 分</span>
+              </div>
+              <div id="selectedQuestions" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">暂未选择题目</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between pt-6">
+            <button onclick="prevStep()" class="px-6 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+              <i class="fas fa-arrow-left mr-2"></i>上一步
+            </button>
+            <button onclick="nextStep()" class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+              下一步 <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 步骤4: 预览确认 -->
+        <div id="step4" class="step-content hidden">
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">试卷预览</h2>
+            <div class="border border-gray-200 rounded-lg p-6 mb-6">
+              <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <h3 class="text-xl font-bold text-gray-900" id="previewName">试卷名称</h3>
+                  <p class="text-sm text-gray-500 mt-1">编号: <span id="previewCode">--</span></p>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm text-gray-500">总分</p>
+                  <p class="text-2xl font-bold text-primary-500"><span id="previewScore">0</span> 分</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                  <p class="text-sm text-gray-500">题目数量</p>
+                  <p class="text-xl font-bold text-gray-900" id="previewQuestionCount">0</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                  <p class="text-sm text-gray-500">组卷模式</p>
+                  <p class="text-xl font-bold text-gray-900" id="previewMode">--</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 text-center">
+                  <p class="text-sm text-gray-500">状态</p>
+                  <p class="text-xl font-bold text-warning-500">草稿</p>
+                </div>
+              </div>
+              <div id="previewQuestions" class="space-y-4">
+                <p class="text-gray-500 text-center py-4">暂无题目</p>
+              </div>
+            </div>
+            <div class="flex justify-between">
+              <button onclick="prevStep()" class="px-6 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>上一步
+              </button>
+              <div class="flex space-x-3">
+                <button onclick="saveDraft()" class="px-6 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+                  <i class="fas fa-save mr-2"></i>保存草稿
+                </button>
+                <button onclick="publishPaper()" class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+                  <i class="fas fa-paper-plane mr-2"></i>发布试卷
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- 添加题型弹窗 -->
+  <div id="addQuestionTypeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">选择题型</h3>
+        <button onclick="closeAddQuestionTypeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">题型</label>
+          <select id="modalQuestionType" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="">请选择题型</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">题目数量</label>
+            <input type="number" id="modalQuestionCount" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">每题分值</label>
+            <input type="number" id="modalQuestionScore" value="2" min="0.5" step="0.5" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-3 p-6 border-t border-gray-200">
+        <button onclick="closeAddQuestionTypeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="confirmAddQuestionType()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">
+          确定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 错误日志和调试工具 ==========
+
+    // 全局错误捕获
+    window.addEventListener('error', function(event) {
+      console.error('❌ [全局错误]', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+        stack: event.error ? event.error.stack : null
+      });
+    });
+
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('❌ [未处理的Promise拒绝]', event.reason);
+    });
+
+    // 日志工具
+    const Logger = {
+      log: (funcName, message, data) => {
+        console.log(`✅ [${funcName}] ${message}`, data !== undefined ? data : '');
+      },
+      warn: (funcName, message, data) => {
+        console.warn(`⚠️ [${funcName}] ${message}`, data !== undefined ? data : '');
+      },
+      error: (funcName, message, data) => {
+        console.error(`❌ [${funcName}] ${message}`, data !== undefined ? data : '');
+      }
+    };
+
+    // DOM 元素安全获取
+    const safeGetElement = (id, funcName) => {
+      const element = document.getElementById(id);
+      if (!element) {
+        Logger.error(funcName, `找不到元素: #${id}`);
+      }
+      return element;
+    };
+
+    // Message 消息提示组件
+    const Message = {
+      show(message, type = 'success') {
+        const container = document.getElementById('messageContainer');
+        const id = 'msg-' + Date.now();
+        const icons = {
+          success: 'fa-check-circle',
+          error: 'fa-times-circle',
+          warning: 'fa-exclamation-circle',
+          info: 'fa-info-circle'
+        };
+        const colors = {
+          success: 'bg-green-50 text-green-800 border-green-200',
+          error: 'bg-red-50 text-red-800 border-red-200',
+          warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+          info: 'bg-blue-50 text-blue-800 border-blue-200'
+        };
+
+        const messageEl = document.createElement('div');
+        messageEl.id = id;
+        messageEl.className = `flex items-center space-x-3 px-4 py-3 rounded-lg border ${colors[type]} shadow-sm animate-slide-in`;
+        messageEl.innerHTML = `
+          <i class="fas ${icons[type]}"></i>
+          <span>${message}</span>
+        `;
+
+        container.appendChild(messageEl);
+
+        setTimeout(() => {
+          messageEl.classList.add('animate-slide-out');
+          setTimeout(() => messageEl.remove(), 300);
+        }, 3000);
+      }
+    };
+
+    // 全局状态
+    let currentStep = 1;
+    let paperData = {
+      name: '',
+      code: '',
+      totalScore: 100,
+      mode: '', // 'document' 或 'extraction'
+      file: null,
+      questionTypes: [],      // 文档模式：题型列表
+      answerOption: 'none',   // 文档模式：答案选项
+      fixedQuestions: [],     // 抽题模式：固定题目
+      randomRules: []         // 抽题模式：随机规则
+    };
+    let uploadedFile = null;
+
+    // 题型配置（与题库模块保持一致）
+    const defaultQuestionTypes = [
+      { id: 'single', name: '单选题', icon: 'fa-dot-circle', color: 'info' },
+      { id: 'multiple', name: '多选题', icon: 'fa-check-double', color: 'success' },
+      { id: 'judge', name: '判断题', icon: 'fa-check-circle', color: 'success' },
+      { id: 'blank', name: '填空题', icon: 'fa-keyboard', color: 'warning' },
+      { id: 'cloze', name: '完形填空', icon: 'fa-layer-group', color: 'indigo' },
+      { id: 'shortAnswer', name: '简答题', icon: 'fa-align-left', color: 'teal' },
+      { id: 'composite', name: '复合题', icon: 'fa-list-alt', color: 'purple' }
+    ];
+
+
+    // 步骤导航
+    function goToStep(step) {
+      try {
+        Logger.log('goToStep', `开始执行 - 目标步骤: ${step}, 当前步骤: ${currentStep}`);
+
+        // 验证当前步骤
+        if (step > currentStep) {
+          Logger.log('goToStep', '需要验证当前步骤');
+          if (currentStep === 1 && !validateStep1()) {
+            Logger.warn('goToStep', '步骤1验证失败');
+            return;
+          }
+          if (currentStep === 2 && !validateStep2()) {
+            Logger.warn('goToStep', '步骤2验证失败');
+            return;
+          }
+          if (currentStep === 3 && !validateStep3()) {
+            Logger.warn('goToStep', '步骤3验证失败');
+            return;
+          }
+          Logger.log('goToStep', '步骤验证通过');
+        }
+
+        // 隐藏所有步骤
+        const allSteps = document.querySelectorAll('[id^="step"]');
+        Logger.log('goToStep', `找到步骤内容元素数量: ${allSteps.length}`);
+        allSteps.forEach(el => {
+          el.classList.add('hidden');
+        });
+
+        // 显示目标步骤
+        const targetStep = document.getElementById('step' + step);
+        if (!targetStep) {
+          Logger.error('goToStep', `找不到目标步骤元素: #step${step}`);
+          return;
+        }
+        targetStep.classList.remove('hidden');
+        Logger.log('goToStep', `已显示步骤${step}`);
+
+        // 更新侧边栏步骤状态
+        const stepItems = document.querySelectorAll('.step-item');
+        Logger.log('goToStep', `找到步骤导航元素数量: ${stepItems.length}`);
+
+        stepItems.forEach((item, index) => {
+          const stepNum = index + 1;
+          const circle = item.querySelector('.step-circle');
+          const text = item.querySelector('.step-text');
+
+          if (!circle) {
+            Logger.error('goToStep', `步骤${stepNum}缺少.step-circle元素`, item);
+            return;
+          }
+          if (!text) {
+            Logger.error('goToStep', `步骤${stepNum}缺少.step-text元素`, item);
+            return;
+          }
+
+          if (stepNum < step) {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary-500 text-white';
+            text.className = 'step-text text-sm font-medium text-gray-900';
+          } else if (stepNum === step) {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary-500 text-white';
+            text.className = 'step-text text-sm font-medium text-primary-600';
+          } else {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-600';
+            text.className = 'step-text text-sm font-medium text-gray-500';
+          }
+        });
+
+        currentStep = step;
+        Logger.log('goToStep', `当前步骤已更新为: ${currentStep}`);
+
+        // 如果是预览步骤，生成预览
+        if (step === 4) {
+          Logger.log('goToStep', '调用generatePreview()');
+          generatePreview();
+        }
+
+        // 更新试卷摘要
+        Logger.log('goToStep', '调用updatePaperSummary()');
+        updatePaperSummary();
+
+        Logger.log('goToStep', '执行完成');
+      } catch (error) {
+        Logger.error('goToStep', '发生异常', error);
+        console.error(error.stack);
+        Message.show('步骤切换失败：' + error.message, 'error');
+      }
+    }
+
+    function nextStep() {
+      if (currentStep < 4) {
+        goToStep(currentStep + 1);
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    // 步骤验证
+    function validateStep1() {
+      const name = document.getElementById('paperName').value.trim();
+      const code = document.getElementById('paperCode').value.trim();
+      const totalScore = document.getElementById('totalScore').value;
+
+      if (!name) {
+        Message.show('请输入试卷名称', 'warning');
+        return false;
+      }
+      if (!code) {
+        Message.show('请输入试卷编号', 'warning');
+        return false;
+      }
+      if (!totalScore || totalScore <= 0) {
+        Message.show('请输入有效的总分', 'warning');
+        return false;
+      }
+
+      paperData.name = name;
+      paperData.code = code;
+      paperData.totalScore = parseInt(totalScore);
+      return true;
+    }
+
+    function validateStep2() {
+      if (!paperData.mode) {
+        Message.show('请选择组卷模式', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    function validateStep3() {
+      if (paperData.mode === 'document') {
+        // 文档模式验证
+        if (!uploadedFile) {
+          Message.show('请上传试卷文件', 'warning');
+          return false;
+        }
+        if (paperData.questionTypes.length === 0) {
+          Message.show('请至少添加一个题型', 'warning');
+          return false;
+        }
+        // 检查总分是否超标
+        const calculatedScore = paperData.questionTypes.reduce((sum, qt) => sum + (qt.count * qt.scorePerQuestion), 0);
+        if (calculatedScore > paperData.totalScore) {
+          Message.show(`题型总分 ${calculatedScore.toFixed(1)} 分超过试卷总分 ${paperData.totalScore} 分`, 'warning');
+          return false;
+        }
+      } else if (paperData.mode === 'extraction') {
+        // 抽题模式验证
+        const extractionMode = document.querySelector('input[name="extractionMode"]:checked')?.value;
+        if (extractionMode === 'fixed' && paperData.fixedQuestions.length === 0) {
+          Message.show('请至少选择一道题目', 'warning');
+          return false;
+        }
+        if (extractionMode === 'random' && paperData.randomRules.length === 0) {
+          Message.show('请至少添加一条抽题规则', 'warning');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // 模式选择
+    function selectMode(mode, element) {
+      try {
+        Logger.log('selectMode', `开始执行 - 模式: ${mode}`, element);
+
+        paperData.mode = mode;
+        Logger.log('selectMode', `paperData.mode已设置为: ${paperData.mode}`);
+
+        // 更新卡片样式
+        const modeCards = document.querySelectorAll('.mode-card');
+        Logger.log('selectMode', `找到模式卡片数量: ${modeCards.length}`);
+
+        modeCards.forEach(card => {
+          card.classList.remove('border-primary-500', 'bg-primary-50');
+          card.classList.add('border-gray-200');
+        });
+
+        if (element) {
+          element.classList.remove('border-gray-200');
+          element.classList.add('border-primary-500', 'bg-primary-50');
+          Logger.log('selectMode', '已更新选中卡片样式');
+        } else {
+          Logger.warn('selectMode', 'element参数为空');
+        }
+
+        // 显示对应的内容面板
+        const docContent = safeGetElement('documentModeContent', 'selectMode');
+        const extContent = safeGetElement('extractionModeContent', 'selectMode');
+
+        if (mode === 'document') {
+          if (docContent) docContent.classList.remove('hidden');
+          if (extContent) extContent.classList.add('hidden');
+          Logger.log('selectMode', '已显示文档模式内容');
+        } else {
+          if (docContent) docContent.classList.add('hidden');
+          if (extContent) extContent.classList.remove('hidden');
+          Logger.log('selectMode', '已显示抽题模式内容');
+          // 默认显示固定选题
+          showFixedQuestions();
+        }
+
+        // 启用下一步按钮
+        const nextBtn = safeGetElement('step2NextBtn', 'selectMode');
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+          nextBtn.classList.add('bg-primary-500', 'hover:bg-primary-600', 'text-white');
+
+          // 强制确保按钮可见（防御性编程）
+          nextBtn.style.display = 'inline-block';
+          nextBtn.style.visibility = 'visible';
+          nextBtn.style.opacity = '1';
+          nextBtn.style.position = 'relative';
+          nextBtn.style.zIndex = '10';
+
+          Logger.log('selectMode', '下一步按钮已启用并强制显示');
+        }
+
+        // 更新试卷摘要
+        Logger.log('selectMode', '调用updatePaperSummary()');
+        updatePaperSummary();
+
+        // 显示成功提示
+        const modeText = mode === 'document' ? '文档组卷' : '抽题组卷';
+        Message.show(`${modeText}模式已选择，请点击下一步继续`, 'success');
+
+        Logger.log('selectMode', '执行完成');
+      } catch (error) {
+        Logger.error('selectMode', '发生异常', error);
+        console.error(error.stack);
+        Message.show('模式选择失败：' + error.message, 'error');
+      }
+    }
+
+    // 文件上传
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        Message.show('仅支持 PDF 和 Word 文档', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        Message.show('文件大小不能超过 10MB', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      uploadedFile = file;
+      paperData.file = file;
+
+      // 显示文件信息
+      const fileIcon = file.type === 'application/pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-word text-blue-500';
+      const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+
+      document.getElementById('uploadArea').classList.add('hidden');
+      document.getElementById('fileInfo').classList.remove('hidden');
+      document.getElementById('fileIcon').className = `fas ${fileIcon} text-3xl`;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = fileSize;
+
+      // 显示题型设置和答案设置区域
+      showQuestionTypeSettings();
+
+      Message.show('文件上传成功', 'success');
+    }
+
+    function removeFile() {
+      uploadedFile = null;
+      paperData.file = null;
+      paperData.questionTypes = [];
+      paperData.answerOption = 'none';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('uploadArea').classList.remove('hidden');
+      document.getElementById('fileInfo').classList.add('hidden');
+
+      // 隐藏题型设置和答案设置
+      document.getElementById('questionTypeSettings').classList.add('hidden');
+      document.getElementById('answerSettings').classList.add('hidden');
+
+      Message.show('文件已移除', 'info');
+    }
+
+    // ========== 文档模式：题型管理 ==========
+
+    // 显示题型设置区域
+    function showQuestionTypeSettings() {
+      document.getElementById('questionTypeSettings').classList.remove('hidden');
+      document.getElementById('answerSettings').classList.remove('hidden');
+      document.getElementById('documentTargetScore').textContent = paperData.totalScore;
+    }
+
+    // 显示添加题型弹窗
+    function showAddQuestionTypeModal() {
+      const modal = document.getElementById('addQuestionTypeModal');
+      const select = document.getElementById('modalQuestionType');
+
+      // 清空并填充题型选项
+      select.innerHTML = '<option value="">请选择题型</option>';
+
+      // 获取已添加的题型ID
+      const addedTypeIds = paperData.questionTypes.map(qt => qt.type);
+
+      // 只显示未添加的题型
+      defaultQuestionTypes.forEach(type => {
+        if (!addedTypeIds.includes(type.id)) {
+          const option = document.createElement('option');
+          option.value = type.id;
+          option.textContent = type.name;
+          select.appendChild(option);
+        }
+      });
+
+      // 重置表单
+      document.getElementById('modalQuestionCount').value = '1';
+      document.getElementById('modalQuestionScore').value = '2';
+
+      // 显示弹窗
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // 关闭添加题型弹窗
+    function closeAddQuestionTypeModal() {
+      const modal = document.getElementById('addQuestionTypeModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // 确认添加题型
+    function confirmAddQuestionType() {
+      const typeId = document.getElementById('modalQuestionType').value;
+      const count = parseInt(document.getElementById('modalQuestionCount').value);
+      const score = parseFloat(document.getElementById('modalQuestionScore').value);
+
+      if (!typeId) {
+        Message.show('请选择题型', 'warning');
+        return;
+      }
+      if (!count || count <= 0) {
+        Message.show('题目数量必须大于0', 'warning');
+        return;
+      }
+      if (!score || score <= 0) {
+        Message.show('分值必须大于0', 'warning');
+        return;
+      }
+
+      // 查找题型信息
+      const typeInfo = defaultQuestionTypes.find(t => t.id === typeId);
+      if (!typeInfo) return;
+
+      // 添加到题型列表
+      const questionType = {
+        id: 'qt-' + Date.now(),
+        type: typeId,
+        typeName: typeInfo.name,
+        icon: typeInfo.icon,
+        color: typeInfo.color,
+        count: count,
+        scorePerQuestion: score
+      };
+
+      paperData.questionTypes.push(questionType);
+      renderQuestionTypes();
+      updateDocumentSummary();
+      closeAddQuestionTypeModal();
+
+      Message.show('题型添加成功', 'success');
+    }
+
+    // 渲染题型列表
+    function renderQuestionTypes() {
+      const container = document.getElementById('questionTypesList');
+
+      if (paperData.questionTypes.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无题型，请点击上方按钮添加</p>';
+        return;
+      }
+
+      container.innerHTML = paperData.questionTypes.map((qt, index) => `
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="flex items-center space-x-4 flex-1">
+            <div class="w-10 h-10 rounded-lg bg-${qt.color}-100 text-${qt.color}-600 flex items-center justify-center">
+              <i class="fas ${qt.icon}"></i>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-gray-900">${qt.typeName}</p>
+              <div class="flex items-center space-x-4 mt-1">
+                <div class="flex items-center space-x-2">
+                  <label class="text-sm text-gray-500">题目数量:</label>
+                  <input type="number" value="${qt.count}" min="1"
+                    onchange="updateQuestionTypeCount(${index}, this.value)"
+                    class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <div class="flex items-center space-x-2">
+                  <label class="text-sm text-gray-500">每题分值:</label>
+                  <input type="number" value="${qt.scorePerQuestion}" min="0.5" step="0.5"
+                    onchange="updateQuestionTypeScore(${index}, this.value)"
+                    class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <span class="text-sm text-gray-500">小计: <span class="font-medium text-primary-600">${(qt.count * qt.scorePerQuestion).toFixed(1)}</span> 分</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="removeQuestionType(${index})" class="ml-4 text-gray-400 hover:text-red-500">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // 更新题型数量
+    function updateQuestionTypeCount(index, value) {
+      const count = parseInt(value);
+      if (count > 0) {
+        paperData.questionTypes[index].count = count;
+        renderQuestionTypes();
+        updateDocumentSummary();
+      }
+    }
+
+    // 更新题型分值
+    function updateQuestionTypeScore(index, value) {
+      const score = parseFloat(value);
+      if (score > 0) {
+        paperData.questionTypes[index].scorePerQuestion = score;
+        renderQuestionTypes();
+        updateDocumentSummary();
+      }
+    }
+
+    // 删除题型
+    function removeQuestionType(index) {
+      paperData.questionTypes.splice(index, 1);
+      renderQuestionTypes();
+      updateDocumentSummary();
+      Message.show('题型已删除', 'info');
+    }
+
+    // 更新文档模式统计信息
+    function updateDocumentSummary() {
+      const totalCount = paperData.questionTypes.reduce((sum, qt) => sum + qt.count, 0);
+      const calculatedScore = paperData.questionTypes.reduce((sum, qt) => sum + (qt.count * qt.scorePerQuestion), 0);
+
+      document.getElementById('documentTotalCount').textContent = totalCount;
+      document.getElementById('documentCalculatedScore').textContent = calculatedScore.toFixed(1);
+
+      // 如果计算总分超过试卷总分，显示警告
+      if (calculatedScore > paperData.totalScore) {
+        document.getElementById('documentCalculatedScore').classList.add('text-red-600');
+        document.getElementById('documentCalculatedScore').classList.remove('text-primary-600');
+      } else {
+        document.getElementById('documentCalculatedScore').classList.remove('text-red-600');
+        document.getElementById('documentCalculatedScore').classList.add('text-primary-600');
+      }
+    }
+
+    // 更新答案选项
+    function updateAnswerOption() {
+      const selected = document.querySelector('input[name="answerOption"]:checked');
+      if (selected) {
+        paperData.answerOption = selected.value;
+      }
+    }
+
+
+    // 抽题模式切换
+    function showFixedQuestions() {
+      document.getElementById('fixedQuestionsPanel').classList.remove('hidden');
+      document.getElementById('randomRulesPanel').classList.add('hidden');
+
+      // 更新按钮样式
+      document.querySelectorAll('input[name="extractionMode"]').forEach(radio => {
+        const label = radio.parentElement;
+        if (radio.value === 'fixed') {
+          label.classList.add('border-primary-500', 'bg-primary-50');
+          label.classList.remove('border-gray-200');
+        } else {
+          label.classList.remove('border-primary-500', 'bg-primary-50');
+          label.classList.add('border-gray-200');
+        }
+      });
+    }
+
+    function showRandomRules() {
+      document.getElementById('fixedQuestionsPanel').classList.add('hidden');
+      document.getElementById('randomRulesPanel').classList.remove('hidden');
+
+      // 更新按钮样式
+      document.querySelectorAll('input[name="extractionMode"]').forEach(radio => {
+        const label = radio.parentElement;
+        if (radio.value === 'random') {
+          label.classList.add('border-primary-500', 'bg-primary-50');
+          label.classList.remove('border-gray-200');
+        } else {
+          label.classList.remove('border-primary-500', 'bg-primary-50');
+          label.classList.add('border-gray-200');
+        }
+      });
+    }
+
+    // 题目搜索（模拟）
+    function searchQuestions() {
+      const keyword = document.getElementById('questionSearch').value.trim();
+      if (!keyword) {
+        Message.show('请输入搜索关键词', 'warning');
+        return;
+      }
+
+      // 模拟搜索结果
+      Message.show(`搜索 "${keyword}" 找到 15 道题目`, 'info');
+
+      // 这里应该显示搜索结果列表，用户可以勾选题目
+      // 实际项目中需要调用后端 API
+    }
+
+    // 添加随机抽题规则
+    function addRandomRule() {
+      const knowledgePoint = document.getElementById('ruleKnowledgePoint').value;
+      const questionType = document.getElementById('ruleQuestionType').value;
+      const difficulty = document.getElementById('ruleDifficulty').value;
+      const count = document.getElementById('ruleCount').value;
+      const score = document.getElementById('ruleScore').value;
+
+      if (!knowledgePoint || !count || !score) {
+        Message.show('请填写完整的抽题规则', 'warning');
+        return;
+      }
+
+      const rule = {
+        id: 'rule-' + Date.now(),
+        knowledgePoint,
+        questionType: questionType || '不限',
+        difficulty: difficulty || '不限',
+        count: parseInt(count),
+        score: parseFloat(score)
+      };
+
+      paperData.randomRules.push(rule);
+      renderRandomRules();
+
+      // 清空表单
+      document.getElementById('ruleKnowledgePoint').value = '';
+      document.getElementById('ruleQuestionType').value = '';
+      document.getElementById('ruleDifficulty').value = '';
+      document.getElementById('ruleCount').value = '1';
+      document.getElementById('ruleScore').value = '2';
+
+      Message.show('抽题规则添加成功', 'success');
+    }
+
+    function removeRandomRule(index) {
+      paperData.randomRules.splice(index, 1);
+      renderRandomRules();
+      Message.show('规则已删除', 'info');
+    }
+
+    function renderRandomRules() {
+      const container = document.getElementById('randomRulesList');
+
+      if (paperData.randomRules.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无抽题规则</p>';
+        return;
+      }
+
+      container.innerHTML = paperData.randomRules.map((rule, index) => `
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div class="flex-1">
+            <div class="flex items-center space-x-4 text-sm">
+              <span class="font-medium text-gray-900">${rule.knowledgePoint}</span>
+              <span class="text-gray-500">题型: ${rule.questionType}</span>
+              <span class="text-gray-500">难度: ${rule.difficulty}</span>
+              <span class="text-primary-600 font-medium">${rule.count} 道题</span>
+              <span class="text-gray-500">每题 ${rule.score} 分</span>
+            </div>
+          </div>
+          <button onclick="removeRandomRule(${index})" class="text-gray-400 hover:text-red-500">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // 生成预览
+    function generatePreview() {
+      // 更新基本信息
+      document.getElementById('previewName').textContent = paperData.name;
+      document.getElementById('previewCode').textContent = paperData.code;
+      document.getElementById('previewScore').textContent = paperData.totalScore;
+
+      // 更新题目数量
+      let questionCount = 0;
+      if (paperData.mode === 'document') {
+        questionCount = paperData.questionTypes.reduce((sum, qt) => sum + qt.count, 0);
+      } else if (paperData.mode === 'extraction') {
+        const extractionMode = document.querySelector('input[name="extractionMode"]:checked')?.value;
+        if (extractionMode === 'fixed') {
+          questionCount = paperData.fixedQuestions.length;
+        } else if (extractionMode === 'random') {
+          questionCount = paperData.randomRules.reduce((sum, rule) => sum + rule.count, 0);
+        }
+      }
+      document.getElementById('previewQuestionCount').textContent = questionCount;
+
+      // 更新模式
+      const modeText = paperData.mode === 'document' ? '文档组卷' : '抽题组卷';
+      document.getElementById('previewMode').textContent = modeText;
+
+      // 更新题目列表
+      const questionsContainer = document.getElementById('previewQuestions');
+
+      if (paperData.mode === 'document') {
+        // 文档模式预览
+        let previewHTML = `
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <div class="flex items-center space-x-3 mb-3">
+              <i class="fas ${uploadedFile.type === 'application/pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-word text-blue-500'} text-2xl"></i>
+              <div>
+                <p class="font-medium text-gray-900">${uploadedFile.name}</p>
+                <p class="text-sm text-gray-500">${(uploadedFile.size / 1024).toFixed(2)} KB</p>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-gray-200 pt-4">
+            <h4 class="font-medium text-gray-900 mb-3">题型设置</h4>
+            <div class="space-y-2">
+        `;
+
+        paperData.questionTypes.forEach(qt => {
+          previewHTML += `
+            <div class="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded bg-${qt.color}-100 text-${qt.color}-600 flex items-center justify-center text-sm">
+                  <i class="fas ${qt.icon}"></i>
+                </div>
+                <span class="font-medium text-gray-900">${qt.typeName}</span>
+              </div>
+              <div class="flex items-center space-x-4 text-sm text-gray-600">
+                <span>${qt.count} 题</span>
+                <span>×</span>
+                <span>${qt.scorePerQuestion} 分</span>
+                <span>=</span>
+                <span class="font-medium text-primary-600">${(qt.count * qt.scorePerQuestion).toFixed(1)} 分</span>
+              </div>
+            </div>
+          `;
+        });
+
+        previewHTML += `
+            </div>
+          </div>
+          <div class="border-t border-gray-200 pt-4 mt-4">
+            <h4 class="font-medium text-gray-900 mb-2">答案设置</h4>
+            <p class="text-sm text-gray-600">
+              ${paperData.answerOption === 'none' ? '不包含答案' :
+                paperData.answerOption === 'inline' ? '答案在题目后' : '答案单独页面'}
+            </p>
+          </div>
+        `;
+
+        questionsContainer.innerHTML = previewHTML;
+      } else if (paperData.mode === 'extraction') {
+        // 抽题模式预览
+        const extractionMode = document.querySelector('input[name="extractionMode"]:checked')?.value;
+
+        if (extractionMode === 'fixed') {
+          if (paperData.fixedQuestions.length === 0) {
+            questionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无题目</p>';
+          } else {
+            questionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">已选择 ' + paperData.fixedQuestions.length + ' 道题目</p>';
+          }
+        } else if (extractionMode === 'random') {
+          if (paperData.randomRules.length === 0) {
+            questionsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">暂无抽题规则</p>';
+          } else {
+            questionsContainer.innerHTML = paperData.randomRules.map((rule, index) => `
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-4 text-sm">
+                    <span class="font-medium text-gray-900">${rule.knowledgePoint}</span>
+                    <span class="text-gray-500">题型: ${rule.questionType}</span>
+                    <span class="text-gray-500">难度: ${rule.difficulty}</span>
+                    <span class="text-primary-600 font-medium">${rule.count} 道题</span>
+                    <span class="text-gray-500">每题 ${rule.score} 分</span>
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+      }
+    }
+
+    // 更新试卷摘要
+    function updatePaperSummary() {
+      try {
+        Logger.log('updatePaperSummary', '开始执行', paperData);
+
+        const summaryName = safeGetElement('summaryName', 'updatePaperSummary');
+        const summaryCode = safeGetElement('summaryCode', 'updatePaperSummary');
+        const summaryScore = safeGetElement('summaryScore', 'updatePaperSummary');
+        const summaryMode = safeGetElement('summaryMode', 'updatePaperSummary');
+
+        if (summaryName) {
+          summaryName.textContent = paperData.name || '--';
+        }
+        if (summaryCode) {
+          summaryCode.textContent = paperData.code || '--';
+        }
+        if (summaryScore) {
+          summaryScore.textContent = paperData.totalScore || '--';
+        }
+        if (summaryMode) {
+          if (paperData.mode === 'document') {
+            summaryMode.textContent = '文档组卷';
+          } else if (paperData.mode === 'extraction') {
+            summaryMode.textContent = '抽题组卷';
+          } else {
+            summaryMode.textContent = '--';
+          }
+        }
+
+        Logger.log('updatePaperSummary', '执行完成');
+      } catch (error) {
+        Logger.error('updatePaperSummary', '发生异常', error);
+        console.error(error.stack);
+      }
+    }
+
+    // 保存草稿
+    function saveDraft() {
+      if (!validateStep1()) return;
+      if (!validateStep2()) return;
+      if (!validateStep3()) return;
+
+      // 生成试卷ID
+      const paperId = 'P' + String(Date.now()).slice(-6);
+
+      // 获取现有试卷列表
+      let papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+
+      // 创建试卷对象
+      const paper = {
+        id: paperId,
+        code: paperData.code,
+        name: paperData.name,
+        mode: paperData.mode,
+        totalScore: paperData.totalScore,
+        questionCount: 0,
+        status: 'draft',
+        usageCount: 0,
+        createTime: new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).replace(/\//g, '-'),
+        creator: '当前用户'
+      };
+
+      // 计算题目数量
+      if (paperData.mode === 'document') {
+        paper.questionCount = paperData.questionTypes.reduce((sum, qt) => sum + qt.count, 0);
+      } else if (paperData.mode === 'extraction') {
+        const extractionMode = document.querySelector('input[name="extractionMode"]:checked')?.value;
+        if (extractionMode === 'fixed') {
+          paper.questionCount = paperData.fixedQuestions.length;
+        } else if (extractionMode === 'random') {
+          paper.questionCount = paperData.randomRules.reduce((sum, rule) => sum + rule.count, 0);
+        }
+      }
+
+      // 添加到列表
+      papers.unshift(paper);
+      localStorage.setItem('allPapers', JSON.stringify(papers));
+
+      Message.show('试卷草稿保存成功', 'success');
+
+      // 延迟跳转
+      setTimeout(() => {
+        window.location.href = 'list.html';
+      }, 1500);
+    }
+
+    // 发布试卷
+    function publishPaper() {
+      if (!validateStep1()) return;
+      if (!validateStep2()) return;
+      if (!validateStep3()) return;
+
+      // 生成试卷ID
+      const paperId = 'P' + String(Date.now()).slice(-6);
+
+      // 获取现有试卷列表
+      let papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+
+      // 创建试卷对象
+      const paper = {
+        id: paperId,
+        code: paperData.code,
+        name: paperData.name,
+        mode: paperData.mode,
+        totalScore: paperData.totalScore,
+        questionCount: 0,
+        status: 'published',
+        usageCount: 0,
+        createTime: new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).replace(/\//g, '-'),
+        creator: '当前用户'
+      };
+
+      // 计算题目数量
+      if (paperData.mode === 'document') {
+        paper.questionCount = paperData.questionTypes.reduce((sum, qt) => sum + qt.count, 0);
+      } else if (paperData.mode === 'extraction') {
+        const extractionMode = document.querySelector('input[name="extractionMode"]:checked')?.value;
+        if (extractionMode === 'fixed') {
+          paper.questionCount = paperData.fixedQuestions.length;
+        } else if (extractionMode === 'random') {
+          paper.questionCount = paperData.randomRules.reduce((sum, rule) => sum + rule.count, 0);
+        }
+      }
+
+      // 添加到列表
+      papers.unshift(paper);
+      localStorage.setItem('allPapers', JSON.stringify(papers));
+
+      Message.show('试卷发布成功', 'success');
+
+      // 延迟跳转
+      setTimeout(() => {
+        window.location.href = 'list.html';
+      }, 1500);
+    }
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      Logger.log('DOMContentLoaded', '页面初始化开始');
+
+      // 生成试卷编号
+      const timestamp = Date.now();
+      const code = 'EXAM-' + new Date().getFullYear() + '-' + String(timestamp).slice(-6);
+      document.getElementById('paperCode').value = code;
+      paperData.code = code;
+      Logger.log('DOMContentLoaded', '试卷编号已生成:', code);
+
+      // 初始化抽题规则列表
+      renderRandomRules();
+
+      // 确保所有关键按钮可见（防御性检查）
+      setTimeout(() => {
+        const step2NextBtn = document.getElementById('step2NextBtn');
+        if (step2NextBtn) {
+          // 确保按钮在 DOM 中可见
+          step2NextBtn.style.display = step2NextBtn.style.display || 'inline-block';
+          Logger.log('DOMContentLoaded', '步骤2下一步按钮已确认存在');
+        } else {
+          Logger.error('DOMContentLoaded', '找不到步骤2下一步按钮！');
+        }
+      }, 100);
+
+      Logger.log('DOMContentLoaded', '页面初始化完成');
+    });
+  </script>
+</body>
+</html>

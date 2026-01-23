@@ -79,54 +79,6 @@
         </button>
       </div>
 
-      <!-- 统计卡片 -->
-      <div class="grid grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500">试卷总数</p>
-              <p class="text-2xl font-bold text-gray-900" id="totalCount">0</p>
-            </div>
-            <div class="w-10 h-10 bg-info-50 rounded-lg flex items-center justify-center">
-              <i class="fas fa-file-alt text-info-500"></i>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500">已发布</p>
-              <p class="text-2xl font-bold text-primary-500" id="publishedCount">0</p>
-            </div>
-            <div class="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
-              <i class="fas fa-check-circle text-primary-500"></i>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500">草稿</p>
-              <p class="text-2xl font-bold text-warning-500" id="draftCount">0</p>
-            </div>
-            <div class="w-10 h-10 bg-warning-50 rounded-lg flex items-center justify-center">
-              <i class="fas fa-edit text-warning-500"></i>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500">已使用</p>
-              <p class="text-2xl font-bold text-success-500" id="usedCount">0</p>
-            </div>
-            <div class="w-10 h-10 bg-success-50 rounded-lg flex items-center justify-center">
-              <i class="fas fa-clipboard-check text-success-500"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 筛选区域 -->
       <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
         <div class="flex items-center gap-4">
@@ -151,7 +103,7 @@
       </div>
 
       <!-- 试卷列表表格 -->
-      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mb-16">
         <table class="w-full">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -175,22 +127,24 @@
           </button>
         </div>
       </div>
-
-      <!-- 分页 -->
-      <div class="flex items-center justify-between mt-4">
-        <p class="text-sm text-gray-500">共 <span id="totalItems">0</span> 份试卷</p>
-        <div class="flex items-center space-x-2">
-          <button onclick="prevPage()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50" id="prevBtn" disabled>
-            <i class="fas fa-chevron-left"></i>
-          </button>
-          <span class="px-3 py-1 text-sm text-gray-700">第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</span>
-          <button onclick="nextPage()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50" id="nextBtn" disabled>
-            <i class="fas fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
     </div>
   </main>
+
+  <!-- 悬浮分页 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
+    <div class="flex items-center justify-between px-6 py-3">
+      <p class="text-sm text-gray-500">共 <span id="totalItems">0</span> 份试卷</p>
+      <div class="flex items-center space-x-2">
+        <button onclick="prevPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="prevBtn" disabled>
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="px-3 py-1.5 text-sm text-gray-700">第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</span>
+        <button onclick="nextPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="nextBtn" disabled>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 删除确认弹窗 -->
   <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
@@ -205,6 +159,82 @@
       <div class="flex justify-end space-x-3">
         <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">取消</button>
         <button onclick="confirmDelete()" class="px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预览弹窗 -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden">
+    <!-- 遮罩层 -->
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closePreviewModal()"></div>
+    <!-- 弹窗内容 -->
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <!-- 弹窗头部 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="previewPaperTitle"></span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="closePreviewModal(); editPaper(previewPaperId)" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-edit mr-1"></i>编辑试卷
+          </button>
+          <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+      </div>
+      <!-- 弹窗主体 -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- 左侧：文件预览 -->
+        <div class="flex-1 bg-gray-100 flex flex-col overflow-hidden border-r border-gray-200">
+          <div class="flex-shrink-0 px-4 py-3 bg-white border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-file-alt text-gray-500"></i>
+              <span class="text-sm font-medium text-gray-700" id="previewFileName">试卷文件</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-hidden" id="previewFileContainer">
+            <!-- PDF 预览 -->
+            <iframe id="previewPdfFrame" class="w-full h-full hidden" frameborder="0"></iframe>
+            <!-- Word 提示 -->
+            <div id="previewWordNotice" class="hidden h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-word text-6xl text-blue-500 mb-4"></i>
+                <p class="text-gray-600">Word 文档预览</p>
+                <p class="text-sm text-gray-400 mt-2" id="previewWordFileName"></p>
+              </div>
+            </div>
+            <!-- 无文件提示 -->
+            <div id="previewNoFile" class="h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-upload text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">暂无试卷文件</p>
+                <p class="text-sm text-gray-400 mt-2">该试卷未上传文件</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 右侧：答题卡预览 -->
+        <div class="w-96 bg-white flex flex-col overflow-hidden">
+          <div class="flex-shrink-0 px-4 py-3 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-clipboard-list text-gray-500"></i>
+                <span class="text-sm font-medium text-gray-700">答题卡</span>
+              </div>
+              <div class="text-sm">
+                <span class="text-gray-500">总分：</span>
+                <span class="font-bold text-primary-500" id="previewTotalScore">100</span>
+                <span class="text-gray-500">分</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3" id="previewAnswerCard">
+            <!-- 答题卡预览内容 -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -231,33 +261,258 @@
     let allPapers = JSON.parse(localStorage.getItem('allPapers')) || [];
     let filteredPapers = [];
     let currentPage = 1;
-    const pageSize = 10;
+    const pageSize = 20;
     let deleteTargetId = null;
+    let previewPaperId = null;  // 当前预览的试卷ID
 
     // 初始化示例数据
     function initDemoData() {
       if (allPapers.length === 0) {
         allPapers = [
-          { id: 'P001', code: 'EXAM-2026-001', name: '2026年计算机基础期末考试', mode: 'extraction', totalScore: 100, questionCount: 50, status: 'published', usageCount: 3, createTime: '2026-01-10 10:00', creator: '张老师' },
-          { id: 'P002', code: 'EXAM-2026-002', name: '数学期中测验卷', mode: 'document', totalScore: 80, questionCount: 30, status: 'draft', usageCount: 0, createTime: '2026-01-12 14:30', creator: '李老师' },
-          { id: 'P003', code: 'EXAM-2026-003', name: '英语词汇测试', mode: 'extraction', totalScore: 60, questionCount: 40, status: 'published', usageCount: 5, createTime: '2026-01-08 09:00', creator: '王老师' },
-          { id: 'P004', code: 'EXAM-2026-004', name: '物理力学单元测试', mode: 'document', totalScore: 100, questionCount: 25, status: 'published', usageCount: 2, createTime: '2026-01-15 16:00', creator: '赵老师' },
-          { id: 'P005', code: 'EXAM-2026-005', name: '化学实验操作考核', mode: 'extraction', totalScore: 50, questionCount: 20, status: 'draft', usageCount: 0, createTime: '2026-01-18 11:00', creator: '钱老师' }
+          {
+            id: 'P001',
+            code: 'EXAM-2026-001',
+            name: '2026年计算机基础期末考试',
+            title: '2026年计算机基础期末考试',
+            mode: 'document',
+            totalScore: 100,
+            questionCount: 50,
+            status: 'published',
+            usageCount: 3,
+            createTime: '2026-01-10 10:00',
+            creator: '张老师',
+            answerCard: {
+              single: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 20}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              multiple: {
+                scorePerQuestion: 3,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 3,
+                  answer: ['AB', 'AC', 'BC', 'ABC', 'ABD'][Math.floor(Math.random() * 5)].split(''),
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              judge: {
+                scorePerQuestion: 1,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 1,
+                  answer: Math.random() > 0.5 ? '对' : '错',
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              blank: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: `答案${i + 1}`,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              essay: {
+                scorePerQuestion: 0,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 4,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              }
+            }
+          },
+          {
+            id: 'P002',
+            code: 'EXAM-2026-002',
+            name: '数学期中测验卷',
+            title: '数学期中测验卷',
+            mode: 'document',
+            totalScore: 80,
+            questionCount: 30,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-12 14:30',
+            creator: '李老师',
+            answerCard: {
+              single: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 15}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              blank: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: `${Math.floor(Math.random() * 100)}`,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              essay: {
+                scorePerQuestion: 0,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 6,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              }
+            }
+          },
+          {
+            id: 'P003',
+            code: 'EXAM-2026-003',
+            name: '英语词汇测试',
+            title: '英语词汇测试',
+            mode: 'document',
+            totalScore: 60,
+            questionCount: 40,
+            status: 'published',
+            usageCount: 5,
+            createTime: '2026-01-08 09:00',
+            creator: '王老师',
+            answerCard: {
+              single: {
+                scorePerQuestion: 1,
+                questions: Array.from({length: 30}, (_, i) => ({
+                  id: i + 1,
+                  score: 1,
+                  answer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              judge: {
+                scorePerQuestion: 1,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 1,
+                  answer: Math.random() > 0.5 ? '对' : '错',
+                  explanation: '',
+                  showExplanation: false
+                }))
+              }
+            }
+          },
+          {
+            id: 'P004',
+            code: 'EXAM-2026-004',
+            name: '物理力学单元测试',
+            title: '物理力学单元测试',
+            mode: 'document',
+            totalScore: 100,
+            questionCount: 25,
+            status: 'published',
+            usageCount: 2,
+            createTime: '2026-01-15 16:00',
+            creator: '赵老师',
+            answerCard: {
+              single: {
+                scorePerQuestion: 3,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 3,
+                  answer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              multiple: {
+                scorePerQuestion: 4,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 4,
+                  answer: ['AB', 'AC', 'BC', 'ABC'][Math.floor(Math.random() * 4)].split(''),
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              blank: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: `${Math.floor(Math.random() * 100)} N`,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              essay: {
+                scorePerQuestion: 0,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 10,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              }
+            }
+          },
+          {
+            id: 'P005',
+            code: 'EXAM-2026-005',
+            name: '化学实验操作考核',
+            title: '化学实验操作考核',
+            mode: 'document',
+            totalScore: 50,
+            questionCount: 20,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-18 11:00',
+            creator: '钱老师',
+            answerCard: {
+              single: {
+                scorePerQuestion: 2,
+                questions: Array.from({length: 10}, (_, i) => ({
+                  id: i + 1,
+                  score: 2,
+                  answer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              judge: {
+                scorePerQuestion: 1,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 1,
+                  answer: Math.random() > 0.5 ? '对' : '错',
+                  explanation: '',
+                  showExplanation: false
+                }))
+              },
+              essay: {
+                scorePerQuestion: 0,
+                questions: Array.from({length: 5}, (_, i) => ({
+                  id: i + 1,
+                  score: 5,
+                  explanation: '',
+                  showExplanation: false
+                }))
+              }
+            }
+          }
         ];
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
       }
-    }
-
-    // 更新统计
-    function updateStats() {
-      const total = allPapers.length;
-      const published = allPapers.filter(p => p.status === 'published').length;
-      const draft = allPapers.filter(p => p.status === 'draft').length;
-      const used = allPapers.filter(p => p.usageCount > 0).length;
-      document.getElementById('totalCount').textContent = total;
-      document.getElementById('publishedCount').textContent = published;
-      document.getElementById('draftCount').textContent = draft;
-      document.getElementById('usedCount').textContent = used;
     }
 
     // 筛选
@@ -309,7 +564,9 @@
       const modeClass = paper.mode === 'document' ? 'bg-info-50 text-info-600' : 'bg-purple-50 text-purple-600';
       const statusText = paper.status === 'published' ? '已发布' : '草稿';
       const statusClass = paper.status === 'published' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-600';
-      const canDelete = paper.usageCount === 0;
+      // 删除逻辑：草稿可删除；已发布且使用次数为0可删除；已发布且使用次数>0不可删除
+      const canDelete = paper.status === 'draft' || (paper.status === 'published' && paper.usageCount === 0);
+      const deleteTitle = canDelete ? '删除' : '已发布且被使用，无法删除';
       return `
         <tr class="hover:bg-gray-50">
           <td class="px-4 py-4">
@@ -326,7 +583,7 @@
               <button onclick="previewPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded" title="预览"><i class="fas fa-eye"></i></button>
               <button onclick="editPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-info-500 hover:bg-info-50 rounded" title="编辑"><i class="fas fa-edit"></i></button>
               <button onclick="copyPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-warning-500 hover:bg-warning-50 rounded" title="复制"><i class="fas fa-copy"></i></button>
-              <button onclick="deletePaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-error-500 hover:bg-error-50 rounded ${canDelete ? '' : 'opacity-50 cursor-not-allowed'}" title="${canDelete ? '删除' : '已被使用，无法删除'}" ${canDelete ? '' : 'disabled'}><i class="fas fa-trash"></i></button>
+              <button onclick="deletePaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-error-500 hover:bg-error-50 rounded ${canDelete ? '' : 'opacity-50 cursor-not-allowed'}" title="${deleteTitle}" ${canDelete ? '' : 'disabled'}><i class="fas fa-trash"></i></button>
             </div>
           </td>
         </tr>`;
@@ -344,8 +601,284 @@
     function prevPage() { if (currentPage > 1) { currentPage--; renderList(); } }
     function nextPage() { const totalPages = Math.ceil(filteredPapers.length / pageSize); if (currentPage < totalPages) { currentPage++; renderList(); } }
 
+    // 题型配置
+    const questionTypeConfig = {
+      single: { name: '单选题', icon: 'fa-dot-circle', options: ['A', 'B', 'C', 'D'] },
+      multiple: { name: '多选题', icon: 'fa-check-double', options: ['A', 'B', 'C', 'D'] },
+      judge: { name: '判断题', icon: 'fa-check-circle', options: ['对', '错'] },
+      blank: { name: '填空题', icon: 'fa-keyboard', options: [] },
+      essay: { name: '简答题', icon: 'fa-align-left', options: [] },
+      composite: { name: '复合题', icon: 'fa-layer-group', options: [] }
+    };
+
+    // 子题型配置
+    const subQuestionTypes = {
+      single: { name: '单选', options: ['A', 'B', 'C', 'D'] },
+      multiple: { name: '多选', options: ['A', 'B', 'C', 'D'] },
+      judge: { name: '判断', options: ['对', '错'] },
+      blank: { name: '填空', options: [] },
+      essay: { name: '简答', options: [] }
+    };
+
     // 操作函数
-    function previewPaper(id) { Message.info('预览功能开发中...'); }
+    function previewPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (!paper) {
+        Message.error('试卷不存在');
+        return;
+      }
+
+      // 保存当前预览的试卷ID
+      previewPaperId = id;
+
+      // 设置标题
+      document.getElementById('previewPaperTitle').textContent = paper.name || paper.title || '未命名试卷';
+      document.getElementById('previewTotalScore').textContent = paper.totalScore || 100;
+
+      // 设置文件预览
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      const wordNotice = document.getElementById('previewWordNotice');
+      const noFile = document.getElementById('previewNoFile');
+
+      // 先隐藏所有
+      pdfFrame.classList.add('hidden');
+      wordNotice.classList.add('hidden');
+      noFile.classList.add('hidden');
+
+      if (paper.file && paper.file.data) {
+        document.getElementById('previewFileName').textContent = paper.file.name;
+        const isPDF = paper.file.type === 'application/pdf';
+
+        if (isPDF) {
+          pdfFrame.src = paper.file.data;
+          pdfFrame.classList.remove('hidden');
+        } else {
+          document.getElementById('previewWordFileName').textContent = paper.file.name;
+          wordNotice.classList.remove('hidden');
+        }
+      } else {
+        document.getElementById('previewFileName').textContent = '试卷文件';
+        noFile.classList.remove('hidden');
+      }
+
+      // 渲染答题卡预览
+      renderPreviewAnswerCard(paper.answerCard);
+
+      // 显示弹窗
+      document.getElementById('previewModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 渲染预览答题卡
+    function renderPreviewAnswerCard(answerCard) {
+      const container = document.getElementById('previewAnswerCard');
+      container.innerHTML = '';
+
+      if (!answerCard || Object.keys(answerCard).length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-inbox text-3xl mb-2"></i><p>暂无答题卡数据</p></div>';
+        return;
+      }
+
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'essay', 'composite'];
+
+      typeOrder.forEach(type => {
+        if (!answerCard[type]) return;
+
+        const config = questionTypeConfig[type];
+        const data = answerCard[type];
+        const questions = data.questions || [];
+
+        if (questions.length === 0) return;
+
+        const typeSection = document.createElement('div');
+        typeSection.className = 'mb-3 bg-white rounded-lg border border-gray-200';
+
+        if (type === 'composite') {
+          // 复合题预览
+          const totalSubQuestions = questions.reduce((sum, q) => sum + (q.subQuestions?.length || 0), 0);
+          const totalScore = questions.reduce((sum, q) => {
+            return sum + (q.subQuestions?.reduce((subSum, sq) => subSum + (sq.score || 0), 0) || 0);
+          }, 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questions.length}</span> 大题 <span class="font-bold text-gray-900">${totalSubQuestions}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="py-1">
+              ${questions.map((q, qIndex) => renderPreviewCompositeQuestion(q, qIndex)).join('')}
+            </div>
+          `;
+        } else {
+          // 普通题型预览
+          const questionCount = questions.length;
+          const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questionCount}</span> 题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="space-y-0.5 py-1">
+              ${questions.map((q, index) => renderPreviewQuestion(type, q, index)).join('')}
+            </div>
+          `;
+        }
+
+        container.appendChild(typeSection);
+      });
+    }
+
+    // 渲染预览普通题目
+    function renderPreviewQuestion(type, q, index) {
+      const config = questionTypeConfig[type];
+      let answerHtml = '';
+
+      if (config.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(q.answer) ? q.answer : (q.answer ? [q.answer] : []);
+        let currentOptions = q.customOptions || config.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${q.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = q.explanation ? `
+        <div class="px-2 pb-2 ml-6">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${q.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div>
+          <div class="flex items-start space-x-1.5 px-2 py-1 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[20px]">${index + 1}.</span>
+            <span class="text-gray-500 min-w-[40px]">${q.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }
+
+    // 渲染预览复合题
+    function renderPreviewCompositeQuestion(q, qIndex) {
+      const totalScore = (q.subQuestions || []).reduce((sum, sq) => sum + (sq.score || 0), 0);
+
+      return `
+        <div class="border border-gray-200 rounded-lg mx-2 mb-2 bg-white">
+          <div class="flex items-center justify-between px-3 py-2 bg-blue-50 border-b border-gray-200 rounded-t-lg">
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold text-gray-900 text-sm">第 ${qIndex + 1} 大题</span>
+              <span class="text-xs text-gray-500">（共 <span class="font-bold text-gray-900">${(q.subQuestions || []).length}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分）</span>
+            </div>
+          </div>
+          <div class="p-2 space-y-1">
+            ${(q.subQuestions || []).map((sq, sqIndex) => renderPreviewSubQuestion(sq, sqIndex)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染预览子题目
+    function renderPreviewSubQuestion(sq, sqIndex) {
+      const subConfig = subQuestionTypes[sq.type] || { name: '未知', options: [] };
+      let answerHtml = '';
+
+      if (subConfig.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(sq.answer) ? sq.answer : (sq.answer ? [sq.answer] : []);
+        let currentOptions = sq.customOptions || subConfig.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (sq.type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${sq.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = sq.explanation ? `
+        <div class="mt-1 ml-8">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${sq.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="bg-gray-50 rounded p-2">
+          <div class="flex items-start space-x-1.5 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[32px]">(${sqIndex + 1})</span>
+            <span class="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600 text-xs">${subConfig.name}</span>
+            <span class="text-gray-500 min-w-[40px]">${sq.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }
+
+    // 关闭预览弹窗
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      previewPaperId = null;
+
+      // 清理 PDF URL
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      if (pdfFrame.src && pdfFrame.src.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfFrame.src);
+      }
+      pdfFrame.src = '';
+    }
+
     function editPaper(id) {
       const paper = allPapers.find(p => p.id === id);
       if (paper) {
@@ -365,7 +898,6 @@
         allPapers.unshift(newPaper);
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
         filteredPapers = [...allPapers];
-        updateStats();
         renderList();
         Message.success('试卷复制成功');
       }
@@ -373,9 +905,16 @@
 
     function deletePaper(id) {
       const paper = allPapers.find(p => p.id === id);
-      if (paper && paper.usageCount > 0) { Message.warning('该试卷已被使用，无法删除'); return; }
+      if (!paper) return;
+
+      // 删除逻辑：草稿可删除；已发布且使用次数为0可删除；已发布且使用次数>0不可删除
+      if (paper.status === 'published' && paper.usageCount > 0) {
+        Message.warning('该试卷已发布且被使用，无法删除');
+        return;
+      }
+
       deleteTargetId = id;
-      document.getElementById('deletePaperName').textContent = paper ? paper.name : '';
+      document.getElementById('deletePaperName').textContent = paper.name || paper.title || '';
       document.getElementById('deleteModal').classList.remove('hidden');
       document.getElementById('deleteModal').classList.add('flex');
     }
@@ -391,7 +930,6 @@
         allPapers = allPapers.filter(p => p.id !== deleteTargetId);
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
         filteredPapers = filteredPapers.filter(p => p.id !== deleteTargetId);
-        updateStats();
         renderList();
         Message.success('试卷删除成功');
         closeDeleteModal();
@@ -402,7 +940,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       initDemoData();
       filteredPapers = [...allPapers];
-      updateStats();
       renderList();
     });
 

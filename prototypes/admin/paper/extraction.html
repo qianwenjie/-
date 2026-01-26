@@ -1,0 +1,3560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>抽题组卷 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 100: '#C3F0DB', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 100: '#FEF3C7', 500: '#FF7D00', 600: '#D97706' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 100: '#DBEAFE', 500: '#14C9C9', 600: '#0369A1' },
+            purple: { 100: '#F3E8FF', 600: '#9333EA' },
+            indigo: { 100: '#E0E7FF', 600: '#4F46E5' },
+            amber: { 100: '#FEF3C7', 600: '#D97706' },
+            pink: { 100: '#FCE7F3', 600: '#DB2777' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .message-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none;
+    }
+    .message-item {
+      padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex; align-items: center; gap: 10px; font-size: 14px;
+      animation: messageSlideIn 0.3s ease-out; pointer-events: auto;
+    }
+    .message-item.success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .message-item.error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+    .message-item.warning { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+    .message-item.info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+    @keyframes messageSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes messageSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .filter-dropdown {
+      position: relative;
+    }
+
+    .filter-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 10;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      max-height: 300px;
+      overflow-y: auto;
+      min-width: 200px;
+    }
+
+    .difficulty-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .difficulty-1 { background: #e0f2fe; color: #0369a1; }
+    .difficulty-2 { background: #dbeafe; color: #1e40af; }
+    .difficulty-3 { background: #fef3c7; color: #92400e; }
+    .difficulty-4 { background: #fed7aa; color: #9a3412; }
+    .difficulty-5 { background: #fecaca; color: #991b1b; }
+
+    /* 侧滑面板样式 */
+    .preview-drawer {
+      position: fixed;
+      top: 0;
+      right: -600px;
+      width: 600px;
+      height: 100vh;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-drawer.active {
+      right: 0;
+    }
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      z-index: 99;
+    }
+    .preview-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .option-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .option-label.correct {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .question-content br {
+      display: block;
+      margin: 4px 0;
+      content: "";
+    }
+
+    /* 级联选择器样式 */
+    .cascade-menu {
+      display: flex;
+      min-width: 400px;
+      max-height: 300px;
+    }
+    .cascade-column {
+      flex: 1;
+      border-right: 1px solid #e5e7eb;
+      overflow-y: auto;
+    }
+    .cascade-column:last-child {
+      border-right: none;
+    }
+    .cascade-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+    .cascade-item:hover {
+      background: #f3f4f6;
+    }
+    .cascade-item.active {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .cascade-item.selected {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .question-card {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="messageContainer" class="message-container"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">试卷管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">抽题组卷</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-save mr-2"></i>保存草稿
+        </button>
+        <button onclick="previewPaper()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-eye mr-2"></i>预览试卷
+        </button>
+        <button onclick="publishPaper()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-paper-plane mr-2"></i>发布试卷
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 试卷信息编辑区 -->
+  <div class="fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+    <div class="px-6 py-3">
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 whitespace-nowrap">试卷名称</label>
+          <span id="paperNameDisplay" class="text-sm text-gray-900">未命名试卷</span>
+          <input type="text" id="paperNameInput"
+                 class="hidden px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-[300px]"
+                 placeholder="请输入试卷名称"
+                 onblur="savePaperName()"
+                 onkeypress="if(event.key==='Enter') this.blur()">
+          <button id="editPaperNameBtn" onclick="toggleEditPaperName()" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors" title="编辑">
+            <i class="fas fa-edit text-sm"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 whitespace-nowrap">试卷编号</label>
+          <span id="paperCodeDisplay" class="text-sm text-gray-500">-</span>
+          <input type="text" id="paperCodeInput"
+                 class="hidden px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-[150px]"
+                 placeholder="如：2024-001"
+                 onblur="savePaperCode()"
+                 onkeypress="if(event.key==='Enter') this.blur()">
+          <button id="editPaperCodeBtn" onclick="toggleEditPaperCode()" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors" title="编辑">
+            <i class="fas fa-edit text-sm"></i>
+          </button>
+        </div>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 whitespace-nowrap">试卷总分</label>
+          <input type="number" id="paperTotalScoreInput" min="0" step="0.5"
+                 class="px-3 py-1.5 border border-gray-300 rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary-500 w-[100px]"
+                 placeholder="100">
+          <span class="text-sm text-gray-600">分</span>
+          <span class="text-sm text-gray-500">（已设 <span id="currentTotalScore" class="text-red-600 font-semibold">0</span> 分）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <main class="pt-32 h-screen flex overflow-hidden">
+    <!-- 左侧：题库题目 -->
+    <div class="flex-1 flex flex-col overflow-hidden border-r border-gray-200 bg-white relative">
+      <!-- 题库标题和筛选 -->
+      <div class="bg-white px-6 py-2 border-b border-gray-200">
+        <!-- 标题和筛选条件在同一行 -->
+        <div class="flex items-center space-x-4">
+          <h2 class="text-base font-bold text-gray-900 whitespace-nowrap">题库题目</h2>
+
+          <!-- 筛选条件 -->
+          <!-- 题型筛选 -->
+          <div class="filter-dropdown">
+            <button onclick="toggleLibraryTypeDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>题型</span>
+              <span id="libraryTypeCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="libraryTypeDropdown" class="filter-dropdown-menu hidden">
+              <div class="p-2 space-y-1">
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="single" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">单选题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="multiple" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">多选题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="judge" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">判断题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="blank" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">填空题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="shortAnswer" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">简答题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="cloze" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">完形填空</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="composite" onchange="applyLibraryFilters()" class="library-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">复合题</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 难度筛选 -->
+          <div class="filter-dropdown">
+            <button onclick="toggleLibraryDifficultyDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>难度</span>
+              <span id="libraryDifficultyCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="libraryDifficultyDropdown" class="filter-dropdown-menu hidden">
+              <div class="p-2 space-y-1">
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="1" onchange="applyLibraryFilters()" class="library-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">一级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="2" onchange="applyLibraryFilters()" class="library-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">二级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="3" onchange="applyLibraryFilters()" class="library-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">三级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="4" onchange="applyLibraryFilters()" class="library-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">四级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="5" onchange="applyLibraryFilters()" class="library-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">五级</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 知识点筛选（级联） -->
+          <div class="filter-dropdown">
+            <button onclick="toggleLibraryKnowledgeDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>知识点</span>
+              <span id="libraryKnowledgeCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="libraryKnowledgeDropdown" class="filter-dropdown-menu hidden" style="min-width: 400px;">
+              <div class="cascade-menu">
+                <div class="cascade-column" id="cascadeLevel1"></div>
+                <div class="cascade-column" id="cascadeLevel2"></div>
+                <div class="cascade-column" id="cascadeLevel3"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 搜索 -->
+          <div class="flex-1">
+            <input type="text" id="librarySearch" placeholder="搜索题目内容..." onkeyup="applyLibraryFilters()" class="w-full px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          </div>
+
+          <!-- 重置按钮 -->
+          <button onclick="resetLibraryFilters()" class="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded text-sm whitespace-nowrap">
+            <i class="fas fa-redo mr-1"></i>重置
+          </button>
+        </div>
+
+        <!-- 全选操作栏 -->
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          <div class="flex items-center space-x-3">
+            <label class="flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="selectAllPageCheckbox" onchange="toggleSelectAllPage()" class="w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+              <span class="ml-2 text-sm text-gray-600">全选本页</span>
+            </label>
+            <span class="text-gray-300">|</span>
+            <button onclick="selectAllFiltered()" class="text-sm text-primary-500 hover:text-primary-600 font-medium">
+              <i class="fas fa-check-double mr-1"></i>全选筛选结果
+            </button>
+            <button onclick="deselectAllLeft()" class="text-sm text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times mr-1"></i>取消全选
+            </button>
+          </div>
+          <div class="text-sm text-gray-500">
+            本页 <span id="currentPageCount">0</span> 道 | 筛选结果 <span id="filteredCount">0</span> 道
+          </div>
+        </div>
+      </div>
+
+      <!-- 题目列表 -->
+      <div class="flex-1 overflow-y-auto p-6 pb-20">
+        <div id="questionList" class="space-y-3">
+          <!-- 题目卡片将通过 JS 动态生成 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden py-16 text-center">
+          <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500">没有找到符合条件的题目</p>
+        </div>
+      </div>
+
+      <!-- 分页（悬浮底部） -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 flex items-center justify-between shadow-lg">
+        <p class="text-sm text-gray-600">
+          显示 <span id="libraryPageStart">1</span>-<span id="libraryPageEnd">20</span> 条，共 <span id="libraryPageTotal">0</span> 条
+        </p>
+        <div class="flex items-center space-x-2">
+          <button onclick="libraryFirstPage()" id="libraryFirstBtn" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600" disabled title="首页">
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button onclick="libraryPrevPage()" id="libraryPrevBtn" disabled class="px-3 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm text-gray-600" title="上一页">
+            <i class="fas fa-angle-left mr-1"></i>上一页
+          </button>
+          <div id="libraryPageNumbers" class="flex items-center space-x-2">
+            <!-- 页码动态生成 -->
+          </div>
+          <button onclick="libraryNextPage()" id="libraryNextBtn" disabled class="px-3 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm text-gray-600" title="下一页">
+            下一页<i class="fas fa-angle-right ml-1"></i>
+          </button>
+          <button onclick="libraryLastPage()" id="libraryLastBtn" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600" disabled title="尾页">
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中间：穿梭按钮 -->
+    <div class="w-32 flex flex-col items-center justify-center bg-gray-50 border-r border-gray-200 py-8 space-y-4">
+      <button onclick="transferToRight()" id="toRightBtn" class="w-20 h-20 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-full shadow-lg transition-all transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center">
+        <i class="fas fa-chevron-right text-2xl"></i>
+      </button>
+      <div class="text-xs text-gray-500 text-center px-2">
+        <span id="toRightCount">0</span> 道题目<br/>待转移
+      </div>
+      <button onclick="transferToLeft()" id="toLeftBtn" class="w-20 h-20 bg-gray-400 hover:bg-gray-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-full shadow-lg transition-all transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center">
+        <i class="fas fa-chevron-left text-2xl"></i>
+      </button>
+      <div class="text-xs text-gray-500 text-center px-2">
+        <span id="toLeftCount">0</span> 道题目<br/>待移回
+      </div>
+    </div>
+
+    <!-- 右侧：已选题目 -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-white relative">
+      <!-- 已选题目标题和筛选 -->
+      <div class="bg-white px-6 py-2 border-b border-gray-200">
+        <!-- 标题和筛选条件在同一行 -->
+        <div class="flex items-center space-x-4">
+          <h2 class="text-base font-bold text-gray-900 whitespace-nowrap">已选题目</h2>
+
+          <!-- 筛选条件 -->
+          <!-- 题型筛选 -->
+          <div class="filter-dropdown">
+            <button onclick="toggleSelectedTypeDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>题型</span>
+              <span id="selectedTypeCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="selectedTypeDropdown" class="filter-dropdown-menu hidden">
+              <div class="p-2 space-y-1">
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="single" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">单选题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="multiple" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">多选题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="judge" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">判断题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="blank" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">填空题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="shortAnswer" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">简答题</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="cloze" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">完形填空</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="composite" onchange="applySelectedFilters()" class="selected-type-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">复合题</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 难度筛选 -->
+          <div class="filter-dropdown">
+            <button onclick="toggleSelectedDifficultyDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>难度</span>
+              <span id="selectedDifficultyCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="selectedDifficultyDropdown" class="filter-dropdown-menu hidden">
+              <div class="p-2 space-y-1">
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="1" onchange="applySelectedFilters()" class="selected-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">一级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="2" onchange="applySelectedFilters()" class="selected-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">二级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="3" onchange="applySelectedFilters()" class="selected-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">三级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="4" onchange="applySelectedFilters()" class="selected-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">四级</span>
+                </label>
+                <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                  <input type="checkbox" value="5" onchange="applySelectedFilters()" class="selected-difficulty-filter w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+                  <span class="ml-2 text-sm">五级</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 知识点筛选（级联） -->
+          <div class="filter-dropdown">
+            <button onclick="toggleSelectedKnowledgeDropdown()" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 flex items-center space-x-2">
+              <span>知识点</span>
+              <span id="selectedKnowledgeCount" class="hidden text-xs bg-primary-500 text-white rounded-full px-1.5 py-0.5"></span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="selectedKnowledgeDropdown" class="filter-dropdown-menu hidden" style="min-width: 400px;">
+              <div class="cascade-menu">
+                <div class="cascade-column" id="selectedCascadeLevel1"></div>
+                <div class="cascade-column" id="selectedCascadeLevel2"></div>
+                <div class="cascade-column" id="selectedCascadeLevel3"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 搜索 -->
+          <div class="flex-1">
+            <input type="text" id="selectedSearch" placeholder="搜索题目内容..." onkeyup="applySelectedFilters()" class="w-full px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          </div>
+
+          <!-- 重置按钮 -->
+          <button onclick="resetSelectedFilters()" class="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded text-sm whitespace-nowrap">
+            <i class="fas fa-redo mr-1"></i>重置
+          </button>
+        </div>
+
+        <!-- 全选操作栏 -->
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          <div class="flex items-center space-x-3">
+            <label class="flex items-center cursor-pointer select-none">
+              <input type="checkbox" id="selectAllRightPageCheckbox" onchange="toggleSelectAllRightPage()" class="w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded">
+              <span class="ml-2 text-sm text-gray-600">全选本页</span>
+            </label>
+            <span class="text-gray-300">|</span>
+            <button onclick="selectAllRightFiltered()" class="text-sm text-primary-500 hover:text-primary-600 font-medium">
+              <i class="fas fa-check-double mr-1"></i>全选筛选结果
+            </button>
+            <button onclick="deselectAllRight()" class="text-sm text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times mr-1"></i>取消全选
+            </button>
+          </div>
+          <div class="text-sm text-gray-500">
+            本页 <span id="rightCurrentPageCount">0</span> 道 | 筛选结果 <span id="rightFilteredCount">0</span> 道
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计信息 -->
+      <div class="bg-white px-6 py-3 border-b border-gray-200">
+        <div id="statsDisplay" class="flex items-center justify-between">
+          <div class="flex items-center gap-1 flex-wrap" id="typeStats">
+            <!-- 统计信息动态生成 -->
+          </div>
+          <div class="flex items-center space-x-2 flex-shrink-0">
+            <input type="number" id="batchScoreInput" placeholder="批量分数" min="0" step="0.5"
+                   class="w-20 px-2 py-1.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-2 focus:ring-primary-500"
+                   oninput="applyBatchScore()">
+            <button onclick="batchDeleteAll()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors"
+                    title="删除全部">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已选题目列表 -->
+      <div class="flex-1 overflow-y-auto p-6 pb-20">
+        <div id="selectedList">
+          <!-- 按题型分类的题目列表 -->
+        </div>
+
+        <div id="selectedEmpty" class="text-center py-16 text-gray-400">
+          <i class="fas fa-hand-pointer text-4xl mb-3"></i>
+          <p class="text-sm">请从左侧选择题目</p>
+        </div>
+      </div>
+
+      <!-- 分页（悬浮底部） -->
+      <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 flex items-center justify-between shadow-lg">
+        <p class="text-sm text-gray-600">
+          显示 <span id="selectedPageStart">1</span>-<span id="selectedPageEnd">20</span> 条，共 <span id="selectedPageTotal">0</span> 条
+        </p>
+        <div class="flex items-center space-x-2">
+          <button onclick="selectedFirstPage()" id="selectedFirstBtn" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600" disabled title="首页">
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button onclick="selectedPrevPage()" id="selectedPrevBtn" disabled class="px-3 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm text-gray-600" title="上一页">
+            <i class="fas fa-angle-left mr-1"></i>上一页
+          </button>
+          <div id="selectedPageNumbers" class="flex items-center space-x-2">
+            <!-- 页码动态生成 -->
+          </div>
+          <button onclick="selectedNextPage()" id="selectedNextBtn" disabled class="px-3 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm text-gray-600" title="下一页">
+            下一页<i class="fas fa-angle-right ml-1"></i>
+          </button>
+          <button onclick="selectedLastPage()" id="selectedLastBtn" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600" disabled title="尾页">
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 题目预览侧滑面板 -->
+  <div id="previewOverlay" class="preview-overlay" onclick="closePreview()"></div>
+  <div id="previewDrawer" class="preview-drawer">
+    <!-- 面板头部 -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h2 class="text-lg font-semibold text-gray-900">题目详情</h2>
+      <button onclick="closePreview()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- 面板内容 -->
+    <div id="previewContent" class="flex-1 overflow-y-auto p-6">
+      <div class="text-center py-20 text-gray-400">
+        <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+        <p>加载中...</p>
+      </div>
+    </div>
+
+    <!-- 面板底部操作栏 -->
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+      <button onclick="closePreview()" class="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+        关闭
+      </button>
+      <button onclick="addCurrentToSelected()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+        <i class="fas fa-plus mr-1.5"></i>添加到已选
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Message 组件
+    const Message = {
+      show(text, type = 'info', duration = 3000) {
+        const container = document.getElementById('messageContainer');
+        const item = document.createElement('div');
+        item.className = `message-item ${type}`;
+        const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+        item.innerHTML = `<i class="fas ${icons[type]}"></i><span>${text}</span>`;
+        container.appendChild(item);
+        setTimeout(() => { item.style.animation = 'messageSlideOut 0.3s ease-out forwards'; setTimeout(() => item.remove(), 300); }, duration);
+      },
+      success(text, duration) { this.show(text, 'success', duration); },
+      error(text, duration) { this.show(text, 'error', duration); },
+      warning(text, duration) { this.show(text, 'warning', duration); },
+      info(text, duration) { this.show(text, 'info', duration); }
+    };
+
+    // 数据
+    let allQuestions = [];
+    let filteredLibraryQuestions = [];
+    let filteredSelectedQuestions = [];
+    let selectedQuestions = new Map(); // 右侧已转移的题目
+    let leftTempSelected = new Set(); // 左侧临时选中的题目ID（未转移）
+    let rightTempSelected = new Set(); // 右侧临时选中的题目ID（待移回）
+    let libraryCurrentPage = 1;
+    let selectedCurrentPage = 1;
+    const pageSize = 20;
+    let paperInfo = null;
+    let batchScores = {}; // 存储每个题型的批量分数输入值
+    let showOnlySelected = false; // 仅显示已选题目的状态（已废弃）
+
+    // 筛选状态
+    let selectedKnowledgePaths = new Set();
+    let selectedSelectedKnowledgePaths = new Set();
+
+    // 图片映射表：占位符关键词 -> SVG文件路径
+    const imageMap = {
+      'Hash': '../question-bank/images/hash-table.svg',
+      'Binary': '../question-bank/images/binary-tree.svg',
+      'Stack': '../question-bank/images/stack-operations.svg',
+      'Graph': '../question-bank/images/graph-structure.svg',
+      'Tree': '../question-bank/images/binary-tree.svg',
+      'Sorting': '../question-bank/images/sorting-process.svg',
+      'Social': '../question-bank/images/social-network.svg'
+    };
+
+    // 替换占位符图片URL
+    function replaceImageUrls(html) {
+      if (!html) return html;
+
+      // 匹配所有img标签
+      return html.replace(/<img[^>]*src=["']([^"']*placeholder[^"']*|https?:\/\/[^"']*\d+\?text=[^"']*)[^"']*["'][^>]*>/gi, (match, url) => {
+        // 从URL中提取关键词
+        let svgPath = null;
+
+        for (const [keyword, path] of Object.entries(imageMap)) {
+          if (url.includes(keyword)) {
+            svgPath = path;
+            break;
+          }
+        }
+
+        if (svgPath) {
+          // 提取原有的其他属性（如alt, style等）
+          const altMatch = match.match(/alt=["']([^"']*)["']/i);
+          const alt = altMatch ? altMatch[1] : '图片';
+
+          return `<img src="${svgPath}" alt="${alt}" style="max-width: 400px; height: auto; display: inline-block; vertical-align: middle; margin: 8px 0;" />`;
+        }
+
+        // 如果没有匹配到，使用默认图片
+        return `<img src="../question-bank/images/binary-tree.svg" alt="图片" style="max-width: 400px; height: auto; display: inline-block; vertical-align: middle; margin: 8px 0;" />`;
+      });
+    }
+
+    // 题型配置
+    const questionTypeConfig = {
+      single: { name: '单选题', color: 'bg-info-100 text-info-600' },
+      multiple: { name: '多选题', color: 'bg-purple-100 text-purple-600' },
+      judge: { name: '判断题', color: 'bg-indigo-100 text-indigo-600' },
+      blank: { name: '填空题', color: 'bg-warning-100 text-warning-600' },
+      shortAnswer: { name: '简答题', color: 'bg-amber-100 text-amber-600' },
+      cloze: { name: '完形填空', color: 'bg-pink-100 text-pink-600' },
+      composite: { name: '复合题', color: 'bg-purple-100 text-purple-600' }
+    };
+
+    // 题型归一化映射 - 将别名类型统一到主类型
+    const typeNormalizationMap = {
+      'essay': 'shortAnswer',
+      'short': 'shortAnswer'
+      // 其他类型保持原样
+    };
+
+    // 归一化题型 - 将别名转换为主类型
+    function normalizeType(type) {
+      return typeNormalizationMap[type] || type;
+    }
+
+    // 点击外部关闭下拉菜单
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.filter-dropdown')) {
+        document.querySelectorAll('.filter-dropdown-menu').forEach(menu => {
+          menu.classList.add('hidden');
+        });
+      }
+    });
+
+    // 切换下拉菜单
+    function toggleLibraryTypeDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('libraryTypeDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('libraryDifficultyDropdown').classList.add('hidden');
+      document.getElementById('libraryKnowledgeDropdown').classList.add('hidden');
+    }
+
+    function toggleLibraryDifficultyDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('libraryDifficultyDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('libraryTypeDropdown').classList.add('hidden');
+      document.getElementById('libraryKnowledgeDropdown').classList.add('hidden');
+    }
+
+    function toggleLibraryKnowledgeDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('libraryKnowledgeDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('libraryTypeDropdown').classList.add('hidden');
+      document.getElementById('libraryDifficultyDropdown').classList.add('hidden');
+    }
+
+    // 初始化
+    function init() {
+      // 读取试卷信息
+      paperInfo = JSON.parse(localStorage.getItem('currentPaper'));
+      if (!paperInfo) {
+        Message.error('未找到试卷信息，请返回重新创建');
+        setTimeout(() => window.location.href = 'list.html', 2000);
+        return;
+      }
+
+      // 初始化试卷信息显示
+      document.getElementById('paperNameDisplay').textContent = paperInfo.name || '未命名试卷';
+      document.getElementById('paperNameInput').value = paperInfo.name || '';
+      document.getElementById('paperCodeDisplay').textContent = paperInfo.code || '-';
+      document.getElementById('paperCodeInput').value = paperInfo.code || '';
+      document.getElementById('paperTotalScoreInput').value = paperInfo.totalScore || '';
+
+      // 检查是否为编辑模式
+      const urlParams = new URLSearchParams(window.location.search);
+      const paperId = urlParams.get('id');
+      const isEditMode = paperId && paperInfo.questions;
+
+      // 读取题库
+      allQuestions = JSON.parse(localStorage.getItem('allQuestions')) || [];
+
+      // 修正题目中的图片路径
+      allQuestions = allQuestions.map(q => {
+        if (q.content) {
+          // 替换本地图片路径
+          q.content = q.content.replace(/\.\/images\//g, '../question-bank/images/');
+          q.content = q.content.replace(/src="images\//g, 'src="../question-bank/images/');
+
+          // 替换 placeholder.com 占位符图片
+          q.content = replaceImageUrls(q.content);
+        }
+        if (q.options) {
+          q.options = q.options.map(opt => {
+            if (opt.text) {
+              opt.text = opt.text.replace(/\.\/images\//g, '../question-bank/images/');
+              opt.text = opt.text.replace(/src="images\//g, 'src="../question-bank/images/');
+              opt.text = replaceImageUrls(opt.text);
+            }
+            return opt;
+          });
+        }
+        return q;
+      });
+
+      if (allQuestions.length === 0) {
+        // 显示更友好的空状态提示
+        const container = document.getElementById('questionList');
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-16">
+            <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+            <p class="text-lg text-gray-600 mb-2">题库为空</p>
+            <p class="text-sm text-gray-500 mb-6">请先添加题目到题库，然后再来组卷</p>
+            <div class="flex space-x-3">
+              <button onclick="window.location.href='../question-bank/add.html'"
+                      class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>添加题目
+              </button>
+              <button onclick="window.location.href='../question-bank/list.html'"
+                      class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                <i class="fas fa-list mr-2"></i>查看题库
+              </button>
+            </div>
+          </div>
+        `;
+        document.getElementById('emptyState').classList.add('hidden');
+        return;
+      }
+
+      // 如果是编辑模式，恢复已选题目
+      if (isEditMode) {
+        paperInfo.questions.forEach(pq => {
+          selectedQuestions.set(pq.questionId, {
+            question: pq.question,
+            paperScore: parseFloat(pq.paperScore) || 0
+          });
+        });
+      }
+
+      // 初始化知识点筛选
+      initKnowledgeFilters();
+
+      // 应用筛选
+      applyLibraryFilters();
+      renderSelectedList();
+      updateStats();
+
+      // 初始化Transfer按钮状态
+      updateTransferButtons();
+      updateLeftSelectedCount();
+      updateRightSelectedCount();
+    }
+
+    // 切换编辑试卷名称
+    function toggleEditPaperName() {
+      const nameDisplay = document.getElementById('paperNameDisplay');
+      const nameInput = document.getElementById('paperNameInput');
+      const editBtn = document.getElementById('editPaperNameBtn');
+
+      // 如果当前是显示状态，切换到编辑状态
+      if (nameDisplay.classList.contains('hidden')) {
+        // 保存并切换回显示状态
+        savePaperName();
+      } else {
+        // 切换到编辑状态
+        nameDisplay.classList.add('hidden');
+        nameInput.classList.remove('hidden');
+        nameInput.focus();
+        nameInput.select();
+
+        editBtn.querySelector('i').classList.remove('fa-edit');
+        editBtn.querySelector('i').classList.add('fa-check');
+        editBtn.title = '保存';
+      }
+    }
+
+    // 保存试卷名称
+    function savePaperName() {
+      const nameDisplay = document.getElementById('paperNameDisplay');
+      const nameInput = document.getElementById('paperNameInput');
+      const editBtn = document.getElementById('editPaperNameBtn');
+
+      // 验证试卷名称
+      const newName = nameInput.value.trim();
+      if (!newName) {
+        Message.warning('试卷名称不能为空');
+        nameInput.focus();
+        return;
+      }
+
+      // 更新显示
+      nameDisplay.textContent = newName;
+      nameDisplay.classList.remove('hidden');
+      nameInput.classList.add('hidden');
+
+      // 更新按钮图标
+      editBtn.querySelector('i').classList.remove('fa-check');
+      editBtn.querySelector('i').classList.add('fa-edit');
+      editBtn.title = '编辑';
+
+      // 更新paperInfo对象
+      paperInfo.name = newName;
+    }
+
+    // 切换编辑试卷编号
+    function toggleEditPaperCode() {
+      const codeDisplay = document.getElementById('paperCodeDisplay');
+      const codeInput = document.getElementById('paperCodeInput');
+      const editBtn = document.getElementById('editPaperCodeBtn');
+
+      // 如果当前是显示状态，切换到编辑状态
+      if (codeDisplay.classList.contains('hidden')) {
+        // 保存并切换回显示状态
+        savePaperCode();
+      } else {
+        // 切换到编辑状态
+        codeDisplay.classList.add('hidden');
+        codeInput.classList.remove('hidden');
+        codeInput.focus();
+        codeInput.select();
+
+        editBtn.querySelector('i').classList.remove('fa-edit');
+        editBtn.querySelector('i').classList.add('fa-check');
+        editBtn.title = '保存';
+      }
+    }
+
+    // 保存试卷编号
+    function savePaperCode() {
+      const codeDisplay = document.getElementById('paperCodeDisplay');
+      const codeInput = document.getElementById('paperCodeInput');
+      const editBtn = document.getElementById('editPaperCodeBtn');
+
+      const newCode = codeInput.value.trim();
+
+      // 更新显示
+      codeDisplay.textContent = newCode || '-';
+      codeDisplay.classList.remove('hidden');
+      codeInput.classList.add('hidden');
+
+      // 更新按钮图标
+      editBtn.querySelector('i').classList.remove('fa-check');
+      editBtn.querySelector('i').classList.add('fa-edit');
+      editBtn.title = '编辑';
+
+      // 更新paperInfo对象
+      paperInfo.code = newCode;
+    }
+
+    // 初始化知识点级联筛选
+    let knowledgeTree = [];
+    let currentCascadeData = { level1: null, level2: null };
+
+    function initKnowledgeFilters() {
+      // 从题目中提取知识点路径并构建树形结构
+      const pathMap = new Map();
+
+      allQuestions.forEach(q => {
+        if (q.knowledgePath) {
+          const parts = q.knowledgePath.split(' / ');
+          const level1 = parts[0];
+          const level2 = parts[1] || null;
+          const level3 = parts[2] || null;
+
+          if (!pathMap.has(level1)) {
+            pathMap.set(level1, { name: level1, children: new Map() });
+          }
+
+          if (level2) {
+            const level1Node = pathMap.get(level1);
+            if (!level1Node.children.has(level2)) {
+              level1Node.children.set(level2, { name: level2, children: new Set() });
+            }
+
+            if (level3) {
+              level1Node.children.get(level2).children.add(level3);
+            }
+          }
+        }
+      });
+
+      // 转换为数组结构
+      knowledgeTree = Array.from(pathMap.values()).map(node => ({
+        name: node.name,
+        children: Array.from(node.children.entries()).map(([name, data]) => ({
+          name: name,
+          children: Array.from(data.children)
+        }))
+      }));
+
+      // 渲染第一级
+      renderCascadeLevel1();
+    }
+
+    function renderCascadeLevel1() {
+      const container = document.getElementById('cascadeLevel1');
+      container.innerHTML = knowledgeTree.map(node => `
+        <div class="cascade-item ${selectedKnowledgePaths.has(node.name) ? 'selected' : ''}"
+             onclick="selectKnowledgeLevel1('${node.name}', event)">
+          <span>${node.name}</span>
+          ${node.children.length > 0 ? '<i class="fas fa-chevron-right text-xs text-gray-400"></i>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderCascadeLevel2(level1Name) {
+      const level1Node = knowledgeTree.find(n => n.name === level1Name);
+      const container = document.getElementById('cascadeLevel2');
+
+      if (!level1Node || level1Node.children.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = level1Node.children.map(node => {
+        const fullPath = `${level1Name} / ${node.name}`;
+        return `
+          <div class="cascade-item ${selectedKnowledgePaths.has(fullPath) ? 'selected' : ''}"
+               onclick="selectKnowledgeLevel2('${level1Name}', '${node.name}', event)">
+            <span>${node.name}</span>
+            ${node.children.length > 0 ? '<i class="fas fa-chevron-right text-xs text-gray-400"></i>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCascadeLevel3(level1Name, level2Name) {
+      const level1Node = knowledgeTree.find(n => n.name === level1Name);
+      if (!level1Node) return;
+
+      const level2Node = level1Node.children.find(n => n.name === level2Name);
+      const container = document.getElementById('cascadeLevel3');
+
+      if (!level2Node || level2Node.children.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = level2Node.children.map(name => {
+        const fullPath = `${level1Name} / ${level2Name} / ${name}`;
+        return `
+          <div class="cascade-item ${selectedKnowledgePaths.has(fullPath) ? 'selected' : ''}"
+               onclick="selectKnowledgeLevel3('${level1Name}', '${level2Name}', '${name}', event)">
+            <span>${name}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectKnowledgeLevel1(name, event) {
+      event.stopPropagation();
+      currentCascadeData.level1 = name;
+      currentCascadeData.level2 = null;
+
+      // 切换选中状态
+      if (selectedKnowledgePaths.has(name)) {
+        selectedKnowledgePaths.delete(name);
+      } else {
+        selectedKnowledgePaths.add(name);
+      }
+
+      renderCascadeLevel1();
+      renderCascadeLevel2(name);
+      document.getElementById('cascadeLevel3').innerHTML = '';
+      applyLibraryFilters();
+    }
+
+    function selectKnowledgeLevel2(level1Name, level2Name, event) {
+      event.stopPropagation();
+      currentCascadeData.level2 = level2Name;
+      const fullPath = `${level1Name} / ${level2Name}`;
+
+      // 切换选中状态
+      if (selectedKnowledgePaths.has(fullPath)) {
+        selectedKnowledgePaths.delete(fullPath);
+      } else {
+        selectedKnowledgePaths.add(fullPath);
+      }
+
+      renderCascadeLevel2(level1Name);
+      renderCascadeLevel3(level1Name, level2Name);
+      applyLibraryFilters();
+    }
+
+    function selectKnowledgeLevel3(level1Name, level2Name, level3Name, event) {
+      event.stopPropagation();
+      const fullPath = `${level1Name} / ${level2Name} / ${level3Name}`;
+
+      // 切换选中状态
+      if (selectedKnowledgePaths.has(fullPath)) {
+        selectedKnowledgePaths.delete(fullPath);
+      } else {
+        selectedKnowledgePaths.add(fullPath);
+      }
+
+      renderCascadeLevel3(level1Name, level2Name);
+      applyLibraryFilters();
+    }
+
+    // 应用题库筛选
+    function applyLibraryFilters() {
+      const selectedTypes = Array.from(document.querySelectorAll('.library-type-filter:checked')).map(cb => cb.value);
+      const selectedDifficulties = Array.from(document.querySelectorAll('.library-difficulty-filter:checked')).map(cb => cb.value);
+      const search = document.getElementById('librarySearch').value.toLowerCase();
+
+      filteredLibraryQuestions = allQuestions.filter(q => {
+        // 排除已选到右边的题目
+        if (selectedQuestions.has(q.id)) {
+          return false;
+        }
+
+        // 如果开启了"仅显示已选"，只显示已选中的题目
+        if (showOnlySelected && !selectedQuestions.has(q.id)) {
+          return false;
+        }
+
+        const normalizedType = normalizeType(q.type);
+        if (selectedTypes.length > 0 && !selectedTypes.includes(normalizedType)) return false;
+        if (selectedDifficulties.length > 0 && !selectedDifficulties.includes(String(q.difficulty))) return false;
+
+        // 知识点筛选：如果选中了知识点，检查题目的知识点路径是否匹配
+        if (selectedKnowledgePaths.size > 0) {
+          let matched = false;
+          selectedKnowledgePaths.forEach(path => {
+            if (q.knowledgePath && q.knowledgePath.startsWith(path)) {
+              matched = true;
+            }
+          });
+          if (!matched) return false;
+        }
+
+        if (search && !stripHtml(q.content).toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      // 更新筛选器计数标记
+      document.getElementById('libraryTypeCount').textContent = selectedTypes.length;
+      document.getElementById('libraryTypeCount').classList.toggle('hidden', selectedTypes.length === 0);
+      document.getElementById('libraryDifficultyCount').textContent = selectedDifficulties.length;
+      document.getElementById('libraryDifficultyCount').classList.toggle('hidden', selectedDifficulties.length === 0);
+      document.getElementById('libraryKnowledgeCount').textContent = selectedKnowledgePaths.size;
+      document.getElementById('libraryKnowledgeCount').classList.toggle('hidden', selectedKnowledgePaths.size === 0);
+
+      libraryCurrentPage = 1;
+      renderLibraryList();
+    }
+
+    // 重置题库筛选
+    function resetLibraryFilters() {
+      document.querySelectorAll('.library-type-filter').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.library-difficulty-filter').forEach(cb => cb.checked = false);
+      selectedKnowledgePaths.clear();
+      document.getElementById('librarySearch').value = '';
+
+      renderCascadeLevel1();
+      document.getElementById('cascadeLevel2').innerHTML = '';
+      document.getElementById('cascadeLevel3').innerHTML = '';
+      applyLibraryFilters();
+    }
+
+    // ==================== 左侧选择功能 ====================
+
+    // 切换左侧题目选中状态
+    function toggleLeftSelection(questionId, event) {
+      event.stopPropagation();
+      if (leftTempSelected.has(questionId)) {
+        leftTempSelected.delete(questionId);
+      } else {
+        leftTempSelected.add(questionId);
+      }
+      renderLibraryList();
+      updateTransferButtons();
+      updateLeftSelectedCount();
+    }
+
+    // 切换全选本页（左侧）- 复选框触发
+    function toggleSelectAllPage() {
+      const checkbox = document.getElementById('selectAllPageCheckbox');
+      if (checkbox.checked) {
+        selectAllCurrentPage();
+      } else {
+        deselectCurrentPage();
+      }
+    }
+
+    // 全选本页（左侧）
+    function selectAllCurrentPage() {
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      pageData.forEach(q => {
+        if (!selectedQuestions.has(q.id)) {
+          leftTempSelected.add(q.id);
+        }
+      });
+
+      renderLibraryList();
+      updateTransferButtons();
+      updateLeftSelectedCount();
+      updateSelectAllCheckbox();
+    }
+
+    // 取消选择本页（左侧）
+    function deselectCurrentPage() {
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      pageData.forEach(q => {
+        leftTempSelected.delete(q.id);
+      });
+
+      renderLibraryList();
+      updateTransferButtons();
+      updateLeftSelectedCount();
+      updateSelectAllCheckbox();
+    }
+
+    // 按筛选全选（左侧）
+    function selectAllFiltered() {
+      let count = 0;
+      filteredLibraryQuestions.forEach(q => {
+        if (!selectedQuestions.has(q.id)) {
+          leftTempSelected.add(q.id);
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        Message.success(`已选中 ${count} 道题目`);
+        renderLibraryList();
+        updateTransferButtons();
+        updateLeftSelectedCount();
+      } else {
+        Message.warning('没有可选的题目');
+      }
+    }
+
+    // 取消全选（左侧）
+    function deselectAllLeft() {
+      leftTempSelected.clear();
+      renderLibraryList();
+      updateTransferButtons();
+      updateLeftSelectedCount();
+    }
+
+    // 关闭左侧全选下拉菜单
+    function closeSelectAllDropdown() {
+      document.getElementById('selectAllDropdown').classList.add('hidden');
+    }
+
+    // 更新左侧选中数量
+    function updateLeftSelectedCount() {
+      // 已移除左侧选中数量显示，此函数保留以兼容其他调用
+    }
+
+    // 更新全选复选框状态
+    function updateSelectAllCheckbox() {
+      const checkbox = document.getElementById('selectAllPageCheckbox');
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      if (pageData.length === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+        return;
+      }
+
+      // 检查本页有多少题目被选中
+      const selectedOnPage = pageData.filter(q => leftTempSelected.has(q.id)).length;
+
+      if (selectedOnPage === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+      } else if (selectedOnPage === pageData.length) {
+        checkbox.checked = true;
+        checkbox.indeterminate = false;
+      } else {
+        checkbox.checked = false;
+        checkbox.indeterminate = true;
+      }
+    }
+
+    // 更新页面统计数量
+    function updatePageStats() {
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = Math.min(start + pageSize, filteredLibraryQuestions.length);
+      const currentPageCount = end - start;
+
+      document.getElementById('currentPageCount').textContent = currentPageCount;
+      document.getElementById('filteredCount').textContent = filteredLibraryQuestions.length;
+    }
+
+    // 全局点击事件 - 关闭下拉菜单
+    document.addEventListener('click', function(e) {
+      const selectAllDropdown = document.getElementById('selectAllDropdown');
+      const selectAllBtn = selectAllDropdown?.previousElementSibling;
+      if (selectAllDropdown && !selectAllDropdown.contains(e.target) && !selectAllBtn?.contains(e.target)) {
+        selectAllDropdown.classList.add('hidden');
+      }
+    });
+
+    // ==================== 右侧选择功能 ====================
+
+    // 切换右侧题目选中状态
+    function toggleRightSelection(questionId, event) {
+      event.stopPropagation();
+      if (rightTempSelected.has(questionId)) {
+        rightTempSelected.delete(questionId);
+      } else {
+        rightTempSelected.add(questionId);
+      }
+      // 不要重新渲染整个列表，只更新复选框状态
+      // renderSelectedList();
+
+      // 只更新当前卡片的选中状态（避免重新渲染导致输入框内容丢失）
+      const card = event.currentTarget;
+      const checkbox = card.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        checkbox.checked = rightTempSelected.has(questionId);
+      }
+
+      // 更新边框样式
+      if (rightTempSelected.has(questionId)) {
+        card.classList.remove('border-gray-200');
+        card.classList.add('border-primary-500', 'shadow-md');
+      } else {
+        card.classList.remove('border-primary-500', 'shadow-md');
+        card.classList.add('border-gray-200');
+      }
+
+      updateTransferButtons();
+      updateRightSelectedCount();
+    }
+
+    // 切换全选本页（右侧）- checkbox 版本
+    function toggleSelectAllRightPage() {
+      const checkbox = document.getElementById('selectAllRightPageCheckbox');
+      const start = (selectedCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredSelectedQuestions.slice(start, end);
+
+      if (checkbox.checked) {
+        // 全选本页
+        pageData.forEach(item => {
+          rightTempSelected.add(item.id);
+        });
+      } else {
+        // 取消本页选中
+        pageData.forEach(item => {
+          rightTempSelected.delete(item.id);
+        });
+      }
+
+      renderSelectedList();
+      updateTransferButtons();
+      updateRightSelectedCount();
+      updateRightPageStats();
+    }
+
+    // 全选本页（右侧）
+    function selectAllRightCurrentPage() {
+      const start = (selectedCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredSelectedQuestions.slice(start, end);
+
+      pageData.forEach(item => {
+        rightTempSelected.add(item.id);
+      });
+
+      renderSelectedList();
+      updateTransferButtons();
+      updateRightSelectedCount();
+      updateRightPageStats();
+    }
+
+    // 按筛选全选（右侧）
+    function selectAllRightFiltered() {
+      let count = 0;
+      filteredSelectedQuestions.forEach(item => {
+        rightTempSelected.add(item.id);
+        count++;
+      });
+
+      if (count > 0) {
+        Message.success(`已选中 ${count} 道题目`);
+        renderSelectedList();
+        updateTransferButtons();
+        updateRightSelectedCount();
+        updateRightPageStats();
+      } else {
+        Message.warning('没有可选的题目');
+      }
+    }
+
+    // 取消全选（右侧）
+    function deselectAllRight() {
+      rightTempSelected.clear();
+      renderSelectedList();
+      updateTransferButtons();
+      updateRightSelectedCount();
+      updateRightPageStats();
+    }
+
+    // 更新右侧选中数量
+    function updateRightSelectedCount() {
+      // 更新右侧选中数量（已移除 rightSelectedCount 元素，此函数保留以兼容其他调用）
+    }
+
+    // 更新右侧页面统计信息
+    function updateRightPageStats() {
+      const start = (selectedCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredSelectedQuestions.slice(start, end);
+
+      // 更新本页数量
+      const rightCurrentPageCountEl = document.getElementById('rightCurrentPageCount');
+      if (rightCurrentPageCountEl) {
+        rightCurrentPageCountEl.textContent = pageData.length;
+      }
+
+      // 更新筛选结果数量
+      const rightFilteredCountEl = document.getElementById('rightFilteredCount');
+      if (rightFilteredCountEl) {
+        rightFilteredCountEl.textContent = filteredSelectedQuestions.length;
+      }
+
+      // 更新全选本页 checkbox 状态
+      const selectAllCheckbox = document.getElementById('selectAllRightPageCheckbox');
+      if (selectAllCheckbox && pageData.length > 0) {
+        const allSelected = pageData.every(item => rightTempSelected.has(item.id));
+        const someSelected = pageData.some(item => rightTempSelected.has(item.id));
+        selectAllCheckbox.checked = allSelected;
+        selectAllCheckbox.indeterminate = someSelected && !allSelected;
+      } else if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+      }
+    }
+
+    // ==================== 穿梭功能 ====================
+
+    // 转移到右侧
+    function transferToRight() {
+      if (leftTempSelected.size === 0) {
+        Message.warning('请先选择要转移的题目');
+        return;
+      }
+
+      let count = 0;
+      leftTempSelected.forEach(questionId => {
+        const question = allQuestions.find(q => q.id === questionId);
+        if (question && !selectedQuestions.has(questionId)) {
+          selectedQuestions.set(questionId, {
+            question: question,
+            paperScore: parseFloat(question.score) || 0
+          });
+          count++;
+        }
+      });
+
+      leftTempSelected.clear();
+
+      Message.success(`已转移 ${count} 道题目到右侧`);
+
+      applyLibraryFilters();
+      applySelectedFilters();
+      updateStats();
+      updateTransferButtons();
+      updateLeftSelectedCount();
+    }
+
+    // 转移到左侧（移回）
+    function transferToLeft() {
+      if (rightTempSelected.size === 0) {
+        Message.warning('请先选择要移回的题目');
+        return;
+      }
+
+      let count = 0;
+      rightTempSelected.forEach(questionId => {
+        if (selectedQuestions.has(questionId)) {
+          selectedQuestions.delete(questionId);
+          count++;
+        }
+      });
+
+      rightTempSelected.clear();
+
+      Message.success(`已移回 ${count} 道题目到左侧`);
+
+      applyLibraryFilters();
+      applySelectedFilters();
+      updateStats();
+      updateTransferButtons();
+      updateRightSelectedCount();
+    }
+
+    // 更新穿梭按钮状态
+    function updateTransferButtons() {
+      const toRightBtn = document.getElementById('toRightBtn');
+      const toLeftBtn = document.getElementById('toLeftBtn');
+
+      toRightBtn.disabled = leftTempSelected.size === 0;
+      toLeftBtn.disabled = rightTempSelected.size === 0;
+
+      document.getElementById('toRightCount').textContent = leftTempSelected.size;
+      document.getElementById('toLeftCount').textContent = rightTempSelected.size;
+    }
+
+    // ==================== 右侧已选题目筛选 ====================
+
+    // 切换下拉框
+    function toggleSelectedTypeDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('selectedTypeDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('selectedDifficultyDropdown').classList.add('hidden');
+      document.getElementById('selectedKnowledgeDropdown').classList.add('hidden');
+    }
+
+    function toggleSelectedDifficultyDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('selectedDifficultyDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('selectedTypeDropdown').classList.add('hidden');
+      document.getElementById('selectedKnowledgeDropdown').classList.add('hidden');
+    }
+
+    function toggleSelectedKnowledgeDropdown() {
+      event.stopPropagation();
+      const dropdown = document.getElementById('selectedKnowledgeDropdown');
+      dropdown.classList.toggle('hidden');
+      document.getElementById('selectedTypeDropdown').classList.add('hidden');
+      document.getElementById('selectedDifficultyDropdown').classList.add('hidden');
+      if (!dropdown.classList.contains('hidden')) {
+        renderSelectedCascadeLevel1();
+      }
+    }
+
+    // 知识点级联选择
+    let currentSelectedCascadeData = { level1: null, level2: null };
+
+    function renderSelectedCascadeLevel1() {
+      const container = document.getElementById('selectedCascadeLevel1');
+      container.innerHTML = knowledgeTree.map(node => `
+        <div class="cascade-item ${selectedSelectedKnowledgePaths.has(node.name) ? 'selected' : ''}"
+             onclick="selectSelectedKnowledgeLevel1('${node.name}', event)">
+          <span>${node.name}</span>
+          ${node.children.length > 0 ? '<i class="fas fa-chevron-right text-xs text-gray-400"></i>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderSelectedCascadeLevel2(level1Name) {
+      const level1Node = knowledgeTree.find(n => n.name === level1Name);
+      const container = document.getElementById('selectedCascadeLevel2');
+
+      if (!level1Node || level1Node.children.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = level1Node.children.map(node => {
+        const fullPath = `${level1Name} / ${node.name}`;
+        return `
+          <div class="cascade-item ${selectedSelectedKnowledgePaths.has(fullPath) ? 'selected' : ''}"
+               onclick="selectSelectedKnowledgeLevel2('${level1Name}', '${node.name}', event)">
+            <span>${node.name}</span>
+            ${node.children.length > 0 ? '<i class="fas fa-chevron-right text-xs text-gray-400"></i>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSelectedCascadeLevel3(level1Name, level2Name) {
+      const level1Node = knowledgeTree.find(n => n.name === level1Name);
+      if (!level1Node) return;
+
+      const level2Node = level1Node.children.find(n => n.name === level2Name);
+      const container = document.getElementById('selectedCascadeLevel3');
+
+      if (!level2Node || level2Node.children.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = level2Node.children.map(name => {
+        const fullPath = `${level1Name} / ${level2Name} / ${name}`;
+        return `
+          <div class="cascade-item ${selectedSelectedKnowledgePaths.has(fullPath) ? 'selected' : ''}"
+               onclick="selectSelectedKnowledgeLevel3('${level1Name}', '${level2Name}', '${name}', event)">
+            <span>${name}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectSelectedKnowledgeLevel1(name, event) {
+      event.stopPropagation();
+      currentSelectedCascadeData.level1 = name;
+      currentSelectedCascadeData.level2 = null;
+
+      if (selectedSelectedKnowledgePaths.has(name)) {
+        selectedSelectedKnowledgePaths.delete(name);
+      } else {
+        selectedSelectedKnowledgePaths.add(name);
+      }
+
+      renderSelectedCascadeLevel1();
+      renderSelectedCascadeLevel2(name);
+      document.getElementById('selectedCascadeLevel3').innerHTML = '';
+      applySelectedFilters();
+    }
+
+    function selectSelectedKnowledgeLevel2(level1Name, level2Name, event) {
+      event.stopPropagation();
+      currentSelectedCascadeData.level2 = level2Name;
+      const fullPath = `${level1Name} / ${level2Name}`;
+
+      if (selectedSelectedKnowledgePaths.has(fullPath)) {
+        selectedSelectedKnowledgePaths.delete(fullPath);
+      } else {
+        selectedSelectedKnowledgePaths.add(fullPath);
+      }
+
+      renderSelectedCascadeLevel2(level1Name);
+      renderSelectedCascadeLevel3(level1Name, level2Name);
+      applySelectedFilters();
+    }
+
+    function selectSelectedKnowledgeLevel3(level1Name, level2Name, level3Name, event) {
+      event.stopPropagation();
+      const fullPath = `${level1Name} / ${level2Name} / ${level3Name}`;
+
+      if (selectedSelectedKnowledgePaths.has(fullPath)) {
+        selectedSelectedKnowledgePaths.delete(fullPath);
+      } else {
+        selectedSelectedKnowledgePaths.add(fullPath);
+      }
+
+      renderSelectedCascadeLevel3(level1Name, level2Name);
+      applySelectedFilters();
+    }
+
+    // 应用已选题目筛选
+    function applySelectedFilters() {
+      const selectedTypes = Array.from(document.querySelectorAll('.selected-type-filter:checked')).map(cb => cb.value);
+      const selectedDifficulties = Array.from(document.querySelectorAll('.selected-difficulty-filter:checked')).map(cb => cb.value);
+      const search = document.getElementById('selectedSearch').value.toLowerCase();
+
+      const allSelectedArray = Array.from(selectedQuestions.entries()).map(([id, data]) => ({
+        id,
+        ...data
+      }));
+
+      filteredSelectedQuestions = allSelectedArray.filter(item => {
+        const q = item.question;
+        const normalizedType = normalizeType(q.type);
+        if (selectedTypes.length > 0 && !selectedTypes.includes(normalizedType)) return false;
+        if (selectedDifficulties.length > 0 && !selectedDifficulties.includes(String(q.difficulty))) return false;
+
+        if (selectedSelectedKnowledgePaths.size > 0) {
+          let matched = false;
+          selectedSelectedKnowledgePaths.forEach(path => {
+            if (q.knowledgePath && q.knowledgePath.startsWith(path)) {
+              matched = true;
+            }
+          });
+          if (!matched) return false;
+        }
+
+        if (search && !stripHtml(q.content).toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      document.getElementById('selectedTypeCount').textContent = selectedTypes.length;
+      document.getElementById('selectedTypeCount').classList.toggle('hidden', selectedTypes.length === 0);
+      document.getElementById('selectedDifficultyCount').textContent = selectedDifficulties.length;
+      document.getElementById('selectedDifficultyCount').classList.toggle('hidden', selectedDifficulties.length === 0);
+      document.getElementById('selectedKnowledgeCount').textContent = selectedSelectedKnowledgePaths.size;
+      document.getElementById('selectedKnowledgeCount').classList.toggle('hidden', selectedSelectedKnowledgePaths.size === 0);
+
+      selectedCurrentPage = 1;
+      renderSelectedList();
+      updateRightPageStats();
+    }
+
+    // 重置已选题目筛选
+    function resetSelectedFilters() {
+      document.querySelectorAll('.selected-type-filter').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.selected-difficulty-filter').forEach(cb => cb.checked = false);
+      selectedSelectedKnowledgePaths.clear();
+      document.getElementById('selectedSearch').value = '';
+      renderSelectedCascadeLevel1();
+      document.getElementById('selectedCascadeLevel2').innerHTML = '';
+      document.getElementById('selectedCascadeLevel3').innerHTML = '';
+      applySelectedFilters();
+    }
+
+    // ==================== End 右侧已选题目筛选 ====================
+
+    // 渲染题库列表
+    function renderLibraryList() {
+      const container = document.getElementById('questionList');
+      const emptyState = document.getElementById('emptyState');
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      if (pageData.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        container.innerHTML = pageData.map(q => createQuestionCard(q)).join('');
+      }
+
+      updateLibraryPagination();
+      updateSelectAllCheckbox();
+      updatePageStats();
+    }
+
+    // 创建题目卡片（左侧）
+    function createQuestionCard(q) {
+      const normalizedType = normalizeType(q.type); // 归一化题型
+      const typeConfig = questionTypeConfig[normalizedType] || { name: q.typeName, color: 'bg-gray-100 text-gray-600' };
+      const isChecked = leftTempSelected.has(q.id); // 临时选中
+      const score = q.score || 0;
+
+      return `
+        <div class="question-card bg-white border ${isChecked ? 'border-primary-500 shadow-md' : 'border-gray-200'} rounded-lg cursor-pointer hover:border-primary-300 hover:shadow-sm transition-all"
+             onclick="toggleLeftSelection('${q.id}', event)">
+          <div class="px-3 py-2.5">
+            <div class="flex items-start space-x-2.5">
+              <input type="checkbox" ${isChecked ? 'checked' : ''}
+                     onclick="event.stopPropagation()"
+                     onchange="toggleLeftSelection('${q.id}', event)"
+                     class="mt-0.5 w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2 py-0.5 rounded text-xs font-medium ${typeConfig.color}">${typeConfig.name}</span>
+                    <span class="difficulty-badge difficulty-${q.difficulty || 1}">${getDifficultyText(q.difficulty)}</span>
+                    ${q.knowledgePath ? `<span class="text-xs text-gray-400 truncate max-w-[150px]">${q.knowledgePath}</span>` : ''}
+                  </div>
+                  <button onclick="event.stopPropagation(); showQuestionDetail('${q.id}')"
+                          class="flex items-center text-xs text-primary-500 hover:text-primary-600 font-medium whitespace-nowrap">
+                    <span>展开详情</span>
+                    <i class="fas fa-chevron-right ml-1 text-[10px]"></i>
+                  </button>
+                </div>
+                <div class="text-sm text-gray-900 mt-1.5 line-clamp-2">${stripHtml(q.content)}</div>
+                <div class="text-xs text-gray-400 mt-1">原分数: ${score} 分</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 获取难度文本
+    function getDifficultyText(difficulty) {
+      const levelMap = { 1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级' };
+      return levelMap[difficulty] || '一级';
+    }
+
+    // 去除 HTML 标签
+    function stripHtml(html) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    }
+
+    // 切换题目选择
+    function toggleQuestion(questionId) {
+      const question = allQuestions.find(q => q.id === questionId);
+      if (!question) return;
+
+      if (selectedQuestions.has(questionId)) {
+        selectedQuestions.delete(questionId);
+      } else {
+        selectedQuestions.set(questionId, {
+          question: question,
+          paperScore: parseFloat(question.score) || 0
+        });
+      }
+
+      renderLibraryList();
+
+      // 如果有筛选条件，重新应用筛选；否则直接渲染
+      if (document.querySelectorAll('.selected-type-filter:checked').length > 0 ||
+          document.querySelectorAll('.selected-difficulty-filter:checked').length > 0 ||
+          selectedSelectedKnowledgePaths.size > 0 ||
+          document.getElementById('selectedSearch').value) {
+        applySelectedFilters();
+      } else {
+        renderSelectedList();
+      }
+
+      updateStats();
+    }
+
+    // 更新题目分数
+    function updateScore(questionId, newScore) {
+      // 允许输入框为空，不立即转为 0
+      const score = newScore === '' ? '' : (parseFloat(newScore) || 0);
+      if (selectedQuestions.has(questionId)) {
+        const item = selectedQuestions.get(questionId);
+        item.paperScore = score;
+        // 只更新统计信息，不重新渲染列表（避免输入时 DOM 被破坏）
+        updateStats();
+      }
+    }
+
+    // 当输入框失去焦点时，验证并设置默认值
+    function validateScore(questionId, inputElement) {
+      const value = inputElement.value.trim();
+      if (value === '' || isNaN(parseFloat(value))) {
+        // 如果为空或无效，设置为 0
+        inputElement.value = 0;
+        if (selectedQuestions.has(questionId)) {
+          const item = selectedQuestions.get(questionId);
+          item.paperScore = 0;
+          updateStats();
+        }
+      } else {
+        const score = Math.max(0, parseFloat(value));
+        inputElement.value = score;
+        if (selectedQuestions.has(questionId)) {
+          const item = selectedQuestions.get(questionId);
+          item.paperScore = score;
+          updateStats();
+        }
+      }
+    }
+
+    // 批量移除某题型的所有题目
+    function removeTypeQuestions(type) {
+      const typeConfig = questionTypeConfig[type] || { name: '题目' };
+      let count = 0;
+
+      const idsToRemove = [];
+      selectedQuestions.forEach((data, id) => {
+        const normalizedType = normalizeType(data.question.type);
+        if (normalizedType === type) {
+          idsToRemove.push(id);
+          count++;
+        }
+      });
+
+      if (count === 0) return;
+
+      if (confirm(`确定要移除全部 ${count} 道${typeConfig.name}吗？`)) {
+        idsToRemove.forEach(id => selectedQuestions.delete(id));
+
+        // 清除该题型的批量分数输入值
+        delete batchScores[type];
+
+        renderLibraryList();
+        renderSelectedList();
+        updateStats();
+        Message.success(`已移除 ${count} 道${typeConfig.name}`);
+      }
+    }
+
+    // 批量设置某题型的分数
+    function batchSetScore(type) {
+      const input = document.getElementById(`batch-score-${type}`);
+      const score = parseFloat(input.value);
+
+      // 保存输入值
+      batchScores[type] = input.value;
+
+      // 如果输入为空，回退到原题目分数
+      if (input.value === '') {
+        let count = 0;
+        selectedQuestions.forEach((data, id) => {
+          const normalizedType = normalizeType(data.question.type);
+          if (normalizedType === type) {
+            data.paperScore = parseFloat(data.question.score) || 0;
+            count++;
+          }
+        });
+
+        if (count > 0) {
+          syncFilteredSelectedScores();
+          renderSelectedList();
+          updateStats();
+        }
+        return;
+      }
+
+      // 如果分数无效，不做任何操作
+      if (isNaN(score) || score < 0) {
+        return;
+      }
+
+      let count = 0;
+      selectedQuestions.forEach((data, id) => {
+        const normalizedType = normalizeType(data.question.type);
+        if (normalizedType === type) {
+          data.paperScore = score;
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        // 同步更新 filteredSelectedQuestions 中的分数
+        syncFilteredSelectedScores();
+        renderSelectedList();
+        updateStats();
+      }
+    }
+
+    // 批量设置所有题目的分数
+    function applyBatchScore() {
+      const input = document.getElementById('batchScoreInput');
+      const score = parseFloat(input.value);
+
+      // 如果输入为空，回退到原题目分数
+      if (input.value === '') {
+        let count = 0;
+
+        // 如果有临时选中的题目，只回退这些题目
+        if (rightTempSelected.size > 0) {
+          rightTempSelected.forEach(questionId => {
+            const data = selectedQuestions.get(questionId);
+            if (data) {
+              data.paperScore = parseFloat(data.question.score) || 0;
+              count++;
+            }
+          });
+        } else {
+          // 回退所有题目
+          selectedQuestions.forEach((data, id) => {
+            data.paperScore = parseFloat(data.question.score) || 0;
+            count++;
+          });
+        }
+
+        if (count > 0) {
+          syncFilteredSelectedScores();
+          renderSelectedList();
+          updateStats();
+        }
+        return;
+      }
+
+      // 如果分数无效，不做任何操作
+      if (isNaN(score) || score < 0) {
+        return;
+      }
+
+      // 如果有临时选中的题目，则只对这些题目设置分数
+      if (rightTempSelected.size > 0) {
+        let count = 0;
+        rightTempSelected.forEach(questionId => {
+          const data = selectedQuestions.get(questionId);
+          if (data) {
+            data.paperScore = score;
+            count++;
+          }
+        });
+
+        if (count > 0) {
+          // 同步更新 filteredSelectedQuestions 中的分数
+          syncFilteredSelectedScores();
+          renderSelectedList();
+          updateStats();
+          Message.success(`已为 ${count} 道选中题目设置分数为 ${score} 分`);
+        }
+        return;
+      }
+
+      // 如果没有临时选中，对所有题目设置分数
+      if (selectedQuestions.size === 0) {
+        Message.warning('请先选择题目');
+        return;
+      }
+
+      let count = 0;
+      selectedQuestions.forEach((data, id) => {
+        data.paperScore = score;
+        count++;
+      });
+
+      if (count > 0) {
+        // 同步更新 filteredSelectedQuestions 中的分数
+        syncFilteredSelectedScores();
+        renderSelectedList();
+        updateStats();
+        Message.success(`已为 ${count} 道题目设置分数为 ${score} 分`);
+      }
+    }
+
+    // 同步 filteredSelectedQuestions 中的分数与 selectedQuestions 保持一致
+    function syncFilteredSelectedScores() {
+      filteredSelectedQuestions.forEach(item => {
+        const data = selectedQuestions.get(item.id);
+        if (data) {
+          item.paperScore = data.paperScore;
+        }
+      });
+    }
+
+    // 批量删除所有题目
+    function batchDeleteAll() {
+      // 如果有临时选中的题目，则只删除这些题目
+      if (rightTempSelected.size > 0) {
+        const count = rightTempSelected.size;
+        if (confirm(`确定要删除选中的 ${count} 道题目吗？`)) {
+          rightTempSelected.forEach(questionId => {
+            selectedQuestions.delete(questionId);
+          });
+          rightTempSelected.clear();
+
+          applyLibraryFilters();
+          applySelectedFilters();
+          updateStats();
+          updateTransferButtons();
+          Message.success(`已删除 ${count} 道题目`);
+        }
+        return;
+      }
+
+      // 如果没有临时选中，删除全部
+      if (selectedQuestions.size === 0) {
+        Message.warning('没有可删除的题目');
+        return;
+      }
+
+      const count = selectedQuestions.size;
+      if (confirm(`确定要删除全部 ${count} 道题目吗？`)) {
+        selectedQuestions.clear();
+        document.getElementById('batchScoreInput').value = '';
+        applyLibraryFilters();
+        applySelectedFilters();
+        updateStats();
+        Message.success(`已删除 ${count} 道题目`);
+      }
+    }
+
+    // 删除单个已选题目
+    function deleteSelectedQuestion(questionId) {
+      if (!selectedQuestions.has(questionId)) {
+        return;
+      }
+
+      selectedQuestions.delete(questionId);
+      // 如果该题目在右侧临时选中列表中，也移除
+      if (rightTempSelected.has(questionId)) {
+        rightTempSelected.delete(questionId);
+      }
+
+      applyLibraryFilters();
+      applySelectedFilters();
+      updateStats();
+      updateTransferButtons();
+      Message.success('已移除该题目');
+    }
+
+    // 渲染已选题目列表（Transfer模式）
+    function renderSelectedList() {
+      const container = document.getElementById('selectedList');
+      const emptyState = document.getElementById('selectedEmpty');
+
+      if (selectedQuestions.size === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        filteredSelectedQuestions = [];
+        updateRightSelectedCount();
+        updateSelectedPagination();
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // 如果没有应用筛选，使用所有已选题目
+      if (filteredSelectedQuestions.length === 0 &&
+          document.querySelectorAll('.selected-type-filter:checked').length === 0 &&
+          document.querySelectorAll('.selected-difficulty-filter:checked').length === 0 &&
+          selectedSelectedKnowledgePaths.size === 0 &&
+          !document.getElementById('selectedSearch').value) {
+        filteredSelectedQuestions = Array.from(selectedQuestions.entries()).map(([id, data]) => ({
+          id,
+          ...data
+        }));
+      }
+
+      const start = (selectedCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredSelectedQuestions.slice(start, end);
+
+      // 如果筛选后没有结果
+      if (pageData.length === 0 && filteredSelectedQuestions.length === 0) {
+        container.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fas fa-inbox text-4xl mb-3"></i><p class="text-sm">没有找到符合条件的题目</p></div>';
+        updateSelectedPagination();
+        return;
+      }
+
+      // 渲染题目列表
+      let html = '<div class="space-y-3">';
+
+      pageData.forEach((item, index) => {
+        const q = item.question;
+        const globalIndex = start + index + 1;
+        const normalizedType = normalizeType(q.type); // 归一化题型
+        const typeConfig = questionTypeConfig[normalizedType] || { name: q.typeName, color: 'bg-gray-100 text-gray-600' };
+        const isChecked = rightTempSelected.has(item.id); // 是否被临时选中
+
+        html += `
+          <div class="bg-white border ${isChecked ? 'border-primary-500 shadow-md' : 'border-gray-200'} rounded-lg cursor-pointer hover:border-primary-300 hover:shadow-sm transition-all"
+               onclick="toggleRightSelection('${item.id}', event)">
+            <div class="px-3 py-2.5">
+              <div class="flex items-start space-x-2.5">
+                <input type="checkbox" ${isChecked ? 'checked' : ''}
+                       onclick="event.stopPropagation()"
+                       onchange="toggleRightSelection('${item.id}', event)"
+                       class="mt-1 w-4 h-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded cursor-pointer flex-shrink-0">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <span class="px-2 py-0.5 rounded text-xs font-medium ${typeConfig.color}">${typeConfig.name}</span>
+                      <span class="difficulty-badge difficulty-${q.difficulty || 1}">${getDifficultyText(q.difficulty)}</span>
+                      ${q.knowledgePath ? `<span class="text-xs text-gray-400 truncate max-w-[200px]">${q.knowledgePath}</span>` : ''}
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <input type="number" value="${item.paperScore}"
+                             onclick="event.stopPropagation()"
+                             oninput="updateScore('${item.id}', this.value)"
+                             onblur="validateScore('${item.id}', this)"
+                             min="0" step="0.5"
+                             class="w-16 px-2 py-1 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary-500"
+                             placeholder="分数">
+                      <button onclick="event.stopPropagation(); deleteSelectedQuestion('${item.id}')"
+                              class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors"
+                              title="移除">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="text-sm text-gray-900 mt-1.5 line-clamp-2">${stripHtml(q.content)}</div>
+                  <div class="text-xs text-gray-400 mt-1">原分数: ${q.score || 0} 分</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+      updateSelectedPagination();
+      updateRightSelectedCount();
+      updateRightPageStats();
+    }
+
+    // 更新统计信息
+    function updateStats() {
+      const typeStatsContainer = document.getElementById('typeStats');
+      if (!typeStatsContainer) return;
+
+      // 统计各题型数量和分数
+      const stats = {};
+      let totalScore = 0;
+
+      selectedQuestions.forEach((data, id) => {
+        const originalType = data.question.type;
+        const type = normalizeType(originalType); // 归一化题型
+        const score = parseFloat(data.paperScore) || 0;
+
+        if (!stats[type]) {
+          stats[type] = { count: 0, score: 0 };
+        }
+        stats[type].count++;
+        stats[type].score += score;
+        totalScore += score;
+      });
+
+      // 生成统计信息 HTML
+      if (Object.keys(stats).length === 0) {
+        typeStatsContainer.innerHTML = '<span class="text-sm text-gray-400">暂无题目</span>';
+        // 更新已设分数为0
+        const currentTotalScoreDisplay = document.getElementById('currentTotalScore');
+        if (currentTotalScoreDisplay) {
+          currentTotalScoreDisplay.textContent = '0';
+        }
+        return;
+      }
+
+      let html = '';
+      Object.entries(stats).forEach(([type, data], index) => {
+        const typeConfig = questionTypeConfig[type] || { name: '未知题型' };
+        if (index > 0) {
+          html += '<span class="text-gray-300 text-sm">|</span>';
+        }
+        html += `
+          <span class="text-sm whitespace-nowrap">
+            <span class="text-gray-600">${typeConfig.name}</span>
+            <span class="text-green-600 font-semibold mx-0.5">${data.count}</span>
+          </span>
+        `;
+      });
+
+      html += '<span class="text-gray-300 text-sm ml-1">·</span>';
+      html += `
+        <span class="text-sm whitespace-nowrap">
+          <span class="text-gray-600">共</span>
+          <span class="text-red-600 font-semibold mx-0.5">${totalScore % 1 === 0 ? totalScore : totalScore.toFixed(1)}</span>
+          <span class="text-gray-600">分</span>
+        </span>
+      `;
+
+      typeStatsContainer.innerHTML = html;
+
+      // 更新试卷总分区域的已设分数显示
+      const currentTotalScoreDisplay = document.getElementById('currentTotalScore');
+      if (currentTotalScoreDisplay) {
+        currentTotalScoreDisplay.textContent = totalScore % 1 === 0 ? totalScore : totalScore.toFixed(1);
+      }
+    }
+
+    // 题库分页
+    function updateLibraryPagination() {
+      const totalPages = Math.ceil(filteredLibraryQuestions.length / pageSize) || 1;
+      const start = (libraryCurrentPage - 1) * pageSize + 1;
+      const end = Math.min(libraryCurrentPage * pageSize, filteredLibraryQuestions.length);
+
+      document.getElementById('libraryPageStart').textContent = filteredLibraryQuestions.length > 0 ? start : 0;
+      document.getElementById('libraryPageEnd').textContent = filteredLibraryQuestions.length > 0 ? end : 0;
+      document.getElementById('libraryPageTotal').textContent = filteredLibraryQuestions.length;
+      document.getElementById('libraryPrevBtn').disabled = libraryCurrentPage <= 1;
+      document.getElementById('libraryNextBtn').disabled = libraryCurrentPage >= totalPages;
+      document.getElementById('libraryFirstBtn').disabled = libraryCurrentPage <= 1;
+      document.getElementById('libraryLastBtn').disabled = libraryCurrentPage >= totalPages;
+
+      // 生成页码按钮
+      renderLibraryPageNumbers(libraryCurrentPage, totalPages);
+    }
+
+    function renderLibraryPageNumbers(current, total) {
+      const container = document.getElementById('libraryPageNumbers');
+      let html = '';
+
+      // 显示页码逻辑：当前页前后各显示2页
+      let start = Math.max(1, current - 2);
+      let end = Math.min(total, current + 2);
+
+      // 如果前面有省略，显示第1页和省略号
+      if (start > 1) {
+        html += `<button onclick="libraryGoToPage(1)" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">1</button>`;
+        if (start > 2) {
+          html += `<span class="px-1 text-gray-400">...</span>`;
+        }
+      }
+
+      // 显示页码
+      for (let i = start; i <= end; i++) {
+        if (i === current) {
+          html += `<button class="w-8 h-7 flex items-center justify-center bg-primary-500 text-white rounded text-sm font-medium shadow-sm">${i}</button>`;
+        } else {
+          html += `<button onclick="libraryGoToPage(${i})" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">${i}</button>`;
+        }
+      }
+
+      // 如果后面有省略，显示省略号和最后一页
+      if (end < total) {
+        if (end < total - 1) {
+          html += `<span class="px-1 text-gray-400">...</span>`;
+        }
+        html += `<button onclick="libraryGoToPage(${total})" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">${total}</button>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function libraryGoToPage(page) {
+      const totalPages = Math.ceil(filteredLibraryQuestions.length / pageSize);
+      if (page >= 1 && page <= totalPages) {
+        libraryCurrentPage = page;
+        renderLibraryList();
+      }
+    }
+
+    function libraryFirstPage() {
+      if (libraryCurrentPage > 1) {
+        libraryCurrentPage = 1;
+        renderLibraryList();
+      }
+    }
+
+    function libraryLastPage() {
+      const totalPages = Math.ceil(filteredLibraryQuestions.length / pageSize);
+      if (libraryCurrentPage < totalPages) {
+        libraryCurrentPage = totalPages;
+        renderLibraryList();
+      }
+    }
+
+    function libraryPrevPage() {
+      if (libraryCurrentPage > 1) {
+        libraryCurrentPage--;
+        renderLibraryList();
+      }
+    }
+
+    function libraryNextPage() {
+      const totalPages = Math.ceil(filteredLibraryQuestions.length / pageSize);
+      if (libraryCurrentPage < totalPages) {
+        libraryCurrentPage++;
+        renderLibraryList();
+      }
+    }
+
+    // 已选题目分页
+    function updateSelectedPagination() {
+      const totalCount = filteredSelectedQuestions.length;
+      const totalPages = Math.ceil(totalCount / pageSize) || 1;
+      const start = totalCount > 0 ? (selectedCurrentPage - 1) * pageSize + 1 : 0;
+      const end = Math.min(selectedCurrentPage * pageSize, totalCount);
+
+      document.getElementById('selectedPageStart').textContent = totalCount > 0 ? start : 0;
+      document.getElementById('selectedPageEnd').textContent = totalCount > 0 ? end : 0;
+      document.getElementById('selectedPageTotal').textContent = totalCount;
+      document.getElementById('selectedPrevBtn').disabled = selectedCurrentPage <= 1;
+      document.getElementById('selectedNextBtn').disabled = selectedCurrentPage >= totalPages;
+      document.getElementById('selectedFirstBtn').disabled = selectedCurrentPage <= 1;
+      document.getElementById('selectedLastBtn').disabled = selectedCurrentPage >= totalPages;
+
+      // 生成页码按钮
+      renderSelectedPageNumbers(selectedCurrentPage, totalPages);
+    }
+
+    function renderSelectedPageNumbers(current, total) {
+      const container = document.getElementById('selectedPageNumbers');
+      let html = '';
+
+      // 显示页码逻辑：当前页前后各显示2页
+      let start = Math.max(1, current - 2);
+      let end = Math.min(total, current + 2);
+
+      // 如果前面有省略，显示第1页和省略号
+      if (start > 1) {
+        html += `<button onclick="selectedGoToPage(1)" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">1</button>`;
+        if (start > 2) {
+          html += `<span class="px-1 text-gray-400">...</span>`;
+        }
+      }
+
+      // 显示页码
+      for (let i = start; i <= end; i++) {
+        if (i === current) {
+          html += `<button class="w-8 h-7 flex items-center justify-center bg-primary-500 text-white rounded text-sm font-medium shadow-sm">${i}</button>`;
+        } else {
+          html += `<button onclick="selectedGoToPage(${i})" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">${i}</button>`;
+        }
+      }
+
+      // 如果后面有省略，显示省略号和最后一页
+      if (end < total) {
+        if (end < total - 1) {
+          html += `<span class="px-1 text-gray-400">...</span>`;
+        }
+        html += `<button onclick="selectedGoToPage(${total})" class="w-8 h-7 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm">${total}</button>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function selectedGoToPage(page) {
+      const totalPages = Math.ceil(filteredSelectedQuestions.length / pageSize);
+      if (page >= 1 && page <= totalPages) {
+        selectedCurrentPage = page;
+        renderSelectedList();
+      }
+    }
+
+    function selectedFirstPage() {
+      if (selectedCurrentPage > 1) {
+        selectedCurrentPage = 1;
+        renderSelectedList();
+      }
+    }
+
+    function selectedLastPage() {
+      const totalPages = Math.ceil(filteredSelectedQuestions.length / pageSize);
+      if (selectedCurrentPage < totalPages) {
+        selectedCurrentPage = totalPages;
+        renderSelectedList();
+      }
+    }
+
+    function selectedPrevPage() {
+      if (selectedCurrentPage > 1) {
+        selectedCurrentPage--;
+        renderSelectedList();
+      }
+    }
+
+    function selectedNextPage() {
+      const totalPages = Math.ceil(filteredSelectedQuestions.length / pageSize);
+      if (selectedCurrentPage < totalPages) {
+        selectedCurrentPage++;
+        renderSelectedList();
+      }
+    }
+
+    // 全选/取消全选当前页
+    function selectAll() {
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      pageData.forEach(q => {
+        if (!selectedQuestions.has(q.id)) {
+          selectedQuestions.set(q.id, {
+            question: q,
+            paperScore: parseFloat(q.score) || 0
+          });
+        }
+      });
+
+      renderLibraryList();
+      renderSelectedList();
+      updateStats();
+    }
+
+    function deselectAll() {
+      const start = (libraryCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredLibraryQuestions.slice(start, end);
+
+      pageData.forEach(q => {
+        selectedQuestions.delete(q.id);
+      });
+
+      renderLibraryList();
+      renderSelectedList();
+      updateStats();
+    }
+
+    // 保存试卷（通用函数）
+    function savePaper(status, successMessage) {
+      if (selectedQuestions.size === 0) {
+        Message.warning('请至少选择一道题目');
+        return;
+      }
+
+      // 获取试卷信息
+      const paperName = document.getElementById('paperNameDisplay').textContent.trim();
+      const paperCode = document.getElementById('paperCodeDisplay').textContent.trim();
+      const paperTotalScore = parseFloat(document.getElementById('paperTotalScoreInput').value);
+
+      // 验证试卷信息
+      if (!paperName || paperName === '未命名试卷') {
+        Message.warning('请先编辑试卷名称');
+        return;
+      }
+
+      const paperQuestions = Array.from(selectedQuestions.entries()).map(([id, data]) => ({
+        questionId: id,
+        question: data.question,
+        paperScore: data.paperScore
+      }));
+
+      let totalScore = 0;
+      paperQuestions.forEach(pq => {
+        totalScore += parseFloat(pq.paperScore) || 0;
+      });
+
+      // 更新试卷信息
+      paperInfo.name = paperName;
+      paperInfo.code = paperCode === '-' ? '' : paperCode;
+      paperInfo.totalScore = paperTotalScore || totalScore; // 如果用户输入了总分，使用用户输入的；否则使用计算的总分
+      paperInfo.actualTotalScore = totalScore; // 保存已设总分（所有题目分数之和）
+      paperInfo.questions = paperQuestions;
+      paperInfo.questionCount = paperQuestions.length;
+      paperInfo.mode = 'extraction';
+      paperInfo.extractionType = 'fixed';
+      paperInfo.status = status; // 设置试卷状态
+
+      // 如果是新创建的试卷，初始化使用次数为0
+      if (!paperInfo.usageCount) {
+        paperInfo.usageCount = 0;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const paperId = urlParams.get('id');
+      const isEditMode = !!paperId;
+
+      const allPapers = JSON.parse(localStorage.getItem('allPapers')) || [];
+
+      if (isEditMode) {
+        const index = allPapers.findIndex(p => p.id === paperInfo.id);
+        if (index !== -1) {
+          allPapers[index] = paperInfo;
+          Message.success(successMessage || '试卷更新成功！');
+        } else {
+          Message.error('未找到要更新的试卷');
+          return;
+        }
+      } else {
+        paperInfo.createTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+        allPapers.unshift(paperInfo);
+        Message.success(successMessage || '试卷保存成功！');
+      }
+
+      localStorage.setItem('allPapers', JSON.stringify(allPapers));
+      localStorage.removeItem('currentPaper');
+
+      // 如果是发布试卷，跳转到列表页；如果是保存草稿，留在当前页面
+      if (status === 'published') {
+        setTimeout(() => {
+          window.location.href = 'list.html';
+        }, 1500);
+      }
+    }
+
+    // 发布试卷
+    function publishPaper() {
+      // 先验证基本信息
+      if (selectedQuestions.size === 0) {
+        Message.warning('请至少选择一道题目');
+        return;
+      }
+
+      const paperName = document.getElementById('paperNameDisplay').textContent.trim();
+      if (!paperName || paperName === '未命名试卷') {
+        Message.warning('请先编辑试卷名称');
+        return;
+      }
+
+      // 计算已设分数
+      let actualTotalScore = 0;
+      selectedQuestions.forEach((data, id) => {
+        actualTotalScore += parseFloat(data.paperScore) || 0;
+      });
+
+      // 获取试卷总分
+      const paperTotalScoreInput = document.getElementById('paperTotalScoreInput');
+      const paperTotalScore = parseFloat(paperTotalScoreInput.value);
+
+      // 验证总分是否一致
+      if (!paperTotalScore || isNaN(paperTotalScore)) {
+        Message.warning('请先设置试卷总分');
+        return;
+      }
+
+      if (Math.abs(actualTotalScore - paperTotalScore) > 0.01) {
+        Message.error(`试卷总分不一致！已设分数为 ${actualTotalScore % 1 === 0 ? actualTotalScore : actualTotalScore.toFixed(1)} 分，试卷总分为 ${paperTotalScore % 1 === 0 ? paperTotalScore : paperTotalScore.toFixed(1)} 分，请调整后再发布`);
+        return;
+      }
+
+      if (confirm('确定要发布试卷吗？发布后考生即可参加考试。')) {
+        savePaper('published', '试卷发布成功！');
+      }
+    }
+
+    // 保存草稿
+    function saveDraft() {
+      savePaper('draft', '草稿保存成功！');
+    }
+
+    // 预览试卷
+    function previewPaper() {
+      if (selectedQuestions.size === 0) {
+        Message.warning('请至少选择一道题目');
+        return;
+      }
+
+      // 获取试卷信息
+      const paperName = document.getElementById('paperNameDisplay').textContent.trim();
+      const paperCode = document.getElementById('paperCodeDisplay').textContent.trim();
+
+      if (!paperName || paperName === '未命名试卷') {
+        Message.warning('请先编辑试卷名称');
+        return;
+      }
+
+      // 设置预览弹窗标题
+      document.getElementById('previewModalTitle').textContent = paperName;
+      document.getElementById('previewPaperName').textContent = paperName;
+      document.getElementById('previewPaperCode').textContent = paperCode === '-' ? '暂无' : paperCode;
+
+      // 计算并设置总分
+      let totalScore = 0;
+      selectedQuestions.forEach(data => {
+        totalScore += parseFloat(data.paperScore) || 0;
+      });
+      document.getElementById('previewTotalScore').textContent = totalScore;
+
+      // 渲染题目列表
+      renderPreviewQuestions();
+
+      // 显示弹窗
+      document.getElementById('previewModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭预览弹窗
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // 渲染预览题目
+    function renderPreviewQuestions() {
+      const container = document.getElementById('previewQuestionsContainer');
+      const navContainer = document.getElementById('previewNavigationContainer');
+
+      // 按题型分组题目
+      const questionsByType = {};
+      selectedQuestions.forEach((data, id) => {
+        const normalizedType = normalizeType(data.question.type);
+        if (!questionsByType[normalizedType]) {
+          questionsByType[normalizedType] = [];
+        }
+        questionsByType[normalizedType].push(data);
+      });
+
+      // 题型顺序
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'cloze', 'shortAnswer', 'composite'];
+
+      let html = '';
+      let navHtml = '';
+      let globalQuestionNumber = 1;
+      let navQuestions = []; // 用于导航的题目列表
+
+      typeOrder.forEach(type => {
+        if (!questionsByType[type] || questionsByType[type].length === 0) return;
+
+        const typeConfig = questionTypeConfig[type] || { name: '未知题型' };
+        const questions = questionsByType[type];
+
+        html += `
+          <div class="question-type-section">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-primary-500">
+              ${typeConfig.name}（共 ${questions.length} 题）
+            </h2>
+            <div class="space-y-6">
+        `;
+
+        questions.forEach(data => {
+          const q = data.question;
+          const score = data.paperScore || 0;
+          const questionId = `preview-question-${globalQuestionNumber}`;
+
+          // 记录导航信息
+          navQuestions.push({
+            number: globalQuestionNumber,
+            type: typeConfig.name,
+            id: questionId
+          });
+
+          html += `
+            <div class="question-item" id="${questionId}">
+              <div class="flex items-start space-x-3 mb-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-sm">
+                  ${globalQuestionNumber}
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-500">${typeConfig.name}</span>
+                      ${q.knowledgePath ? `<span class="text-xs text-gray-400">· ${q.knowledgePath}</span>` : ''}
+                    </div>
+                    <span class="text-sm font-medium text-primary-600">${score} 分</span>
+                  </div>
+                  <div class="question-content text-gray-900 text-base leading-relaxed mb-3">
+                    ${q.content}
+                  </div>
+          `;
+
+          // 根据题型显示选项和答案
+          if (type === 'single' || type === 'multiple') {
+            // 单选题、多选题
+            html += '<div class="space-y-2 ml-4">';
+            if (q.options && q.options.length > 0) {
+              q.options.forEach(opt => {
+                const isCorrect = q.correctAnswers && q.correctAnswers.includes(opt.label);
+                html += `
+                  <div class="flex items-start space-x-2">
+                    <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                    <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                  </div>
+                `;
+              });
+            }
+            html += '</div>';
+
+            // 显示答案
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.join('、')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'judge') {
+            // 判断题
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers[0]}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'blank') {
+            // 填空题
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.map((ans, idx) => `空${idx + 1}：${ans}`).join('；')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'cloze') {
+            // 完形填空
+            if (q.blanks && q.blanks.length > 0) {
+              html += '<div class="space-y-3 ml-4 mt-3">';
+              q.blanks.forEach((blank, blankIndex) => {
+                html += `
+                  <div>
+                    <div class="font-medium text-gray-700 mb-2">空 ${blankIndex + 1}：</div>
+                    <div class="space-y-1 ml-4">
+                `;
+                if (blank.options && blank.options.length > 0) {
+                  blank.options.forEach(opt => {
+                    const isCorrect = blank.correctAnswer === opt.label;
+                    html += `
+                      <div class="flex items-start space-x-2">
+                        <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                        <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                      </div>
+                    `;
+                  });
+                }
+                html += `
+                    </div>
+                    <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                      <span class="font-medium text-green-700">答案：</span>
+                      <span class="text-green-600">${blank.correctAnswer}</span>
+                    </div>
+                  </div>
+                `;
+              });
+              html += '</div>';
+            }
+          } else if (type === 'shortAnswer') {
+            // 简答题 - 显示答案要点
+            if (q.correctAnswers && q.correctAnswers.length > 0 && q.correctAnswers[0]) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <div class="text-sm font-medium text-green-700 mb-2">参考答案：</div>
+                  <div class="text-sm text-green-600 whitespace-pre-wrap">${q.correctAnswers[0]}</div>
+                </div>
+              `;
+            }
+          } else if (type === 'composite') {
+            // 复合题
+            if (q.subQuestions && q.subQuestions.length > 0) {
+              html += '<div class="mt-4 space-y-4">';
+              q.subQuestions.forEach((sub, subIndex) => {
+                const subType = normalizeType(sub.type);
+                html += `
+                  <div class="ml-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="font-medium text-gray-800">${globalQuestionNumber}.${subIndex + 1} ${sub.content}</div>
+                    </div>
+                `;
+
+                // 根据子题型显示选项和答案
+                if (subType === 'single' || subType === 'multiple') {
+                  html += '<div class="space-y-1 ml-4 mt-2">';
+                  if (sub.options && sub.options.length > 0) {
+                    sub.options.forEach(opt => {
+                      const isCorrect = sub.correctAnswers && sub.correctAnswers.includes(opt.label);
+                      html += `
+                        <div class="flex items-start space-x-2">
+                          <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                          <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                        </div>
+                      `;
+                    });
+                  }
+                  html += '</div>';
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <span class="font-medium text-green-700">答案：</span>
+                        <span class="text-green-600">${sub.correctAnswers.join('、')}</span>
+                      </div>
+                    `;
+                  }
+                } else if (subType === 'shortAnswer') {
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0 && sub.correctAnswers[0]) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <div class="font-medium text-green-700 mb-1">参考答案：</div>
+                        <div class="text-green-600 whitespace-pre-wrap">${sub.correctAnswers[0]}</div>
+                      </div>
+                    `;
+                  }
+                }
+
+                html += '</div>';
+              });
+              html += '</div>';
+            }
+          }
+
+          // 显示解析
+          if (q.explanation) {
+            html += `
+              <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <div class="text-sm font-medium text-blue-700 mb-2">解析：</div>
+                <div class="text-sm text-blue-600 leading-relaxed">${q.explanation}</div>
+              </div>
+            `;
+          }
+
+          html += `
+                </div>
+              </div>
+            </div>
+          `;
+
+          globalQuestionNumber++;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html || '<div class="text-center text-gray-400 py-16">暂无题目</div>';
+
+      // 生成导航
+      if (navQuestions.length > 0) {
+        // 按题型分组，保持题目顺序
+        const navByType = {};
+        const typeOrderList = []; // 记录题型出现顺序
+
+        navQuestions.forEach(item => {
+          if (!navByType[item.type]) {
+            navByType[item.type] = [];
+            typeOrderList.push(item.type);
+          }
+          navByType[item.type].push(item);
+        });
+
+        navHtml = `
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">题目导航</h3>
+            <div class="text-xs text-gray-500 mb-4">共 ${navQuestions.length} 道题</div>
+          </div>
+        `;
+
+        // 按题型出现顺序渲染导航
+        typeOrderList.forEach(typeName => {
+          const questions = navByType[typeName];
+          navHtml += `
+            <div class="mb-6">
+              <div class="flex items-center mb-3">
+                <div class="w-1 h-5 bg-primary-500 rounded mr-2"></div>
+                <h4 class="text-sm font-medium text-gray-800">${typeName}</h4>
+              </div>
+              <div class="grid grid-cols-5 gap-2">
+          `;
+
+          questions.forEach(item => {
+            navHtml += `
+              <button onclick="scrollToPreviewQuestion('${item.id}')"
+                      class="preview-nav-item aspect-square flex items-center justify-center text-sm font-medium border border-gray-300 rounded transition-colors"
+                      data-question-id="${item.id}">
+                ${item.number}
+              </button>
+            `;
+          });
+
+          navHtml += `
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        navHtml = '<div class="text-center text-gray-400 py-8">暂无题目</div>';
+      }
+
+      navContainer.innerHTML = navHtml;
+
+      // 设置滚动监听
+      setupPreviewScrollTracking();
+    }
+
+    // 滚动到指定题目
+    function scrollToPreviewQuestion(questionId) {
+      const scrollContainer = document.getElementById('previewScrollContainer');
+      const questionElement = document.getElementById(questionId);
+
+      if (questionElement && scrollContainer) {
+        const containerTop = scrollContainer.offsetTop;
+        const elementTop = questionElement.offsetTop;
+        const offset = elementTop - containerTop - 100; // 100px 偏移量
+
+        scrollContainer.scrollTo({
+          top: offset,
+          behavior: 'smooth'
+        });
+
+        // 更新导航激活状态
+        updatePreviewActiveNav(questionId);
+      }
+    }
+
+    // 更新导航激活状态
+    function updatePreviewActiveNav(questionId) {
+      // 移除之前的激活状态
+      document.querySelectorAll('.preview-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // 添加新的激活状态
+      const activeNav = document.querySelector(`.preview-nav-item[data-question-id="${questionId}"]`);
+      if (activeNav) {
+        activeNav.classList.add('active');
+      }
+    }
+
+    // 设置滚动跟踪
+    function setupPreviewScrollTracking() {
+      const scrollContainer = document.getElementById('previewScrollContainer');
+      if (!scrollContainer) return;
+
+      // 移除旧的监听器（如果存在）
+      if (scrollContainer._scrollHandler) {
+        scrollContainer.removeEventListener('scroll', scrollContainer._scrollHandler);
+      }
+
+      // 创建新的滚动处理函数
+      const scrollHandler = () => {
+        const questions = document.querySelectorAll('.question-item');
+        const scrollTop = scrollContainer.scrollTop;
+        const containerTop = scrollContainer.offsetTop;
+
+        // 找到当前可见的题目
+        for (let i = questions.length - 1; i >= 0; i--) {
+          const question = questions[i];
+          const questionTop = question.offsetTop - containerTop - 150; // 150px 阈值
+
+          if (scrollTop >= questionTop) {
+            updatePreviewActiveNav(question.id);
+            break;
+          }
+        }
+      };
+
+      // 保存处理函数引用以便后续移除
+      scrollContainer._scrollHandler = scrollHandler;
+
+      // 添加滚动监听
+      scrollContainer.addEventListener('scroll', scrollHandler);
+
+      // 初始化激活第一个
+      const firstQuestion = document.querySelector('.question-item');
+      if (firstQuestion) {
+        updatePreviewActiveNav(firstQuestion.id);
+      }
+    }
+
+    // 返回
+    function goBack() {
+      if (selectedQuestions.size > 0) {
+        if (confirm('当前有已选题目，确定要放弃并返回吗？')) {
+          localStorage.removeItem('currentPaper');
+          window.location.href = 'list.html';
+        }
+      } else {
+        localStorage.removeItem('currentPaper');
+        window.location.href = 'list.html';
+      }
+    }
+
+    // ==================== 侧滑面板功能 ====================
+
+    let currentPreviewQuestion = null;
+
+    // 显示题目详情
+    function showQuestionDetail(questionId) {
+      const question = allQuestions.find(q => q.id === questionId);
+      if (!question) {
+        Message.error('题目不存在');
+        return;
+      }
+
+      currentPreviewQuestion = question;
+      renderQuestionPreview(question);
+
+      // 显示侧滑面板
+      setTimeout(() => {
+        document.getElementById('previewOverlay').classList.add('active');
+        document.getElementById('previewDrawer').classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }, 10);
+    }
+
+    // 关闭预览面板
+    function closePreview() {
+      document.getElementById('previewOverlay').classList.remove('active');
+      document.getElementById('previewDrawer').classList.remove('active');
+      document.body.style.overflow = '';
+      currentPreviewQuestion = null;
+    }
+
+    // 添加当前预览题目到已选
+    function addCurrentToSelected() {
+      if (!currentPreviewQuestion) return;
+
+      const questionId = currentPreviewQuestion.id;
+      if (selectedQuestions.has(questionId)) {
+        Message.warning('该题目已在已选列表中');
+        return;
+      }
+
+      selectedQuestions.set(questionId, {
+        question: currentPreviewQuestion,
+        paperScore: parseFloat(currentPreviewQuestion.score) || 0
+      });
+
+      applyLibraryFilters();
+      applySelectedFilters();
+      updateStats();
+      updateTransferButtons();
+      closePreview();
+      Message.success('已添加到已选题目');
+    }
+
+    // 渲染题目预览内容
+    function renderQuestionPreview(q) {
+      const content = document.getElementById('previewContent');
+      const normalizedType = normalizeType(q.type); // 归一化题型
+      const typeConfig = questionTypeConfig[normalizedType] || { name: q.typeName, color: 'bg-gray-100 text-gray-600' };
+
+      // 生成题型标签
+      const typeTag = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${typeConfig.color}">
+        ${typeConfig.name}
+      </span>`;
+
+      // 生成难度标签
+      const difficultyTag = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-warning-100 text-warning-600">
+        ${getDifficultyText(q.difficulty)}
+      </span>`;
+
+      // 生成标签列表
+      const tagsHtml = q.tags && q.tags.length > 0
+        ? q.tags.map(tag => `<span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">#${tag}</span>`).join(' ')
+        : '<span class="text-gray-400 text-sm">无标签</span>';
+
+      // 根据题型生成内容
+      let questionContent = '';
+
+      if (q.type === 'cloze') {
+        questionContent = renderClozeQuestion(q);
+      } else if (q.type === 'composite') {
+        questionContent = renderCompositeQuestion(q);
+      } else if (q.type === 'single' || q.type === 'multiple') {
+        questionContent = renderChoiceQuestion(q);
+      } else if (q.type === 'judge') {
+        questionContent = renderJudgeQuestion(q);
+      } else if (q.type === 'blank') {
+        questionContent = renderBlankQuestion(q);
+      } else {
+        questionContent = renderShortQuestion(q);
+      }
+
+      content.innerHTML = `
+        <div class="space-y-6">
+          <!-- 基本信息 -->
+          <div class="flex items-center gap-3 flex-wrap">
+            ${typeTag}
+            ${difficultyTag}
+            ${q.type === 'composite' && q.subQuestions ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+              <i class="fas fa-list-ol mr-1"></i>${q.subQuestions.length} 道子题
+            </span>` : ''}
+          </div>
+
+          ${questionContent}
+
+          <!-- 附加信息 -->
+          <div class="pt-6 border-t border-gray-200 space-y-3">
+            <div class="flex items-start">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">知识点：</span>
+              <span class="text-sm text-gray-900">${q.knowledgePath || '未分类'}</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">标签：</span>
+              <div class="flex items-center gap-2 flex-wrap">${tagsHtml}</div>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">默认分值：</span>
+              <span class="text-sm text-gray-900">${q.score ? q.score + ' 分' : '--'}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">创建时间：</span>
+              <span class="text-sm text-gray-600">${q.createTime || '--'}</span>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm font-medium text-gray-500 w-20 flex-shrink-0">创建者：</span>
+              <span class="text-sm text-gray-600">${q.author || '--'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染选择题
+    function renderChoiceQuestion(q) {
+      const optionsHtml = q.options ? q.options.map(opt => {
+        const isCorrect = q.correctAnswers && q.correctAnswers.includes(opt.label);
+        return `
+          <div class="flex items-start py-2">
+            <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+            <span class="text-gray-900">${opt.text}</span>
+          </div>
+        `;
+      }).join('') : '';
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">选项</div>
+            <div class="space-y-1">${optionsHtml}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">正确答案</div>
+            <div class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+              ${q.correctAnswers ? q.correctAnswers.join('、') : '--'}
+            </div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染判断题
+    function renderJudgeQuestion(q) {
+      const answer = q.correctAnswers ? (Array.isArray(q.correctAnswers) ? q.correctAnswers[0] : q.correctAnswers) : '';
+      const isCorrect = answer === '对' || answer === '正确' || answer === 'true' || answer === 'A';
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">正确答案</div>
+            <div class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">
+              ${isCorrect ? '正确' : '错误'}
+            </div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染填空题
+    function renderBlankQuestion(q) {
+      if (!q.blanks || q.blanks.length === 0) {
+        return `
+          <div class="space-y-4">
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+              <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-2">参考答案</div>
+              <div class="text-sm text-gray-400">暂无填空答案</div>
+            </div>
+            ${q.explanation ? `
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+              <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      const blanksHtml = q.blanks.map((blank, index) => `
+        <div class="flex items-center py-2">
+          <span class="text-sm font-medium text-gray-500 w-20">空 ${blank.index || (index + 1)}：</span>
+          <span class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium">${blank.answer}</span>
+          <span class="text-sm text-gray-500 ml-3">(${blank.score ? blank.score + ' 分' : '--'})</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">参考答案</div>
+            <div class="space-y-1">${blanksHtml}</div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染简答题
+    function renderShortQuestion(q) {
+      const answer = q.correctAnswers || q.answer || q.referenceAnswer || '';
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">参考答案</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-green-50 p-4 rounded-lg">
+              ${Array.isArray(answer) ? answer.join('') : answer || '暂无答案'}
+            </div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染完形填空
+    function renderClozeQuestion(q) {
+      // 检查是否有完形填空子题
+      if (!q.clozeSubQuestions || !Array.isArray(q.clozeSubQuestions) || q.clozeSubQuestions.length === 0) {
+        // 兼容旧格式：使用 blanks 字段
+        return renderBlankQuestion(q);
+      }
+
+      const subQuestionsHtml = q.clozeSubQuestions.map((subQ, index) => {
+        if (!subQ.options || subQ.options.length === 0) {
+          return `
+            <div class="border-l-2 border-gray-300 pl-4 py-2">
+              <div class="text-sm font-medium text-gray-700 mb-1">${subQ.index}）选项数据缺失</div>
+            </div>
+          `;
+        }
+
+        const optionsHtml = subQ.options.map(opt => {
+          const isCorrect = opt.label === subQ.correctAnswer;
+          return `
+            <div class="flex items-start py-2">
+              <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+              <span class="text-gray-900">${opt.text}</span>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="border-l-2 border-indigo-300 pl-4 py-3 mb-3">
+            <div class="text-sm font-medium text-gray-700 mb-2">${subQ.index}）</div>
+            <div class="space-y-1">${optionsHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">题干</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">选项与答案（共 ${q.clozeSubQuestions.length} 个空）</div>
+            <div>${subQuestionsHtml}</div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染复合题
+    function renderCompositeQuestion(q) {
+      // 检查 subQuestions 是否存在
+      if (!q.subQuestions || !Array.isArray(q.subQuestions) || q.subQuestions.length === 0) {
+        console.error('复合题缺少 subQuestions 字段:', q);
+        return `
+          <div class="text-center text-error-500 py-8">
+            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+            <p>题目数据异常：缺少子题目信息</p>
+          </div>
+        `;
+      }
+
+      const subQuestionsHtml = q.subQuestions.map((sub, index) => {
+        let subContent = '';
+
+        // 检查子题数据完整性
+        if (!sub || !sub.content) {
+          return `
+            <div class="border-l-2 border-error-300 pl-4 py-2">
+              <div class="text-sm text-error-600">第 ${index + 1} 题数据异常</div>
+            </div>
+          `;
+        }
+
+        if (sub.type === 'single' || sub.type === 'multiple') {
+          // 选择题子题
+          if (!sub.options || !Array.isArray(sub.options)) {
+            subContent = `<div class="text-xs text-error-600 mt-2">选项数据异常</div>`;
+          } else {
+            const optionsHtml = sub.options.map(opt => {
+              const isCorrect = sub.correctAnswers && sub.correctAnswers.includes(opt.label);
+              return `
+                <div class="flex items-start py-1">
+                  <span class="option-label ${isCorrect ? 'correct' : ''}">${opt.label}</span>
+                  <span class="text-gray-800 text-sm">${opt.text}</span>
+                </div>
+              `;
+            }).join('');
+            subContent = `
+              <div class="mt-2 space-y-2">
+                ${optionsHtml}
+                <div class="mt-2">
+                  <span class="text-xs font-medium text-gray-500">答案：</span>
+                  <span class="inline-flex items-center px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+                    ${sub.correctAnswers ? sub.correctAnswers.join('、') : '无'}
+                  </span>
+                  <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+                </div>
+              </div>
+            `;
+          }
+        } else if (sub.type === 'judge') {
+          // 判断题子题
+          const answerText = sub.correctAnswer === 'true' ? '正确' : '错误';
+          subContent = `
+            <div class="mt-2">
+              <div class="text-xs font-medium text-gray-500 mb-1">答案：</div>
+              <div class="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded text-sm font-medium">${answerText}</div>
+              <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+            </div>
+          `;
+        } else if (sub.type === 'blank') {
+          // 填空题子题
+          if (sub.blanks && Array.isArray(sub.blanks)) {
+            const blanksHtml = sub.blanks.map(blank => `
+              <div class="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded text-sm mr-2">
+                空${blank.index}: ${blank.answer}
+              </div>
+            `).join('');
+            subContent = `
+              <div class="mt-2">
+                <div class="text-xs font-medium text-gray-500 mb-1">答案：</div>
+                ${blanksHtml}
+                <span class="text-xs text-gray-500 ml-2">(${sub.score ? sub.score + ' 分' : '--'})</span>
+              </div>
+            `;
+          } else {
+            subContent = `
+              <div class="mt-2">
+                <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
+                <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || '无'}</div>
+                <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score ? sub.score + ' 分' : '--'})</span>
+              </div>
+            `;
+          }
+        } else {
+          // 其他题型（简答等）
+          subContent = `
+            <div class="mt-2">
+              <div class="text-xs font-medium text-gray-500 mb-1">参考答案：</div>
+              <div class="text-sm text-gray-700 bg-green-50 p-2 rounded">${sub.answer || sub.referenceAnswer || '无'}</div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">(${sub.score ? sub.score + ' 分' : '--'})</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="border-l-2 border-gray-300 pl-4 py-2">
+            <div class="text-sm font-medium text-gray-700 mb-1">
+              ${index + 1}）${sub.content}
+            </div>
+            ${subContent}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">材料</div>
+            <div class="question-content text-gray-900 text-base leading-relaxed bg-amber-50 p-4 rounded-lg">${q.content}</div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">子题目 (共 ${q.subCount || q.subQuestions.length} 道)</div>
+            <div class="space-y-3">${subQuestionsHtml}</div>
+          </div>
+          ${q.explanation ? `
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">答案解析</div>
+            <div class="question-content text-gray-700 text-sm leading-relaxed bg-blue-50 p-4 rounded-lg">${q.explanation}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+  <!-- 预览弹窗 -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden">
+    <!-- 遮罩层 -->
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closePreviewModal()"></div>
+    <!-- 弹窗内容 -->
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <!-- 弹窗头部 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="previewModalTitle"></span>
+        </div>
+        <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <!-- 弹窗主体 -->
+      <div class="flex-1 overflow-hidden flex">
+        <!-- 左侧快速导航 -->
+        <aside class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div id="previewNavigationContainer" class="p-6">
+            <!-- 导航将通过JavaScript动态生成 -->
+          </div>
+        </aside>
+        <!-- 试卷内容区 -->
+        <div class="flex-1 overflow-y-auto p-8 bg-gray-50" id="previewScrollContainer">
+          <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-8">
+            <!-- 试卷头部 -->
+            <div class="text-center mb-8 pb-6 border-b-2 border-gray-300">
+              <h1 id="previewPaperName" class="text-3xl font-bold text-gray-900 mb-4">试卷名称</h1>
+              <div class="flex items-center justify-center space-x-8 text-sm text-gray-600">
+                <div>
+                  <span class="font-medium">试卷编号：</span>
+                  <span id="previewPaperCode">-</span>
+                </div>
+                <div>
+                  <span class="font-medium">总分：</span>
+                  <span id="previewTotalScore" class="text-primary-600 font-semibold">0</span>
+                  <span>分</span>
+                </div>
+              </div>
+            </div>
+            <!-- 题目列表 -->
+            <div id="previewQuestionsContainer" class="space-y-8">
+              <!-- 题目将通过JavaScript动态生成 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* 导航激活状态 */
+    .preview-nav-item {
+      transition: all 0.2s;
+      color: #374151;
+      background-color: white;
+    }
+    .preview-nav-item.active {
+      background-color: #00B96B;
+      color: white;
+      border-color: #00B96B;
+    }
+    .preview-nav-item:hover:not(.active) {
+      background-color: #f0fdf4;
+      border-color: #00B96B;
+    }
+  </style>
+
+</body>
+</html>

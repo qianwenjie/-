@@ -637,15 +637,22 @@
       paperData.totalScore = parseInt(document.getElementById('totalScore').value) || 100;
       paperData.updateTime = new Date().toISOString();
 
-      // 计算题目数量
+      // 计算题目数量和已设总分
       let questionCount = 0;
+      let actualTotalScore = 0;
       Object.entries(paperData.answerCard).forEach(([type, data]) => {
         if (type === 'composite') {
           data.questions.forEach(q => {
             questionCount += q.subQuestions.length;
+            q.subQuestions.forEach(sq => {
+              actualTotalScore += parseFloat(sq.score) || 0;
+            });
           });
         } else {
           questionCount += data.questions.length;
+          data.questions.forEach(q => {
+            actualTotalScore += parseFloat(q.score) || 0;
+          });
         }
       });
 
@@ -656,6 +663,7 @@
         code: paperData.code || ('EXAM-' + paperData.id),  // 确保有编号
         mode: 'document',  // 文档组卷模式
         questionCount: questionCount,
+        actualTotalScore: actualTotalScore,  // 保存已设总分
         usageCount: paperData.usageCount || 0,
         creator: paperData.creator || '当前用户',
         createTime: paperData.createTime ? formatDateTime(paperData.createTime) : formatDateTime(new Date().toISOString())

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>考试列表 - 考试系统</title>
+  <title>考试管理 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
@@ -11,176 +11,899 @@
       theme: {
         extend: {
           colors: {
-            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
-            success: { 50: '#E8FFEA', 500: '#00B42A' },
-            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
-            error: { 50: '#FFECE8', 500: '#F53F3F' },
-            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+            primary: { 50: '#E6F9F0', 100: '#C3F0DB', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A', 600: '#00A35C' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00', 600: '#F57C00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F', 600: '#E53935' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9', 600: '#00ACC1' },
+            gray: { 50: '#F9FAFB', 100: '#F3F4F6', 200: '#E5E7EB', 300: '#D1D5DB', 400: '#9CA3AF', 500: '#6B7280', 600: '#4B5563', 700: '#374151', 800: '#1F2937', 900: '#111827' }
           }
         }
       }
     }
   </script>
+  <style>
+    /* 卡片悬停效果 */
+    .exam-card {
+      transition: all 0.3s ease;
+    }
+
+    .exam-card:hover {
+      transform: translateX(2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 消息提示样式 */
+    .message-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .message {
+      min-width: 300px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* 模态框样式 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      animation: modalSlideDown 0.3s ease-out;
+    }
+
+    @keyframes modalSlideDown {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* 步骤指示器 */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      background: #E5E7EB;
+      color: #9CA3AF;
+      position: relative;
+      z-index: 2;
+    }
+
+    .step.active .step-number {
+      background: #00B96B;
+      color: white;
+    }
+
+    .step.completed .step-number {
+      background: #00B42A;
+      color: white;
+    }
+
+    .step-line {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: #E5E7EB;
+      z-index: 1;
+    }
+
+    .step.completed .step-line {
+      background: #00B42A;
+    }
+
+    .step:last-child .step-line {
+      display: none;
+    }
+
+    .step-label {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    .step.active .step-label {
+      color: #00B96B;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body class="bg-gray-50">
-  <div class="min-h-screen">
-    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-      <div class="flex items-center justify-between h-full px-6">
-        <div class="flex items-center space-x-4">
+  <div id="messageContainer" class="message-container"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
           <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
             <i class="fas fa-graduation-cap text-white"></i>
           </div>
           <span class="text-xl font-semibold text-gray-900">考试系统</span>
-          <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <a href="#" class="hover:text-primary-500">首页</a>
-            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
-            <span class="text-gray-900 font-medium">考试管理</span>
-          </nav>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">考试管理</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <img src="https://via.placeholder.com/32" alt="头像" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="pt-16 min-h-screen">
+    <div class="p-6">
+      <!-- 筛选区域 -->
+      <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4 mt-1">
+        <div class="flex items-center justify-between gap-3">
+          <!-- 左侧筛选控件 -->
+          <div class="flex items-center gap-3">
+            <input type="text" id="searchInput" placeholder="搜索考试名称..." class="w-64 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            <select id="filterStatus" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="">全部状态</option>
+              <option value="pending">未开始</option>
+              <option value="ongoing">进行中</option>
+              <option value="finished">已结束</option>
+            </select>
+            <button onclick="filterExams()" class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-search mr-2"></i>筛选
+            </button>
+            <button onclick="resetFilter()" class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-redo mr-2"></i>重置
+            </button>
+          </div>
+          <!-- 右侧创建按钮 -->
+          <a href="create.html" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-plus mr-2"></i>创建考试
+          </a>
         </div>
       </div>
-    </header>
 
-    <main class="pt-16">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-semibold text-gray-900">考试列表</h1>
-            <p class="mt-1 text-sm text-gray-500">管理和监控考试进度</p>
+      <!-- 考试卡片列表 -->
+      <div class="mb-16">
+        <!-- 列表容器 -->
+        <div id="examList" class="space-y-3">
+        </div>
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-lg border border-gray-200">
+          <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 mb-4">暂无考试数据</p>
+          <a href="create.html" class="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <i class="fas fa-plus mr-2"></i>创建第一场考试
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 悬浮分页 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
+    <div class="flex items-center justify-between px-6 py-3">
+      <p class="text-sm text-gray-500">共 <span id="totalItems">0</span> 场考试</p>
+      <div class="flex items-center space-x-2">
+        <button onclick="prevPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="prevBtn" disabled>
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="text-sm text-gray-700">第 <span id="currentPage">1</span> 页，共 <span id="totalPages">1</span> 页</span>
+        <button onclick="nextPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="nextBtn">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建考试模态框 -->
+  <div id="createModal" class="modal">
+    <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <!-- 模态框头部 -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900">创建考试</h2>
+        <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+
+      <!-- 步骤指示器 -->
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <div class="step-indicator">
+          <div class="step active" id="step1Indicator">
+            <span class="step-number">1</span>
+            <div class="step-line"></div>
+            <div class="step-label">基本信息</div>
           </div>
-          <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
-            <i class="fas fa-plus mr-2"></i>创建考试
+          <div class="step" id="step2Indicator">
+            <span class="step-number">2</span>
+            <div class="step-line"></div>
+            <div class="step-label">选择试卷</div>
+          </div>
+          <div class="step" id="step3Indicator">
+            <span class="step-number">3</span>
+            <div class="step-line"></div>
+            <div class="step-label">考试设置</div>
+          </div>
+          <div class="step" id="step4Indicator">
+            <span class="step-number">4</span>
+            <div class="step-label">确认创建</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模态框内容 -->
+      <div class="flex-1 overflow-y-auto px-6 py-6">
+        <!-- 步骤1：基本信息 -->
+        <div id="step1" class="step-content">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">考试名称 <span class="text-error-500">*</span></label>
+              <input type="text" id="examName" placeholder="例如：2026春季期末考试" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">考试描述</label>
+              <textarea id="examDesc" rows="3" placeholder="选填，简要描述考试内容和要求..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤2：选择试卷 -->
+        <div id="step2" class="step-content hidden">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">选择试卷 <span class="text-error-500">*</span></label>
+              <select id="examPaper" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">请选择试卷</option>
+              </select>
+            </div>
+            <div id="paperPreview" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">试卷预览</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <p><span class="font-medium">题目数量：</span><span id="previewQuestionCount">-</span></p>
+                <p><span class="font-medium">总分：</span><span id="previewTotalScore">-</span></p>
+                <p><span class="font-medium">试卷模式：</span><span id="previewPaperMode">-</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤3：考试设置 -->
+        <div id="step3" class="step-content hidden">
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">开始时间 <span class="text-error-500">*</span></label>
+                <input type="datetime-local" id="examStartTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">结束时间 <span class="text-error-500">*</span></label>
+                <input type="datetime-local" id="examEndTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">考试时长（分钟） <span class="text-error-500">*</span></label>
+              <input type="number" id="examDuration" placeholder="例如：120" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <p class="mt-1 text-xs text-gray-500">考生需在此时间内完成答题</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">及格分数</label>
+              <input type="number" id="examPassScore" placeholder="例如：60" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="checkbox" id="examShuffle" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
+                <span class="ml-2 text-sm text-gray-700">题目随机排序</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" id="examShowAnswer" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
+                <span class="ml-2 text-sm text-gray-700">考试结束后显示答案</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 步骤4：确认信息 -->
+        <div id="step4" class="step-content hidden">
+          <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-2"></i>
+                <div class="text-sm text-blue-700">
+                  请仔细核对以下信息，确认无误后点击"确认创建"按钮
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">考试名称：</span>
+                <span class="text-sm text-gray-900" id="confirmExamName">-</span>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">考试描述：</span>
+                <span class="text-sm text-gray-600" id="confirmExamDesc">-</span>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">关联试卷：</span>
+                <span class="text-sm text-gray-900" id="confirmPaperName">-</span>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">考试时间：</span>
+                <div class="text-sm text-gray-900">
+                  <div id="confirmStartTime">-</div>
+                  <div class="text-gray-500">至</div>
+                  <div id="confirmEndTime">-</div>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">考试时长：</span>
+                <span class="text-sm text-gray-900" id="confirmDuration">-</span>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">及格分数：</span>
+                <span class="text-sm text-gray-900" id="confirmPassScore">-</span>
+              </div>
+              <div class="flex items-start">
+                <span class="text-sm font-medium text-gray-700 w-24">其他设置：</span>
+                <div class="text-sm text-gray-900">
+                  <div id="confirmSettings">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模态框底部按钮 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+        <button onclick="prevStep()" id="prevStepBtn" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors hidden">
+          <i class="fas fa-chevron-left mr-2"></i>上一步
+        </button>
+        <div class="flex items-center space-x-3 ml-auto">
+          <button onclick="closeCreateModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
+            取消
+          </button>
+          <button onclick="nextStep()" id="nextStepBtn" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            下一步<i class="fas fa-chevron-right ml-2"></i>
+          </button>
+          <button onclick="submitExam()" id="submitBtn" class="hidden px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-check mr-2"></i>确认创建
           </button>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- 状态标签页 -->
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
-          <div class="flex border-b border-gray-200">
-            <button class="px-6 py-3 text-sm font-medium text-primary-600 border-b-2 border-primary-500">
-              全部 (15)
-            </button>
-            <button class="px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900">
-              未开始 (5)
-            </button>
-            <button class="px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900">
-              进行中 (3)
-            </button>
-            <button class="px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900">
-              已结束 (7)
-            </button>
+  <script>
+    // 模拟考试数据
+    let exams = [
+      {
+        id: 'E001',
+        name: '2026春季期末考试',
+        description: '计算机基础课程期末考试',
+        paper: { id: 'P001', name: '计算机基础期末卷', questionCount: 50, totalScore: 100 },
+        startTime: '2026-01-20 09:00',
+        endTime: '2026-01-20 11:00',
+        duration: 120,
+        passScore: 60,
+        participants: 156,
+        submitted: 0,
+        status: 'pending', // pending, ongoing, finished
+        shuffle: true,
+        showAnswer: true,
+        createTime: '2026-01-15 10:00:00'
+      },
+      {
+        id: 'E002',
+        name: '数学期中测验',
+        description: '数学期中测验',
+        paper: { id: 'P002', name: '数学期中测验卷', questionCount: 30, totalScore: 100 },
+        startTime: '2026-01-16 14:00',
+        endTime: '2026-01-16 15:30',
+        duration: 90,
+        passScore: 60,
+        participants: 128,
+        submitted: 85,
+        status: 'ongoing',
+        shuffle: false,
+        showAnswer: true,
+        createTime: '2026-01-10 15:30:00'
+      },
+      {
+        id: 'E003',
+        name: '英语听力测试',
+        description: '英语听力专项测试',
+        paper: { id: 'P003', name: '英语听力专项卷', questionCount: 40, totalScore: 100 },
+        startTime: '2026-01-10 10:00',
+        endTime: '2026-01-10 11:00',
+        duration: 60,
+        passScore: 60,
+        participants: 98,
+        submitted: 98,
+        status: 'finished',
+        shuffle: true,
+        showAnswer: true,
+        createTime: '2026-01-05 09:00:00'
+      }
+    ];
+
+    // 模拟试卷数据（用于选择试卷）
+    let papers = [
+      { id: 'P001', name: '计算机基础期末卷', questionCount: 50, totalScore: 100, mode: '文档模式' },
+      { id: 'P002', name: '数学期中测验卷', questionCount: 30, totalScore: 100, mode: '固定抽题' },
+      { id: 'P003', name: '英语听力专项卷', questionCount: 40, totalScore: 100, mode: '随机抽题' },
+      { id: 'P004', name: '物理实验考核卷', questionCount: 25, totalScore: 100, mode: '文档模式' }
+    ];
+
+    let filteredExams = [...exams];
+    let currentPage = 1;
+    const pageSize = 20;
+    let currentStep = 1;
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      renderList();
+      loadPaperOptions();
+    });
+
+    // 渲染考试列表
+    function renderList() {
+      const container = document.getElementById('examList');
+      const emptyState = document.getElementById('emptyState');
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageData = filteredExams.slice(start, end);
+
+      if (filteredExams.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        container.innerHTML = pageData.map(exam => createExamCard(exam)).join('');
+      }
+
+      updatePagination();
+      document.getElementById('totalItems').textContent = filteredExams.length;
+    }
+
+    // 创建考试卡片
+    function createExamCard(exam) {
+      // 状态映射
+      const statusMap = {
+        pending: { text: '未开始', class: 'bg-warning-50 text-warning-600', icon: '●', badgeClass: 'bg-warning-100 border-warning-200' },
+        ongoing: { text: '进行中', class: 'bg-success-50 text-success-600', icon: '●', badgeClass: 'bg-success-100 border-success-200' },
+        finished: { text: '已结束', class: 'bg-gray-100 text-gray-600', icon: '●', badgeClass: 'bg-gray-100 border-gray-200' }
+      };
+
+      const status = statusMap[exam.status] || statusMap.pending;
+
+      return `
+        <div class="exam-card bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="viewExam('${exam.id}')">
+          <div class="flex items-center p-4 gap-4">
+            <!-- 左侧图标和状态 -->
+            <div class="flex-shrink-0 relative">
+              <div class="w-16 h-16 rounded-lg ${status.badgeClass} border flex items-center justify-center">
+                <svg class="w-10 h-10" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="examGrad${exam.id}" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
+                    </linearGradient>
+                  </defs>
+                  <!-- 时钟背景 -->
+                  <circle cx="60" cy="60" r="35" fill="#FFF3E0" stroke="#FFB74D" stroke-width="2"/>
+                  <!-- 时钟刻度 -->
+                  <line x1="60" y1="30" x2="60" y2="35" stroke="#FB8C00" stroke-width="2"/>
+                  <line x1="60" y1="85" x2="60" y2="90" stroke="#FB8C00" stroke-width="2"/>
+                  <line x1="30" y1="60" x2="35" y2="60" stroke="#FB8C00" stroke-width="2"/>
+                  <line x1="85" y1="60" x2="90" y2="60" stroke="#FB8C00" stroke-width="2"/>
+                  <!-- 时针 -->
+                  <line x1="60" y1="60" x2="60" y2="45" stroke="url(#examGrad${exam.id})" stroke-width="3" stroke-linecap="round"/>
+                  <!-- 分针 -->
+                  <line x1="60" y1="60" x2="75" y2="60" stroke="url(#examGrad${exam.id})" stroke-width="2.5" stroke-linecap="round"/>
+                  <!-- 中心点 -->
+                  <circle cx="60" cy="60" r="4" fill="#FF7D00"/>
+                </svg>
+              </div>
+              <!-- 状态标签 -->
+              <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${status.class}">
+                ${status.text}
+              </span>
+            </div>
+
+            <!-- 中间信息区 -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex-1 min-w-0 pr-4">
+                  <h3 class="text-base font-semibold text-gray-900 truncate">${exam.name}</h3>
+                  <p class="text-sm text-gray-500 mt-0.5">${exam.paper.id}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-6 text-sm text-gray-600">
+                <div class="flex items-center gap-1.5">
+                  <i class="fas fa-calendar text-gray-400"></i>
+                  <span>${exam.startTime}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i class="fas fa-clock text-gray-400"></i>
+                  <span>${exam.duration}分钟</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <i class="fas fa-users text-gray-400"></i>
+                  <span>${exam.participants}人</span>
+                  ${exam.status === 'ongoing' ? `<span class="text-success-500">(已交卷: ${exam.submitted}人)</span>` : ''}
+                  ${exam.status === 'finished' ? `<span class="text-success-500">(已批阅: ${exam.submitted}人)</span>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧操作按钮 -->
+            <div class="flex-shrink-0 flex items-center gap-2">
+              <button onclick="event.stopPropagation(); viewExam('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5" title="查看详情">
+                <i class="fas fa-eye"></i>
+                <span>查看</span>
+              </button>
+              <button onclick="event.stopPropagation(); editExam('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-info-600 hover:bg-info-50 rounded-lg transition-colors flex items-center gap-1.5" title="编辑考试" ${exam.status !== 'pending' ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>
+                <i class="fas fa-edit"></i>
+                <span>编辑</span>
+              </button>
+              ${exam.status === 'ongoing' ? `
+                <button onclick="event.stopPropagation(); monitorExam('${exam.id}')" class="px-3 py-1.5 text-sm text-white bg-warning-500 hover:bg-warning-600 rounded-lg transition-colors flex items-center gap-1.5" title="实时监控">
+                  <i class="fas fa-desktop"></i>
+                  <span>监控</span>
+                </button>
+              ` : ''}
+              ${exam.status === 'finished' ? `
+                <button onclick="event.stopPropagation(); viewResults('${exam.id}')" class="px-3 py-1.5 text-sm text-white bg-success-500 hover:bg-success-600 rounded-lg transition-colors flex items-center gap-1.5" title="查看成绩">
+                  <i class="fas fa-chart-bar"></i>
+                  <span>成绩</span>
+                </button>
+              ` : ''}
+              <button onclick="event.stopPropagation(); deleteExam('${exam.id}')" class="p-1.5 text-gray-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors" title="删除" ${exam.status !== 'pending' ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
+      `;
+    }
 
-        <!-- 考试表格 -->
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">考试名称</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">关联试卷</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">考试时间</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">参考人数</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-t border-gray-200 hover:bg-gray-50">
-                <td class="px-6 py-4">
-                  <p class="text-sm font-medium text-gray-900">2026春季期末考试</p>
-                  <p class="text-xs text-gray-500">考试ID: E001</p>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-700">计算机基础期末卷</td>
-                <td class="px-6 py-4">
-                  <p class="text-sm text-gray-700">2026-01-20 09:00</p>
-                  <p class="text-xs text-gray-500">时长: 120分钟</p>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-700">156 人</td>
-                <td class="px-6 py-4">
-                  <span class="bg-warning-50 text-warning-600 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                    未开始
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center space-x-2">
-                    <button class="text-primary-500 hover:text-primary-600" title="查看">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="text-gray-500 hover:text-gray-700" title="编辑">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="text-info-500 hover:text-info-600" title="监控">
-                      <i class="fas fa-desktop"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+    // 分页相关
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredExams.length / pageSize) || 1;
+      document.getElementById('currentPage').textContent = currentPage;
+      document.getElementById('totalPages').textContent = totalPages;
 
-              <tr class="border-t border-gray-200 hover:bg-gray-50">
-                <td class="px-6 py-4">
-                  <p class="text-sm font-medium text-gray-900">数学期中测验</p>
-                  <p class="text-xs text-gray-500">考试ID: E002</p>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-700">数学期中测验卷</td>
-                <td class="px-6 py-4">
-                  <p class="text-sm text-gray-700">2026-01-16 14:00</p>
-                  <p class="text-xs text-gray-500">时长: 90分钟</p>
-                </td>
-                <td class="px-6 py-4">
-                  <p class="text-sm text-gray-700">128 人</p>
-                  <p class="text-xs text-success-500">已交卷: 85人</p>
-                </td>
-                <td class="px-6 py-4">
-                  <span class="bg-success-50 text-success-600 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                    进行中
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center space-x-2">
-                    <button class="text-primary-500 hover:text-primary-600" title="查看">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="text-info-500 hover:text-info-600" title="监控">
-                      <i class="fas fa-desktop"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages;
+    }
 
-              <tr class="border-t border-gray-200 hover:bg-gray-50">
-                <td class="px-6 py-4">
-                  <p class="text-sm font-medium text-gray-900">英语听力测试</p>
-                  <p class="text-xs text-gray-500">考试ID: E003</p>
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-700">英语听力专项卷</td>
-                <td class="px-6 py-4">
-                  <p class="text-sm text-gray-700">2026-01-10 10:00</p>
-                  <p class="text-xs text-gray-500">时长: 60分钟</p>
-                </td>
-                <td class="px-6 py-4">
-                  <p class="text-sm text-gray-700">98 人</p>
-                  <p class="text-xs text-success-500">已批阅: 98人</p>
-                </td>
-                <td class="px-6 py-4">
-                  <span class="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                    已结束
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center space-x-2">
-                    <button class="text-primary-500 hover:text-primary-600" title="查看">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="text-success-500 hover:text-success-600" title="成绩">
-                      <i class="fas fa-chart-bar"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-  </div>
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderList();
+      }
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(filteredExams.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderList();
+      }
+    }
+
+    // 筛选功能
+    function filterExams() {
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('filterStatus').value;
+
+      filteredExams = exams.filter(exam => {
+        const matchSearch = !searchText || exam.name.toLowerCase().includes(searchText);
+        const matchStatus = !status || exam.status === status;
+        return matchSearch && matchStatus;
+      });
+
+      currentPage = 1;
+      renderList();
+    }
+
+    function resetFilter() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterStatus').value = '';
+      filteredExams = [...exams];
+      currentPage = 1;
+      renderList();
+    }
+
+    // 考试操作
+    function viewExam(id) {
+      showMessage('查看考试详情：' + id, 'info');
+    }
+
+    function editExam(id) {
+      showMessage('编辑考试：' + id, 'info');
+    }
+
+    function monitorExam(id) {
+      showMessage('监控考试：' + id, 'info');
+    }
+
+    function viewResults(id) {
+      showMessage('查看考试成绩：' + id, 'info');
+    }
+
+    function deleteExam(id) {
+      if (confirm('确定要删除这场考试吗？')) {
+        exams = exams.filter(e => e.id !== id);
+        filteredExams = filteredExams.filter(e => e.id !== id);
+        renderList();
+        showMessage('删除成功', 'success');
+      }
+    }
+
+    // 创建考试模态框相关
+    function openCreateModal() {
+      document.getElementById('createModal').classList.add('active');
+      currentStep = 1;
+      resetForm();
+      showStep(1);
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.remove('active');
+    }
+
+    function resetForm() {
+      document.getElementById('examName').value = '';
+      document.getElementById('examDesc').value = '';
+      document.getElementById('examPaper').value = '';
+      document.getElementById('examStartTime').value = '';
+      document.getElementById('examEndTime').value = '';
+      document.getElementById('examDuration').value = '';
+      document.getElementById('examPassScore').value = '60';
+      document.getElementById('examShuffle').checked = false;
+      document.getElementById('examShowAnswer').checked = true;
+      document.getElementById('paperPreview').classList.add('hidden');
+    }
+
+    function showStep(step) {
+      // 隐藏所有步骤内容
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      // 显示当前步骤
+      document.getElementById('step' + step).classList.remove('hidden');
+
+      // 更新步骤指示器
+      for (let i = 1; i <= 4; i++) {
+        const indicator = document.getElementById('step' + i + 'Indicator');
+        indicator.classList.remove('active', 'completed');
+        if (i < step) {
+          indicator.classList.add('completed');
+        } else if (i === step) {
+          indicator.classList.add('active');
+        }
+      }
+
+      // 更新按钮状态
+      document.getElementById('prevStepBtn').classList.toggle('hidden', step === 1);
+      document.getElementById('nextStepBtn').classList.toggle('hidden', step === 4);
+      document.getElementById('submitBtn').classList.toggle('hidden', step !== 4);
+
+      currentStep = step;
+    }
+
+    function nextStep() {
+      // 验证当前步骤
+      if (!validateStep(currentStep)) {
+        return;
+      }
+
+      if (currentStep === 3) {
+        // 最后一步前，填充确认信息
+        fillConfirmInfo();
+      }
+
+      if (currentStep < 4) {
+        showStep(currentStep + 1);
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        showStep(currentStep - 1);
+      }
+    }
+
+    function validateStep(step) {
+      if (step === 1) {
+        const name = document.getElementById('examName').value.trim();
+        if (!name) {
+          showMessage('请输入考试名称', 'error');
+          return false;
+        }
+      } else if (step === 2) {
+        const paper = document.getElementById('examPaper').value;
+        if (!paper) {
+          showMessage('请选择试卷', 'error');
+          return false;
+        }
+      } else if (step === 3) {
+        const startTime = document.getElementById('examStartTime').value;
+        const endTime = document.getElementById('examEndTime').value;
+        const duration = document.getElementById('examDuration').value;
+
+        if (!startTime || !endTime || !duration) {
+          showMessage('请完善考试时间设置', 'error');
+          return false;
+        }
+
+        if (new Date(startTime) >= new Date(endTime)) {
+          showMessage('结束时间必须晚于开始时间', 'error');
+          return false;
+        }
+
+        if (duration <= 0) {
+          showMessage('考试时长必须大于0', 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function fillConfirmInfo() {
+      document.getElementById('confirmExamName').textContent = document.getElementById('examName').value;
+      document.getElementById('confirmExamDesc').textContent = document.getElementById('examDesc').value || '无';
+
+      const paperId = document.getElementById('examPaper').value;
+      const paper = papers.find(p => p.id === paperId);
+      document.getElementById('confirmPaperName').textContent = paper ? paper.name : '-';
+
+      document.getElementById('confirmStartTime').textContent = document.getElementById('examStartTime').value.replace('T', ' ');
+      document.getElementById('confirmEndTime').textContent = document.getElementById('examEndTime').value.replace('T', ' ');
+      document.getElementById('confirmDuration').textContent = document.getElementById('examDuration').value + ' 分钟';
+      document.getElementById('confirmPassScore').textContent = document.getElementById('examPassScore').value || '未设置';
+
+      const settings = [];
+      if (document.getElementById('examShuffle').checked) settings.push('题目随机排序');
+      if (document.getElementById('examShowAnswer').checked) settings.push('考后显示答案');
+      document.getElementById('confirmSettings').textContent = settings.length > 0 ? settings.join('、') : '无特殊设置';
+    }
+
+    function submitExam() {
+      const newExam = {
+        id: 'E' + String(exams.length + 1).padStart(3, '0'),
+        name: document.getElementById('examName').value,
+        description: document.getElementById('examDesc').value,
+        paper: papers.find(p => p.id === document.getElementById('examPaper').value),
+        startTime: document.getElementById('examStartTime').value.replace('T', ' '),
+        endTime: document.getElementById('examEndTime').value.replace('T', ' '),
+        duration: parseInt(document.getElementById('examDuration').value),
+        passScore: parseInt(document.getElementById('examPassScore').value) || 60,
+        participants: 0,
+        submitted: 0,
+        status: 'pending',
+        shuffle: document.getElementById('examShuffle').checked,
+        showAnswer: document.getElementById('examShowAnswer').checked,
+        createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+      };
+
+      exams.unshift(newExam);
+      filteredExams = [...exams];
+      renderList();
+      closeCreateModal();
+      showMessage('创建考试成功', 'success');
+    }
+
+    // 加载试卷选项
+    function loadPaperOptions() {
+      const select = document.getElementById('examPaper');
+      select.innerHTML = '<option value="">请选择试卷</option>' +
+        papers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+      // 监听选择变化
+      select.addEventListener('change', function() {
+        const paperId = this.value;
+        if (paperId) {
+          const paper = papers.find(p => p.id === paperId);
+          if (paper) {
+            document.getElementById('paperPreview').classList.remove('hidden');
+            document.getElementById('previewQuestionCount').textContent = paper.questionCount + ' 题';
+            document.getElementById('previewTotalScore').textContent = paper.totalScore + ' 分';
+            document.getElementById('previewPaperMode').textContent = paper.mode;
+          }
+        } else {
+          document.getElementById('paperPreview').classList.add('hidden');
+        }
+      });
+    }
+
+    // 消息提示
+    function showMessage(text, type = 'info') {
+      const container = document.getElementById('messageContainer');
+      const colors = {
+        success: 'bg-success-50 text-success-700 border-success-200',
+        error: 'bg-error-50 text-error-700 border-error-200',
+        warning: 'bg-warning-50 text-warning-700 border-warning-200',
+        info: 'bg-info-50 text-info-700 border-info-200'
+      };
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+      };
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `message ${colors[type]} border`;
+      messageEl.innerHTML = `
+        <i class="fas ${icons[type]} mr-2"></i>
+        <span>${text}</span>
+      `;
+
+      container.appendChild(messageEl);
+
+      setTimeout(() => {
+        messageEl.style.opacity = '0';
+        messageEl.style.transform = 'translateX(100%)';
+        setTimeout(() => messageEl.remove(), 300);
+      }, 3000);
+    }
+  </script>
 </body>
 </html>

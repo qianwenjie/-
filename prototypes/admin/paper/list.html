@@ -37,6 +37,22 @@
     .message-item.info { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
     @keyframes messageSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes messageSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+
+    /* 表格列宽固定 */
+    .paper-table thead th:nth-child(1),
+    .paper-table tbody td:nth-child(1) { width: 25%; }
+    .paper-table thead th:nth-child(2),
+    .paper-table tbody td:nth-child(2) { width: 10%; }
+    .paper-table thead th:nth-child(3),
+    .paper-table tbody td:nth-child(3) { width: 15%; }
+    .paper-table thead th:nth-child(4),
+    .paper-table tbody td:nth-child(4) { width: 8%; }
+    .paper-table thead th:nth-child(5),
+    .paper-table tbody td:nth-child(5) { width: 10%; }
+    .paper-table thead th:nth-child(6),
+    .paper-table tbody td:nth-child(6) { width: 15%; }
+    .paper-table thead th:nth-child(7),
+    .paper-table tbody td:nth-child(7) { width: 17%; }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -80,23 +96,23 @@
       </div>
 
       <!-- 筛选区域 -->
-      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <div class="flex items-center gap-4">
-          <input type="text" id="searchInput" placeholder="搜索试卷名称或编号..." class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-          <select id="filterStatus" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+      <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+        <div class="flex items-center gap-3">
+          <input type="text" id="searchInput" placeholder="搜索试卷名称或编号..." class="w-64 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+          <select id="filterStatus" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
             <option value="">全部状态</option>
             <option value="draft">草稿</option>
             <option value="published">已发布</option>
           </select>
-          <select id="filterMode" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <select id="filterMode" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
             <option value="">全部模式</option>
             <option value="document">文档模式</option>
             <option value="extraction">抽题模式</option>
           </select>
-          <button onclick="filterPapers()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <button onclick="filterPapers()" class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
             <i class="fas fa-search mr-2"></i>筛选
           </button>
-          <button onclick="resetFilter()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          <button onclick="resetFilter()" class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
             <i class="fas fa-redo mr-2"></i>重置
           </button>
         </div>
@@ -104,27 +120,35 @@
 
       <!-- 试卷列表表格 -->
       <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mb-16">
-        <table class="w-full">
-          <thead class="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷信息</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组卷模式</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目/总分</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用次数</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
-              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-            </tr>
-          </thead>
-          <tbody id="paperList" class="divide-y divide-gray-200">
-          </tbody>
-        </table>
-        <div id="emptyState" class="hidden py-16 text-center">
-          <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
-          <p class="text-gray-500 mb-4">暂无试卷数据</p>
-          <button onclick="window.location.href='add.html'" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
-            <i class="fas fa-plus mr-2"></i>创建第一份试卷
-          </button>
+        <!-- 表头固定 -->
+        <div class="overflow-x-auto">
+          <table class="w-full paper-table">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷信息</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组卷模式</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目/总分</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用次数</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+        <!-- 表体滚动 -->
+        <div class="overflow-auto" style="max-height: calc(100vh - 340px);">
+          <table class="w-full paper-table">
+            <tbody id="paperList" class="divide-y divide-gray-200">
+            </tbody>
+          </table>
+          <div id="emptyState" class="hidden py-16 text-center">
+            <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 mb-4">暂无试卷数据</p>
+            <button onclick="window.location.href='add.html'" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+              <i class="fas fa-plus mr-2"></i>创建第一份试卷
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -265,12 +289,19 @@
     let deleteTargetId = null;
     let previewPaperId = null;  // 当前预览的试卷ID
 
-    // 数据迁移：为旧试卷计算 actualTotalScore
+    // 数据迁移：为旧试卷计算 actualTotalScore 和设置默认 extractionType
     function migratePaperData() {
       let needUpdate = false;
 
       allPapers.forEach(paper => {
-        // 如果已有 actualTotalScore，跳过
+        // 迁移1：为抽题模式试卷设置默认 extractionType
+        if ((paper.mode === 'extraction' || paper.mode === 'random') && !paper.extractionType) {
+          // 如果有 randomRules 则是随机抽题，否则是固定抽题
+          paper.extractionType = paper.randomRules ? 'random' : 'fixed';
+          needUpdate = true;
+        }
+
+        // 迁移2：计算 actualTotalScore（如果已有则跳过）
         if (paper.actualTotalScore !== undefined) {
           return;
         }
@@ -570,6 +601,34 @@
                 }))
               }
             }
+          },
+          {
+            id: 'P006',
+            code: 'EXAM-2026-006',
+            name: '数据结构固定抽题测试',
+            title: '数据结构固定抽题测试',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 25,
+            status: 'published',
+            usageCount: 1,
+            createTime: '2026-01-20 10:30',
+            creator: '张老师'
+          },
+          {
+            id: 'P007',
+            code: 'EXAM-2026-007',
+            name: '算法基础随机抽题试卷',
+            title: '算法基础随机抽题试卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 30,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-22 15:45',
+            creator: '李老师'
           }
         ];
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
@@ -587,6 +646,12 @@
         const matchMode = !mode || p.mode === mode;
         return matchSearch && matchStatus && matchMode;
       });
+      // 按创建时间倒序排列
+      filteredPapers.sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
       currentPage = 1;
       renderList();
     }
@@ -596,6 +661,12 @@
       document.getElementById('filterStatus').value = '';
       document.getElementById('filterMode').value = '';
       filteredPapers = [...allPapers];
+      // 按创建时间倒序排列
+      filteredPapers.sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
       currentPage = 1;
       renderList();
     }
@@ -622,8 +693,26 @@
 
     function createPaperRow(paper) {
       const isExtraction = paper.mode === 'extraction' || paper.mode === 'random';
-      const modeText = paper.mode === 'document' ? '文档模式' : '抽题模式';
-      const modeClass = paper.mode === 'document' ? 'bg-info-50 text-info-600' : 'bg-purple-50 text-purple-600';
+
+      // 组卷模式显示
+      let modeText, modeClass;
+      if (paper.mode === 'document') {
+        modeText = '文档模式';
+        modeClass = 'bg-info-50 text-info-600';
+      } else if (isExtraction) {
+        // 区分固定抽题和随机抽题
+        if (paper.extractionType === 'random') {
+          modeText = '随机抽题';
+          modeClass = 'bg-purple-50 text-purple-600';
+        } else {
+          modeText = '固定抽题';
+          modeClass = 'bg-indigo-50 text-indigo-600';
+        }
+      } else {
+        modeText = '抽题模式';
+        modeClass = 'bg-purple-50 text-purple-600';
+      }
+
       const statusText = paper.status === 'published' ? '已发布' : '草稿';
       const statusClass = paper.status === 'published' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-600';
       // 删除逻辑：草稿可删除；已发布且使用次数为0可删除；已发布且使用次数>0不可删除
@@ -640,7 +729,6 @@
             <span class="text-gray-900">${paper.questionCount} 题</span>
             <span class="text-gray-400 mx-1">/</span>
             <span class="text-gray-900">${paper.totalScore} 分</span>
-            ${paper.actualTotalScore !== undefined ? `<span class="text-gray-400 mx-1">/</span><span class="text-red-600 font-medium">${paper.actualTotalScore % 1 === 0 ? paper.actualTotalScore : paper.actualTotalScore.toFixed(1)} 分</span>` : ''}
           </td>
           <td class="px-4 py-4"><span class="px-2 py-1 rounded text-xs font-medium ${statusClass}">${statusText}</span></td>
           <td class="px-4 py-4 text-gray-600">${paper.usageCount || 0} 次</td>
@@ -707,15 +795,30 @@
         document.getElementById('extractionPreviewPaperName').textContent = paper.name || '未命名试卷';
         document.getElementById('extractionPreviewPaperCode').textContent = paper.code || '暂无';
 
-        // 计算并设置总分
-        let totalScore = 0;
-        (paper.questions || []).forEach(q => {
-          totalScore += parseFloat(q.paperScore) || 0;
-        });
-        document.getElementById('extractionPreviewTotalScore').textContent = totalScore;
+        // 判断是随机抽题还是固定抽题
+        if (paper.extractionType === 'random' && paper.randomRules) {
+          // 随机抽题：隐藏左侧导航栏，主体内容居中
+          document.getElementById('extractionPreviewNavigation').classList.add('hidden');
+          document.getElementById('extractionPreviewContent').classList.add('flex', 'items-center', 'justify-center');
 
-        // 渲染题目列表
-        renderExtractionPreviewQuestions(paper.questions || []);
+          // 显示抽题规则说明
+          document.getElementById('extractionPreviewTotalScore').textContent = paper.totalScore || 100;
+          renderRandomExtractionRulesPreview(paper.randomRules, paper.totalScore || 100);
+        } else {
+          // 固定抽题：显示左侧导航栏
+          document.getElementById('extractionPreviewNavigation').classList.remove('hidden');
+          document.getElementById('extractionPreviewContent').classList.remove('flex', 'items-center', 'justify-center');
+
+          // 计算并设置总分
+          let totalScore = 0;
+          (paper.questions || []).forEach(q => {
+            totalScore += parseFloat(q.paperScore) || 0;
+          });
+          document.getElementById('extractionPreviewTotalScore').textContent = totalScore;
+
+          // 渲染题目列表
+          renderExtractionPreviewQuestions(paper.questions || []);
+        }
 
         // 显示弹窗
         document.getElementById('extractionPreviewModal').classList.remove('hidden');
@@ -982,10 +1085,15 @@
           // 文档模式跳转到 document.html
           window.location.href = `document.html?id=${id}`;
         } else if (paper.mode === 'extraction' || paper.mode === 'random') {
-          // 抽题模式跳转到 extraction.html
-          // 保存当前试卷到 currentPaper 供编辑使用
-          localStorage.setItem('currentPaper', JSON.stringify(paper));
-          window.location.href = `extraction.html?id=${id}`;
+          // 抽题模式：根据 extractionType 跳转到不同页面
+          if (paper.extractionType === 'random') {
+            // 随机抽题 → random-extraction.html
+            window.location.href = `random-extraction.html?id=${id}`;
+          } else {
+            // 固定抽题 → extraction.html
+            localStorage.setItem('currentPaper', JSON.stringify(paper));
+            window.location.href = `extraction.html?id=${id}`;
+          }
         } else {
           // 其他模式暂未实现
           Message.warning('该模式暂未实现');
@@ -998,6 +1106,12 @@
         const newPaper = { ...paper, id: 'P' + Date.now(), code: 'EXAM-' + Date.now(), name: paper.name + ' (副本)', status: 'draft', usageCount: 0, createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-') };
         allPapers.unshift(newPaper);
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
+        // 按创建时间倒序排列
+        allPapers.sort((a, b) => {
+          const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+          const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+          return timeB - timeA;
+        });
         filteredPapers = [...allPapers];
         renderList();
         Message.success('试卷复制成功');
@@ -1040,6 +1154,12 @@
     // 初始化
     document.addEventListener('DOMContentLoaded', () => {
       initDemoData();
+      // 按创建时间倒序排列（最新的在最前面）
+      allPapers.sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
       filteredPapers = [...allPapers];
       renderList();
     });
@@ -1127,6 +1247,13 @@
       const totalScore = parseInt(document.getElementById('modalTotalScore').value);
       const mode = document.querySelector('input[name="paperMode"]:checked').value;
 
+      // 获取抽题子模式
+      let extractionType = 'fixed';
+      if (mode === 'extraction') {
+        const extractionTypeRadio = document.querySelector('input[name="extractionType"]:checked');
+        extractionType = extractionTypeRadio ? extractionTypeRadio.value : 'fixed';
+      }
+
       // 生成唯一ID
       const paperId = 'P' + Date.now() + Math.random().toString(36).substr(2, 9);
 
@@ -1136,9 +1263,10 @@
         name: name,
         code: code,
         totalScore: totalScore,
-        mode: mode,
+        mode: mode === 'extraction' ? 'extraction' : mode,
+        extractionType: extractionType,
         status: 'draft',
-        createTime: new Date().toISOString(),
+        createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
         usageCount: 0
       };
 
@@ -1151,11 +1279,37 @@
       // 跳转到对应页面
       if (mode === 'document') {
         window.location.href = 'document.html';
-      } else if (mode === 'random') {
-        window.location.href = 'extraction.html';
+      } else if (mode === 'extraction') {
+        if (extractionType === 'random') {
+          window.location.href = 'random-extraction.html';
+        } else {
+          window.location.href = 'extraction.html';
+        }
       } else {
         // 其他模式暂未实现
         Message.warning('该模式暂未实现');
+      }
+    }
+
+    // 切换抽题模式子选项展开/收起
+    function toggleExtractionOptions() {
+      const subOptions = document.getElementById('extractionSubOptions');
+      const expandIcon = document.getElementById('extractionExpandIcon');
+      const extractionRadio = document.querySelector('input[name="paperMode"][value="extraction"]');
+      const container = document.getElementById('extractionModeContainer');
+
+      // 选中抽题模式
+      extractionRadio.checked = true;
+
+      // 切换展开状态
+      subOptions.classList.toggle('hidden');
+      expandIcon.classList.toggle('rotate-180');
+
+      // 更新容器边框颜色
+      if (!subOptions.classList.contains('hidden')) {
+        container.classList.add('border-primary-500');
+      } else {
+        container.classList.remove('border-primary-500');
       }
     }
 
@@ -1191,9 +1345,170 @@
 
       const paper = allPapers.find(p => p.id === previewPaperId);
       if (paper) {
-        localStorage.setItem('currentPaper', JSON.stringify(paper));
-        window.location.href = `extraction.html?id=${previewPaperId}`;
+        // 根据抽题类型跳转到不同页面
+        if (paper.extractionType === 'random') {
+          // 随机抽题 → random-extraction.html
+          window.location.href = `random-extraction.html?id=${previewPaperId}`;
+        } else {
+          // 固定抽题 → extraction.html
+          localStorage.setItem('currentPaper', JSON.stringify(paper));
+          window.location.href = `extraction.html?id=${previewPaperId}`;
+        }
       }
+    }
+
+    // 渲染随机抽题规则预览
+    function renderRandomExtractionRulesPreview(randomRules, totalScore) {
+      const container = document.getElementById('extractionPreviewContent');
+
+      // 题型配置
+      const typeConfig = {
+        single: { name: '单选题', icon: 'fa-dot-circle', color: 'info' },
+        multiple: { name: '多选题', icon: 'fa-check-double', color: 'purple' },
+        judge: { name: '判断题', icon: 'fa-check-circle', color: 'success' },
+        blank: { name: '填空题', icon: 'fa-keyboard', color: 'warning' },
+        cloze: { name: '完形填空', icon: 'fa-puzzle-piece', color: 'indigo' },
+        short: { name: '简答题', icon: 'fa-align-left', color: 'amber' },
+        composite: { name: '复合题', icon: 'fa-layer-group', color: 'purple' }
+      };
+
+      let html = `
+        <div class="max-w-3xl w-full">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-random text-purple-600 text-xl"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900">随机抽题模式</h2>
+                <p class="text-sm text-gray-500 mt-1">每次考试从题库中随机抽取题目，保证试卷多样性</p>
+              </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div class="flex items-start gap-3">
+                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                <div class="flex-1 text-sm text-blue-800">
+                  <div class="font-medium mb-1">预览说明</div>
+                  <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。如需查看实际抽取效果，请点击"编辑试卷"按钮进入编辑页面，使用"抽一份看看"功能。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                <span class="text-sm font-medium text-gray-700">试卷总分</span>
+                <span class="text-lg font-bold text-primary-600">${totalScore} 分</span>
+              </div>
+      `;
+
+      // 全局筛选条件
+      if (randomRules.globalFilters) {
+        const filters = randomRules.globalFilters;
+
+        html += `
+          <div class="py-3 border-b border-gray-200">
+            <div class="text-sm font-medium text-gray-700 mb-2">全局筛选条件</div>
+            <div class="flex flex-wrap gap-2">
+        `;
+
+        // 难度筛选
+        if (filters.difficulties && filters.difficulties.length > 0) {
+          const difficultyNames = {1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级'};
+          filters.difficulties.forEach(d => {
+            html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">难度：${difficultyNames[d] || d}</span>`;
+          });
+        }
+
+        // 知识点筛选
+        if (filters.knowledgeIds && filters.knowledgeIds.length > 0) {
+          html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">已选 ${filters.knowledgeIds.length} 个知识点</span>`;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      // 题型抽取规则
+      html += `
+        <div class="py-3">
+          <div class="text-sm font-medium text-gray-700 mb-3">题型抽取规则</div>
+          <div class="space-y-3">
+      `;
+
+      const typeRules = randomRules.typeRules || {};
+      Object.entries(typeRules).forEach(([type, rule]) => {
+        if (rule.count > 0) {
+          const config = typeConfig[type] || { name: '未知题型', icon: 'fa-question', color: 'gray' };
+          const scoreModeText = rule.scoreMode === 'custom' ? `自设分数：${rule.customScore}分/题` : '题库分数';
+          const totalTypeScore = rule.scoreMode === 'custom' ? (rule.count * rule.customScore).toFixed(1) : '根据题库';
+
+          // 根据题型设置颜色类（固定类名以支持Tailwind）
+          let bgClass = 'bg-gray-50';
+          let iconColorClass = 'text-gray-600';
+          if (config.color === 'info') {
+            bgClass = 'bg-blue-50';
+            iconColorClass = 'text-blue-600';
+          } else if (config.color === 'purple') {
+            bgClass = 'bg-purple-50';
+            iconColorClass = 'text-purple-600';
+          } else if (config.color === 'success') {
+            bgClass = 'bg-green-50';
+            iconColorClass = 'text-green-600';
+          } else if (config.color === 'warning') {
+            bgClass = 'bg-orange-50';
+            iconColorClass = 'text-orange-600';
+          } else if (config.color === 'indigo') {
+            bgClass = 'bg-indigo-50';
+            iconColorClass = 'text-indigo-600';
+          } else if (config.color === 'amber') {
+            bgClass = 'bg-amber-50';
+            iconColorClass = 'text-amber-600';
+          }
+
+          html += `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 ${bgClass} rounded-lg flex items-center justify-center">
+                  <i class="fas ${config.icon} ${iconColorClass}"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-900">${config.name}</div>
+                  <div class="text-xs text-gray-500">${scoreModeText}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-gray-900">${rule.count} 题</div>
+                <div class="text-xs text-gray-500">${totalTypeScore}${rule.scoreMode === 'custom' ? ' 分' : ''}</div>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      html += `
+            </div>
+
+            <div class="mt-6 flex items-center justify-center gap-3">
+              <button onclick="editExtractionPaper()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-edit mr-2"></i>编辑试卷
+              </button>
+              <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-times mr-2"></i>关闭预览
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = html;
     }
 
     // 渲染抽题预览题目
@@ -1593,14 +1908,41 @@
                 <div class="text-xs text-gray-500">上传 PDF/Word 文档，设置答题卡</div>
               </div>
             </label>
-            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 transition-colors">
-              <input type="radio" name="paperMode" value="random"
-                class="w-4 h-4 text-primary-500 focus:ring-primary-500">
-              <div class="ml-3">
-                <div class="text-sm font-medium text-gray-900">抽题模式</div>
-                <div class="text-xs text-gray-500">从题库中按规则抽取题目组卷</div>
+            <!-- 抽题模式（可展开） -->
+            <div class="border border-gray-300 rounded-lg overflow-hidden" id="extractionModeContainer">
+              <!-- 主选项 -->
+              <div class="flex items-center p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                   onclick="toggleExtractionOptions()">
+                <input type="radio" name="paperMode" value="extraction"
+                  class="w-4 h-4 text-primary-500 focus:ring-primary-500">
+                <div class="ml-3 flex-1">
+                  <div class="text-sm font-medium text-gray-900">抽题模式</div>
+                  <div class="text-xs text-gray-500">从题库中按规则抽取题目组卷</div>
+                </div>
+                <i id="extractionExpandIcon" class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
               </div>
-            </label>
+              <!-- 子选项（默认隐藏） -->
+              <div id="extractionSubOptions" class="hidden border-t border-gray-200 bg-gray-50">
+                <!-- 固定抽题 -->
+                <label class="flex items-center p-3 pl-10 cursor-pointer hover:bg-gray-100 transition-colors">
+                  <input type="radio" name="extractionType" value="fixed" checked
+                    class="w-4 h-4 text-primary-500 focus:ring-primary-500">
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-700">固定抽题</div>
+                    <div class="text-xs text-gray-500">手动选择具体题目</div>
+                  </div>
+                </label>
+                <!-- 随机抽题 -->
+                <label class="flex items-center p-3 pl-10 cursor-pointer hover:bg-gray-100 transition-colors">
+                  <input type="radio" name="extractionType" value="random"
+                    class="w-4 h-4 text-primary-500 focus:ring-primary-500">
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-700">随机抽题</div>
+                    <div class="text-xs text-gray-500">按规则从题库随机抽取</div>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1644,13 +1986,13 @@
       <!-- 弹窗主体 -->
       <div class="flex-1 overflow-hidden flex">
         <!-- 左侧快速导航 -->
-        <aside class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <aside id="extractionPreviewNavigation" class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
           <div id="extractionPreviewNavigationContainer" class="p-6">
             <!-- 导航将通过JavaScript动态生成 -->
           </div>
         </aside>
         <!-- 试卷内容区 -->
-        <div class="flex-1 overflow-y-auto p-8 bg-gray-50" id="extractionPreviewScrollContainer">
+        <div id="extractionPreviewContent" class="flex-1 overflow-y-auto p-8 bg-gray-50">
           <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-8">
             <!-- 试卷头部 -->
             <div class="text-center mb-8 pb-6 border-b-2 border-gray-300">

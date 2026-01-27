@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>抽题组卷 - 考试系统</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
     tailwind.config = {
@@ -201,6 +201,16 @@
         </nav>
       </div>
       <div class="flex items-center space-x-3">
+        <!-- 模式切换按钮组 -->
+        <div class="flex items-center bg-gray-100 rounded-lg p-1">
+          <button id="fixedModeBtn" class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-white shadow text-primary-600">
+            <i class="fas fa-hand-pointer mr-1.5"></i>固定抽题
+          </button>
+          <button id="randomModeBtn" onclick="switchToRandomMode()" class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-600 hover:text-gray-900">
+            <i class="fas fa-random mr-1.5"></i>随机抽题
+          </button>
+        </div>
+        <div class="w-px h-6 bg-gray-300"></div>
         <button onclick="saveDraft()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
           <i class="fas fa-save mr-2"></i>保存草稿
         </button>
@@ -690,6 +700,7 @@
     let paperInfo = null;
     let batchScores = {}; // 存储每个题型的批量分数输入值
     let showOnlySelected = false; // 仅显示已选题目的状态（已废弃）
+    let isEditMode = false; // 是否为编辑模式
 
     // 筛选状态
     let selectedKnowledgePaths = new Set();
@@ -802,6 +813,12 @@
         return;
       }
 
+      // 转换createTime格式（如果是ISO格式）
+      if (paperInfo.createTime && paperInfo.createTime.includes('T')) {
+        const date = new Date(paperInfo.createTime);
+        paperInfo.createTime = date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+      }
+
       // 初始化试卷信息显示
       document.getElementById('paperNameDisplay').textContent = paperInfo.name || '未命名试卷';
       document.getElementById('paperNameInput').value = paperInfo.name || '';
@@ -812,7 +829,22 @@
       // 检查是否为编辑模式
       const urlParams = new URLSearchParams(window.location.search);
       const paperId = urlParams.get('id');
-      const isEditMode = paperId && paperInfo.questions;
+      isEditMode = !!paperId; // 只要有ID参数就是编辑模式
+
+      // 如果是编辑模式，从 allPapers 中加载完整的试卷数据
+      if (isEditMode && paperId) {
+        const allPapers = JSON.parse(localStorage.getItem('allPapers')) || [];
+        const existingPaper = allPapers.find(p => p.id === paperId);
+        if (existingPaper) {
+          // 合并数据，保留 currentPaper 中的最新信息，但确保 id 等关键字段来自 allPapers
+          paperInfo = {
+            ...existingPaper,
+            ...paperInfo,
+            id: existingPaper.id,  // 确保 id 不被覆盖
+            createTime: existingPaper.createTime  // 确保创建时间不被覆盖
+          };
+        }
+      }
 
       // 读取题库
       allQuestions = JSON.parse(localStorage.getItem('allQuestions')) || [];
@@ -864,8 +896,8 @@
         return;
       }
 
-      // 如果是编辑模式，恢复已选题目
-      if (isEditMode) {
+      // 如果是编辑模式且有题目数据，恢复已选题目
+      if (isEditMode && paperInfo.questions && paperInfo.questions.length > 0) {
         paperInfo.questions.forEach(pq => {
           selectedQuestions.set(pq.questionId, {
             question: pq.question,
@@ -2526,7 +2558,7 @@
 
       const urlParams = new URLSearchParams(window.location.search);
       const paperId = urlParams.get('id');
-      const isEditMode = !!paperId;
+      isEditMode = !!paperId; // 更新全局变量
 
       const allPapers = JSON.parse(localStorage.getItem('allPapers')) || [];
 
@@ -2540,6 +2572,8 @@
           return;
         }
       } else {
+        // 创建新试卷，生成ID和创建时间
+        paperInfo.id = 'P' + Date.now();
         paperInfo.createTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
         allPapers.unshift(paperInfo);
         Message.success(successMessage || '试卷保存成功！');
@@ -2593,6 +2627,50 @@
 
       if (confirm('确定要发布试卷吗？发布后考生即可参加考试。')) {
         savePaper('published', '试卷发布成功！');
+      }
+    }
+
+    // 切换到随机抽题模式
+    function switchToRandomMode() {
+      // 显示确认对话框
+      document.getElementById('switchModeConfirmModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭模式切换确认对话框
+    function closeSwitchModeConfirm() {
+      document.getElementById('switchModeConfirmModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // 确认切换到随机抽题模式
+    function confirmSwitchMode() {
+      // 获取基本的试卷信息（名称、编号、总分）
+      const paperName = document.getElementById('paperNameDisplay').textContent.trim();
+      const paperCode = document.getElementById('paperCodeDisplay').textContent.trim();
+      const paperTotalScore = parseFloat(document.getElementById('paperTotalScoreInput').value) || 100;
+
+      // 保留试卷ID等关键信息，只切换模式（清空当前模式的题目数据）
+      const switchedPaperData = {
+        id: paperInfo.id,  // 保留原试卷ID
+        name: paperName === '未命名试卷' ? '' : paperName,
+        code: paperCode === '-' ? '' : paperCode,
+        totalScore: paperTotalScore,
+        mode: 'extraction',
+        extractionType: 'random',
+        status: 'draft',  // 切换模式后变为草稿状态
+        usageCount: paperInfo.usageCount || 0,
+        createTime: paperInfo.createTime  // 保留创建时间
+        // 不保留题目列表等当前模式的数据
+      };
+
+      localStorage.setItem('currentPaper', JSON.stringify(switchedPaperData));
+
+      // 跳转到随机抽题页面（带上原试卷ID，表示编辑同一份试卷）
+      if (paperInfo.id) {
+        window.location.href = `random-extraction.html?id=${paperInfo.id}`;
+      } else {
+        window.location.href = 'random-extraction.html';
       }
     }
 
@@ -3533,6 +3611,32 @@
               <!-- 题目将通过JavaScript动态生成 -->
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模式切换确认对话框 -->
+  <div id="switchModeConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+      <div class="bg-warning-500 px-6 py-4 flex items-center gap-3">
+        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+        <h3 class="text-lg font-bold text-white">切换模式确认</h3>
+      </div>
+      <div class="p-6">
+        <p class="text-gray-700 leading-relaxed mb-4">
+          <span class="font-semibold text-gray-900">切换模式后，当前模式下的所有操作将全部清除</span>
+        </p>
+        <p class="text-sm text-gray-600 mb-6">
+          包括已添加的题目、设置的分值等所有数据将无法恢复，是否确认切换？
+        </p>
+        <div class="flex items-center justify-end gap-3">
+          <button onclick="closeSwitchModeConfirm()" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-times mr-2"></i>取消
+          </button>
+          <button onclick="confirmSwitchMode()" class="px-5 py-2.5 bg-warning-500 hover:bg-warning-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-check mr-2"></i>确认切换
+          </button>
         </div>
       </div>
     </div>

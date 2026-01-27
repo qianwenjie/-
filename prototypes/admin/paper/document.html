@@ -383,7 +383,7 @@
             title: data.name || paperData.title,
             code: data.code || generatePaperCode(),
             totalScore: data.totalScore || paperData.totalScore,
-            createTime: data.createTime || new Date().toISOString()
+            createTime: data.createTime || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
           };
           // 更新显示元素
           document.getElementById('paperTitleDisplay').textContent = paperData.title;
@@ -396,7 +396,7 @@
           // 完全新建
           paperData.id = generateId();
           paperData.code = generatePaperCode();
-          paperData.createTime = new Date().toISOString();
+          paperData.createTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
           // 更新显示元素
           document.getElementById('paperTitleDisplay').textContent = paperData.title;
           document.getElementById('paperTitleInput').value = paperData.title;
@@ -666,7 +666,7 @@
         actualTotalScore: actualTotalScore,  // 保存已设总分
         usageCount: paperData.usageCount || 0,
         creator: paperData.creator || '当前用户',
-        createTime: paperData.createTime ? formatDateTime(paperData.createTime) : formatDateTime(new Date().toISOString())
+        createTime: paperData.createTime || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
       };
 
       const papers = JSON.parse(localStorage.getItem('allPapers') || '[]');

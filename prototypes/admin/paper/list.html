@@ -38,21 +38,26 @@
     @keyframes messageSlideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes messageSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
 
-    /* 表格列宽固定 */
-    .paper-table thead th:nth-child(1),
-    .paper-table tbody td:nth-child(1) { width: 25%; }
-    .paper-table thead th:nth-child(2),
-    .paper-table tbody td:nth-child(2) { width: 10%; }
-    .paper-table thead th:nth-child(3),
-    .paper-table tbody td:nth-child(3) { width: 15%; }
-    .paper-table thead th:nth-child(4),
-    .paper-table tbody td:nth-child(4) { width: 8%; }
-    .paper-table thead th:nth-child(5),
-    .paper-table tbody td:nth-child(5) { width: 10%; }
-    .paper-table thead th:nth-child(6),
-    .paper-table tbody td:nth-child(6) { width: 15%; }
-    .paper-table thead th:nth-child(7),
-    .paper-table tbody td:nth-child(7) { width: 17%; }
+    /* 卡片悬浮效果 */
+    .paper-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .paper-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 试卷图标动画 */
+    .paper-icon-container {
+      background: linear-gradient(135deg, #F9FAFB 0%, #E5E7EB 100%);
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .paper-icon-container:hover {
+      background: linear-gradient(135deg, #F3F4F6 0%, #D1D5DB 100%);
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -84,71 +89,48 @@
   <!-- 主内容区 -->
   <main class="pt-16 min-h-screen">
     <div class="p-6">
-      <!-- 页面标题和操作 -->
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">试卷管理</h1>
-          <p class="mt-1 text-sm text-gray-500">管理所有试卷，支持文档模式和抽题模式组卷</p>
-        </div>
-        <button onclick="openCreatePaperModal()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-          <i class="fas fa-plus mr-2"></i>新增试卷
-        </button>
-      </div>
-
       <!-- 筛选区域 -->
-      <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4">
-        <div class="flex items-center gap-3">
-          <input type="text" id="searchInput" placeholder="搜索试卷名称或编号..." class="w-64 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-          <select id="filterStatus" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option value="">全部状态</option>
-            <option value="draft">草稿</option>
-            <option value="published">已发布</option>
-          </select>
-          <select id="filterMode" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option value="">全部模式</option>
-            <option value="document">文档模式</option>
-            <option value="extraction">抽题模式</option>
-          </select>
-          <button onclick="filterPapers()" class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-search mr-2"></i>筛选
-          </button>
-          <button onclick="resetFilter()" class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-redo mr-2"></i>重置
-          </button>
-        </div>
-      </div>
-
-      <!-- 试卷列表表格 -->
-      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mb-16">
-        <!-- 表头固定 -->
-        <div class="overflow-x-auto">
-          <table class="w-full paper-table">
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷信息</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组卷模式</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">题目/总分</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用次数</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        <!-- 表体滚动 -->
-        <div class="overflow-auto" style="max-height: calc(100vh - 340px);">
-          <table class="w-full paper-table">
-            <tbody id="paperList" class="divide-y divide-gray-200">
-            </tbody>
-          </table>
-          <div id="emptyState" class="hidden py-16 text-center">
-            <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
-            <p class="text-gray-500 mb-4">暂无试卷数据</p>
-            <button onclick="window.location.href='add.html'" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
-              <i class="fas fa-plus mr-2"></i>创建第一份试卷
+      <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4 mt-1">
+        <div class="flex items-center justify-between gap-3">
+          <!-- 左侧筛选控件 -->
+          <div class="flex items-center gap-3">
+            <input type="text" id="searchInput" placeholder="搜索试卷名称或编号..." class="w-64 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            <select id="filterStatus" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="">全部状态</option>
+              <option value="draft">草稿</option>
+              <option value="published">已发布</option>
+            </select>
+            <select id="filterMode" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option value="">全部模式</option>
+              <option value="document">文档模式</option>
+              <option value="extraction">抽题模式</option>
+            </select>
+            <button onclick="filterPapers()" class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-search mr-2"></i>筛选
+            </button>
+            <button onclick="resetFilter()" class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-redo mr-2"></i>重置
             </button>
           </div>
+          <!-- 右侧新增按钮 -->
+          <button onclick="openCreatePaperModal()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-plus mr-2"></i>新增试卷
+          </button>
+        </div>
+      </div>
+
+      <!-- 试卷卡片列表 -->
+      <div class="mb-16">
+        <!-- 卡片网格 -->
+        <div id="paperList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        </div>
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-lg border border-gray-200">
+          <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 mb-4">暂无试卷数据</p>
+          <button onclick="openCreatePaperModal()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <i class="fas fa-plus mr-2"></i>创建第一份试卷
+          </button>
         </div>
       </div>
     </div>
@@ -673,32 +655,31 @@
 
     // 渲染列表
     function renderList() {
-      const tbody = document.getElementById('paperList');
+      const container = document.getElementById('paperList');
       const emptyState = document.getElementById('emptyState');
       const start = (currentPage - 1) * pageSize;
       const end = start + pageSize;
       const pageData = filteredPapers.slice(start, end);
 
       if (filteredPapers.length === 0) {
-        tbody.innerHTML = '';
+        container.innerHTML = '';
         emptyState.classList.remove('hidden');
-        emptyState.classList.add('flex', 'flex-col');
       } else {
         emptyState.classList.add('hidden');
-        tbody.innerHTML = pageData.map(p => createPaperRow(p)).join('');
+        container.innerHTML = pageData.map(p => createPaperCard(p)).join('');
       }
       updatePagination();
       document.getElementById('totalItems').textContent = filteredPapers.length;
     }
 
-    function createPaperRow(paper) {
+    function createPaperCard(paper) {
       const isExtraction = paper.mode === 'extraction' || paper.mode === 'random';
 
       // 组卷模式显示
       let modeText, modeClass;
       if (paper.mode === 'document') {
         modeText = '文档模式';
-        modeClass = 'bg-info-50 text-info-600';
+        modeClass = 'bg-blue-50 text-blue-600';
       } else if (isExtraction) {
         // 区分固定抽题和随机抽题
         if (paper.extractionType === 'random') {
@@ -714,34 +695,150 @@
       }
 
       const statusText = paper.status === 'published' ? '已发布' : '草稿';
-      const statusClass = paper.status === 'published' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-600';
+      const statusClass = paper.status === 'published' ? 'text-primary-600' : 'text-gray-500';
+      const statusIcon = paper.status === 'published' ? '●' : '●';
+
       // 删除逻辑：草稿可删除；已发布且使用次数为0可删除；已发布且使用次数>0不可删除
       const canDelete = paper.status === 'draft' || (paper.status === 'published' && (paper.usageCount || 0) === 0);
       const deleteTitle = canDelete ? '删除' : '已发布且被使用，无法删除';
+
       return `
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-4">
-            <div class="font-medium text-gray-900">${paper.name}</div>
-            <div class="text-sm text-gray-500">${paper.code}</div>
-          </td>
-          <td class="px-4 py-4"><span class="px-2 py-1 rounded text-xs font-medium ${modeClass}">${modeText}</span></td>
-          <td class="px-4 py-4">
-            <span class="text-gray-900">${paper.questionCount} 题</span>
-            <span class="text-gray-400 mx-1">/</span>
-            <span class="text-gray-900">${paper.totalScore} 分</span>
-          </td>
-          <td class="px-4 py-4"><span class="px-2 py-1 rounded text-xs font-medium ${statusClass}">${statusText}</span></td>
-          <td class="px-4 py-4 text-gray-600">${paper.usageCount || 0} 次</td>
-          <td class="px-4 py-4 text-gray-500 text-sm">${paper.createTime}</td>
-          <td class="px-4 py-4 text-center">
-            <div class="flex items-center justify-center space-x-2">
-              <button onclick="previewPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded" title="预览"><i class="fas fa-eye"></i></button>
-              <button onclick="editPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-info-500 hover:bg-info-50 rounded" title="编辑"><i class="fas fa-edit"></i></button>
-              <button onclick="copyPaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-warning-500 hover:bg-warning-50 rounded" title="复制"><i class="fas fa-copy"></i></button>
-              <button onclick="deletePaper('${paper.id}')" class="p-1.5 text-gray-500 hover:text-error-500 hover:bg-error-50 rounded ${canDelete ? '' : 'opacity-50 cursor-not-allowed'}" title="${deleteTitle}" ${canDelete ? '' : 'disabled'}><i class="fas fa-trash"></i></button>
+        <div class="paper-card bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <!-- 卡片上半部分：渐变背景区域 -->
+          <div class="paper-icon-container" onclick="previewPaper('${paper.id}')">
+            <!-- 模式标签 -->
+            <div class="px-4 pt-4">
+              <span class="inline-block px-2 py-1 rounded text-xs font-medium ${modeClass}">${modeText}</span>
             </div>
-          </td>
-        </tr>`;
+
+            <!-- 图标区域 -->
+            <div class="flex items-center justify-center py-12">
+            <div class="relative">
+              <!-- 扁平化试卷图标 -->
+              <svg class="w-24 h-24" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <!-- 渐变定义 -->
+                  <linearGradient id="mainDocGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#F0FDF4;stop-opacity:1" />
+                  </linearGradient>
+                  <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#34D399;stop-opacity:1" />
+                  </linearGradient>
+                  <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FBBF24;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+                  </linearGradient>
+                  <!-- 阴影滤镜 -->
+                  <filter id="paperShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                    <feOffset dx="0" dy="4" result="offsetblur"/>
+                    <feComponentTransfer>
+                      <feFuncA type="linear" slope="0.15"/>
+                    </feComponentTransfer>
+                    <feMerge>
+                      <feMergeNode/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <!-- 文档主体 -->
+                <g filter="url(#paperShadow)">
+                  <rect x="25" y="20" width="70" height="85" rx="6" fill="url(#mainDocGradient)" stroke="#E5E7EB" stroke-width="1"/>
+
+                  <!-- 顶部绿色标题栏 -->
+                  <rect x="25" y="20" width="70" height="20" rx="6" fill="url(#headerGradient)"/>
+                  <rect x="25" y="30" width="70" height="10" fill="url(#headerGradient)"/>
+
+                  <!-- 标题栏装饰线 -->
+                  <line x1="32" y1="28" x2="52" y2="28" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                  <line x1="32" y1="33" x2="45" y2="33" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+
+                  <!-- 文档内容 - 题目列表样式 -->
+                  <!-- 题目1 -->
+                  <circle cx="34" cy="52" r="3" fill="#10B981" opacity="0.3"/>
+                  <line x1="42" y1="52" x2="80" y2="52" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+
+                  <!-- 题目2 -->
+                  <circle cx="34" cy="62" r="3" fill="#10B981" opacity="0.3"/>
+                  <line x1="42" y1="62" x2="85" y2="62" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+
+                  <!-- 题目3 -->
+                  <circle cx="34" cy="72" r="3" fill="#10B981" opacity="0.3"/>
+                  <line x1="42" y1="72" x2="75" y2="72" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+
+                  <!-- 题目4 -->
+                  <circle cx="34" cy="82" r="3" fill="#10B981" opacity="0.3"/>
+                  <line x1="42" y1="82" x2="82" y2="82" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+
+                  <!-- 题目5 -->
+                  <circle cx="34" cy="92" r="3" fill="#10B981" opacity="0.3"/>
+                  <line x1="42" y1="92" x2="78" y2="92" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round"/>
+                </g>
+
+                <!-- 右上角徽章 -->
+                <g filter="url(#paperShadow)">
+                  <circle cx="85" cy="30" r="12" fill="url(#badgeGradient)"/>
+                  <path d="M 80 30 L 83 33 L 90 25" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </g>
+
+                <!-- 文档折角效果 -->
+                <path d="M 85 20 L 85 30 L 95 30 Z" fill="#D1FAE5" opacity="0.5"/>
+                <path d="M 85 30 L 95 30 L 95 26 Q 95 20 89 20 L 85 20" fill="#DCFCE7" opacity="0.3"/>
+
+              </svg>
+            </div>
+            </div>
+          </div>
+
+          <!-- 卡片底部：标题和信息 -->
+          <div class="px-4 pb-4 border-t border-gray-100">
+            <!-- 标题 -->
+            <h3 class="mt-3 font-medium text-gray-900 truncate" title="${paper.name}">${paper.name}</h3>
+
+            <!-- 信息行 -->
+            <div class="mt-3 flex items-center justify-between text-xs text-gray-500">
+              <div class="flex items-center space-x-3">
+                <!-- 创建时间 -->
+                <span>${paper.createTime}</span>
+                <!-- 使用次数 -->
+                <span>${paper.usageCount || 0}次</span>
+              </div>
+              <!-- 状态 -->
+              <div class="flex items-center space-x-1 ${statusClass}">
+                <span>${statusIcon}</span>
+                <span>${statusText}</span>
+              </div>
+            </div>
+
+            <!-- 操作按钮行 -->
+            <div class="mt-3 flex items-center justify-between pt-3 border-t border-gray-100">
+              <div class="flex items-center space-x-1">
+                <button onclick="event.stopPropagation(); previewPaper('${paper.id}')" class="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="预览">
+                  <i class="fas fa-eye text-sm"></i>
+                </button>
+                <button onclick="event.stopPropagation(); editPaper('${paper.id}')" class="p-1.5 text-gray-400 hover:text-info-500 hover:bg-info-50 rounded transition-colors" title="编辑">
+                  <i class="fas fa-edit text-sm"></i>
+                </button>
+                <button onclick="event.stopPropagation(); copyPaper('${paper.id}')" class="p-1.5 text-gray-400 hover:text-warning-500 hover:bg-warning-50 rounded transition-colors" title="复制">
+                  <i class="fas fa-copy text-sm"></i>
+                </button>
+                <button onclick="event.stopPropagation(); deletePaper('${paper.id}')" class="p-1.5 text-gray-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors ${canDelete ? '' : 'opacity-30 cursor-not-allowed'}" title="${deleteTitle}" ${canDelete ? '' : 'disabled'}>
+                  <i class="fas fa-trash text-sm"></i>
+                </button>
+              </div>
+              <!-- 题目和分数 -->
+              <div class="text-xs text-gray-500">
+                <span>${paper.questionCount}题</span>
+                <span class="mx-1">/</span>
+                <span>${paper.totalScore}分</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     // 分页

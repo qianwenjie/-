@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>创建考试 - 考试系统</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- 使用稳定的CDN -->
+  <script src="https://unpkg.com/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <script>
     tailwind.config = {
       theme: {
@@ -107,32 +108,54 @@
       background: #E6F9F0;
     }
 
+    /* 试卷卡片样式 */
+    .paper-card {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .paper-card input:checked ~ .paper-card-content {
+      border-color: #00B96B !important;
+      background: #E6F9F0;
+    }
+
+    .paper-card input:checked ~ .paper-card-content i.fa-check-circle {
+      display: inline-block !important;
+    }
+
     /* 消息提示 */
     .message-container {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
     }
 
     .message {
-      min-width: 300px;
-      padding: 16px 20px;
-      margin-bottom: 10px;
+      min-width: 320px;
+      max-width: 500px;
+      padding: 16px 24px;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       display: flex;
       align-items: center;
+      justify-content: center;
       animation: slideIn 0.3s ease-out;
+      transition: all 0.3s ease;
     }
 
     @keyframes slideIn {
       from {
-        transform: translateX(100%);
+        transform: translateY(-20px);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateY(0);
         opacity: 1;
       }
     }
@@ -167,8 +190,8 @@
   </header>
 
   <!-- 主内容区 -->
-  <main class="pt-16 min-h-screen">
-    <div class="flex h-screen">
+  <main class="pt-16 h-screen flex flex-col">
+    <div class="flex flex-1 overflow-hidden">
       <!-- 左侧步骤导航 -->
       <aside class="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div class="p-6 border-b border-gray-200">
@@ -215,8 +238,8 @@
       </aside>
 
       <!-- 右侧内容区 -->
-      <div class="flex-1 overflow-y-auto">
-        <div class="max-w-4xl mx-auto p-8">
+      <div class="flex-1 overflow-y-auto relative">
+        <div class="max-w-4xl mx-auto p-8" id="mainContent">
 
           <!-- 步骤1：基本信息 -->
           <div id="step1" class="step-content active">
@@ -270,111 +293,96 @@
                 <!-- 作答次数 -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    作答次数 <span class="text-error-500">*</span>
+                    限制多少次作答 <span class="text-error-500">*</span>
                   </label>
-                  <div class="flex items-center space-x-4">
-                    <label class="flex items-center cursor-pointer">
-                      <input type="radio" name="attemptType" value="unlimited" checked class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500">
-                      <span class="ml-2 text-sm text-gray-700">不限次数</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                      <input type="radio" name="attemptType" value="limited" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleAttemptLimit()">
-                      <span class="ml-2 text-sm text-gray-700">限制次数</span>
-                    </label>
-                  </div>
-                  <div id="attemptLimitInput" class="mt-3 hidden">
-                    <input type="number" id="attemptLimit" placeholder="输入次数" min="1" class="w-48 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <div class="flex items-center">
+                    <input type="number" id="attemptLimit" placeholder="输入次数，0表示不限次数" min="0" class="flex-1 max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <span class="ml-2 text-sm text-gray-500">次</span>
                   </div>
+                  <p class="mt-1 text-xs text-gray-500">输入0表示不限制作答次数</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- 步骤2：选择试卷 -->
-          <div id="step2" class="step-content">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-6">选择试卷</h3>
+          <div id="step2" class="step-content fixed inset-0 left-80" style="top: 64px; bottom: 72px;">
+            <div class="h-full flex flex-col p-8">
+              <!-- 固定顶部：标题和筛选区 -->
+              <div>
+                <div class="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900">选择试卷</h3>
+                    <p class="text-sm text-gray-500 mt-1">文档模式支持选择多份试卷用于A/B场景；抽题组卷仅支持选择一份</p>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <!-- 组卷模式筛选 -->
+                    <select id="paperModeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="filterPapersByMode()">
+                      <option value="">组卷模式</option>
+                      <option value="document">文档模式</option>
+                      <option value="fixed">固定抽题</option>
+                      <option value="random">随机抽题</option>
+                    </select>
 
-              <div class="space-y-6">
-                <!-- 选择方式 -->
-                <div class="grid grid-cols-2 gap-4">
-                  <!-- 选择已有试卷 -->
-                  <label class="radio-card">
-                    <input type="radio" name="paperSource" value="existing" checked class="sr-only" onchange="togglePaperSource()">
-                    <div class="radio-card-content border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors">
-                      <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center">
-                          <i class="fas fa-file-alt text-primary-500 text-xl"></i>
-                          <span class="ml-3 font-medium text-gray-900">选择已有试卷</span>
-                        </div>
-                        <i class="fas fa-check-circle text-primary-500"></i>
-                      </div>
-                      <p class="text-sm text-gray-500">从试卷库中选择已创建的试卷</p>
-                    </div>
-                  </label>
+                    <!-- 搜索框 -->
+                    <input type="text" id="paperSearchInput" placeholder="搜索试卷名称" class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" oninput="searchPapers()">
 
-                  <!-- 创建新试卷 -->
-                  <label class="radio-card">
-                    <input type="radio" name="paperSource" value="new" class="sr-only" onchange="togglePaperSource()">
-                    <div class="radio-card-content border-2 border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors">
-                      <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center">
-                          <i class="fas fa-plus-circle text-info-500 text-xl"></i>
-                          <span class="ml-3 font-medium text-gray-900">创建新试卷</span>
-                        </div>
-                        <i class="fas fa-check-circle text-primary-500 hidden"></i>
-                      </div>
-                      <p class="text-sm text-gray-500">跳转到试卷创建页面新建试卷</p>
-                    </div>
-                  </label>
-                </div>
+                    <!-- 重置按钮 -->
+                    <button onclick="resetPaperFilters()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors flex items-center space-x-2">
+                      <i class="fas fa-redo text-gray-600"></i>
+                      <span>重置</span>
+                    </button>
 
-                <!-- 选择已有试卷 -->
-                <div id="existingPaperSection">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    选择试卷 <span class="text-error-500">*</span>
-                  </label>
-                  <select id="selectedPaper" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="showPaperPreview()">
-                    <option value="">请选择试卷</option>
-                    <option value="P001">P001 - 计算机基础期末卷</option>
-                    <option value="P002">P002 - 数学期中测验卷</option>
-                    <option value="P003">P003 - 英语听力专项卷</option>
-                    <option value="P004">P004 - 物理实验考核卷</option>
-                  </select>
-
-                  <!-- 试卷预览 -->
-                  <div id="paperPreview" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h4 class="text-sm font-medium text-gray-700 mb-3">试卷预览</h4>
-                    <div class="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span class="text-gray-500">题目数量：</span>
-                        <span class="font-medium text-gray-900" id="previewQuestionCount">-</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-500">总分：</span>
-                        <span class="font-medium text-gray-900" id="previewTotalScore">-</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-500">试卷模式：</span>
-                        <span class="font-medium text-gray-900" id="previewPaperMode">-</span>
-                      </div>
-                    </div>
+                    <!-- 创建试卷按钮 -->
+                    <button onclick="window.open('../paper/list.html', '_blank')" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors flex items-center space-x-2">
+                      <i class="fas fa-plus"></i>
+                      <span>创建试卷</span>
+                    </button>
                   </div>
                 </div>
 
-                <!-- 创建新试卷提示 -->
-                <div id="newPaperSection" class="hidden">
-                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-start">
-                      <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-3"></i>
-                      <div class="flex-1">
-                        <p class="text-sm text-blue-700 mb-3">点击下方按钮将跳转到试卷创建页面，创建完成后返回本页面继续。</p>
-                        <a href="../paper/list.html" class="inline-flex items-center px-4 py-2 bg-info-500 hover:bg-info-600 text-white rounded-lg text-sm font-medium transition-colors">
-                          <i class="fas fa-plus mr-2"></i>前往创建试卷
-                        </a>
-                      </div>
-                    </div>
+                <!-- 表头 -->
+                <div class="bg-gray-50 border border-gray-200 rounded-t-lg">
+                  <table class="w-full">
+                    <thead>
+                      <tr>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-700" style="width: 30%;">试卷名称</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-700" style="width: 15%;">组卷模式</th>
+                        <th class="px-6 py-3 text-center text-sm font-medium text-gray-700" style="width: 15%;">题目数/总分</th>
+                        <th class="px-6 py-3 text-center text-sm font-medium text-gray-700" style="width: 12%;">使用次数</th>
+                        <th class="px-6 py-3 text-center text-sm font-medium text-gray-700" style="width: 12%;">预览试卷</th>
+                        <th class="px-6 py-3 text-center text-sm font-medium text-gray-700" style="width: 10%;">选择</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 可滚动的表格内容区 -->
+              <div class="flex-1 overflow-y-auto bg-white border-x border-gray-200">
+                <table class="w-full">
+                  <colgroup>
+                    <col style="width: 30%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 12%;">
+                    <col style="width: 12%;">
+                    <col style="width: 10%;">
+                  </colgroup>
+                  <tbody id="paperList" class="divide-y divide-gray-200">
+                    <!-- 试卷行将通过 JavaScript 动态生成 -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 固定底部：分页 -->
+              <div class="bg-white border border-gray-200 rounded-b-lg py-3 px-6">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm text-gray-600">
+                    显示 <span id="pageStart">1</span>-<span id="pageEnd">20</span> 条，共 <span id="totalPapers">0</span> 条
+                  </div>
+                  <div class="flex items-center space-x-2" id="paginationControls">
+                    <!-- 分页按钮将通过 JavaScript 动态生成 -->
                   </div>
                 </div>
               </div>
@@ -586,10 +594,6 @@
                   <h4 class="text-sm font-semibold text-gray-900 mb-3">试卷信息</h4>
                   <div class="space-y-2 text-sm">
                     <div class="flex">
-                      <span class="w-28 text-gray-500">选择方式：</span>
-                      <span class="flex-1 text-gray-900" id="confirmPaperSource">-</span>
-                    </div>
-                    <div class="flex">
                       <span class="w-28 text-gray-500">试卷：</span>
                       <span class="flex-1 text-gray-900" id="confirmPaper">-</span>
                     </div>
@@ -622,8 +626,12 @@
             </div>
           </div>
 
-          <!-- 底部按钮 -->
-          <div class="mt-6 flex items-center justify-between">
+        </div>
+        <!-- mainContent 结束 -->
+
+        <!-- 底部按钮 - 使用 fixed 定位固定在视口底部 -->
+        <div id="bottomButtons" class="fixed bottom-0 right-0 bg-white border-t border-gray-200 px-8 py-4 shadow-lg" style="left: 320px; z-index: 20;">
+          <div class="max-w-4xl mx-auto flex items-center justify-between">
             <button onclick="prevStep()" id="prevBtn" class="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors hidden">
               <i class="fas fa-chevron-left mr-2"></i>上一步
             </button>
@@ -647,20 +655,368 @@
   <script>
     let currentStep = 1;
 
-    // 试卷数据
-    const papers = {
-      'P001': { name: '计算机基础期末卷', questionCount: 50, totalScore: 100, mode: '文档模式' },
-      'P002': { name: '数学期中测验卷', questionCount: 30, totalScore: 100, mode: '固定抽题' },
-      'P003': { name: '英语听力专项卷', questionCount: 40, totalScore: 100, mode: '随机抽题' },
-      'P004': { name: '物理实验考核卷', questionCount: 25, totalScore: 100, mode: '文档模式' }
-    };
+    // 从 localStorage 读取所有试卷数据
+    const allPapers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+    let filteredPapers = [...allPapers]; // 用于筛选后的试卷列表
+    const papers = {};
+    let selectedPaperIds = []; // 记录选中的试卷ID数组（支持多选）
 
-    // 页面加载时生成编号
-    document.addEventListener('DOMContentLoaded', function() {
-      generateExamCode();
+    // 转换为 papers 对象格式
+    allPapers.forEach(paper => {
+      // 判断试卷模式
+      let modeText = '文档模式';
+      if (paper.mode === 'extraction') {
+        if (paper.extractionType === 'random') {
+          modeText = '随机抽题';
+        } else {
+          modeText = '固定抽题';
+        }
+      }
+
+      papers[paper.id] = {
+        name: paper.name,
+        questionCount: paper.questionCount,
+        totalScore: paper.totalScore,
+        mode: modeText
+      };
     });
 
-    // 生成考试编号
+    // 页面加载时生成编号和渲染试卷列表
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化筛选列表
+      filteredPapers = [...allPapers];
+
+      generateExamCode();
+      renderPaperList(1);
+      updateStepUI(); // 初始化UI状态
+    });
+
+    // 分页配置
+    let currentPaperPage = 1;
+    const papersPerPage = 20;
+
+    // 渲染试卷列表
+    function renderPaperList(page = 1) {
+      currentPaperPage = page;
+      const paperList = document.getElementById('paperList');
+
+      if (filteredPapers.length === 0) {
+        paperList.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-inbox text-3xl mb-2 block"></i><p>暂无试卷</p></td></tr>';
+        document.getElementById('totalPapers').textContent = '0';
+        document.getElementById('pageStart').textContent = '0';
+        document.getElementById('pageEnd').textContent = '0';
+        document.getElementById('paginationControls').innerHTML = '';
+        return;
+      }
+
+      // 计算分页
+      const startIndex = (page - 1) * papersPerPage;
+      const endIndex = Math.min(startIndex + papersPerPage, filteredPapers.length);
+      const pagePapers = filteredPapers.slice(startIndex, endIndex);
+
+      // 更新显示信息
+      document.getElementById('totalPapers').textContent = filteredPapers.length;
+      document.getElementById('pageStart').textContent = startIndex + 1;
+      document.getElementById('pageEnd').textContent = endIndex;
+
+      // 渲染试卷表格行
+      const html = pagePapers.map(paper => {
+        // 判断试卷模式
+        let modeText = '文档模式';
+        let modeColor = 'text-blue-600 bg-blue-50';
+        let paperMode = 'document'; // 用于判断选择逻辑
+
+        if (paper.mode === 'extraction') {
+          if (paper.extractionType === 'random') {
+            modeText = '随机抽题';
+            modeColor = 'text-purple-600 bg-purple-50';
+            paperMode = 'extraction';
+          } else {
+            modeText = '固定抽题';
+            modeColor = 'text-green-600 bg-green-50';
+            paperMode = 'extraction';
+          }
+        }
+
+        // 使用次数（随机生成，实际应从数据库获取）
+        const useCount = Math.floor(Math.random() * 10);
+
+        // 判断是否选中
+        const isSelected = selectedPaperIds.includes(paper.id);
+        const rowClass = isSelected ? 'bg-primary-50' : 'hover:bg-gray-50';
+
+        // 选择按钮样式
+        let selectButtonHtml = '';
+        if (isSelected) {
+          selectButtonHtml = `
+            <button class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium flex items-center justify-center space-x-1 min-w-[80px]">
+              <i class="fas fa-check"></i>
+              <span>已选</span>
+            </button>
+          `;
+        } else {
+          selectButtonHtml = `
+            <button class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors min-w-[80px]">
+              选择
+            </button>
+          `;
+        }
+
+        return `
+          <tr class="${rowClass} transition-colors cursor-pointer" id="paper-row-${paper.id}" data-paper-mode="${paperMode}" onclick="toggleRowSelection('${paper.id}', '${paperMode}')">
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-gray-900">${paper.name}</div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${modeColor}">
+                ${modeText}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class="text-sm text-gray-600">${paper.questionCount}/${paper.totalScore}</span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class="text-sm text-gray-600">${useCount}</span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <button onclick="event.stopPropagation(); previewPaper('${paper.id}')" class="text-gray-600 hover:text-primary-500 transition-colors" title="预览试卷">
+                <i class="fas fa-eye text-lg"></i>
+              </button>
+            </td>
+            <td class="px-6 py-4 text-center">
+              ${selectButtonHtml}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      paperList.innerHTML = html;
+
+      // 渲染分页控件
+      renderPagination();
+    }
+
+    // 渲染分页控件
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredPapers.length / papersPerPage);
+      const paginationControls = document.getElementById('paginationControls');
+
+      if (totalPages <= 1) {
+        paginationControls.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+
+      // 首页按钮
+      html += `
+        <button onclick="goToFirstPage()"
+                class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors ${currentPaperPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                ${currentPaperPage === 1 ? 'disabled' : ''}
+                title="首页">
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+      `;
+
+      // 上一页按钮
+      html += `
+        <button onclick="goToPreviousPage()"
+                class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors ${currentPaperPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                ${currentPaperPage === 1 ? 'disabled' : ''}>
+          <i class="fas fa-angle-left mr-1"></i>上一页
+        </button>
+      `;
+
+      // 页码按钮
+      const maxVisiblePages = 4;
+      let startPage = Math.max(1, currentPaperPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPaperPage;
+        html += `
+          <button onclick="renderPaperList(${i})"
+                  class="px-3 py-1.5 border rounded text-sm transition-colors ${isActive ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-300 hover:bg-gray-50'}">
+            ${i}
+          </button>
+        `;
+      }
+
+      // 下一页按钮
+      html += `
+        <button onclick="goToNextPage(${totalPages})"
+                class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors ${currentPaperPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}"
+                ${currentPaperPage === totalPages ? 'disabled' : ''}>
+          下一页<i class="fas fa-angle-right ml-1"></i>
+        </button>
+      `;
+
+      // 末页按钮
+      html += `
+        <button onclick="goToLastPage(${totalPages})"
+                class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors ${currentPaperPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}"
+                ${currentPaperPage === totalPages ? 'disabled' : ''}
+                title="末页">
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+      `;
+
+      paginationControls.innerHTML = html;
+    }
+
+    // 首页
+    function goToFirstPage() {
+      if (currentPaperPage > 1) {
+        renderPaperList(1);
+      }
+    }
+
+    // 末页
+    function goToLastPage(totalPages) {
+      if (currentPaperPage < totalPages) {
+        renderPaperList(totalPages);
+      }
+    }
+
+    // 按组卷模式筛选
+    function filterPapersByMode() {
+      const mode = document.getElementById('paperModeFilter').value;
+      const searchText = document.getElementById('paperSearchInput').value.toLowerCase();
+
+      filteredPapers = allPapers.filter(paper => {
+        // 模式筛选
+        let modeMatch = true;
+        if (mode) {
+          if (mode === 'document') {
+            modeMatch = paper.mode !== 'extraction';
+          } else if (mode === 'fixed') {
+            modeMatch = paper.mode === 'extraction' && paper.extractionType === 'fixed';
+          } else if (mode === 'random') {
+            modeMatch = paper.mode === 'extraction' && paper.extractionType === 'random';
+          }
+        }
+
+        // 名称搜索
+        const nameMatch = searchText ? paper.name.toLowerCase().includes(searchText) : true;
+
+        return modeMatch && nameMatch;
+      });
+
+      renderPaperList(1); // 重置到第一页
+    }
+
+    // 搜索试卷
+    function searchPapers() {
+      filterPapersByMode();
+    }
+
+    // 重置筛选
+    function resetPaperFilters() {
+      document.getElementById('paperModeFilter').value = '';
+      document.getElementById('paperSearchInput').value = '';
+      filteredPapers = [...allPapers];
+      renderPaperList(1);
+    }
+
+    // 预览试卷
+    function previewPaper(paperId) {
+      // 这里可以打开试卷详情页面或弹窗预览
+      showMessage('预览功能开发中...', 'info');
+    }
+
+    // 上一页
+    function goToPreviousPage() {
+      if (currentPaperPage > 1) {
+        renderPaperList(currentPaperPage - 1);
+      }
+    }
+
+    // 下一页
+    function goToNextPage(totalPages) {
+      if (currentPaperPage < totalPages) {
+        renderPaperList(currentPaperPage + 1);
+      }
+    }
+
+    // 点击整行选择/取消选择试卷
+    function toggleRowSelection(paperId, paperMode) {
+      const isSelected = selectedPaperIds.includes(paperId);
+
+      if (paperMode === 'document') {
+        // 文档模式：支持多选
+        if (isSelected) {
+          // 取消选择
+          selectedPaperIds = selectedPaperIds.filter(id => id !== paperId);
+        } else {
+          // 添加选择
+          selectedPaperIds.push(paperId);
+        }
+      } else {
+        // 抽题模式（固定抽题/随机抽题）：单选
+        if (isSelected) {
+          // 取消选择
+          selectedPaperIds = [];
+        } else {
+          // 清空之前的选择，只选择当前试卷
+          // 但需要先检查是否有文档模式的试卷被选中
+          const hasDocumentSelected = selectedPaperIds.some(id => {
+            const paper = allPapers.find(p => p.id === id);
+            return paper && paper.mode !== 'extraction';
+          });
+
+          if (hasDocumentSelected) {
+            // 如果已选中文档模式试卷，提示不能混选
+            showMessage('抽题组卷不能与文档模式混合使用，请先取消文档模式试卷的选择', 'error');
+            return;
+          }
+
+          // 清空所有抽题模式的选择
+          selectedPaperIds = selectedPaperIds.filter(id => {
+            const paper = allPapers.find(p => p.id === id);
+            return paper && paper.mode !== 'extraction';
+          });
+
+          // 选择当前试卷
+          selectedPaperIds = [paperId];
+        }
+      }
+
+      // 更新UI
+      updatePaperSelection();
+    }
+
+    // 更新试卷选择状态的UI
+    function updatePaperSelection() {
+      // 移除所有行的选中样式
+      document.querySelectorAll('#paperList tr').forEach(row => {
+        const paperId = row.id.replace('paper-row-', '');
+        const isSelected = selectedPaperIds.includes(paperId);
+
+        if (isSelected) {
+          row.classList.add('bg-primary-50');
+          row.classList.remove('hover:bg-gray-50');
+        } else {
+          row.classList.remove('bg-primary-50');
+          row.classList.add('hover:bg-gray-50');
+        }
+
+        // 更新选择按钮
+        const selectButton = row.querySelector('td:last-child button');
+        if (selectButton) {
+          if (isSelected) {
+            selectButton.className = 'px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium flex items-center justify-center space-x-1 min-w-[80px]';
+            selectButton.innerHTML = '<i class="fas fa-check"></i><span>已选</span>';
+          } else {
+            selectButton.className = 'px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors min-w-[80px]';
+            selectButton.innerHTML = '选择';
+          }
+        }
+      });
+    }
     function generateExamCode() {
       const timestamp = Date.now().toString().slice(-4);
       document.getElementById('examCode').value = 'E' + timestamp;
@@ -717,6 +1073,10 @@
       document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 1);
       document.getElementById('nextBtn').classList.toggle('hidden', currentStep === 4);
       document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== 4);
+
+      // 为底部按钮预留空间
+      const mainContent = document.getElementById('mainContent');
+      mainContent.style.paddingBottom = '120px';
     }
 
     // 验证步骤
@@ -749,13 +1109,9 @@
           return false;
         }
       } else if (step === 2) {
-        const paperSource = document.querySelector('input[name="paperSource"]:checked').value;
-        if (paperSource === 'existing') {
-          const paper = document.getElementById('selectedPaper').value;
-          if (!paper) {
-            showMessage('请选择试卷', 'error');
-            return false;
-          }
+        if (selectedPaperIds.length === 0) {
+          showMessage('请至少选择一份试卷', 'error');
+          return false;
         }
       }
       return true;
@@ -770,24 +1126,22 @@
       document.getElementById('confirmOpenEndTime').textContent = document.getElementById('openEndTime').value.replace('T', ' ');
       document.getElementById('confirmDuration').textContent = document.getElementById('examDuration').value + ' 分钟';
 
-      const attemptType = document.querySelector('input[name="attemptType"]:checked').value;
-      if (attemptType === 'unlimited') {
+      const attemptLimit = document.getElementById('attemptLimit').value;
+      if (!attemptLimit || attemptLimit === '0') {
         document.getElementById('confirmAttempt').textContent = '不限次数';
       } else {
-        const limit = document.getElementById('attemptLimit').value;
-        document.getElementById('confirmAttempt').textContent = limit + ' 次';
+        document.getElementById('confirmAttempt').textContent = attemptLimit + ' 次';
       }
 
       // 试卷信息
-      const paperSource = document.querySelector('input[name="paperSource"]:checked').value;
-      document.getElementById('confirmPaperSource').textContent = paperSource === 'existing' ? '选择已有试卷' : '创建新试卷';
-
-      if (paperSource === 'existing') {
-        const paperId = document.getElementById('selectedPaper').value;
-        const paper = papers[paperId];
-        document.getElementById('confirmPaper').textContent = paperId + ' - ' + paper.name;
+      if (selectedPaperIds.length > 0) {
+        const paperNames = selectedPaperIds.map(paperId => {
+          const paper = allPapers.find(p => p.id === paperId);
+          return paper ? `${paperId} - ${paper.name}` : paperId;
+        }).join('、');
+        document.getElementById('confirmPaper').textContent = paperNames;
       } else {
-        document.getElementById('confirmPaper').textContent = '待创建';
+        document.getElementById('confirmPaper').textContent = '未选择';
       }
 
       // 考试配置
@@ -834,33 +1188,6 @@
       setTimeout(() => {
         window.location.href = 'list.html';
       }, 1500);
-    }
-
-    // 切换作答次数限制
-    function toggleAttemptLimit() {
-      const isLimited = document.querySelector('input[name="attemptType"]:checked').value === 'limited';
-      document.getElementById('attemptLimitInput').classList.toggle('hidden', !isLimited);
-    }
-
-    // 切换试卷来源
-    function togglePaperSource() {
-      const source = document.querySelector('input[name="paperSource"]:checked').value;
-      document.getElementById('existingPaperSection').classList.toggle('hidden', source === 'new');
-      document.getElementById('newPaperSection').classList.toggle('hidden', source === 'existing');
-    }
-
-    // 显示试卷预览
-    function showPaperPreview() {
-      const paperId = document.getElementById('selectedPaper').value;
-      if (paperId) {
-        const paper = papers[paperId];
-        document.getElementById('paperPreview').classList.remove('hidden');
-        document.getElementById('previewQuestionCount').textContent = paper.questionCount + ' 题';
-        document.getElementById('previewTotalScore').textContent = paper.totalScore + ' 分';
-        document.getElementById('previewPaperMode').textContent = paper.mode;
-      } else {
-        document.getElementById('paperPreview').classList.add('hidden');
-      }
     }
 
     // 切换迟到限制
@@ -921,7 +1248,7 @@
 
       setTimeout(() => {
         messageEl.style.opacity = '0';
-        messageEl.style.transform = 'translateX(100%)';
+        messageEl.style.transform = 'translateY(-20px)';
         setTimeout(() => messageEl.remove(), 300);
       }, 3000);
     }

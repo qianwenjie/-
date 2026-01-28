@@ -375,6 +375,21 @@
                 </table>
               </div>
 
+              <!-- 已选试卷列表 -->
+              <div id="selectedPapersContainer" class="bg-white border-x border-gray-200 px-6 py-3" style="display: none;">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <span class="text-sm font-medium text-gray-700 mr-3">已选试卷：</span>
+                    <div id="selectedPapersList" class="flex flex-wrap gap-2">
+                      <!-- 已选试卷标签将通过 JavaScript 动态生成 -->
+                    </div>
+                  </div>
+                  <button onclick="clearAllSelections(event)" class="text-sm text-gray-500 hover:text-error-500 transition-colors">
+                    <i class="fas fa-trash-alt mr-1"></i>清空
+                  </button>
+                </div>
+              </div>
+
               <!-- 固定底部：分页 -->
               <div class="bg-white border border-gray-200 rounded-b-lg py-3 px-6">
                 <div class="flex items-center justify-between">
@@ -652,6 +667,23 @@
     </div>
   </main>
 
+  <!-- 预览试卷弹窗 - 复用 paper/list.html 的预览功能 -->
+  <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" onclick="closePreviewModal()">
+    <div class="bg-white rounded-lg shadow-xl w-full h-full m-8 flex flex-col" onclick="event.stopPropagation()">
+      <!-- 弹窗头部 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">试卷预览</h3>
+        <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <!-- 弹窗内容 - 加载 paper/list.html 并自动预览 -->
+      <div class="flex-1 overflow-hidden">
+        <iframe id="previewIframe" src="" class="w-full h-full border-0"></iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentStep = 1;
 
@@ -689,6 +721,16 @@
       generateExamCode();
       renderPaperList(1);
       updateStepUI(); // 初始化UI状态
+
+      // 监听ESC键关闭预览弹窗
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          const modal = document.getElementById('previewModal');
+          if (!modal.classList.contains('hidden')) {
+            closePreviewModal();
+          }
+        }
+      });
     });
 
     // 分页配置
@@ -709,10 +751,17 @@
         return;
       }
 
+      // 按创建时间倒序排列（最新的在前面）
+      const sortedPapers = [...filteredPapers].sort((a, b) => {
+        const timeA = new Date(a.createTime || 0).getTime();
+        const timeB = new Date(b.createTime || 0).getTime();
+        return timeB - timeA; // 倒序
+      });
+
       // 计算分页
       const startIndex = (page - 1) * papersPerPage;
-      const endIndex = Math.min(startIndex + papersPerPage, filteredPapers.length);
-      const pagePapers = filteredPapers.slice(startIndex, endIndex);
+      const endIndex = Math.min(startIndex + papersPerPage, sortedPapers.length);
+      const pagePapers = sortedPapers.slice(startIndex, endIndex);
 
       // 更新显示信息
       document.getElementById('totalPapers').textContent = filteredPapers.length;
@@ -765,7 +814,10 @@
         return `
           <tr class="${rowClass} transition-colors cursor-pointer" id="paper-row-${paper.id}" data-paper-mode="${paperMode}" onclick="toggleRowSelection('${paper.id}', '${paperMode}')">
             <td class="px-6 py-4">
-              <div class="text-sm font-medium text-gray-900">${paper.name}</div>
+              <div class="text-sm font-medium text-gray-900 flex items-center">
+                <i class="fas fa-file-alt text-primary-500 mr-2"></i>
+                <span>${paper.name}</span>
+              </div>
             </td>
             <td class="px-6 py-4">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${modeColor}">
@@ -794,6 +846,9 @@
 
       // 渲染分页控件
       renderPagination();
+
+      // 更新已选试卷列表
+      updateSelectedPapersList();
     }
 
     // 渲染分页控件
@@ -923,9 +978,39 @@
     }
 
     // 预览试卷
+    // 预览试卷 - 完全复用 paper/list.html 的预览弹窗
     function previewPaper(paperId) {
-      // 这里可以打开试卷详情页面或弹窗预览
-      showMessage('预览功能开发中...', 'info');
+      // 查找试卷数据
+      const paper = allPapers.find(p => p.id === paperId);
+      if (!paper) {
+        showMessage('未找到试卷数据', 'error');
+        return;
+      }
+
+      // 显示预览弹窗
+      const modal = document.getElementById('previewModal');
+      const iframe = document.getElementById('previewIframe');
+
+      // 复用 paper/list.html 的预览功能，通过 URL 参数传递试卷ID
+      // list.html 会自动调用其内置的 previewPaper(paperId) 函数
+      iframe.src = '../paper/list.html?autoPreview=' + paperId;
+
+      modal.classList.remove('hidden');
+
+      // 禁止body滚动
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭预览弹窗
+    function closePreviewModal() {
+      const modal = document.getElementById('previewModal');
+      const iframe = document.getElementById('previewIframe');
+
+      modal.classList.add('hidden');
+      iframe.src = '';
+
+      // 恢复body滚动
+      document.body.style.overflow = '';
     }
 
     // 上一页
@@ -946,6 +1031,24 @@
     function toggleRowSelection(paperId, paperMode) {
       const isSelected = selectedPaperIds.includes(paperId);
 
+      // 检查是否有不同模式的试卷已被选中
+      if (!isSelected && selectedPaperIds.length > 0) {
+        const firstSelectedPaper = allPapers.find(p => p.id === selectedPaperIds[0]);
+        if (firstSelectedPaper) {
+          const firstSelectedMode = firstSelectedPaper.mode === 'extraction' ? 'extraction' : 'document';
+
+          // 如果当前点击的试卷模式与已选试卷模式不同，提示错误
+          if (firstSelectedMode !== paperMode) {
+            if (paperMode === 'document') {
+              showMessage('文档模式不能与抽题组卷同时选择，请先取消抽题模式试卷的选择', 'error');
+            } else {
+              showMessage('抽题组卷不能与文档模式同时选择，请先取消文档模式试卷的选择', 'error');
+            }
+            return;
+          }
+        }
+      }
+
       if (paperMode === 'document') {
         // 文档模式：支持多选
         if (isSelected) {
@@ -961,26 +1064,7 @@
           // 取消选择
           selectedPaperIds = [];
         } else {
-          // 清空之前的选择，只选择当前试卷
-          // 但需要先检查是否有文档模式的试卷被选中
-          const hasDocumentSelected = selectedPaperIds.some(id => {
-            const paper = allPapers.find(p => p.id === id);
-            return paper && paper.mode !== 'extraction';
-          });
-
-          if (hasDocumentSelected) {
-            // 如果已选中文档模式试卷，提示不能混选
-            showMessage('抽题组卷不能与文档模式混合使用，请先取消文档模式试卷的选择', 'error');
-            return;
-          }
-
-          // 清空所有抽题模式的选择
-          selectedPaperIds = selectedPaperIds.filter(id => {
-            const paper = allPapers.find(p => p.id === id);
-            return paper && paper.mode !== 'extraction';
-          });
-
-          // 选择当前试卷
+          // 清空所有选择，只选择当前试卷
           selectedPaperIds = [paperId];
         }
       }
@@ -1016,6 +1100,57 @@
           }
         }
       });
+
+      // 更新已选试卷列表
+      updateSelectedPapersList();
+    }
+
+    // 更新已选试卷列表显示
+    function updateSelectedPapersList() {
+      const container = document.getElementById('selectedPapersContainer');
+      const list = document.getElementById('selectedPapersList');
+
+      if (selectedPaperIds.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+
+      const html = selectedPaperIds.map(paperId => {
+        const paper = allPapers.find(p => p.id === paperId);
+        if (!paper) return '';
+
+        return `
+          <div class="inline-flex items-center bg-primary-50 text-primary-700 px-3 py-1.5 rounded-lg text-sm">
+            <i class="fas fa-file-alt mr-2"></i>
+            <span>${paper.name}</span>
+            <button onclick="removeSelectedPaper('${paperId}', event)" class="ml-2 text-primary-500 hover:text-primary-700 transition-colors">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      list.innerHTML = html;
+    }
+
+    // 移除单个已选试卷
+    function removeSelectedPaper(paperId, event) {
+      if (event) event.stopPropagation();
+      selectedPaperIds = selectedPaperIds.filter(id => id !== paperId);
+      updatePaperSelection();
+    }
+
+    // 清空所有选择
+    function clearAllSelections(event) {
+      if (event) event.stopPropagation();
+      if (selectedPaperIds.length === 0) return;
+
+      if (confirm('确定要清空所有已选试卷吗？')) {
+        selectedPaperIds = [];
+        updatePaperSelection();
+      }
     }
     function generateExamCode() {
       const timestamp = Date.now().toString().slice(-4);

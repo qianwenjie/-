@@ -341,8 +341,19 @@
 
     // 初始化示例数据
     function initDemoData() {
-      if (allPapers.length === 0) {
+      // 如果试卷数量不足25份，强制重新初始化为25份演示数据
+      if (allPapers.length < 25) {
+        // 模拟题库中的题目ID（用于抽题模式）
+        const questionBank = {
+          single: Array.from({length: 200}, (_, i) => `Q${String(i + 1).padStart(4, '0')}`),
+          multiple: Array.from({length: 150}, (_, i) => `Q${String(i + 201).padStart(4, '0')}`),
+          judge: Array.from({length: 100}, (_, i) => `Q${String(i + 351).padStart(4, '0')}`),
+          blank: Array.from({length: 80}, (_, i) => `Q${String(i + 451).padStart(4, '0')}`),
+          essay: Array.from({length: 50}, (_, i) => `Q${String(i + 531).padStart(4, '0')}`)
+        };
+
         allPapers = [
+          // ========== 文档模式试卷（5份）==========
           {
             id: 'P001',
             code: 'EXAM-2026-001',
@@ -584,33 +595,608 @@
               }
             }
           },
+
+          // ========== 固定抽题模式试卷（10份）==========
           {
             id: 'P006',
             code: 'EXAM-2026-006',
-            name: '数据结构固定抽题测试',
-            title: '数据结构固定抽题测试',
+            name: '数据结构固定抽题卷',
+            title: '数据结构固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 30,
+            status: 'published',
+            usageCount: 1,
+            createTime: '2026-01-20 10:30',
+            creator: '张老师',
+            questions: [
+              ...questionBank.single.slice(0, 15).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '数据结构/线性表',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(0, 5).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '数据结构/树',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(0, 5).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: '数据结构/图',
+                paperScore: 2
+              })),
+              ...questionBank.essay.slice(0, 5).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '数据结构/算法分析',
+                paperScore: 10
+              }))
+            ]
+          },
+          {
+            id: 'P007',
+            code: 'EXAM-2026-007',
+            name: '操作系统原理固定抽题卷',
+            title: '操作系统原理固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 35,
+            status: 'published',
+            usageCount: 2,
+            createTime: '2026-01-21 09:15',
+            creator: '李老师',
+            questions: [
+              ...questionBank.single.slice(15, 30).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '操作系统/进程管理',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(5, 12).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '操作系统/内存管理',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(5, 13).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: '操作系统/文件系统',
+                paperScore: 2
+              })),
+              ...questionBank.blank.slice(0, 5).map((id, i) => ({
+                questionId: id,
+                questionType: 'blank',
+                knowledgePoint: '操作系统/设备管理',
+                paperScore: 4
+              })),
+              ...questionBank.essay.slice(5, 10).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '操作系统/综合应用',
+                paperScore: 8
+              }))
+            ]
+          },
+          {
+            id: 'P008',
+            code: 'EXAM-2026-008',
+            name: '计算机网络固定抽题卷',
+            title: '计算机网络固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 40,
+            status: 'published',
+            usageCount: 0,
+            createTime: '2026-01-22 14:20',
+            creator: '王老师',
+            questions: [
+              ...questionBank.single.slice(30, 50).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '计算机网络/网络层',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(12, 20).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '计算机网络/传输层',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(13, 20).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: '计算机网络/应用层',
+                paperScore: 2
+              })),
+              ...questionBank.essay.slice(10, 15).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '计算机网络/协议分析',
+                paperScore: 8
+              }))
+            ]
+          },
+          {
+            id: 'P009',
+            code: 'EXAM-2026-009',
+            name: '数据库原理固定抽题卷',
+            title: '数据库原理固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 32,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-23 11:30',
+            creator: '赵老师',
+            questions: [
+              ...questionBank.single.slice(50, 68).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '数据库/SQL语言',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(20, 26).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '数据库/事务管理',
+                paperScore: 3
+              })),
+              ...questionBank.blank.slice(5, 10).map((id, i) => ({
+                questionId: id,
+                questionType: 'blank',
+                knowledgePoint: '数据库/索引优化',
+                paperScore: 4
+              })),
+              ...questionBank.essay.slice(15, 18).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '数据库/设计规范',
+                paperScore: 12
+              }))
+            ]
+          },
+          {
+            id: 'P010',
+            code: 'EXAM-2026-010',
+            name: '软件工程固定抽题卷',
+            title: '软件工程固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 28,
+            status: 'published',
+            usageCount: 3,
+            createTime: '2026-01-24 08:45',
+            creator: '钱老师',
+            questions: [
+              ...questionBank.single.slice(68, 83).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '软件工程/需求分析',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(26, 32).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '软件工程/设计模式',
+                paperScore: 3
+              })),
+              ...questionBank.essay.slice(18, 25).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '软件工程/项目管理',
+                paperScore: 10
+              }))
+            ]
+          },
+          {
+            id: 'P011',
+            code: 'EXAM-2026-011',
+            name: 'Java编程固定抽题卷',
+            title: 'Java编程固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 35,
+            status: 'published',
+            usageCount: 1,
+            createTime: '2026-01-25 10:00',
+            creator: '张老师',
+            questions: [
+              ...questionBank.single.slice(83, 103).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: 'Java/面向对象',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(32, 38).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: 'Java/集合框架',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(20, 25).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: 'Java/异常处理',
+                paperScore: 2
+              })),
+              ...questionBank.blank.slice(10, 15).map((id, i) => ({
+                questionId: id,
+                questionType: 'blank',
+                knowledgePoint: 'Java/IO流',
+                paperScore: 4
+              }))
+            ]
+          },
+          {
+            id: 'P012',
+            code: 'EXAM-2026-012',
+            name: 'Python基础固定抽题卷',
+            title: 'Python基础固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 30,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-26 13:30',
+            creator: '李老师',
+            questions: [
+              ...questionBank.single.slice(103, 118).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: 'Python/基础语法',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(38, 43).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: 'Python/数据类型',
+                paperScore: 3
+              })),
+              ...questionBank.blank.slice(15, 20).map((id, i) => ({
+                questionId: id,
+                questionType: 'blank',
+                knowledgePoint: 'Python/函数',
+                paperScore: 4
+              })),
+              ...questionBank.essay.slice(25, 30).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: 'Python/面向对象',
+                paperScore: 10
+              }))
+            ]
+          },
+          {
+            id: 'P013',
+            code: 'EXAM-2026-013',
+            name: '前端开发固定抽题卷',
+            title: '前端开发固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 38,
+            status: 'published',
+            usageCount: 2,
+            createTime: '2026-01-27 09:20',
+            creator: '王老师',
+            questions: [
+              ...questionBank.single.slice(118, 138).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '前端/HTML+CSS',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(43, 50).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '前端/JavaScript',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(25, 30).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: '前端/DOM操作',
+                paperScore: 2
+              })),
+              ...questionBank.essay.slice(30, 36).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '前端/Vue框架',
+                paperScore: 7
+              }))
+            ]
+          },
+          {
+            id: 'P014',
+            code: 'EXAM-2026-014',
+            name: '算法设计固定抽题卷',
+            title: '算法设计固定抽题卷',
             mode: 'extraction',
             extractionType: 'fixed',
             totalScore: 100,
             questionCount: 25,
             status: 'published',
-            usageCount: 1,
-            createTime: '2026-01-20 10:30',
-            creator: '张老师'
+            usageCount: 4,
+            createTime: '2026-01-27 16:10',
+            creator: '赵老师',
+            questions: [
+              ...questionBank.single.slice(138, 148).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '算法/排序算法',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(50, 55).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '算法/查找算法',
+                paperScore: 4
+              })),
+              ...questionBank.blank.slice(20, 25).map((id, i) => ({
+                questionId: id,
+                questionType: 'blank',
+                knowledgePoint: '算法/动态规划',
+                paperScore: 6
+              })),
+              ...questionBank.essay.slice(36, 41).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '算法/复杂度分析',
+                paperScore: 10
+              }))
+            ]
           },
           {
-            id: 'P007',
-            code: 'EXAM-2026-007',
-            name: '算法基础随机抽题试卷',
-            title: '算法基础随机抽题试卷',
+            id: 'P015',
+            code: 'EXAM-2026-015',
+            name: '人工智能基础固定抽题卷',
+            title: '人工智能基础固定抽题卷',
+            mode: 'extraction',
+            extractionType: 'fixed',
+            totalScore: 100,
+            questionCount: 33,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-28 11:00',
+            creator: '钱老师',
+            questions: [
+              ...questionBank.single.slice(148, 168).map((id, i) => ({
+                questionId: id,
+                questionType: 'single',
+                knowledgePoint: '人工智能/机器学习',
+                paperScore: 2
+              })),
+              ...questionBank.multiple.slice(55, 60).map((id, i) => ({
+                questionId: id,
+                questionType: 'multiple',
+                knowledgePoint: '人工智能/神经网络',
+                paperScore: 3
+              })),
+              ...questionBank.judge.slice(30, 35).map((id, i) => ({
+                questionId: id,
+                questionType: 'judge',
+                knowledgePoint: '人工智能/深度学习',
+                paperScore: 2
+              })),
+              ...questionBank.essay.slice(41, 44).map((id, i) => ({
+                questionId: id,
+                questionType: 'essay',
+                knowledgePoint: '人工智能/应用案例',
+                paperScore: 12
+              }))
+            ]
+          },
+
+          // ========== 随机抽题模式试卷（10份）==========
+          {
+            id: 'P016',
+            code: 'EXAM-2026-016',
+            name: '数据结构随机抽题卷',
+            title: '数据结构随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 30,
+            status: 'published',
+            usageCount: 5,
+            createTime: '2026-01-20 15:00',
+            creator: '张老师',
+            questions: [
+              { questionType: 'single', count: 15, scorePerQuestion: 2, knowledgePoint: '数据结构/线性表' },
+              { questionType: 'multiple', count: 5, scorePerQuestion: 3, knowledgePoint: '数据结构/树' },
+              { questionType: 'judge', count: 5, scorePerQuestion: 2, knowledgePoint: '数据结构/图' },
+              { questionType: 'essay', count: 5, scorePerQuestion: 10, knowledgePoint: '数据结构/算法分析' }
+            ]
+          },
+          {
+            id: 'P017',
+            code: 'EXAM-2026-017',
+            name: '操作系统原理随机抽题卷',
+            title: '操作系统原理随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 35,
+            status: 'published',
+            usageCount: 3,
+            createTime: '2026-01-21 13:45',
+            creator: '李老师',
+            questions: [
+              { questionType: 'single', count: 15, scorePerQuestion: 2, knowledgePoint: '操作系统/进程管理' },
+              { questionType: 'multiple', count: 7, scorePerQuestion: 3, knowledgePoint: '操作系统/内存管理' },
+              { questionType: 'judge', count: 8, scorePerQuestion: 2, knowledgePoint: '操作系统/文件系统' },
+              { questionType: 'essay', count: 5, scorePerQuestion: 8, knowledgePoint: '操作系统/综合应用' }
+            ]
+          },
+          {
+            id: 'P018',
+            code: 'EXAM-2026-018',
+            name: '计算机网络随机抽题卷',
+            title: '计算机网络随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 40,
+            status: 'published',
+            usageCount: 2,
+            createTime: '2026-01-22 16:30',
+            creator: '王老师',
+            questions: [
+              { questionType: 'single', count: 20, scorePerQuestion: 2, knowledgePoint: '计算机网络/网络层' },
+              { questionType: 'multiple', count: 8, scorePerQuestion: 3, knowledgePoint: '计算机网络/传输层' },
+              { questionType: 'judge', count: 7, scorePerQuestion: 2, knowledgePoint: '计算机网络/应用层' },
+              { questionType: 'essay', count: 5, scorePerQuestion: 8, knowledgePoint: '计算机网络/协议分析' }
+            ]
+          },
+          {
+            id: 'P019',
+            code: 'EXAM-2026-019',
+            name: '数据库原理随机抽题卷',
+            title: '数据库原理随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 32,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-23 14:15',
+            creator: '赵老师',
+            questions: [
+              { questionType: 'single', count: 18, scorePerQuestion: 2, knowledgePoint: '数据库/SQL语言' },
+              { questionType: 'multiple', count: 6, scorePerQuestion: 3, knowledgePoint: '数据库/事务管理' },
+              { questionType: 'blank', count: 5, scorePerQuestion: 4, knowledgePoint: '数据库/索引优化' },
+              { questionType: 'essay', count: 3, scorePerQuestion: 12, knowledgePoint: '数据库/设计规范' }
+            ]
+          },
+          {
+            id: 'P020',
+            code: 'EXAM-2026-020',
+            name: '软件工程随机抽题卷',
+            title: '软件工程随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 28,
+            status: 'published',
+            usageCount: 6,
+            createTime: '2026-01-24 10:20',
+            creator: '钱老师',
+            questions: [
+              { questionType: 'single', count: 15, scorePerQuestion: 2, knowledgePoint: '软件工程/需求分析' },
+              { questionType: 'multiple', count: 6, scorePerQuestion: 3, knowledgePoint: '软件工程/设计模式' },
+              { questionType: 'essay', count: 7, scorePerQuestion: 10, knowledgePoint: '软件工程/项目管理' }
+            ]
+          },
+          {
+            id: 'P021',
+            code: 'EXAM-2026-021',
+            name: 'Java编程随机抽题卷',
+            title: 'Java编程随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 35,
+            status: 'published',
+            usageCount: 4,
+            createTime: '2026-01-25 12:45',
+            creator: '张老师',
+            questions: [
+              { questionType: 'single', count: 20, scorePerQuestion: 2, knowledgePoint: 'Java/面向对象' },
+              { questionType: 'multiple', count: 6, scorePerQuestion: 3, knowledgePoint: 'Java/集合框架' },
+              { questionType: 'judge', count: 5, scorePerQuestion: 2, knowledgePoint: 'Java/异常处理' },
+              { questionType: 'blank', count: 4, scorePerQuestion: 5, knowledgePoint: 'Java/IO流' }
+            ]
+          },
+          {
+            id: 'P022',
+            code: 'EXAM-2026-022',
+            name: 'Python基础随机抽题卷',
+            title: 'Python基础随机抽题卷',
             mode: 'extraction',
             extractionType: 'random',
             totalScore: 100,
             questionCount: 30,
             status: 'draft',
             usageCount: 0,
-            createTime: '2026-01-22 15:45',
-            creator: '李老师'
+            createTime: '2026-01-26 15:00',
+            creator: '李老师',
+            questions: [
+              { questionType: 'single', count: 15, scorePerQuestion: 2, knowledgePoint: 'Python/基础语法' },
+              { questionType: 'multiple', count: 5, scorePerQuestion: 3, knowledgePoint: 'Python/数据类型' },
+              { questionType: 'blank', count: 5, scorePerQuestion: 4, knowledgePoint: 'Python/函数' },
+              { questionType: 'essay', count: 5, scorePerQuestion: 9, knowledgePoint: 'Python/面向对象' }
+            ]
+          },
+          {
+            id: 'P023',
+            code: 'EXAM-2026-023',
+            name: '前端开发随机抽题卷',
+            title: '前端开发随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 38,
+            status: 'published',
+            usageCount: 7,
+            createTime: '2026-01-27 11:10',
+            creator: '王老师',
+            questions: [
+              { questionType: 'single', count: 20, scorePerQuestion: 2, knowledgePoint: '前端/HTML+CSS' },
+              { questionType: 'multiple', count: 7, scorePerQuestion: 3, knowledgePoint: '前端/JavaScript' },
+              { questionType: 'judge', count: 5, scorePerQuestion: 2, knowledgePoint: '前端/DOM操作' },
+              { questionType: 'essay', count: 6, scorePerQuestion: 7, knowledgePoint: '前端/Vue框架' }
+            ]
+          },
+          {
+            id: 'P024',
+            code: 'EXAM-2026-024',
+            name: '算法设计随机抽题卷',
+            title: '算法设计随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 25,
+            status: 'published',
+            usageCount: 8,
+            createTime: '2026-01-27 17:30',
+            creator: '赵老师',
+            questions: [
+              { questionType: 'single', count: 10, scorePerQuestion: 2, knowledgePoint: '算法/排序算法' },
+              { questionType: 'multiple', count: 5, scorePerQuestion: 4, knowledgePoint: '算法/查找算法' },
+              { questionType: 'blank', count: 5, scorePerQuestion: 6, knowledgePoint: '算法/动态规划' },
+              { questionType: 'essay', count: 5, scorePerQuestion: 10, knowledgePoint: '算法/复杂度分析' }
+            ]
+          },
+          {
+            id: 'P025',
+            code: 'EXAM-2026-025',
+            name: '人工智能基础随机抽题卷',
+            title: '人工智能基础随机抽题卷',
+            mode: 'extraction',
+            extractionType: 'random',
+            totalScore: 100,
+            questionCount: 33,
+            status: 'draft',
+            usageCount: 0,
+            createTime: '2026-01-28 13:20',
+            creator: '钱老师',
+            questions: [
+              { questionType: 'single', count: 20, scorePerQuestion: 2, knowledgePoint: '人工智能/机器学习' },
+              { questionType: 'multiple', count: 5, scorePerQuestion: 3, knowledgePoint: '人工智能/神经网络' },
+              { questionType: 'judge', count: 5, scorePerQuestion: 2, knowledgePoint: '人工智能/深度学习' },
+              { questionType: 'essay', count: 3, scorePerQuestion: 12, knowledgePoint: '人工智能/应用案例' }
+            ]
           }
         ];
         localStorage.setItem('allPapers', JSON.stringify(allPapers));
@@ -1259,6 +1845,16 @@
       });
       filteredPapers = [...allPapers];
       renderList();
+
+      // 支持从 URL 参数自动预览试卷（供考试模块调用）
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoPreviewId = urlParams.get('autoPreview');
+      if (autoPreviewId) {
+        // 延迟执行预览，确保页面完全加载
+        setTimeout(() => {
+          previewPaper(autoPreviewId);
+        }, 300);
+      }
     });
 
     // ========== 创建试卷弹窗相关函数 ==========

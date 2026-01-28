@@ -65,27 +65,34 @@
     </div>
 
     <!-- 右侧答题卡 -->
-    <div class="w-96 bg-white border-l border-gray-200 flex flex-col">
-      <!-- 答题卡头部 -->
-      <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-lg font-semibold text-gray-900">
-            <i class="fas fa-clipboard-list text-primary-500 mr-2"></i>答题卡
-          </h3>
-          <span class="text-sm text-gray-600">
-            总分：<span id="docTotalScore" class="font-bold text-primary-600">100</span> 分
-          </span>
+    <aside class="w-[480px] h-full bg-gray-50 flex flex-col">
+      <div class="px-4 py-4 flex-shrink-0">
+        <div class="flex items-center space-x-2 mb-4">
+          <i class="fas fa-cog text-gray-500 text-sm"></i>
+          <h2 class="text-base font-semibold text-gray-900">答题卡设置</h2>
         </div>
-        <div class="text-sm text-gray-600">
-          单选题 <span id="docSingleCount" class="font-semibold">5</span> 题，共 <span id="docSingleScore" class="font-semibold text-red-500">100</span> 分
-        </div>
+        <h3 class="text-xs font-medium text-gray-600 mb-0.5">题目列表</h3>
       </div>
 
-      <!-- 答题卡内容 -->
-      <div class="flex-1 overflow-y-auto px-6 py-4">
+      <!-- 可滚动的题目列表区域 -->
+      <div class="flex-1 overflow-y-auto px-4">
         <div id="documentAnswerCard"></div>
       </div>
-    </div>
+
+      <!-- 底部固定栏 -->
+      <div class="flex-shrink-0 bg-white border-t border-gray-200 shadow-lg px-4 py-3">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-4">
+            <span class="text-gray-600">
+              试卷总分：<span id="docTotalScore" class="font-semibold text-gray-900">100</span> 分
+            </span>
+            <span class="text-gray-600">
+              已设分值：<span id="docUsedScore" class="font-semibold text-red-500">0</span> 分
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <!-- 抽题模式预览容器 -->
@@ -124,14 +131,14 @@
   <script>
     // 题型配置
     const questionTypeConfig = {
-      'single': { name: '单选题', icon: 'fa-check-circle' },
-      'multiple': { name: '多选题', icon: 'fa-check-double' },
-      'judge': { name: '判断题', icon: 'fa-balance-scale' },
-      'blank': { name: '填空题', icon: 'fa-keyboard' },
-      'shortAnswer': { name: '简答题', icon: 'fa-align-left' },
-      'essay': { name: '简答题', icon: 'fa-align-left' },
-      'cloze': { name: '完形填空', icon: 'fa-spell-check' },
-      'composite': { name: '复合题', icon: 'fa-layer-group' }
+      single: { name: '单选题', icon: 'fa-dot-circle' },
+      multiple: { name: '多选题', icon: 'fa-check-double' },
+      judge: { name: '判断题', icon: 'fa-check-circle' },
+      blank: { name: '填空题', icon: 'fa-keyboard' },
+      essay: { name: '简答题', icon: 'fa-align-left' },
+      shortAnswer: { name: '简答题', icon: 'fa-align-left' },
+      cloze: { name: '完形填空', icon: 'fa-spell-check' },
+      composite: { name: '复合题', icon: 'fa-layer-group' }
     };
 
     // 页面加载时初始化
@@ -240,65 +247,120 @@
       console.log('最终题目列表：', questions);
 
       if (questions.length === 0) {
-        document.getElementById('documentAnswerCard').innerHTML = '<p class="text-gray-500 text-center">暂无题目数据</p>';
+        document.getElementById('documentAnswerCard').innerHTML = '<p class="text-gray-500 text-center py-4">暂无题目数据</p>';
         document.getElementById('docTotalScore').textContent = data.totalScore || 0;
-        document.getElementById('docSingleCount').textContent = 0;
-        document.getElementById('docSingleScore').textContent = 0;
+        document.getElementById('docUsedScore').textContent = 0;
         return;
       }
 
-      // 统计单选题
-      const singleQuestions = questions.filter(q => {
-        const type = q.type || q.question?.type;
-        return type === 'single';
-      });
-      const singleScore = singleQuestions.reduce((sum, q) => {
-        const score = q.score || q.paperScore || q.question?.score || 0;
-        return sum + parseFloat(score);
-      }, 0);
-
-      document.getElementById('docTotalScore').textContent = data.totalScore || 0;
-      document.getElementById('docSingleCount').textContent = singleQuestions.length || questions.length;
-      document.getElementById('docSingleScore').textContent = singleScore;
-
-      // 渲染答题卡
-      const answerCardHtml = questions.map((q, index) => {
-        const questionNum = q.questionNumber || q.id || (index + 1);
-        const score = q.score || q.paperScore || 0;
-
-        // 处理正确答案
-        let correctAnswer = '';
-        if (q.correctAnswer) {
-          correctAnswer = q.correctAnswer;
-        } else if (q.answer) {
-          correctAnswer = q.answer;
-        } else if (q.question && q.question.correctAnswers && q.question.correctAnswers.length > 0) {
-          correctAnswer = q.question.correctAnswers[0];
+      // 按题型分组题目
+      const groupedByType = {};
+      questions.forEach(q => {
+        const type = q.type || q.question?.type || 'single';
+        if (!groupedByType[type]) {
+          groupedByType[type] = {
+            questions: []
+          };
         }
+        groupedByType[type].questions.push(q);
+      });
 
-        console.log(`题目 ${questionNum}: 分数=${score}, 答案=${correctAnswer}, 原始数据=`, q);
+      console.log('按题型分组后：', groupedByType);
+
+      // 渲染每个题型的卡片
+      let totalScore = 0;
+      const answerCardHtml = Object.keys(groupedByType).map(type => {
+        const config = questionTypeConfig[type] || { name: '未知题型', icon: 'fa-question' };
+        const typeData = groupedByType[type];
+        const questionCount = typeData.questions.length;
+
+        // 计算该题型总分
+        const typeScore = typeData.questions.reduce((sum, q) => {
+          const score = parseFloat(q.score || q.paperScore || 0);
+          return sum + score;
+        }, 0);
+        totalScore += typeScore;
+
+        // 渲染题目列表
+        const questionsHtml = typeData.questions.map((q, index) => {
+          const score = q.score || q.paperScore || 0;
+
+          // 处理正确答案
+          let answer = '';
+          if (q.correctAnswer) {
+            answer = q.correctAnswer;
+          } else if (q.answer) {
+            answer = q.answer;
+          } else if (q.question && q.question.correctAnswers && q.question.correctAnswers.length > 0) {
+            answer = q.question.correctAnswers.join(',');
+          }
+
+          // 判断题型是否有选项
+          const hasOptions = ['single', 'multiple', 'judge'].includes(type);
+
+          if (hasOptions) {
+            // 有选项的题型
+            let options = ['A', 'B', 'C', 'D'];
+            if (type === 'judge') {
+              options = ['对', '错'];
+            }
+
+            const answerArray = answer.split(',').map(a => a.trim());
+
+            return `
+              <div>
+                <div class="flex items-start space-x-1.5 px-2 py-1 hover:bg-gray-50 text-xs">
+                  <span class="font-semibold text-gray-700 min-w-[20px] pt-0.5">${index + 1}.</span>
+                  <span class="text-gray-500 pt-0.5">${score}分</span>
+                  <div class="flex items-center flex-wrap gap-1 flex-1">
+                    ${options.map(opt => {
+                      const isCorrect = answerArray.includes(opt) || answerArray.includes(opt.toLowerCase());
+                      return `
+                        <button class="answer-option px-2 py-0.5 border border-gray-300 rounded text-xs font-medium ${isCorrect ? 'selected' : ''}" title="${isCorrect ? '正确答案' : ''}">
+                          ${opt}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            // 无选项的题型（填空、简答）
+            return `
+              <div>
+                <div class="flex items-start space-x-1.5 px-2 py-1 hover:bg-gray-50 text-xs">
+                  <span class="font-semibold text-gray-700 min-w-[20px] pt-0.5">${index + 1}.</span>
+                  <span class="text-gray-500 pt-0.5">${score}分</span>
+                  ${type === 'essay' || type === 'shortAnswer' ?
+                    '<div class="flex-1"></div>' :
+                    `<div class="flex-1 text-gray-600">${answer || '（无答案）'}</div>`
+                  }
+                </div>
+              </div>
+            `;
+          }
+        }).join('');
 
         return `
-          <div>
-            <div class="flex items-start space-x-1.5 px-2 py-1 hover:bg-gray-50 text-xs">
-              <span class="font-semibold text-gray-700 min-w-[20px] pt-0.5">${questionNum}.</span>
-              <span class="text-gray-500 pt-0.5">${score}分</span>
-              <div class="flex items-center flex-wrap gap-1 flex-1">
-                ${['A', 'B', 'C', 'D'].map(option => {
-                  const isCorrect = correctAnswer === option || correctAnswer === option.toLowerCase();
-                  return `
-                    <button class="answer-option px-2 py-0.5 border border-gray-300 rounded text-xs font-medium ${isCorrect ? 'selected' : ''}" title="${isCorrect ? '正确答案' : ''}">
-                      ${option}
-                    </button>
-                  `;
-                }).join('')}
+          <div class="mb-3 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questionCount}</span> 题，共 <span class="font-bold text-red-500">${typeScore}</span> 分</span>
               </div>
+            </div>
+            <div class="space-y-0.5 py-1">
+              ${questionsHtml}
             </div>
           </div>
         `;
       }).join('');
 
       document.getElementById('documentAnswerCard').innerHTML = answerCardHtml;
+      document.getElementById('docTotalScore').textContent = data.totalScore || totalScore;
+      document.getElementById('docUsedScore').textContent = totalScore;
     }
 
     // 显示抽题模式预览

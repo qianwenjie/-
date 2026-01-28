@@ -305,7 +305,13 @@
               options = ['对', '错'];
             }
 
-            const answerArray = answer.split(',').map(a => a.trim());
+            // 将 answer 转换为数组
+            let answerArray = [];
+            if (Array.isArray(answer)) {
+              answerArray = answer;
+            } else if (typeof answer === 'string' && answer) {
+              answerArray = answer.split(',').map(a => a.trim());
+            }
 
             return `
               <div>

@@ -430,29 +430,31 @@
                 <div class="border-b border-gray-100 pb-6">
                   <h4 class="text-sm font-medium text-gray-900 mb-4">迟到设置</h4>
                   <div class="space-y-3">
-                    <label class="flex items-start cursor-pointer">
-                      <input type="checkbox" id="enableLateLimit" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleLateLimit()">
-                      <div class="ml-3">
-                        <span class="text-sm text-gray-700">开考后禁止迟到进入</span>
-                        <div id="lateLimitInput" class="hidden mt-2 flex items-center">
-                          <span class="text-sm text-gray-500 mr-2">开考后</span>
-                          <input type="number" id="lateMinutes" placeholder="15" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                          <span class="text-sm text-gray-500 ml-2">分钟后禁止进入</span>
-                        </div>
+                    <!-- 开考后禁止迟到进入 -->
+                    <div class="flex items-center">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="enableLateLimit" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleLateLimit()">
+                        <span class="ml-3 text-sm text-gray-700">开考后禁止迟到进入</span>
+                      </label>
+                      <div id="lateLimitInput" class="hidden flex items-center ml-4">
+                        <span class="text-sm text-gray-500 mr-2">开考后</span>
+                        <input type="number" id="lateMinutes" placeholder="15" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span class="text-sm text-gray-500 ml-2">分钟后禁止进入</span>
                       </div>
-                    </label>
+                    </div>
 
-                    <label class="flex items-start cursor-pointer">
-                      <input type="checkbox" id="enableEarlyEntry" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleEarlyEntry()">
-                      <div class="ml-3">
-                        <span class="text-sm text-gray-700">允许提前进入考试（不可答题）</span>
-                        <div id="earlyEntryInput" class="hidden mt-2 flex items-center">
-                          <span class="text-sm text-gray-500 mr-2">提前</span>
-                          <input type="number" id="earlyMinutes" placeholder="10" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                          <span class="text-sm text-gray-500 ml-2">分钟可进入</span>
-                        </div>
+                    <!-- 允许提前进入考试 -->
+                    <div class="flex items-center">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="enableEarlyEntry" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleEarlyEntry()">
+                        <span class="ml-3 text-sm text-gray-700">允许提前进入考试（不可答题）</span>
+                      </label>
+                      <div id="earlyEntryInput" class="hidden flex items-center ml-4">
+                        <span class="text-sm text-gray-500 mr-2">提前</span>
+                        <input type="number" id="earlyMinutes" placeholder="10" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span class="text-sm text-gray-500 ml-2">分钟可进入</span>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
 
@@ -465,34 +467,35 @@
                       <span class="ml-3 text-sm text-gray-700">进入考试时开启人脸识别</span>
                     </label>
 
-                    <label class="flex items-start cursor-pointer">
-                      <input type="checkbox" id="enableRandomCapture" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleRandomCapture()">
-                      <div class="ml-3">
-                        <span class="text-sm text-gray-700">考试中随机抓拍</span>
-                        <div id="randomCaptureInput" class="hidden mt-2 flex items-center">
-                          <span class="text-sm text-gray-500 mr-2">随机抓拍</span>
-                          <input type="number" id="captureCount" placeholder="3" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                          <span class="text-sm text-gray-500 ml-2">张照片</span>
-                        </div>
+                    <!-- 考试中随机抓拍 -->
+                    <div class="flex items-center">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="enableRandomCapture" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleRandomCapture()">
+                        <span class="ml-3 text-sm text-gray-700">考试中随机抓拍</span>
+                      </label>
+                      <div id="randomCaptureInput" class="hidden flex items-center ml-4">
+                        <span class="text-sm text-gray-500 mr-2">随机抓拍</span>
+                        <input type="number" id="captureCount" placeholder="3" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span class="text-sm text-gray-500 ml-2">张照片</span>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
 
                 <!-- 交卷限制 -->
                 <div class="border-b border-gray-100 pb-6">
                   <h4 class="text-sm font-medium text-gray-900 mb-4">交卷限制</h4>
-                  <label class="flex items-start cursor-pointer">
-                    <input type="checkbox" id="enableMinSubmitTime" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleMinSubmitTime()">
-                    <div class="ml-3">
-                      <span class="text-sm text-gray-700">开启最短交卷时间限制</span>
-                      <div id="minSubmitTimeInput" class="hidden mt-2 flex items-center">
-                        <span class="text-sm text-gray-500 mr-2">作答至少</span>
-                        <input type="number" id="minSubmitMinutes" placeholder="30" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <span class="text-sm text-gray-500 ml-2">分钟后才可交卷</span>
-                      </div>
+                  <div class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="checkbox" id="enableMinSubmitTime" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" onchange="toggleMinSubmitTime()">
+                      <span class="ml-3 text-sm text-gray-700">开启最短交卷时间限制</span>
+                    </label>
+                    <div id="minSubmitTimeInput" class="hidden flex items-center ml-4">
+                      <span class="text-sm text-gray-500 mr-2">作答至少</span>
+                      <input type="number" id="minSubmitMinutes" placeholder="30" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                      <span class="text-sm text-gray-500 ml-2">分钟后才可交卷</span>
                     </div>
-                  </label>
+                  </div>
                 </div>
 
                 <!-- 成绩公布方式 -->
@@ -504,34 +507,36 @@
                       <span class="ml-3 text-sm text-gray-700">交卷后立即公布</span>
                     </label>
 
-                    <label class="flex items-start cursor-pointer">
-                      <input type="radio" name="resultPublishType" value="delayAfterSubmit" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleResultPublish()">
-                      <div class="ml-3">
-                        <span class="text-sm text-gray-700">交卷后延迟公布</span>
-                        <div id="delayAfterSubmitInput" class="hidden mt-2 flex items-center">
-                          <span class="text-sm text-gray-500 mr-2">交卷后</span>
-                          <input type="number" id="delayDaysAfterSubmit" placeholder="1" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                          <span class="text-sm text-gray-500 ml-2">天后公布</span>
-                        </div>
+                    <!-- 交卷后延迟公布 -->
+                    <div class="flex items-center">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="resultPublishType" value="delayAfterSubmit" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleResultPublish()">
+                        <span class="ml-3 text-sm text-gray-700">交卷后延迟公布</span>
+                      </label>
+                      <div id="delayAfterSubmitInput" class="hidden flex items-center ml-4">
+                        <span class="text-sm text-gray-500 mr-2">交卷后</span>
+                        <input type="number" id="delayDaysAfterSubmit" placeholder="1" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span class="text-sm text-gray-500 ml-2">天后公布</span>
                       </div>
-                    </label>
+                    </div>
 
                     <label class="flex items-center cursor-pointer">
                       <input type="radio" name="resultPublishType" value="afterExamEnd" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleResultPublish()">
                       <span class="ml-3 text-sm text-gray-700">考试结束后立即公布</span>
                     </label>
 
-                    <label class="flex items-start cursor-pointer">
-                      <input type="radio" name="resultPublishType" value="delayAfterExamEnd" class="mt-1 w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleResultPublish()">
-                      <div class="ml-3">
-                        <span class="text-sm text-gray-700">考试结束后延迟公布</span>
-                        <div id="delayAfterExamEndInput" class="hidden mt-2 flex items-center">
-                          <span class="text-sm text-gray-500 mr-2">考试结束后</span>
-                          <input type="number" id="delayHoursAfterExamEnd" placeholder="24" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                          <span class="text-sm text-gray-500 ml-2">小时后公布</span>
-                        </div>
+                    <!-- 考试结束后延迟公布 -->
+                    <div class="flex items-center">
+                      <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="resultPublishType" value="delayAfterExamEnd" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" onchange="toggleResultPublish()">
+                        <span class="ml-3 text-sm text-gray-700">考试结束后延迟公布</span>
+                      </label>
+                      <div id="delayAfterExamEndInput" class="hidden flex items-center ml-4">
+                        <span class="text-sm text-gray-500 mr-2">考试结束后</span>
+                        <input type="number" id="delayDaysAfterExamEnd" placeholder="1" min="1" class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <span class="text-sm text-gray-500 ml-2">天后公布</span>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
 
@@ -598,16 +603,16 @@
                       <span class="flex-1 text-gray-900 font-medium" id="confirmExamName">-</span>
                     </div>
                     <div class="flex">
-                      <span class="w-28 text-gray-500">试卷编号：</span>
+                      <span class="w-28 text-gray-500">考试编号：</span>
                       <span class="flex-1 text-gray-900" id="confirmExamCode">-</span>
                     </div>
                     <div class="flex">
                       <span class="w-28 text-gray-500">开放时间：</span>
-                      <div class="flex-1 text-gray-900">
-                        <div id="confirmOpenStartTime">-</div>
-                        <div class="text-gray-400 text-xs">至</div>
-                        <div id="confirmOpenEndTime">-</div>
-                      </div>
+                      <span class="flex-1 text-gray-900">
+                        <span id="confirmOpenStartTime">-</span>
+                        <span class="text-gray-400 mx-2">至</span>
+                        <span id="confirmOpenEndTime">-</span>
+                      </span>
                     </div>
                     <div class="flex">
                       <span class="w-28 text-gray-500">作答时间：</span>
@@ -624,9 +629,16 @@
                 <div class="bg-gray-50 rounded-lg p-4">
                   <h4 class="text-sm font-semibold text-gray-900 mb-3">试卷信息</h4>
                   <div class="space-y-2 text-sm">
-                    <div class="flex">
-                      <span class="w-28 text-gray-500">试卷：</span>
-                      <span class="flex-1 text-gray-900" id="confirmPaper">-</span>
+                    <div class="flex items-center">
+                      <span class="w-28 text-gray-500">试卷编号：</span>
+                      <span class="flex-1 text-gray-900" id="confirmPaperCode">-</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="w-28 text-gray-500">试卷名称：</span>
+                      <span class="flex-1 text-gray-900" id="confirmPaperName">-</span>
+                      <button onclick="previewSelectedPaper()" id="previewPaperBtn" class="ml-4 px-3 py-1.5 text-primary-600 hover:text-primary-700 border border-primary-500 hover:bg-primary-50 rounded text-xs transition-colors">
+                        <i class="fas fa-eye mr-1"></i>预览试卷
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -636,8 +648,16 @@
                   <h4 class="text-sm font-semibold text-gray-900 mb-3">考试配置</h4>
                   <div class="space-y-2 text-sm">
                     <div class="flex">
+                      <span class="w-28 text-gray-500">迟到设置：</span>
+                      <span class="flex-1 text-gray-900" id="confirmLateSettings">-</span>
+                    </div>
+                    <div class="flex">
                       <span class="w-28 text-gray-500">防作弊：</span>
                       <span class="flex-1 text-gray-900" id="confirmAntiCheat">-</span>
+                    </div>
+                    <div class="flex">
+                      <span class="w-28 text-gray-500">交卷限制：</span>
+                      <span class="flex-1 text-gray-900" id="confirmSubmitLimit">-</span>
                     </div>
                     <div class="flex">
                       <span class="w-28 text-gray-500">成绩公布：</span>
@@ -1755,7 +1775,7 @@
             <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
             <div class="flex-1 text-sm text-blue-800">
               <div class="font-medium mb-1">预览说明</div>
-                  <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。如需查看实际抽取效果，请点击"编辑试卷"按钮进入编辑页面，使用"抽一份看看"功能。</div>
+                  <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。</div>
                 </div>
               </div>
             </div>
@@ -1861,10 +1881,7 @@
       html += `
         </div>
 
-        <div class="mt-6 flex items-center justify-center gap-3">
-          <button onclick="editExtractionPaper()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-edit mr-2"></i>编辑试卷
-          </button>
+        <div class="mt-6 flex items-center justify-center">
           <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
             <i class="fas fa-times mr-2"></i>关闭预览
           </button>
@@ -2475,16 +2492,39 @@
 
       // 试卷信息
       if (selectedPaperIds.length > 0) {
-        const paperNames = selectedPaperIds.map(paperId => {
-          const paper = allPapers.find(p => p.id === paperId);
-          return paper ? `${paperId} - ${paper.name}` : paperId;
-        }).join('、');
-        document.getElementById('confirmPaper').textContent = paperNames;
+        const firstPaper = allPapers.find(p => p.id === selectedPaperIds[0]);
+        if (firstPaper) {
+          document.getElementById('confirmPaperCode').textContent = firstPaper.code || firstPaper.id;
+
+          if (selectedPaperIds.length === 1) {
+            document.getElementById('confirmPaperName').textContent = firstPaper.name;
+          } else {
+            // 多份试卷
+            const paperNames = selectedPaperIds.map(paperId => {
+              const paper = allPapers.find(p => p.id === paperId);
+              return paper ? paper.name : paperId;
+            }).join('、');
+            document.getElementById('confirmPaperName').textContent = paperNames;
+          }
+        }
       } else {
-        document.getElementById('confirmPaper').textContent = '未选择';
+        document.getElementById('confirmPaperCode').textContent = '未选择';
+        document.getElementById('confirmPaperName').textContent = '-';
       }
 
-      // 考试配置
+      // 考试配置 - 迟到设置
+      const lateSettings = [];
+      if (document.getElementById('enableLateLimit').checked) {
+        const minutes = document.getElementById('lateMinutes').value || '15';
+        lateSettings.push('开考后' + minutes + '分钟禁止进入');
+      }
+      if (document.getElementById('enableEarlyEntry').checked) {
+        const minutes = document.getElementById('earlyMinutes').value || '10';
+        lateSettings.push('提前' + minutes + '分钟可进入');
+      }
+      document.getElementById('confirmLateSettings').textContent = lateSettings.length > 0 ? lateSettings.join('、') : '未设置';
+
+      // 考试配置 - 防作弊
       const antiCheatSettings = [];
       if (document.getElementById('enableFaceRecognition').checked) {
         antiCheatSettings.push('人脸识别');
@@ -2495,12 +2535,20 @@
       }
       document.getElementById('confirmAntiCheat').textContent = antiCheatSettings.length > 0 ? antiCheatSettings.join('、') : '未启用';
 
+      // 交卷限制
+      if (document.getElementById('enableMinSubmitTime').checked) {
+        const minutes = document.getElementById('minSubmitMinutes').value || '30';
+        document.getElementById('confirmSubmitLimit').textContent = '作答至少' + minutes + '分钟后才可交卷';
+      } else {
+        document.getElementById('confirmSubmitLimit').textContent = '无限制';
+      }
+
       const resultType = document.querySelector('input[name="resultPublishType"]:checked').value;
       const resultTypeMap = {
         'immediate': '交卷后立即公布',
-        'delayAfterSubmit': '交卷后' + document.getElementById('delayDaysAfterSubmit').value + '天公布',
+        'delayAfterSubmit': '交卷后' + (document.getElementById('delayDaysAfterSubmit').value || '1') + '天公布',
         'afterExamEnd': '考试结束后立即公布',
-        'delayAfterExamEnd': '考试结束后' + document.getElementById('delayHoursAfterExamEnd').value + '小时公布'
+        'delayAfterExamEnd': '考试结束后' + (document.getElementById('delayDaysAfterExamEnd').value || '1') + '天公布'
       };
       document.getElementById('confirmResultPublish').textContent = resultTypeMap[resultType];
 
@@ -2520,6 +2568,16 @@
         aiSettings.push('AI评语');
       }
       document.getElementById('confirmAI').textContent = aiSettings.length > 0 ? aiSettings.join('、') : '未启用';
+    }
+
+    // 预览选中的试卷（第四步使用）
+    function previewSelectedPaper() {
+      if (selectedPaperIds.length > 0) {
+        // 复用第二步的预览功能，预览第一份选中的试卷
+        previewPaper(selectedPaperIds[0]);
+      } else {
+        showMessage('未选择试卷', 'warning');
+      }
     }
 
     // 创建考试

@@ -310,12 +310,13 @@
             <div class="h-full flex flex-col p-8">
               <!-- 固定顶部：标题和筛选区 -->
               <div>
-                <div class="flex items-center justify-between mb-5">
+                <!-- 标题行 + 筛选条件 -->
+                <div class="flex items-center justify-between mb-2">
                   <div>
                     <h3 class="text-lg font-semibold text-gray-900">选择试卷</h3>
-                    <p class="text-sm text-gray-500 mt-1">文档模式支持选择多份试卷用于A/B场景；抽题组卷仅支持选择一份</p>
                   </div>
-                  <div class="flex items-center space-x-3">
+
+                  <div class="flex items-center space-x-4">
                     <!-- 组卷模式筛选 -->
                     <select id="paperModeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="filterPapersByMode()">
                       <option value="">组卷模式</option>
@@ -334,10 +335,25 @@
                     </button>
 
                     <!-- 创建试卷按钮 -->
-                    <button onclick="window.open('../paper/list.html', '_blank')" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors flex items-center space-x-2">
+                    <button onclick="openCreatePaperWindow()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm transition-colors flex items-center space-x-2">
                       <i class="fas fa-plus"></i>
                       <span>创建试卷</span>
                     </button>
+                  </div>
+                </div>
+
+                <!-- 说明文字：副标题 + 刷新提示 -->
+                <div class="flex items-center justify-between text-sm mb-5">
+                  <!-- 副标题（灰色，左侧） -->
+                  <p class="text-gray-500">文档模式支持选择多份试卷用于A/B场景；抽题组卷仅支持选择一份</p>
+
+                  <!-- 刷新提示（红色，右侧） -->
+                  <div class="text-red-600 flex items-center whitespace-nowrap">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span>创建新的试卷后，请点击
+                      <a href="javascript:void(0)" onclick="refreshPaperList()" class="underline hover:text-red-700 font-medium">「刷新列表」</a>
+                      获取最新试卷
+                    </span>
                   </div>
                 </div>
 
@@ -647,7 +663,7 @@
         <!-- 底部按钮 - 使用 fixed 定位固定在视口底部 -->
         <div id="bottomButtons" class="fixed bottom-0 right-0 bg-white border-t border-gray-200 px-8 py-4 shadow-lg" style="left: 320px; z-index: 20;">
           <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <button onclick="prevStep()" id="prevBtn" class="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors hidden">
+            <button onclick="prevStep()" id="prevBtn" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors hidden">
               <i class="fas fa-chevron-left mr-2"></i>上一步
             </button>
             <div class="flex items-center space-x-3 ml-auto">
@@ -782,7 +798,7 @@
     let currentStep = 1;
 
     // 从 localStorage 读取所有试卷数据
-    const allPapers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+    let allPapers = JSON.parse(localStorage.getItem('allPapers') || '[]');
     let filteredPapers = [...allPapers]; // 用于筛选后的试卷列表
     const papers = {};
     let selectedPaperIds = []; // 记录选中的试卷ID数组（支持多选）
@@ -1069,6 +1085,49 @@
       document.getElementById('paperSearchInput').value = '';
       filteredPapers = [...allPapers];
       renderPaperList(1);
+    }
+
+    // 打开新窗口创建试卷
+    function openCreatePaperWindow() {
+      // 使用 window.open 打开试卷管理页面（新窗口），并传递 autoCreate 参数
+      const paperManageUrl = '../paper/list.html?autoCreate=true';
+      const windowFeatures = 'width=1400,height=900,left=100,top=50,resizable=yes,scrollbars=yes';
+      window.open(paperManageUrl, '_blank', windowFeatures);
+
+      // 提示用户
+      showMessage('已在新窗口打开试卷管理，将自动打开创建试卷弹窗', 'info');
+    }
+
+    // 刷新试卷列表
+    function refreshPaperList() {
+      // 重新从 localStorage 读取最新的试卷数据
+      allPapers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+
+      // 重新初始化 filteredPapers
+      filteredPapers = [...allPapers];
+
+      // 应用当前的筛选条件
+      const modeFilter = document.getElementById('paperModeFilter').value;
+      const searchText = document.getElementById('paperSearchInput').value.toLowerCase();
+
+      if (modeFilter || searchText) {
+        filteredPapers = allPapers.filter(paper => {
+          const matchMode = !modeFilter ||
+            (modeFilter === 'document' && paper.mode === 'document') ||
+            (modeFilter === 'extraction-fixed' && paper.mode === 'extraction' && paper.extractionType === 'fixed') ||
+            (modeFilter === 'extraction-random' && paper.mode === 'extraction' && paper.extractionType === 'random');
+
+          const matchSearch = !searchText || paper.name.toLowerCase().includes(searchText);
+
+          return matchMode && matchSearch;
+        });
+      }
+
+      // 重新渲染列表（从第一页开始）
+      renderPaperList(1);
+
+      // 显示刷新成功提示
+      showMessage('试卷列表已刷新', 'success');
     }
 
     // ========== 从 paper/list.html 复制的预览功能 ==========

@@ -1853,6 +1853,15 @@
           previewPaper(autoPreviewId);
         }, 300);
       }
+
+      // 支持从 URL 参数自动打开创建试卷弹窗（供考试模块调用）
+      const autoCreate = urlParams.get('autoCreate');
+      if (autoCreate === 'true') {
+        // 延迟执行，确保页面完全加载
+        setTimeout(() => {
+          openCreatePaperModal();
+        }, 300);
+      }
     });
 
     // ========== 创建试卷弹窗相关函数 ==========

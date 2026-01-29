@@ -1480,9 +1480,8 @@
 
         // 判断是随机抽题还是固定抽题
         if (paper.extractionType === 'random' && paper.randomRules) {
-          // 随机抽题：隐藏左侧导航栏，主体内容居中
+          // 随机抽题：隐藏左侧导航栏
           document.getElementById('extractionPreviewNavigation').classList.add('hidden');
-          document.getElementById('extractionPreviewContent').classList.add('flex', 'items-center', 'justify-center');
 
           // 显示抽题规则说明
           document.getElementById('extractionPreviewTotalScore').textContent = paper.totalScore || 100;
@@ -1490,7 +1489,6 @@
         } else {
           // 固定抽题：显示左侧导航栏
           document.getElementById('extractionPreviewNavigation').classList.remove('hidden');
-          document.getElementById('extractionPreviewContent').classList.remove('flex', 'items-center', 'justify-center');
 
           // 计算并设置总分
           let totalScore = 0;
@@ -2052,7 +2050,8 @@
 
     // 渲染随机抽题规则预览
     function renderRandomExtractionRulesPreview(randomRules, totalScore) {
-      const container = document.getElementById('extractionPreviewContent');
+      // 只替换题目容器，不破坏整个 modal 结构
+      const container = document.getElementById('extractionPreviewQuestionsContainer');
 
       // 题型配置
       const typeConfig = {
@@ -2066,23 +2065,21 @@
       };
 
       let html = `
-        <div class="max-w-3xl w-full">
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                <i class="fas fa-random text-purple-600 text-xl"></i>
-              </div>
-              <div>
-                <h2 class="text-xl font-bold text-gray-900">随机抽题模式</h2>
-                <p class="text-sm text-gray-500 mt-1">每次考试从题库中随机抽取题目，保证试卷多样性</p>
-              </div>
-            </div>
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+            <i class="fas fa-random text-purple-600 text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">随机抽题模式</h2>
+            <p class="text-sm text-gray-500 mt-1">每次考试从题库中随机抽取题目，保证试卷多样性</p>
+          </div>
+        </div>
 
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div class="flex items-start gap-3">
-                <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
-                <div class="flex-1 text-sm text-blue-800">
-                  <div class="font-medium mb-1">预览说明</div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+            <div class="flex-1 text-sm text-blue-800">
+              <div class="font-medium mb-1">预览说明</div>
                   <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。如需查看实际抽取效果，请点击"编辑试卷"按钮进入编辑页面，使用"抽一份看看"功能。</div>
                 </div>
               </div>
@@ -2187,17 +2184,15 @@
       `;
 
       html += `
-            </div>
+        </div>
 
-            <div class="mt-6 flex items-center justify-center gap-3">
-              <button onclick="editExtractionPaper()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-                <i class="fas fa-edit mr-2"></i>编辑试卷
-              </button>
-              <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-                <i class="fas fa-times mr-2"></i>关闭预览
-              </button>
-            </div>
-          </div>
+        <div class="mt-6 flex items-center justify-center gap-3">
+          <button onclick="editExtractionPaper()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-edit mr-2"></i>编辑试卷
+          </button>
+          <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-times mr-2"></i>关闭预览
+          </button>
         </div>
       `;
 

@@ -608,7 +608,20 @@
     });
 
     // 页面加载时初始化
-    window.addEventListener('DOMContentLoaded', loadPaper);
+    window.addEventListener('DOMContentLoaded', function() {
+      // 检查是否在弹窗模式中打开
+      const previewData = JSON.parse(localStorage.getItem('previewPaper'));
+      if (previewData && previewData.inModal) {
+        // 隐藏编辑试卷按钮
+        const editButton = document.querySelector('header button[onclick="goBack()"]');
+        if (editButton) {
+          editButton.style.display = 'none';
+        }
+      }
+
+      // 加载试卷数据
+      loadPaper();
+    });
   </script>
 </body>
 </html>

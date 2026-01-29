@@ -667,22 +667,116 @@
     </div>
   </main>
 
-  <!-- 预览试卷弹窗 - 复用 paper/list.html 的预览功能 -->
-  <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" onclick="closePreviewModal()">
-    <div class="bg-white rounded-lg shadow-xl w-full h-full m-8 flex flex-col" onclick="event.stopPropagation()">
-      <!-- 弹窗头部 -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">试卷预览</h3>
+  <!-- ========== 从 paper/list.html 复制的预览弹窗（文档模式） ========== -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closePreviewModal()"></div>
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="previewPaperTitle"></span>
+        </div>
         <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
-      <!-- 弹窗内容 - 加载 paper/list.html 并自动预览 -->
-      <div class="flex-1 overflow-hidden">
-        <iframe id="previewIframe" src="" class="w-full h-full border-0"></iframe>
+      <div class="flex-1 flex overflow-hidden">
+        <div class="flex-1 bg-gray-100 flex flex-col overflow-hidden border-r border-gray-200">
+          <div class="flex-shrink-0 px-4 py-3 bg-white border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-file-alt text-gray-500"></i>
+              <span class="text-sm font-medium text-gray-700" id="previewFileName">试卷文件</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-hidden" id="previewFileContainer">
+            <iframe id="previewPdfFrame" class="w-full h-full hidden" frameborder="0"></iframe>
+            <div id="previewWordNotice" class="hidden h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-word text-6xl text-blue-500 mb-4"></i>
+                <p class="text-gray-600">Word 文档预览</p>
+                <p class="text-sm text-gray-400 mt-2" id="previewWordFileName"></p>
+              </div>
+            </div>
+            <div id="previewNoFile" class="h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-upload text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">暂无试卷文件</p>
+                <p class="text-sm text-gray-400 mt-2">该试卷未上传文件</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-96 bg-white flex flex-col overflow-hidden">
+          <div class="flex-shrink-0 px-4 py-3 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-clipboard-list text-gray-500"></i>
+                <span class="text-sm font-medium text-gray-700">答题卡</span>
+              </div>
+              <div class="text-sm">
+                <span class="text-gray-500">总分：</span>
+                <span class="font-bold text-primary-500" id="previewTotalScore">100</span>
+                <span class="text-gray-500">分</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3" id="previewAnswerCard"></div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- ========== 从 paper/list.html 复制的预览弹窗（抽题模式） ========== -->
+  <div id="extractionPreviewModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeExtractionPreviewModal()"></div>
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="extractionPreviewModalTitle"></span>
+        </div>
+        <button onclick="closeExtractionPreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-hidden flex">
+        <aside id="extractionPreviewNavigation" class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div id="extractionPreviewNavigationContainer" class="p-6"></div>
+        </aside>
+        <div id="extractionPreviewContent" class="flex-1 overflow-y-auto p-8 bg-gray-50">
+          <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-8">
+            <div class="text-center mb-8 pb-6 border-b-2 border-gray-300">
+              <h1 id="extractionPreviewPaperName" class="text-3xl font-bold text-gray-900 mb-4">试卷名称</h1>
+              <div class="flex items-center justify-center space-x-8 text-sm text-gray-600">
+                <div><span class="font-medium">试卷编号：</span><span id="extractionPreviewPaperCode">-</span></div>
+                <div><span class="font-medium">总分：</span><span id="extractionPreviewTotalScore" class="text-primary-600 font-semibold">0</span><span>分</span></div>
+              </div>
+            </div>
+            <div id="extractionPreviewQuestionsContainer" class="space-y-8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .extraction-preview-nav-item {
+      transition: all 0.2s;
+      color: #374151;
+      background-color: white;
+    }
+    .extraction-preview-nav-item.active {
+      background-color: #00B96B;
+      color: white;
+      border-color: #00B96B;
+    }
+    .extraction-preview-nav-item:hover:not(.active) {
+      background-color: #f0fdf4;
+      border-color: #00B96B;
+    }
+  </style>
 
   <script>
     let currentStep = 1;
@@ -977,40 +1071,1092 @@
       renderPaperList(1);
     }
 
-    // 预览试卷
-    // 预览试卷 - 完全复用 paper/list.html 的预览弹窗
-    function previewPaper(paperId) {
-      // 查找试卷数据
-      const paper = allPapers.find(p => p.id === paperId);
+    // ========== 从 paper/list.html 复制的预览功能 ==========
+
+    let previewPaperId = null;  // 当前预览的试卷ID
+
+    const questionTypeConfig = {
+      single: { name: '单选题', icon: 'fa-dot-circle', options: ['A', 'B', 'C', 'D'] },
+      multiple: { name: '多选题', icon: 'fa-check-double', options: ['A', 'B', 'C', 'D'] },
+      judge: { name: '判断题', icon: 'fa-check-circle', options: ['对', '错'] },
+      blank: { name: '填空题', icon: 'fa-keyboard', options: [] },
+      cloze: { name: '完形填空', icon: 'fa-puzzle-piece', options: [] },
+      shortAnswer: { name: '简答题', icon: 'fa-align-left', options: [] },
+      essay: { name: '简答题', icon: 'fa-align-left', options: [] },
+      composite: { name: '复合题', icon: 'fa-layer-group', options: [] }
+    };
+
+    // 子题型配置
+    const subQuestionTypes = {
+      single: { name: '单选', options: ['A', 'B', 'C', 'D'] },
+      multiple: { name: '多选', options: ['A', 'B', 'C', 'D'] },
+      judge: { name: '判断', options: ['对', '错'] },
+      blank: { name: '填空', options: [] },
+      essay: { name: '简答', options: [] }
+    };
+
+    // 操作函数
+    function previewPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
       if (!paper) {
-        showMessage('未找到试卷数据', 'error');
+        Message.error('试卷不存在');
         return;
       }
 
-      // 显示预览弹窗
-      const modal = document.getElementById('previewModal');
-      const iframe = document.getElementById('previewIframe');
+      // 抽题模式：使用弹窗预览
+      if (paper.mode === 'extraction' || paper.mode === 'random') {
+        // 保存当前预览的试卷ID
+        previewPaperId = id;
 
-      // 复用 paper/list.html 的预览功能，通过 URL 参数传递试卷ID
-      // list.html 会自动调用其内置的 previewPaper(paperId) 函数
-      iframe.src = '../paper/list.html?autoPreview=' + paperId;
+        // 设置预览弹窗标题
+        document.getElementById('extractionPreviewModalTitle').textContent = paper.name || '未命名试卷';
+        document.getElementById('extractionPreviewPaperName').textContent = paper.name || '未命名试卷';
+        document.getElementById('extractionPreviewPaperCode').textContent = paper.code || '暂无';
 
-      modal.classList.remove('hidden');
+        // 判断是随机抽题还是固定抽题
+        if (paper.extractionType === 'random' && paper.randomRules) {
+          // 随机抽题：隐藏左侧导航栏
+          document.getElementById('extractionPreviewNavigation').classList.add('hidden');
 
-      // 禁止body滚动
+          // 显示抽题规则说明
+          document.getElementById('extractionPreviewTotalScore').textContent = paper.totalScore || 100;
+          renderRandomExtractionRulesPreview(paper.randomRules, paper.totalScore || 100);
+        } else {
+          // 固定抽题：显示左侧导航栏
+          document.getElementById('extractionPreviewNavigation').classList.remove('hidden');
+
+          // 计算并设置总分
+          let totalScore = 0;
+          (paper.questions || []).forEach(q => {
+            totalScore += parseFloat(q.paperScore) || 0;
+          });
+          document.getElementById('extractionPreviewTotalScore').textContent = totalScore;
+
+          // 渲染题目列表
+          renderExtractionPreviewQuestions(paper.questions || []);
+        }
+
+        // 显示弹窗
+        document.getElementById('extractionPreviewModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
+      }
+
+      // 文档模式：在弹窗中预览
+      // 保存当前预览的试卷ID
+      previewPaperId = id;
+
+      // 设置标题
+      document.getElementById('previewPaperTitle').textContent = paper.name || paper.title || '未命名试卷';
+      document.getElementById('previewTotalScore').textContent = paper.totalScore || 100;
+
+      // 设置文件预览
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      const wordNotice = document.getElementById('previewWordNotice');
+      const noFile = document.getElementById('previewNoFile');
+
+      // 先隐藏所有
+      pdfFrame.classList.add('hidden');
+      wordNotice.classList.add('hidden');
+      noFile.classList.add('hidden');
+
+      if (paper.file && paper.file.data) {
+        document.getElementById('previewFileName').textContent = paper.file.name;
+        const isPDF = paper.file.type === 'application/pdf';
+
+        if (isPDF) {
+          pdfFrame.src = paper.file.data;
+          pdfFrame.classList.remove('hidden');
+        } else {
+          document.getElementById('previewWordFileName').textContent = paper.file.name;
+          wordNotice.classList.remove('hidden');
+        }
+      } else {
+        document.getElementById('previewFileName').textContent = '试卷文件';
+        noFile.classList.remove('hidden');
+      }
+
+      // 渲染答题卡预览
+      renderPreviewAnswerCard(paper.answerCard);
+
+      // 显示弹窗
+      document.getElementById('previewModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+    }
+
+    // 渲染预览答题卡
+    function renderPreviewAnswerCard(answerCard) {
+      const container = document.getElementById('previewAnswerCard');
+      container.innerHTML = '';
+
+      if (!answerCard || Object.keys(answerCard).length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-inbox text-3xl mb-2"></i><p>暂无答题卡数据</p></div>';
+        return;
+      }
+
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'essay', 'composite'];
+
+      typeOrder.forEach(type => {
+        if (!answerCard[type]) return;
+
+        const config = questionTypeConfig[type];
+        const data = answerCard[type];
+        const questions = data.questions || [];
+
+        if (questions.length === 0) return;
+
+        const typeSection = document.createElement('div');
+        typeSection.className = 'mb-3 bg-white rounded-lg border border-gray-200';
+
+        if (type === 'composite') {
+          // 复合题预览
+          const totalSubQuestions = questions.reduce((sum, q) => sum + (q.subQuestions?.length || 0), 0);
+          const totalScore = questions.reduce((sum, q) => {
+            return sum + (q.subQuestions?.reduce((subSum, sq) => subSum + (sq.score || 0), 0) || 0);
+          }, 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questions.length}</span> 大题 <span class="font-bold text-gray-900">${totalSubQuestions}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="py-1">
+              ${questions.map((q, qIndex) => renderPreviewCompositeQuestion(q, qIndex)).join('')}
+            </div>
+          `;
+        } else {
+          // 普通题型预览
+          const questionCount = questions.length;
+          const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questionCount}</span> 题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="space-y-0.5 py-1">
+              ${questions.map((q, index) => renderPreviewQuestion(type, q, index)).join('')}
+            </div>
+          `;
+        }
+
+        container.appendChild(typeSection);
+      });
+    }
+
+    // 渲染预览普通题目
+    function renderPreviewQuestion(type, q, index) {
+      const config = questionTypeConfig[type];
+      let answerHtml = '';
+
+      if (config.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(q.answer) ? q.answer : (q.answer ? [q.answer] : []);
+        let currentOptions = q.customOptions || config.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${q.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = q.explanation ? `
+        <div class="px-2 pb-2 ml-6">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${q.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div>
+          <div class="flex items-start space-x-1.5 px-2 py-1 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[20px]">${index + 1}.</span>
+            <span class="text-gray-500 min-w-[40px]">${q.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }
+
+    // 渲染预览复合题
+    function renderPreviewCompositeQuestion(q, qIndex) {
+      const totalScore = (q.subQuestions || []).reduce((sum, sq) => sum + (sq.score || 0), 0);
+
+      return `
+        <div class="border border-gray-200 rounded-lg mx-2 mb-2 bg-white">
+          <div class="flex items-center justify-between px-3 py-2 bg-blue-50 border-b border-gray-200 rounded-t-lg">
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold text-gray-900 text-sm">第 ${qIndex + 1} 大题</span>
+              <span class="text-xs text-gray-500">（共 <span class="font-bold text-gray-900">${(q.subQuestions || []).length}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分）</span>
+            </div>
+          </div>
+          <div class="p-2 space-y-1">
+            ${(q.subQuestions || []).map((sq, sqIndex) => renderPreviewSubQuestion(sq, sqIndex)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染预览子题目
+    function renderPreviewSubQuestion(sq, sqIndex) {
+      const subConfig = subQuestionTypes[sq.type] || { name: '未知', options: [] };
+      let answerHtml = '';
+
+      if (subConfig.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(sq.answer) ? sq.answer : (sq.answer ? [sq.answer] : []);
+        let currentOptions = sq.customOptions || subConfig.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (sq.type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${sq.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = sq.explanation ? `
+        <div class="mt-1 ml-8">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${sq.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="bg-gray-50 rounded p-2">
+          <div class="flex items-start space-x-1.5 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[32px]">(${sqIndex + 1})</span>
+            <span class="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600 text-xs">${subConfig.name}</span>
+            <span class="text-gray-500 min-w-[40px]">${sq.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
     }
 
     // 关闭预览弹窗
     function closePreviewModal() {
-      const modal = document.getElementById('previewModal');
-      const iframe = document.getElementById('previewIframe');
-
-      modal.classList.add('hidden');
-      iframe.src = '';
-
-      // 恢复body滚动
+      document.getElementById('previewModal').classList.add('hidden');
       document.body.style.overflow = '';
+      previewPaperId = null;
+
+      // 清理 PDF URL
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      if (pdfFrame.src && pdfFrame.src.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfFrame.src);
+      }
+      pdfFrame.src = '';
+    }
+
+    function editPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (paper) {
+        if (paper.mode === 'document') {
+          // 文档模式跳转到 document.html
+          window.location.href = `document.html?id=${id}`;
+        } else if (paper.mode === 'extraction' || paper.mode === 'random') {
+          // 抽题模式：根据 extractionType 跳转到不同页面
+          if (paper.extractionType === 'random') {
+            // 随机抽题 → random-extraction.html
+            window.location.href = `random-extraction.html?id=${id}`;
+          } else {
+            // 固定抽题 → extraction.html
+            localStorage.setItem('currentPaper', JSON.stringify(paper));
+            window.location.href = `extraction.html?id=${id}`;
+          }
+        } else {
+          // 其他模式暂未实现
+          Message.warning('该模式暂未实现');
+        }
+      }
+    }
+    function copyPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (paper) {
+        const newPaper = { ...paper, id: 'P' + Date.now(), code: 'EXAM-' + Date.now(), name: paper.name + ' (副本)', status: 'draft', usageCount: 0, createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-') };
+        allPapers.unshift(newPaper);
+        localStorage.setItem('allPapers', JSON.stringify(allPapers));
+        // 按创建时间倒序排列
+        allPapers.sort((a, b) => {
+          const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+          const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+          return timeB - timeA;
+        });
+        filteredPapers = [...allPapers];
+        renderList();
+        Message.success('试卷复制成功');
+      }
+    }
+
+    function deletePaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (!paper) return;
+
+      // 删除逻辑：草稿可删除；已发布且使用次数为0可删除；已发布且使用次数>0不可删除
+      if (paper.status === 'published' && (paper.usageCount || 0) > 0) {
+        Message.warning('该试卷已发布且被使用，无法删除');
+        return;
+      }
+
+      deleteTargetId = id;
+      document.getElementById('deletePaperName').textContent = paper.name || paper.title || '';
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deleteModal').classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      document.getElementById('deleteModal').classList.remove('flex');
+      deleteTargetId = null;
+    }
+
+    function confirmDelete() {
+      if (deleteTargetId) {
+        allPapers = allPapers.filter(p => p.id !== deleteTargetId);
+        localStorage.setItem('allPapers', JSON.stringify(allPapers));
+        filteredPapers = filteredPapers.filter(p => p.id !== deleteTargetId);
+        renderList();
+        Message.success('试卷删除成功');
+        closeDeleteModal();
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      initDemoData();
+      // 按创建时间倒序排列（最新的在最前面）
+      allPapers.sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
+      filteredPapers = [...allPapers];
+      renderList();
+
+      // 支持从 URL 参数自动预览试卷（供考试模块调用）
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoPreviewId = urlParams.get('autoPreview');
+      if (autoPreviewId) {
+        // 延迟执行预览，确保页面完全加载
+        setTimeout(() => {
+          previewPaper(autoPreviewId);
+        }, 300);
+      }
+    });
+
+    // ========== 创建试卷弹窗相关函数 ==========
+
+    // 生成试卷编号（格式：EXAM + YYYYMMDD + 序号）
+    function generatePaperCode() {
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+      const todayPapers = papers.filter(p => p.code && p.code.startsWith('EXAM' + today));
+      const seq = (todayPapers.length + 1).toString().padStart(3, '0');
+      return `EXAM${today}${seq}`;
+    }
+
+    // 打开创建试卷弹窗
+    function openCreatePaperModal() {
+      // 生成试卷编号
+      document.getElementById('modalPaperCode').value = generatePaperCode();
+      // 清空试卷名称
+      document.getElementById('modalPaperName').value = '';
+      // 重置总分
+      document.getElementById('modalTotalScore').value = '100';
+      // 默认选中文档模式
+      document.querySelector('input[name="paperMode"][value="document"]').checked = true;
+      // 显示弹窗
+      document.getElementById('createPaperModal').classList.remove('hidden');
+    }
+
+    // 关闭创建试卷弹窗
+    function closeCreatePaperModal() {
+      document.getElementById('createPaperModal').classList.add('hidden');
+    }
+
+    // 验证表单
+    function validatePaperForm() {
+      const name = document.getElementById('modalPaperName').value.trim();
+      const code = document.getElementById('modalPaperCode').value.trim();
+      const totalScore = parseInt(document.getElementById('modalTotalScore').value);
+      const mode = document.querySelector('input[name="paperMode"]:checked')?.value;
+
+      // 验证试卷名称
+      if (!name) {
+        Message.warning('请输入试卷名称');
+        return false;
+      }
+
+      // 验证试卷编号
+      if (!code) {
+        Message.warning('请输入试卷编号');
+        return false;
+      }
+
+      // 验证编号唯一性
+      const papers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+      if (papers.some(p => p.code === code)) {
+        Message.error('试卷编号已存在，请使用其他编号');
+        return false;
+      }
+
+      // 验证试卷总分
+      if (!totalScore || totalScore <= 0) {
+        Message.warning('请输入试卷总分，且总分必须大于0');
+        return false;
+      }
+
+      // 验证组卷模式
+      if (!mode) {
+        Message.warning('请选择组卷模式');
+        return false;
+      }
+
+      return true;
+    }
+
+    // 确认创建试卷
+    function confirmCreatePaper() {
+      // 验证表单
+      if (!validatePaperForm()) {
+        return;
+      }
+
+      const name = document.getElementById('modalPaperName').value.trim();
+      const code = document.getElementById('modalPaperCode').value.trim();
+      const totalScore = parseInt(document.getElementById('modalTotalScore').value);
+      const mode = document.querySelector('input[name="paperMode"]:checked').value;
+
+      // 获取抽题子模式
+      let extractionType = 'fixed';
+      if (mode === 'extraction') {
+        const extractionTypeRadio = document.querySelector('input[name="extractionType"]:checked');
+        extractionType = extractionTypeRadio ? extractionTypeRadio.value : 'fixed';
+      }
+
+      // 生成唯一ID
+      const paperId = 'P' + Date.now() + Math.random().toString(36).substr(2, 9);
+
+      // 创建试卷数据
+      const paperData = {
+        id: paperId,
+        name: name,
+        code: code,
+        totalScore: totalScore,
+        mode: mode === 'extraction' ? 'extraction' : mode,
+        extractionType: extractionType,
+        status: 'draft',
+        createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-'),
+        usageCount: 0
+      };
+
+      // 保存到 LocalStorage（用于对应页面读取）
+      localStorage.setItem('currentPaper', JSON.stringify(paperData));
+
+      // 关闭弹窗
+      closeCreatePaperModal();
+
+      // 跳转到对应页面
+      if (mode === 'document') {
+        window.location.href = 'document.html';
+      } else if (mode === 'extraction') {
+        if (extractionType === 'random') {
+          window.location.href = 'random-extraction.html';
+        } else {
+          window.location.href = 'extraction.html';
+        }
+      } else {
+        // 其他模式暂未实现
+        Message.warning('该模式暂未实现');
+      }
+    }
+
+    // 切换抽题模式子选项展开/收起
+    function toggleExtractionOptions() {
+      const subOptions = document.getElementById('extractionSubOptions');
+      const expandIcon = document.getElementById('extractionExpandIcon');
+      const extractionRadio = document.querySelector('input[name="paperMode"][value="extraction"]');
+      const container = document.getElementById('extractionModeContainer');
+
+      // 选中抽题模式
+      extractionRadio.checked = true;
+
+      // 切换展开状态
+      subOptions.classList.toggle('hidden');
+      expandIcon.classList.toggle('rotate-180');
+
+      // 更新容器边框颜色
+      if (!subOptions.classList.contains('hidden')) {
+        container.classList.add('border-primary-500');
+      } else {
+        container.classList.remove('border-primary-500');
+      }
+    }
+
+    // 点击遮罩层关闭弹窗
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('createPaperModal');
+      if (e.target === modal) {
+        closeCreatePaperModal();
+      }
+    });
+
+    // ========== 抽题模式预览相关函数 ==========
+
+    // 类型标准化
+    function normalizeType(type) {
+      const typeMap = {
+        'essay': 'shortAnswer',
+        'short': 'shortAnswer',
+        'shortanswer': 'shortAnswer'
+      };
+      return typeMap[type?.toLowerCase()] || type;
+    }
+
+    // 关闭抽题预览弹窗
+    function closeExtractionPreviewModal() {
+      document.getElementById('extractionPreviewModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    function renderRandomExtractionRulesPreview(randomRules, totalScore) {
+      // 只替换题目容器，不破坏整个 modal 结构
+      const container = document.getElementById('extractionPreviewQuestionsContainer');
+
+      // 题型配置
+      const typeConfig = {
+        single: { name: '单选题', icon: 'fa-dot-circle', color: 'info' },
+        multiple: { name: '多选题', icon: 'fa-check-double', color: 'purple' },
+        judge: { name: '判断题', icon: 'fa-check-circle', color: 'success' },
+        blank: { name: '填空题', icon: 'fa-keyboard', color: 'warning' },
+        cloze: { name: '完形填空', icon: 'fa-puzzle-piece', color: 'indigo' },
+        short: { name: '简答题', icon: 'fa-align-left', color: 'amber' },
+        composite: { name: '复合题', icon: 'fa-layer-group', color: 'purple' }
+      };
+
+      let html = `
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+            <i class="fas fa-random text-purple-600 text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">随机抽题模式</h2>
+            <p class="text-sm text-gray-500 mt-1">每次考试从题库中随机抽取题目，保证试卷多样性</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+            <div class="flex-1 text-sm text-blue-800">
+              <div class="font-medium mb-1">预览说明</div>
+                  <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。如需查看实际抽取效果，请点击"编辑试卷"按钮进入编辑页面，使用"抽一份看看"功能。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                <span class="text-sm font-medium text-gray-700">试卷总分</span>
+                <span class="text-lg font-bold text-primary-600">${totalScore} 分</span>
+              </div>
+      `;
+
+      // 全局筛选条件
+      if (randomRules.globalFilters) {
+        const filters = randomRules.globalFilters;
+
+        html += `
+          <div class="py-3 border-b border-gray-200">
+            <div class="text-sm font-medium text-gray-700 mb-2">全局筛选条件</div>
+            <div class="flex flex-wrap gap-2">
+        `;
+
+        // 难度筛选
+        if (filters.difficulties && filters.difficulties.length > 0) {
+          const difficultyNames = {1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级'};
+          filters.difficulties.forEach(d => {
+            html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">难度：${difficultyNames[d] || d}</span>`;
+          });
+        }
+
+        // 知识点筛选
+        if (filters.knowledgeIds && filters.knowledgeIds.length > 0) {
+          html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">已选 ${filters.knowledgeIds.length} 个知识点</span>`;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      // 题型抽取规则
+      html += `
+        <div class="py-3">
+          <div class="text-sm font-medium text-gray-700 mb-3">题型抽取规则</div>
+          <div class="space-y-3">
+      `;
+
+      const typeRules = randomRules.typeRules || {};
+      Object.entries(typeRules).forEach(([type, rule]) => {
+        if (rule.count > 0) {
+          const config = typeConfig[type] || { name: '未知题型', icon: 'fa-question', color: 'gray' };
+          const scoreModeText = rule.scoreMode === 'custom' ? `自设分数：${rule.customScore}分/题` : '题库分数';
+          const totalTypeScore = rule.scoreMode === 'custom' ? (rule.count * rule.customScore).toFixed(1) : '根据题库';
+
+          // 根据题型设置颜色类（固定类名以支持Tailwind）
+          let bgClass = 'bg-gray-50';
+          let iconColorClass = 'text-gray-600';
+          if (config.color === 'info') {
+            bgClass = 'bg-blue-50';
+            iconColorClass = 'text-blue-600';
+          } else if (config.color === 'purple') {
+            bgClass = 'bg-purple-50';
+            iconColorClass = 'text-purple-600';
+          } else if (config.color === 'success') {
+            bgClass = 'bg-green-50';
+            iconColorClass = 'text-green-600';
+          } else if (config.color === 'warning') {
+            bgClass = 'bg-orange-50';
+            iconColorClass = 'text-orange-600';
+          } else if (config.color === 'indigo') {
+            bgClass = 'bg-indigo-50';
+            iconColorClass = 'text-indigo-600';
+          } else if (config.color === 'amber') {
+            bgClass = 'bg-amber-50';
+            iconColorClass = 'text-amber-600';
+          }
+
+          html += `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 ${bgClass} rounded-lg flex items-center justify-center">
+                  <i class="fas ${config.icon} ${iconColorClass}"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-900">${config.name}</div>
+                  <div class="text-xs text-gray-500">${scoreModeText}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-gray-900">${rule.count} 题</div>
+                <div class="text-xs text-gray-500">${totalTypeScore}${rule.scoreMode === 'custom' ? ' 分' : ''}</div>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      html += `
+        </div>
+
+        <div class="mt-6 flex items-center justify-center gap-3">
+          <button onclick="editExtractionPaper()" class="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-edit mr-2"></i>编辑试卷
+          </button>
+          <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-times mr-2"></i>关闭预览
+          </button>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // 渲染抽题预览题目
+    function renderExtractionPreviewQuestions(questions) {
+      const container = document.getElementById('extractionPreviewQuestionsContainer');
+      const navContainer = document.getElementById('extractionPreviewNavigationContainer');
+
+      // 按题型分组题目
+      const questionsByType = {};
+      questions.forEach(data => {
+        const q = data.question || data;
+        const normalizedType = normalizeType(q.type);
+        if (!questionsByType[normalizedType]) {
+          questionsByType[normalizedType] = [];
+        }
+        questionsByType[normalizedType].push(data);
+      });
+
+      // 题型顺序
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'cloze', 'shortAnswer', 'composite'];
+
+      let html = '';
+      let navHtml = '';
+      let globalQuestionNumber = 1;
+      let navQuestions = [];
+
+      typeOrder.forEach(type => {
+        if (!questionsByType[type] || questionsByType[type].length === 0) return;
+
+        const typeConfig = questionTypeConfig[type] || { name: '未知题型' };
+        const typeQuestions = questionsByType[type];
+
+        html += `
+          <div class="question-type-section">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-primary-500">
+              ${typeConfig.name}（共 ${typeQuestions.length} 题）
+            </h2>
+            <div class="space-y-6">
+        `;
+
+        typeQuestions.forEach(data => {
+          const q = data.question || data;
+          const score = data.paperScore || 0;
+          const questionId = `extraction-preview-question-${globalQuestionNumber}`;
+
+          navQuestions.push({
+            number: globalQuestionNumber,
+            type: typeConfig.name,
+            id: questionId
+          });
+
+          html += `
+            <div class="question-item" id="${questionId}">
+              <div class="flex items-start space-x-3 mb-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-sm">
+                  ${globalQuestionNumber}
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-500">${typeConfig.name}</span>
+                      ${q.knowledgePath ? `<span class="text-xs text-gray-400">· ${q.knowledgePath}</span>` : ''}
+                    </div>
+                    <span class="text-sm font-medium text-primary-600">${score} 分</span>
+                  </div>
+                  <div class="question-content text-gray-900 text-base leading-relaxed mb-3">
+                    ${q.content}
+                  </div>
+          `;
+
+          // 根据题型显示选项和答案
+          if (type === 'single' || type === 'multiple') {
+            html += '<div class="space-y-2 ml-4">';
+            if (q.options && q.options.length > 0) {
+              q.options.forEach(opt => {
+                const isCorrect = q.correctAnswers && q.correctAnswers.includes(opt.label);
+                html += `
+                  <div class="flex items-start space-x-2">
+                    <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                    <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                  </div>
+                `;
+              });
+            }
+            html += '</div>';
+
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.join('、')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'judge') {
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers[0]}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'blank') {
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.map((ans, idx) => `空${idx + 1}：${ans}`).join('；')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'cloze') {
+            if (q.blanks && q.blanks.length > 0) {
+              html += '<div class="space-y-3 ml-4 mt-3">';
+              q.blanks.forEach((blank, blankIndex) => {
+                html += `
+                  <div>
+                    <div class="font-medium text-gray-700 mb-2">空 ${blankIndex + 1}：</div>
+                    <div class="space-y-1 ml-4">
+                `;
+                if (blank.options && blank.options.length > 0) {
+                  blank.options.forEach(opt => {
+                    const isCorrect = blank.correctAnswer === opt.label;
+                    html += `
+                      <div class="flex items-start space-x-2">
+                        <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                        <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                      </div>
+                    `;
+                  });
+                }
+                html += `
+                    </div>
+                    <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                      <span class="font-medium text-green-700">答案：</span>
+                      <span class="text-green-600">${blank.correctAnswer}</span>
+                    </div>
+                  </div>
+                `;
+              });
+              html += '</div>';
+            }
+          } else if (type === 'shortAnswer') {
+            if (q.correctAnswers && q.correctAnswers.length > 0 && q.correctAnswers[0]) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <div class="text-sm font-medium text-green-700 mb-2">参考答案：</div>
+                  <div class="text-sm text-green-600 whitespace-pre-wrap">${q.correctAnswers[0]}</div>
+                </div>
+              `;
+            }
+          } else if (type === 'composite') {
+            if (q.subQuestions && q.subQuestions.length > 0) {
+              html += '<div class="mt-4 space-y-4">';
+              q.subQuestions.forEach((sub, subIndex) => {
+                const subType = normalizeType(sub.type);
+                html += `
+                  <div class="ml-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="font-medium text-gray-800">${globalQuestionNumber}.${subIndex + 1} ${sub.content}</div>
+                    </div>
+                `;
+
+                if (subType === 'single' || subType === 'multiple') {
+                  html += '<div class="space-y-1 ml-4 mt-2">';
+                  if (sub.options && sub.options.length > 0) {
+                    sub.options.forEach(opt => {
+                      const isCorrect = sub.correctAnswers && sub.correctAnswers.includes(opt.label);
+                      html += `
+                        <div class="flex items-start space-x-2">
+                          <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                          <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                        </div>
+                      `;
+                    });
+                  }
+                  html += '</div>';
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <span class="font-medium text-green-700">答案：</span>
+                        <span class="text-green-600">${sub.correctAnswers.join('、')}</span>
+                      </div>
+                    `;
+                  }
+                } else if (subType === 'shortAnswer') {
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0 && sub.correctAnswers[0]) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <div class="font-medium text-green-700 mb-1">参考答案：</div>
+                        <div class="text-green-600 whitespace-pre-wrap">${sub.correctAnswers[0]}</div>
+                      </div>
+                    `;
+                  }
+                }
+
+                html += '</div>';
+              });
+              html += '</div>';
+            }
+          }
+
+          // 显示解析
+          if (q.explanation) {
+            html += `
+              <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <div class="text-sm font-medium text-blue-700 mb-2">解析：</div>
+                <div class="text-sm text-blue-600 leading-relaxed">${q.explanation}</div>
+              </div>
+            `;
+          }
+
+          html += `
+                </div>
+              </div>
+            </div>
+          `;
+
+          globalQuestionNumber++;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html || '<div class="text-center text-gray-400 py-16">暂无题目</div>';
+
+      // 生成导航
+      if (navQuestions.length > 0) {
+        const navByType = {};
+        const typeOrderList = [];
+
+        navQuestions.forEach(item => {
+          if (!navByType[item.type]) {
+            navByType[item.type] = [];
+            typeOrderList.push(item.type);
+          }
+          navByType[item.type].push(item);
+        });
+
+        navHtml = `
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">题目导航</h3>
+            <div class="text-xs text-gray-500 mb-4">共 ${navQuestions.length} 道题</div>
+          </div>
+        `;
+
+        typeOrderList.forEach(typeName => {
+          const typeQuestions = navByType[typeName];
+          navHtml += `
+            <div class="mb-6">
+              <div class="flex items-center mb-3">
+                <div class="w-1 h-5 bg-primary-500 rounded mr-2"></div>
+                <h4 class="text-sm font-medium text-gray-800">${typeName}</h4>
+              </div>
+              <div class="grid grid-cols-5 gap-2">
+          `;
+
+          typeQuestions.forEach(item => {
+            navHtml += `
+              <button onclick="scrollToExtractionPreviewQuestion('${item.id}')"
+                      class="extraction-preview-nav-item aspect-square flex items-center justify-center text-sm font-medium border border-gray-300 rounded transition-colors"
+                      data-question-id="${item.id}">
+                ${item.number}
+              </button>
+            `;
+          });
+
+          navHtml += `
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        navHtml = '<div class="text-center text-gray-400 py-8">暂无题目</div>';
+      }
+
+      navContainer.innerHTML = navHtml;
+
+      // 设置滚动监听
+      setupExtractionPreviewScrollTracking();
+    }
+
+    // 滚动到指定题目
+    function scrollToExtractionPreviewQuestion(questionId) {
+      const scrollContainer = document.getElementById('extractionPreviewScrollContainer');
+      const questionElement = document.getElementById(questionId);
+
+      if (questionElement && scrollContainer) {
+        const containerTop = scrollContainer.offsetTop;
+        const elementTop = questionElement.offsetTop;
+        const offset = elementTop - containerTop - 100;
+
+        scrollContainer.scrollTo({
+          top: offset,
+          behavior: 'smooth'
+        });
+
+        updateExtractionPreviewActiveNav(questionId);
+      }
+    }
+
+    // 更新导航激活状态
+    function updateExtractionPreviewActiveNav(questionId) {
+      document.querySelectorAll('.extraction-preview-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      const activeNav = document.querySelector(`.extraction-preview-nav-item[data-question-id="${questionId}"]`);
+      if (activeNav) {
+        activeNav.classList.add('active');
+      }
+    }
+
+    // 设置滚动跟踪
+    function setupExtractionPreviewScrollTracking() {
+      const scrollContainer = document.getElementById('extractionPreviewScrollContainer');
+      if (!scrollContainer) return;
+
+      if (scrollContainer._scrollHandler) {
+        scrollContainer.removeEventListener('scroll', scrollContainer._scrollHandler);
+      }
+
+      const scrollHandler = () => {
+        const questions = document.querySelectorAll('#extractionPreviewQuestionsContainer .question-item');
+        const scrollTop = scrollContainer.scrollTop;
+        const containerTop = scrollContainer.offsetTop;
+
+        for (let i = questions.length - 1; i >= 0; i--) {
+          const question = questions[i];
+          const questionTop = question.offsetTop - containerTop - 150;
+
+          if (scrollTop >= questionTop) {
+            updateExtractionPreviewActiveNav(question.id);
+            break;
+          }
+        }
+      };
+
+      scrollContainer._scrollHandler = scrollHandler;
+      scrollContainer.addEventListener('scroll', scrollHandler);
     }
 
     // 上一页

@@ -365,8 +365,76 @@
 
     // 页面加载时初始化
     window.onload = function() {
-      // 从 URL 参数或 LocalStorage 加载试卷数据
+      // 检查是否是预览模式
       const urlParams = new URLSearchParams(window.location.search);
+      const isPreview = urlParams.get('preview') === '1';
+
+      if (isPreview) {
+        // 预览模式：从 previewPaper 加载数据
+        const previewData = JSON.parse(localStorage.getItem('previewPaper') || '{}');
+        if (previewData && previewData.inModal) {
+          // 加载预览数据
+          paperData = {
+            id: previewData.paperId || previewData.code,
+            title: previewData.name || '未命名试卷',
+            code: previewData.code || previewData.paperId,
+            totalScore: previewData.totalScore || 0,
+            questions: previewData.questions || [],
+            file: previewData.documentUrl || '',
+            createTime: previewData.createTime || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+          };
+
+          // 更新显示元素
+          document.getElementById('paperTitleDisplay').textContent = paperData.title;
+          document.getElementById('paperCodeDisplay').textContent = paperData.code;
+          document.getElementById('totalScore').value = paperData.totalScore;
+          document.getElementById('displayTotalScore').textContent = paperData.totalScore;
+
+          // 加载 PDF
+          if (paperData.file) {
+            uploadedFile = paperData.file;
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('uploadedState').classList.remove('hidden');
+            document.getElementById('uploadedFileName').textContent = paperData.title + '.pdf';
+            document.getElementById('pdfFrame').src = paperData.file;
+          }
+
+          // 渲染答题卡
+          if (paperData.questions && paperData.questions.length > 0) {
+            paperData.answerCard = {};
+            paperData.questions.forEach(q => {
+              paperData.answerCard[q.questionNumber || q.id] = q;
+            });
+            renderAnswerCard();
+          }
+
+          // 隐藏编辑相关按钮
+          const headerButtons = document.querySelector('header .flex.items-center.space-x-3');
+          if (headerButtons) {
+            headerButtons.style.display = 'none';
+          }
+
+          // 隐藏编辑按钮
+          const editButtons = document.querySelectorAll('[id^="edit"]');
+          editButtons.forEach(btn => btn.style.display = 'none');
+
+          // 隐藏上传/删除按钮
+          const uploadButtons = document.querySelectorAll('button[onclick*="fileInput"], button[onclick*="removeFile"]');
+          uploadButtons.forEach(btn => btn.style.display = 'none');
+
+          // 隐藏添加题目按钮
+          const addButtons = document.querySelectorAll('button[onclick^="addQuestionType"]');
+          addButtons.forEach(btn => btn.style.display = 'none');
+
+          // 隐藏保存答题卡按钮
+          const saveButton = document.querySelector('button[onclick="saveAnswerCard()"]');
+          if (saveButton) saveButton.style.display = 'none';
+
+          return; // 退出初始化，不执行编辑模式逻辑
+        }
+      }
+
+      // 原有的编辑模式逻辑
       const paperId = urlParams.get('id');
 
       if (paperId) {

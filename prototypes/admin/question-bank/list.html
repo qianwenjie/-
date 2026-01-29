@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>题目列表 - 考试系统</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
   <!-- KaTeX CSS for formula rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/katex@0.16.9/dist/katex.min.css">
   <!-- KaTeX JS -->
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://unpkg.com/katex@0.16.9/dist/katex.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1996,9 +1997,12 @@
         ? knowledgeTree.filter(node => matchesSearch(node, searchKeyword))
         : knowledgeTree;
 
+      // 使用 DocumentFragment 批量添加，减少 DOM 重绘
+      const fragment = document.createDocumentFragment();
       nodesToRender.forEach((node, index) => {
-        container.appendChild(createNodeElement(node, null, index));
+        fragment.appendChild(createNodeElement(node, null, index));
       });
+      container.appendChild(fragment);
 
       // 如果搜索后没有结果，显示提示
       if (nodesToRender.length === 0 && searchKeyword) {
@@ -2192,7 +2196,6 @@
     function saveKnowledgeTreeToStorage() {
       try {
         localStorage.setItem('knowledgePoints', JSON.stringify(knowledgeTree));
-        console.log('知识点树已保存到 localStorage');
       } catch (e) {
         console.error('保存知识点树失败:', e);
       }
@@ -2204,7 +2207,6 @@
         const saved = localStorage.getItem('knowledgePoints');
         if (saved) {
           knowledgeTree = JSON.parse(saved);
-          console.log('从 localStorage 加载知识点树:', knowledgeTree);
 
           // 更新 nextId，确保不会产生重复ID
           let maxId = 0;
@@ -2219,7 +2221,6 @@
           findMaxId(knowledgeTree);
           nextId = maxId + 1;
         } else {
-          console.log('localStorage 中没有知识点数据，使用默认数据');
           // 首次加载时保存默认数据
           saveKnowledgeTreeToStorage();
         }
@@ -2844,10 +2845,12 @@
       const endIndex = Math.min(startIndex + pageSize, filteredQuestions.length);
       const currentQuestions = filteredQuestions.slice(startIndex, endIndex);
 
-      // 渲染当前页的题目
+      // 使用 DocumentFragment 批量添加，减少 DOM 重绘
+      const fragment = document.createDocumentFragment();
       currentQuestions.forEach(question => {
-        container.appendChild(createQuestionCard(question));
+        fragment.appendChild(createQuestionCard(question));
       });
+      container.appendChild(fragment);
 
       // 显示并渲染分页控件
       if (filteredQuestions.length > 0) {
@@ -2863,13 +2866,6 @@
       const card = document.createElement('div');
       card.className = 'apple-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer';
       card.setAttribute('data-question-id', q.id);
-
-      // 调试日志：仅对简便录入的题目输出
-      if (q.author === '简便录入') {
-        console.log('[渲染卡片] 简便录入题目:', q.id);
-        console.log('  - knowledgeIds:', q.knowledgeIds);
-        console.log('  - knowledgePath:', q.knowledgePath);
-      }
 
       // 生成标签HTML
       const tagsHtml = q.tags && q.tags.length > 0
@@ -4995,19 +4991,6 @@
 
       // 从 localStorage 读取已保存的题目
       let savedQuestions = JSON.parse(localStorage.getItem('allQuestions') || '[]');
-
-      console.log('===== list.html 加载题目 =====');
-      console.log('从localStorage读取题目数量:', savedQuestions.length);
-      if (savedQuestions.length > 0) {
-        const lastQuestion = savedQuestions[savedQuestions.length - 1];
-        console.log('最后一个题目:', lastQuestion);
-        console.log('  - ID:', lastQuestion.id);
-        console.log('  - 题型:', lastQuestion.type, lastQuestion.typeName);
-        console.log('  - 作者:', lastQuestion.author);
-        console.log('  - knowledgeIds:', lastQuestion.knowledgeIds);
-        console.log('  - knowledgePath:', lastQuestion.knowledgePath);
-      }
-      console.log('==============================');
 
       // 检查内置题目是否已保存到 localStorage
       // 通过检查是否存在 Q001 来判断

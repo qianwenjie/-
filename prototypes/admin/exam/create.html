@@ -822,6 +822,20 @@
     let filteredPapers = [...allPapers]; // 用于筛选后的试卷列表
     const papers = {};
     let selectedPaperIds = []; // 记录选中的试卷ID数组（支持多选）
+    let editMode = false; // 是否是编辑模式
+    let editingExamId = null; // 正在编辑的考试ID
+
+    // 检测编辑模式
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'edit' && urlParams.get('id')) {
+      editMode = true;
+      editingExamId = urlParams.get('id');
+
+      // 修改页面标题
+      document.querySelector('nav .text-gray-900').textContent = '编辑考试';
+      document.querySelector('aside h2').textContent = '编辑考试';
+      document.querySelector('aside p').textContent = '修改考试配置信息';
+    }
 
     // 转换为 papers 对象格式
     allPapers.forEach(paper => {
@@ -851,6 +865,11 @@
       generateExamCode();
       renderPaperList(1);
       updateStepUI(); // 初始化UI状态
+
+      // 如果是编辑模式，加载考试数据
+      if (editMode && editingExamId) {
+        loadExamData(editingExamId);
+      }
 
       // 监听ESC键关闭预览弹窗
       document.addEventListener('keydown', function(e) {
@@ -2580,9 +2599,257 @@
       }
     }
 
+    // 加载考试数据（编辑模式）
+    function loadExamData(examId) {
+      // 从 localStorage 读取考试数据
+      const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+      const exam = exams.find(e => e.id === examId);
+
+      if (!exam) {
+        showMessage('考试不存在', 'error');
+        setTimeout(() => {
+          window.location.href = 'list.html';
+        }, 1500);
+        return;
+      }
+
+      // 填充第一步：基本信息
+      document.getElementById('examName').value = exam.name || '';
+      document.getElementById('examCode').value = exam.code || '';
+
+      // 填充开放时间（转换格式）
+      if (exam.openStartTime) {
+        document.getElementById('openStartTime').value = exam.openStartTime.replace(' ', 'T');
+      }
+      if (exam.openEndTime) {
+        document.getElementById('openEndTime').value = exam.openEndTime.replace(' ', 'T');
+      }
+
+      // 填充作答时间和次数
+      document.getElementById('examDuration').value = exam.duration || '';
+      document.getElementById('attemptLimit').value = exam.attemptLimit || '0';
+
+      // 填充第二步：选中的试卷
+      if (exam.paperIds && exam.paperIds.length > 0) {
+        selectedPaperIds = [...exam.paperIds];
+        // 重新渲染试卷列表以显示选中状态
+        renderPaperList(1);
+      }
+
+      // 填充第三步：考试配置
+      const settings = exam.settings || {};
+
+      // 迟到设置
+      if (settings.enableLateLimit) {
+        document.getElementById('enableLateLimit').checked = true;
+        document.getElementById('lateLimitInput').classList.remove('hidden');
+        if (settings.lateMinutes) {
+          document.getElementById('lateMinutes').value = settings.lateMinutes;
+        }
+      }
+
+      // 提前进入
+      if (settings.enableEarlyEntry) {
+        document.getElementById('enableEarlyEntry').checked = true;
+        document.getElementById('earlyEntryInput').classList.remove('hidden');
+        if (settings.earlyMinutes) {
+          document.getElementById('earlyMinutes').value = settings.earlyMinutes;
+        }
+      }
+
+      // 防作弊设置
+      if (settings.enableFaceRecognition) {
+        document.getElementById('enableFaceRecognition').checked = true;
+      }
+      if (settings.enableRandomCapture) {
+        document.getElementById('enableRandomCapture').checked = true;
+        document.getElementById('randomCaptureInput').classList.remove('hidden');
+        if (settings.captureCount) {
+          document.getElementById('captureCount').value = settings.captureCount;
+        }
+      }
+
+      // 交卷限制
+      if (settings.enableMinSubmitTime) {
+        document.getElementById('enableMinSubmitTime').checked = true;
+        document.getElementById('minSubmitTimeInput').classList.remove('hidden');
+        if (settings.minSubmitMinutes) {
+          document.getElementById('minSubmitMinutes').value = settings.minSubmitMinutes;
+        }
+      }
+
+      // 成绩公布
+      const resultPublishType = settings.resultPublishType || 'immediate';
+      const resultTypeRadio = document.querySelector(`input[name="resultPublishType"][value="${resultPublishType}"]`);
+      if (resultTypeRadio) {
+        resultTypeRadio.checked = true;
+        toggleResultPublish();
+
+        // 填充延迟天数
+        if (resultPublishType === 'delayAfterSubmit' && settings.delayDaysAfterSubmit) {
+          document.getElementById('delayDaysAfterSubmit').value = settings.delayDaysAfterSubmit;
+        }
+        if (resultPublishType === 'delayAfterExamEnd' && settings.delayDaysAfterExamEnd) {
+          document.getElementById('delayDaysAfterExamEnd').value = settings.delayDaysAfterExamEnd;
+        }
+      }
+
+      // 成绩公布内容
+      const resultContent = settings.resultContent || 'scoreOnly';
+      const resultContentRadio = document.querySelector(`input[name="resultContent"][value="${resultContent}"]`);
+      if (resultContentRadio) {
+        resultContentRadio.checked = true;
+      }
+
+      // AI批阅
+      if (settings.enableAIGrading) {
+        document.getElementById('enableAIGrading').checked = true;
+      }
+      if (settings.enableAIComment) {
+        document.getElementById('enableAIComment').checked = true;
+      }
+
+      // 修改提交按钮文字
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i>更新考试';
+      }
+
+      showMessage('考试数据加载成功', 'success');
+    }
+
     // 创建考试
     function createExam() {
-      showMessage('创建考试成功！', 'success');
+      // 收集所有考试数据
+      const examData = {
+        id: editMode ? editingExamId : ('E' + Date.now().toString().slice(-6)),
+        code: document.getElementById('examCode').value,
+        name: document.getElementById('examName').value,
+        openStartTime: document.getElementById('openStartTime').value.replace('T', ' '),
+        openEndTime: document.getElementById('openEndTime').value.replace('T', ' '),
+        duration: parseInt(document.getElementById('examDuration').value),
+        attemptLimit: document.getElementById('attemptLimit').value || '0',
+        paperIds: selectedPaperIds,
+        // 保存所有选中试卷的信息
+        papers: selectedPaperIds.length > 0 ? (() => {
+          const papersInfo = [];
+          selectedPaperIds.forEach(paperId => {
+            const paper = allPapers.find(p => p.id === paperId);
+            if (paper) {
+              papersInfo.push({
+                id: paper.id,
+                code: paper.code || paper.id,
+                name: paper.name,
+                mode: paper.mode,
+                questionCount: paper.questionCount || 0,
+                totalScore: paper.totalScore || 0
+              });
+            }
+          });
+          // 编辑模式且找不到试卷时，保留原有的 papers
+          if (papersInfo.length === 0 && editMode) {
+            const originalExam = JSON.parse(localStorage.getItem('exams') || '[]').find(e => e.id === editingExamId);
+            return originalExam?.papers || null;
+          }
+          return papersInfo.length > 0 ? papersInfo : null;
+        })() : null,
+        // 保留 paperInfo 作为第一份试卷的快速访问（向后兼容）
+        paperInfo: selectedPaperIds.length > 0 ? (() => {
+          const firstPaper = allPapers.find(p => p.id === selectedPaperIds[0]);
+          if (firstPaper) {
+            return {
+              id: firstPaper.id,
+              code: firstPaper.code || firstPaper.id,
+              name: firstPaper.name,
+              mode: firstPaper.mode,
+              questionCount: firstPaper.questionCount || 0,
+              totalScore: firstPaper.totalScore || 0
+            };
+          } else if (editMode) {
+            // 编辑模式：如果找不到试卷，保留原有的 paperInfo
+            const originalExam = JSON.parse(localStorage.getItem('exams') || '[]').find(e => e.id === editingExamId);
+            return originalExam?.paperInfo || null;
+          } else {
+            return null;
+          }
+        })() : null,
+        // 根据开放时间计算考试状态
+        status: (() => {
+          const now = new Date();
+          const startTime = new Date(document.getElementById('openStartTime').value.replace('T', ' '));
+          const endTime = new Date(document.getElementById('openEndTime').value.replace('T', ' '));
+
+          if (now < startTime) {
+            return 'pending'; // 未开始
+          } else if (now >= startTime && now <= endTime) {
+            return 'ongoing'; // 进行中
+          } else {
+            return 'finished'; // 已结束
+          }
+        })(),
+        totalStudents: 0,
+        submittedCount: 0,
+        gradedCount: 0,
+        onlineCount: 0,
+        createTime: editMode ?
+          (JSON.parse(localStorage.getItem('exams') || '[]').find(e => e.id === editingExamId)?.createTime || new Date().toLocaleString('zh-CN', { hour12: false })) :
+          new Date().toLocaleString('zh-CN', { hour12: false }),
+        settings: {
+          // 迟到设置
+          enableLateLimit: document.getElementById('enableLateLimit') ? document.getElementById('enableLateLimit').checked : false,
+          lateMinutes: (document.getElementById('enableLateLimit') && document.getElementById('enableLateLimit').checked) ?
+            (document.getElementById('lateMinutes') ? (document.getElementById('lateMinutes').value || '15') : '15') : null,
+          // 提前进入
+          enableEarlyEntry: document.getElementById('enableEarlyEntry') ? document.getElementById('enableEarlyEntry').checked : false,
+          earlyMinutes: (document.getElementById('enableEarlyEntry') && document.getElementById('enableEarlyEntry').checked) ?
+            (document.getElementById('earlyMinutes') ? (document.getElementById('earlyMinutes').value || '10') : '10') : null,
+          // 防作弊设置
+          enableFaceRecognition: document.getElementById('enableFaceRecognition') ? document.getElementById('enableFaceRecognition').checked : false,
+          enableRandomCapture: document.getElementById('enableRandomCapture') ? document.getElementById('enableRandomCapture').checked : false,
+          captureCount: (document.getElementById('enableRandomCapture') && document.getElementById('enableRandomCapture').checked) ?
+            (document.getElementById('captureCount') ? (document.getElementById('captureCount').value || '3') : '3') : null,
+          // 交卷限制
+          enableMinSubmitTime: document.getElementById('enableMinSubmitTime') ? document.getElementById('enableMinSubmitTime').checked : false,
+          minSubmitMinutes: (document.getElementById('enableMinSubmitTime') && document.getElementById('enableMinSubmitTime').checked) ?
+            (document.getElementById('minSubmitMinutes') ? (document.getElementById('minSubmitMinutes').value || '30') : '30') : null,
+          // 成绩公布
+          resultPublishType: document.querySelector('input[name="resultPublishType"]:checked') ? document.querySelector('input[name="resultPublishType"]:checked').value : 'immediate',
+          delayDaysAfterSubmit: (document.querySelector('input[name="resultPublishType"]:checked') && document.querySelector('input[name="resultPublishType"]:checked').value === 'delayAfterSubmit') ?
+            (document.getElementById('delayDaysAfterSubmit') ? (document.getElementById('delayDaysAfterSubmit').value || '1') : '1') : null,
+          delayDaysAfterExamEnd: (document.querySelector('input[name="resultPublishType"]:checked') && document.querySelector('input[name="resultPublishType"]:checked').value === 'delayAfterExamEnd') ?
+            (document.getElementById('delayDaysAfterExamEnd') ? (document.getElementById('delayDaysAfterExamEnd').value || '1') : '1') : null,
+          // 成绩公布内容
+          resultContent: document.querySelector('input[name="resultContent"]:checked') ? document.querySelector('input[name="resultContent"]:checked').value : 'scoreOnly',
+          // AI批阅
+          enableAIGrading: document.getElementById('enableAIGrading') ? document.getElementById('enableAIGrading').checked : false,
+          enableAIComment: document.getElementById('enableAIComment') ? document.getElementById('enableAIComment').checked : false
+        }
+      };
+
+      // 保存到 localStorage
+      let exams = JSON.parse(localStorage.getItem('exams') || '[]');
+
+      if (editMode) {
+        // 编辑模式：更新现有考试
+        const index = exams.findIndex(e => e.id === editingExamId);
+        if (index !== -1) {
+          // 保留原有的统计数据
+          examData.totalStudents = exams[index].totalStudents || 0;
+          examData.submittedCount = exams[index].submittedCount || 0;
+          examData.gradedCount = exams[index].gradedCount || 0;
+          examData.onlineCount = exams[index].onlineCount || 0;
+          // 状态根据开放时间重新计算，不保留原状态
+
+          exams[index] = examData;
+        }
+      } else {
+        // 创建模式：添加新考试
+        exams.unshift(examData);
+      }
+
+      localStorage.setItem('exams', JSON.stringify(exams));
+
+      showMessage(editMode ? '更新考试成功！' : '创建考试成功！', 'success');
       setTimeout(() => {
         window.location.href = 'list.html';
       }, 1500);

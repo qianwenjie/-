@@ -16,6 +16,7 @@
             warning: { 50: '#FFF7E8', 500: '#FF7D00', 600: '#F57C00' },
             error: { 50: '#FFECE8', 500: '#F53F3F', 600: '#E53935' },
             info: { 50: '#E8F7FF', 500: '#14C9C9', 600: '#00ACC1' },
+            purple: { 50: '#F3E8FF', 500: '#9333EA', 600: '#7E22CE' },
             gray: { 50: '#F9FAFB', 100: '#F3F4F6', 200: '#E5E7EB', 300: '#D1D5DB', 400: '#9CA3AF', 500: '#6B7280', 600: '#4B5563', 700: '#374151', 800: '#1F2937', 900: '#111827' }
           }
         }
@@ -29,7 +30,6 @@
     }
 
     .exam-card:hover {
-      transform: translateX(2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
@@ -61,105 +61,6 @@
         transform: translateX(0);
         opacity: 1;
       }
-    }
-
-    /* 模态框样式 */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      animation: modalSlideDown 0.3s ease-out;
-    }
-
-    @keyframes modalSlideDown {
-      from {
-        transform: translateY(-50px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    /* 步骤指示器 */
-    .step-indicator {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .step {
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
-
-    .step-number {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      background: #E5E7EB;
-      color: #9CA3AF;
-      position: relative;
-      z-index: 2;
-    }
-
-    .step.active .step-number {
-      background: #00B96B;
-      color: white;
-    }
-
-    .step.completed .step-number {
-      background: #00B42A;
-      color: white;
-    }
-
-    .step-line {
-      position: absolute;
-      top: 18px;
-      left: 50%;
-      width: 100%;
-      height: 2px;
-      background: #E5E7EB;
-      z-index: 1;
-    }
-
-    .step.completed .step-line {
-      background: #00B42A;
-    }
-
-    .step:last-child .step-line {
-      display: none;
-    }
-
-    .step-label {
-      margin-top: 8px;
-      font-size: 13px;
-      color: #6B7280;
-    }
-
-    .step.active .step-label {
-      color: #00B96B;
-      font-weight: 600;
     }
   </style>
 </head>
@@ -251,263 +152,430 @@
     </div>
   </div>
 
-  <!-- 创建考试模态框 -->
-  <div id="createModal" class="modal">
-    <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+  <!-- 查看配置模态框 -->
+  <div id="configModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
       <!-- 模态框头部 -->
       <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-gray-900">创建考试</h2>
-        <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <h2 class="text-xl font-semibold text-gray-900">考试配置详情</h2>
+        <button onclick="closeConfigModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
           <i class="fas fa-times text-xl"></i>
         </button>
       </div>
 
-      <!-- 步骤指示器 -->
-      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-        <div class="step-indicator">
-          <div class="step active" id="step1Indicator">
-            <span class="step-number">1</span>
-            <div class="step-line"></div>
-            <div class="step-label">基本信息</div>
+      <!-- 模态框内容 -->
+      <div class="flex-1 overflow-y-auto px-6 py-6">
+        <div class="space-y-6" id="configContent">
+          <!-- 内容将通过 JavaScript 动态填充 -->
+        </div>
+      </div>
+
+      <!-- 模态框底部 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认模态框 -->
+  <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+      <!-- 模态框头部 -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-error-50 rounded-lg flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-error-500 text-lg"></i>
           </div>
-          <div class="step" id="step2Indicator">
-            <span class="step-number">2</span>
-            <div class="step-line"></div>
-            <div class="step-label">选择试卷</div>
-          </div>
-          <div class="step" id="step3Indicator">
-            <span class="step-number">3</span>
-            <div class="step-line"></div>
-            <div class="step-label">考试设置</div>
-          </div>
-          <div class="step" id="step4Indicator">
-            <span class="step-number">4</span>
-            <div class="step-label">确认创建</div>
-          </div>
+          <h2 class="text-lg font-semibold text-gray-900">确认删除</h2>
         </div>
       </div>
 
       <!-- 模态框内容 -->
-      <div class="flex-1 overflow-y-auto px-6 py-6">
-        <!-- 步骤1：基本信息 -->
-        <div id="step1" class="step-content">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">考试名称 <span class="text-error-500">*</span></label>
-              <input type="text" id="examName" placeholder="例如：2026春季期末考试" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">考试描述</label>
-              <textarea id="examDesc" rows="3" placeholder="选填，简要描述考试内容和要求..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤2：选择试卷 -->
-        <div id="step2" class="step-content hidden">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">选择试卷 <span class="text-error-500">*</span></label>
-              <select id="examPaper" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                <option value="">请选择试卷</option>
-              </select>
-            </div>
-            <div id="paperPreview" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h4 class="text-sm font-medium text-gray-700 mb-2">试卷预览</h4>
-              <div class="space-y-1 text-sm text-gray-600">
-                <p><span class="font-medium">题目数量：</span><span id="previewQuestionCount">-</span></p>
-                <p><span class="font-medium">总分：</span><span id="previewTotalScore">-</span></p>
-                <p><span class="font-medium">试卷模式：</span><span id="previewPaperMode">-</span></p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤3：考试设置 -->
-        <div id="step3" class="step-content hidden">
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">开始时间 <span class="text-error-500">*</span></label>
-                <input type="datetime-local" id="examStartTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">结束时间 <span class="text-error-500">*</span></label>
-                <input type="datetime-local" id="examEndTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">考试时长（分钟） <span class="text-error-500">*</span></label>
-              <input type="number" id="examDuration" placeholder="例如：120" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <p class="mt-1 text-xs text-gray-500">考生需在此时间内完成答题</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">及格分数</label>
-              <input type="number" id="examPassScore" placeholder="例如：60" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-            </div>
-            <div class="space-y-2">
-              <label class="flex items-center">
-                <input type="checkbox" id="examShuffle" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
-                <span class="ml-2 text-sm text-gray-700">题目随机排序</span>
-              </label>
-              <label class="flex items-center">
-                <input type="checkbox" id="examShowAnswer" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
-                <span class="ml-2 text-sm text-gray-700">考试结束后显示答案</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤4：确认信息 -->
-        <div id="step4" class="step-content hidden">
-          <div class="space-y-4">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div class="flex items-start">
-                <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-2"></i>
-                <div class="text-sm text-blue-700">
-                  请仔细核对以下信息，确认无误后点击"确认创建"按钮
-                </div>
-              </div>
-            </div>
-            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">考试名称：</span>
-                <span class="text-sm text-gray-900" id="confirmExamName">-</span>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">考试描述：</span>
-                <span class="text-sm text-gray-600" id="confirmExamDesc">-</span>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">关联试卷：</span>
-                <span class="text-sm text-gray-900" id="confirmPaperName">-</span>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">考试时间：</span>
-                <div class="text-sm text-gray-900">
-                  <div id="confirmStartTime">-</div>
-                  <div class="text-gray-500">至</div>
-                  <div id="confirmEndTime">-</div>
-                </div>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">考试时长：</span>
-                <span class="text-sm text-gray-900" id="confirmDuration">-</span>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">及格分数：</span>
-                <span class="text-sm text-gray-900" id="confirmPassScore">-</span>
-              </div>
-              <div class="flex items-start">
-                <span class="text-sm font-medium text-gray-700 w-24">其他设置：</span>
-                <div class="text-sm text-gray-900">
-                  <div id="confirmSettings">-</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="px-6 py-6">
+        <p class="text-gray-700 text-sm leading-relaxed">
+          确定要删除考试<span class="font-semibold text-gray-900" id="deleteExamName"></span>吗？
+        </p>
+        <p class="text-error-600 text-sm mt-2">
+          <i class="fas fa-info-circle mr-1"></i>删除后将无法恢复！
+        </p>
       </div>
 
-      <!-- 模态框底部按钮 -->
-      <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-        <button onclick="prevStep()" id="prevStepBtn" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors hidden">
-          <i class="fas fa-chevron-left mr-2"></i>上一步
+      <!-- 模态框底部 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <button onclick="closeDeleteConfirmModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          取消
         </button>
-        <div class="flex items-center space-x-3 ml-auto">
-          <button onclick="closeCreateModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">
-            取消
-          </button>
-          <button onclick="nextStep()" id="nextStepBtn" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-            下一步<i class="fas fa-chevron-right ml-2"></i>
-          </button>
-          <button onclick="submitExam()" id="submitBtn" class="hidden px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-check mr-2"></i>确认创建
-          </button>
+        <button onclick="confirmDeleteExam()" class="px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium transition-colors">
+          <i class="fas fa-trash mr-2"></i>确认删除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 从 create.html 复制的预览弹窗（文档模式） ========== -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closePreviewModal()"></div>
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="previewPaperTitle"></span>
+        </div>
+        <button onclick="closePreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="flex-1 flex overflow-hidden">
+        <div class="flex-1 bg-gray-100 flex flex-col overflow-hidden border-r border-gray-200">
+          <div class="flex-shrink-0 px-4 py-3 bg-white border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+              <i class="fas fa-file-alt text-gray-500"></i>
+              <span class="text-sm font-medium text-gray-700" id="previewFileName">试卷文件</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-hidden" id="previewFileContainer">
+            <iframe id="previewPdfFrame" class="w-full h-full hidden" frameborder="0"></iframe>
+            <div id="previewWordNotice" class="hidden h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-word text-6xl text-blue-500 mb-4"></i>
+                <p class="text-gray-600">Word 文档预览</p>
+                <p class="text-sm text-gray-400 mt-2" id="previewWordFileName"></p>
+              </div>
+            </div>
+            <div id="previewNoFile" class="h-full flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-file-upload text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">暂无试卷文件</p>
+                <p class="text-sm text-gray-400 mt-2">该试卷未上传文件</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-96 bg-white flex flex-col overflow-hidden">
+          <div class="flex-shrink-0 px-4 py-3 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-clipboard-list text-gray-500"></i>
+                <span class="text-sm font-medium text-gray-700">答题卡</span>
+              </div>
+              <div class="text-sm">
+                <span class="text-gray-500">总分：</span>
+                <span class="font-bold text-primary-500" id="previewTotalScore">100</span>
+                <span class="text-gray-500">分</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3" id="previewAnswerCard"></div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ========== 从 create.html 复制的预览弹窗（抽题模式） ========== -->
+  <div id="extractionPreviewModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeExtractionPreviewModal()"></div>
+    <div class="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-eye text-primary-500"></i>
+          <span class="text-lg font-semibold text-gray-900">试卷预览</span>
+          <span class="text-sm text-gray-500" id="extractionPreviewModalTitle"></span>
+        </div>
+        <button onclick="closeExtractionPreviewModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-hidden flex">
+        <aside id="extractionPreviewNavigation" class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+          <div id="extractionPreviewNavigationContainer" class="p-6"></div>
+        </aside>
+        <div id="extractionPreviewScrollContainer" class="flex-1 overflow-y-auto p-8 bg-gray-50">
+          <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-8">
+            <div class="text-center mb-8 pb-6 border-b-2 border-gray-300">
+              <h1 id="extractionPreviewPaperName" class="text-3xl font-bold text-gray-900 mb-4">试卷名称</h1>
+              <div class="flex items-center justify-center space-x-8 text-sm text-gray-600">
+                <div><span class="font-medium">试卷编号：</span><span id="extractionPreviewPaperCode">-</span></div>
+                <div><span class="font-medium">总分：</span><span id="extractionPreviewTotalScore" class="text-primary-600 font-semibold">0</span><span>分</span></div>
+              </div>
+            </div>
+            <div id="extractionPreviewQuestionsContainer" class="space-y-8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .extraction-preview-nav-item {
+      transition: all 0.2s;
+      color: #374151;
+      background-color: white;
+    }
+    .extraction-preview-nav-item.active {
+      background-color: #00B96B;
+      color: white;
+      border-color: #00B96B;
+    }
+    .extraction-preview-nav-item:hover:not(.active) {
+      background-color: #f0fdf4;
+      border-color: #00B96B;
+    }
+  </style>
+
   <script>
-    // 模拟考试数据
+    // 模拟考试数据（根据create.html的数据结构）
     let exams = [
       {
         id: 'E001',
+        code: 'E001',
         name: '2026春季期末考试',
-        description: '计算机基础课程期末考试',
-        paper: { id: 'P001', name: '计算机基础期末卷', questionCount: 50, totalScore: 100 },
-        startTime: '2026-01-20 09:00',
-        endTime: '2026-01-20 11:00',
+        openStartTime: '2026-02-01 08:00',
+        openEndTime: '2026-02-01 11:00',
         duration: 120,
-        passScore: 60,
-        participants: 156,
-        submitted: 0,
+        attemptLimit: '1',
+        paperIds: ['P001'],
+        paperInfo: {
+          id: 'P001',
+          code: 'DOC2026001',
+          name: '计算机基础期末卷',
+          mode: 'document',
+          questionCount: 50,
+          totalScore: 100
+        },
         status: 'pending', // pending, ongoing, finished
-        shuffle: true,
-        showAnswer: true,
-        createTime: '2026-01-15 10:00:00'
+        totalStudents: 156,
+        submittedCount: 0,
+        gradedCount: 0,
+        onlineCount: 0,
+        createTime: '2026-01-20 10:00:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 15,
+          enableFaceRecognition: true,
+          resultPublishType: 'afterExamEnd'
+        }
       },
       {
         id: 'E002',
-        name: '数学期中测验',
-        description: '数学期中测验',
-        paper: { id: 'P002', name: '数学期中测验卷', questionCount: 30, totalScore: 100 },
-        startTime: '2026-01-16 14:00',
-        endTime: '2026-01-16 15:30',
+        code: 'E002',
+        name: '数据结构与算法期中测试',
+        openStartTime: '2026-01-28 14:00',
+        openEndTime: '2026-01-28 16:30',
         duration: 90,
-        passScore: 60,
-        participants: 128,
-        submitted: 85,
+        attemptLimit: '2',
+        paperIds: ['P002'],
+        paperInfo: {
+          id: 'P002',
+          code: 'FIX2026002',
+          name: '数据结构固定抽题卷',
+          mode: 'extraction',
+          questionCount: 30,
+          totalScore: 100
+        },
         status: 'ongoing',
-        shuffle: false,
-        showAnswer: true,
-        createTime: '2026-01-10 15:30:00'
+        totalStudents: 128,
+        submittedCount: 85,
+        gradedCount: 45,
+        onlineCount: 43,
+        createTime: '2026-01-22 09:00:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 10,
+          enableRandomCapture: true,
+          captureCount: 3,
+          resultPublishType: 'immediate'
+        }
       },
       {
         id: 'E003',
-        name: '英语听力测试',
-        description: '英语听力专项测试',
-        paper: { id: 'P003', name: '英语听力专项卷', questionCount: 40, totalScore: 100 },
-        startTime: '2026-01-10 10:00',
-        endTime: '2026-01-10 11:00',
-        duration: 60,
-        passScore: 60,
-        participants: 98,
-        submitted: 98,
+        code: 'E003',
+        name: '操作系统原理期末考试',
+        openStartTime: '2026-01-25 09:00',
+        openEndTime: '2026-01-25 11:00',
+        duration: 120,
+        attemptLimit: '1',
+        paperIds: ['P003'],
+        paperInfo: {
+          id: 'P003',
+          code: 'RND2026003',
+          name: '操作系统随机抽题卷',
+          mode: 'random-extraction',
+          questionCount: 40,
+          totalScore: 100
+        },
         status: 'finished',
-        shuffle: true,
-        showAnswer: true,
-        createTime: '2026-01-05 09:00:00'
+        totalStudents: 142,
+        submittedCount: 138,
+        gradedCount: 138,
+        onlineCount: 0,
+        createTime: '2026-01-18 15:00:00',
+        settings: {
+          enableLateLimit: false,
+          enableFaceRecognition: true,
+          enableAIGrading: true,
+          resultPublishType: 'delayAfterExamEnd',
+          delayDays: 2
+        }
+      },
+      {
+        id: 'E004',
+        code: 'E004',
+        name: 'Python编程基础测验',
+        openStartTime: '2026-02-05 10:00',
+        openEndTime: '2026-02-05 12:00',
+        duration: 90,
+        attemptLimit: '0',
+        paperIds: ['P004'],
+        paperInfo: {
+          id: 'P004',
+          code: 'DOC2026004',
+          name: 'Python编程基础卷',
+          mode: 'document',
+          questionCount: 35,
+          totalScore: 100
+        },
+        status: 'pending',
+        totalStudents: 89,
+        submittedCount: 0,
+        gradedCount: 0,
+        onlineCount: 0,
+        createTime: '2026-01-25 16:30:00',
+        settings: {
+          enableMinSubmitTime: true,
+          minSubmitMinutes: 30,
+          resultPublishType: 'immediate'
+        }
+      },
+      {
+        id: 'E005',
+        code: 'E005',
+        name: '数据库系统概论期末',
+        openStartTime: '2026-01-27 14:00',
+        openEndTime: '2026-01-27 17:00',
+        duration: 150,
+        attemptLimit: '1',
+        paperIds: ['P005', 'P006'],
+        paperInfo: {
+          id: 'P005',
+          code: 'DOC2026005',
+          name: '数据库系统A卷（含B卷）',
+          mode: 'document',
+          questionCount: 45,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 175,
+        submittedCount: 98,
+        gradedCount: 12,
+        onlineCount: 77,
+        createTime: '2026-01-20 11:00:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 20,
+          enableEarlyEntry: true,
+          earlyMinutes: 10,
+          resultPublishType: 'delayAfterSubmit',
+          delayDays: 1
+        }
+      },
+      {
+        id: 'E006',
+        code: 'E006',
+        name: '计算机网络原理期中考试',
+        openStartTime: '2026-01-22 09:00',
+        openEndTime: '2026-01-22 11:00',
+        duration: 100,
+        attemptLimit: '1',
+        paperIds: ['P007'],
+        paperInfo: {
+          id: 'P007',
+          code: 'FIX2026007',
+          name: '计算机网络固定抽题卷',
+          mode: 'extraction',
+          questionCount: 38,
+          totalScore: 100
+        },
+        status: 'finished',
+        totalStudents: 164,
+        submittedCount: 161,
+        gradedCount: 161,
+        onlineCount: 0,
+        createTime: '2026-01-15 14:00:00',
+        settings: {
+          enableFaceRecognition: true,
+          enableRandomCapture: true,
+          captureCount: 5,
+          resultPublishType: 'afterExamEnd'
+        }
       }
-    ];
-
-    // 模拟试卷数据（用于选择试卷）
-    let papers = [
-      { id: 'P001', name: '计算机基础期末卷', questionCount: 50, totalScore: 100, mode: '文档模式' },
-      { id: 'P002', name: '数学期中测验卷', questionCount: 30, totalScore: 100, mode: '固定抽题' },
-      { id: 'P003', name: '英语听力专项卷', questionCount: 40, totalScore: 100, mode: '随机抽题' },
-      { id: 'P004', name: '物理实验考核卷', questionCount: 25, totalScore: 100, mode: '文档模式' }
     ];
 
     let filteredExams = [...exams];
     let currentPage = 1;
     const pageSize = 20;
-    let currentStep = 1;
+    let deleteTargetId = null; // 待删除的考试ID
 
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
+      // 从 localStorage 读取考试数据并合并
+      const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
+      if (savedExams.length > 0) {
+        // 合并保存的考试和模拟数据
+        exams = [...savedExams, ...exams];
+        // 去重（如果有相同ID的考试，保留localStorage中的）
+        const examMap = new Map();
+        exams.forEach(exam => {
+          if (!examMap.has(exam.id)) {
+            examMap.set(exam.id, exam);
+          }
+        });
+        exams = Array.from(examMap.values());
+      }
+
+      // 按创建时间倒序排列
+      exams.sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
+
+      filteredExams = [...exams];
       renderList();
-      loadPaperOptions();
     });
 
     // 渲染考试列表
     function renderList() {
       const container = document.getElementById('examList');
       const emptyState = document.getElementById('emptyState');
+
+      // 按创建时间倒序排列（最新的在前面）
+      const sortedExams = [...filteredExams].sort((a, b) => {
+        const timeA = new Date(a.createTime || '2000-01-01 00:00:00').getTime();
+        const timeB = new Date(b.createTime || '2000-01-01 00:00:00').getTime();
+        return timeB - timeA;
+      });
+
+      // 根据开放时间动态计算考试状态
+      const now = new Date();
+      sortedExams.forEach(exam => {
+        const startTime = new Date(exam.openStartTime);
+        const endTime = new Date(exam.openEndTime);
+
+        if (now < startTime) {
+          exam.status = 'pending'; // 未开始
+        } else if (now >= startTime && now <= endTime) {
+          exam.status = 'ongoing'; // 进行中
+        } else {
+          exam.status = 'finished'; // 已结束
+        }
+      });
+
       const start = (currentPage - 1) * pageSize;
       const end = start + pageSize;
-      const pageData = filteredExams.slice(start, end);
+      const pageData = sortedExams.slice(start, end);
 
       if (filteredExams.length === 0) {
         container.innerHTML = '';
@@ -525,99 +593,244 @@
     function createExamCard(exam) {
       // 状态映射
       const statusMap = {
-        pending: { text: '未开始', class: 'bg-warning-50 text-warning-600', icon: '●', badgeClass: 'bg-warning-100 border-warning-200' },
-        ongoing: { text: '进行中', class: 'bg-success-50 text-success-600', icon: '●', badgeClass: 'bg-success-100 border-success-200' },
-        finished: { text: '已结束', class: 'bg-gray-100 text-gray-600', icon: '●', badgeClass: 'bg-gray-100 border-gray-200' }
+        pending: {
+          text: '未开始',
+          class: 'bg-warning-500 text-white',
+          bgClass: 'bg-warning-50',
+          borderClass: 'border-warning-200'
+        },
+        ongoing: {
+          text: '进行中',
+          class: 'bg-success-500 text-white',
+          bgClass: 'bg-success-50',
+          borderClass: 'border-success-200'
+        },
+        finished: {
+          text: '已结束',
+          class: 'bg-gray-500 text-white',
+          bgClass: 'bg-gray-50',
+          borderClass: 'border-gray-200'
+        }
       };
 
       const status = statusMap[exam.status] || statusMap.pending;
 
+      // 试卷模式映射
+      const modeMap = {
+        'document': '文档组卷',
+        'extraction': '固定抽题',
+        'random-extraction': '随机抽题'
+      };
+
+      const paperMode = modeMap[exam.paperInfo.mode] || exam.paperInfo.mode;
+
+      // 处理多个试卷的情况
+      let paperDisplayName = '';
+      let totalQuestionCount = 0;
+      let totalPaperScore = 0;
+      let hasMultiplePapers = false;
+
+      if (exam.papers && exam.papers.length > 0) {
+        // 有 papers 数组，显示所有试卷
+        const paperNames = exam.papers.map(p => p.name).join('、');
+        paperDisplayName = paperNames;
+        hasMultiplePapers = exam.papers.length > 1;
+
+        // 计算总题数和总分
+        exam.papers.forEach(p => {
+          totalQuestionCount += p.questionCount || 0;
+          totalPaperScore += p.totalScore || 0;
+        });
+      } else if (exam.paperInfo) {
+        // 向后兼容：只有 paperInfo
+        paperDisplayName = exam.paperInfo.name;
+        totalQuestionCount = exam.paperInfo.questionCount || 0;
+        totalPaperScore = exam.paperInfo.totalScore || 0;
+      }
+
+      // 完成进度百分比
+      const submitProgress = exam.totalStudents > 0 ? Math.round((exam.submittedCount / exam.totalStudents) * 100) : 0;
+      const gradeProgress = exam.submittedCount > 0 ? Math.round((exam.gradedCount / exam.submittedCount) * 100) : 0;
+
+      // 判断是否可以删除
+      let canDelete = false;
+      if (exam.status === 'pending') {
+        canDelete = true;
+      } else if (exam.status === 'ongoing') {
+        canDelete = (exam.submittedCount === 0 && exam.onlineCount === 0);
+      } else if (exam.status === 'finished') {
+        canDelete = (exam.submittedCount === 0);
+      }
+
       return `
-        <div class="exam-card bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="viewExam('${exam.id}')">
-          <div class="flex items-center p-4 gap-4">
-            <!-- 左侧图标和状态 -->
-            <div class="flex-shrink-0 relative">
-              <div class="w-16 h-16 rounded-lg ${status.badgeClass} border flex items-center justify-center">
-                <svg class="w-10 h-10" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="examGrad${exam.id}" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
-                      <stop offset="100%" style="stop-color:#F57C00;stop-opacity:1" />
-                    </linearGradient>
-                  </defs>
-                  <!-- 时钟背景 -->
-                  <circle cx="60" cy="60" r="35" fill="#FFF3E0" stroke="#FFB74D" stroke-width="2"/>
-                  <!-- 时钟刻度 -->
-                  <line x1="60" y1="30" x2="60" y2="35" stroke="#FB8C00" stroke-width="2"/>
-                  <line x1="60" y1="85" x2="60" y2="90" stroke="#FB8C00" stroke-width="2"/>
-                  <line x1="30" y1="60" x2="35" y2="60" stroke="#FB8C00" stroke-width="2"/>
-                  <line x1="85" y1="60" x2="90" y2="60" stroke="#FB8C00" stroke-width="2"/>
-                  <!-- 时针 -->
-                  <line x1="60" y1="60" x2="60" y2="45" stroke="url(#examGrad${exam.id})" stroke-width="3" stroke-linecap="round"/>
-                  <!-- 分针 -->
-                  <line x1="60" y1="60" x2="75" y2="60" stroke="url(#examGrad${exam.id})" stroke-width="2.5" stroke-linecap="round"/>
-                  <!-- 中心点 -->
-                  <circle cx="60" cy="60" r="4" fill="#FF7D00"/>
-                </svg>
-              </div>
-              <!-- 状态标签 -->
-              <span class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${status.class}">
-                ${status.text}
-              </span>
-            </div>
-
-            <!-- 中间信息区 -->
+        <div class="exam-card bg-white rounded-lg border border-gray-200 p-5">
+          <!-- 顶部信息行 -->
+          <div class="flex items-start justify-between mb-4">
+            <!-- 左侧：标题和状态 -->
             <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between mb-2">
-                <div class="flex-1 min-w-0 pr-4">
-                  <h3 class="text-base font-semibold text-gray-900 truncate">${exam.name}</h3>
-                  <p class="text-sm text-gray-500 mt-0.5">${exam.paper.id}</p>
+              <div class="flex items-center gap-3 mb-2">
+                <!-- 考试图标 -->
+                <div class="w-7 h-7 rounded-lg ${status.bgClass} border ${status.borderClass} flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-clipboard-check text-sm" style="color: ${exam.status === 'pending' ? '#FF7D00' : exam.status === 'ongoing' ? '#00B42A' : '#6B7280'}"></i>
                 </div>
+                <h3 class="text-lg font-semibold text-gray-900">${exam.name}</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${status.class}">
+                  ${status.text}
+                </span>
               </div>
-
-              <div class="flex items-center gap-6 text-sm text-gray-600">
-                <div class="flex items-center gap-1.5">
-                  <i class="fas fa-calendar text-gray-400"></i>
-                  <span>${exam.startTime}</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <i class="fas fa-clock text-gray-400"></i>
-                  <span>${exam.duration}分钟</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <i class="fas fa-users text-gray-400"></i>
-                  <span>${exam.participants}人</span>
-                  ${exam.status === 'ongoing' ? `<span class="text-success-500">(已交卷: ${exam.submitted}人)</span>` : ''}
-                  ${exam.status === 'finished' ? `<span class="text-success-500">(已批阅: ${exam.submitted}人)</span>` : ''}
-                </div>
+              <div class="flex items-center gap-4 text-sm text-gray-500">
+                <span class="flex items-center gap-1.5">
+                  <i class="fas fa-hashtag"></i>
+                  ${exam.code}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <i class="fas fa-file-alt"></i>
+                  ${paperDisplayName}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <i class="fas fa-tag"></i>
+                  ${paperMode}
+                </span>
               </div>
             </div>
 
-            <!-- 右侧操作按钮 -->
-            <div class="flex-shrink-0 flex items-center gap-2">
-              <button onclick="event.stopPropagation(); viewExam('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5" title="查看详情">
-                <i class="fas fa-eye"></i>
-                <span>查看</span>
-              </button>
-              <button onclick="event.stopPropagation(); editExam('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-info-600 hover:bg-info-50 rounded-lg transition-colors flex items-center gap-1.5" title="编辑考试" ${exam.status !== 'pending' ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>
-                <i class="fas fa-edit"></i>
-                <span>编辑</span>
-              </button>
+            <!-- 右侧：主要操作按钮 -->
+            <div class="flex items-center gap-2 ml-4">
+              ${exam.status === 'pending' ? `
+                <button onclick="editExam('${exam.id}')" class="px-3 py-1.5 text-sm bg-info-500 hover:bg-info-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-edit"></i>
+                  <span>编辑</span>
+                </button>
+                <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-trash"></i>
+                  <span>删除</span>
+                </button>
+              ` : ''}
               ${exam.status === 'ongoing' ? `
-                <button onclick="event.stopPropagation(); monitorExam('${exam.id}')" class="px-3 py-1.5 text-sm text-white bg-warning-500 hover:bg-warning-600 rounded-lg transition-colors flex items-center gap-1.5" title="实时监控">
+                <button onclick="monitorExam('${exam.id}')" class="px-3 py-1.5 text-sm bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
                   <i class="fas fa-desktop"></i>
                   <span>监控</span>
                 </button>
+                ${canDelete ? `
+                  <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-trash"></i>
+                    <span>删除</span>
+                  </button>
+                ` : ''}
               ` : ''}
               ${exam.status === 'finished' ? `
-                <button onclick="event.stopPropagation(); viewResults('${exam.id}')" class="px-3 py-1.5 text-sm text-white bg-success-500 hover:bg-success-600 rounded-lg transition-colors flex items-center gap-1.5" title="查看成绩">
+                <button onclick="viewResults('${exam.id}')" class="px-3 py-1.5 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
                   <i class="fas fa-chart-bar"></i>
-                  <span>成绩</span>
+                  <span>成绩管理</span>
+                </button>
+                ${canDelete ? `
+                  <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-trash"></i>
+                    <span>删除</span>
+                  </button>
+                ` : ''}
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- 考试信息栏 -->
+          <div class="grid grid-cols-4 gap-4 mb-4 pb-4 border-b border-gray-100">
+            <div>
+              <div class="text-xs text-gray-500 mb-1">开放时间</div>
+              <div class="text-sm font-medium text-gray-900">${exam.openStartTime}</div>
+              <div class="text-xs text-gray-400">至 ${exam.openEndTime}</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">作答时长</div>
+              <div class="text-sm font-medium text-gray-900">${exam.duration} 分钟</div>
+              <div class="text-xs text-gray-400">
+                ${exam.attemptLimit === '0' ? '不限次数' : exam.attemptLimit + ' 次'}
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">试卷信息</div>
+              ${hasMultiplePapers ? `
+                ${exam.papers.map(p => `
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <span class="text-xs text-gray-600">${p.name}（${p.questionCount}题/${p.totalScore}分）</span>
+                    <button onclick="event.stopPropagation(); previewPaper('${p.id}')" class="text-primary-500 hover:text-primary-600 transition-colors" title="预览${p.name}">
+                      <i class="fas fa-eye text-xs"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              ` : `
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm font-medium text-gray-900">${totalQuestionCount} 题</span>
+                  <span class="text-xs text-gray-400">/ 总分 ${totalPaperScore} 分</span>
+                  <button onclick="event.stopPropagation(); previewPaper('${exam.paperInfo ? exam.paperInfo.id : (exam.papers ? exam.papers[0].id : '')}')" class="text-primary-500 hover:text-primary-600 transition-colors ml-1" title="预览试卷">
+                    <i class="fas fa-eye text-xs"></i>
+                  </button>
+                </div>
+              `}
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">考生人数</div>
+              <div class="text-sm font-medium text-gray-900">${exam.totalStudents} 人</div>
+              ${exam.status === 'ongoing' ? `
+                <div class="text-xs text-success-600">在线 ${exam.onlineCount} 人</div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- 统计信息和操作按钮 -->
+          <div class="flex items-center justify-between">
+            <!-- 左侧：统计信息 -->
+            <div class="flex items-center gap-6">
+              ${exam.status !== 'pending' ? `
+                <div class="flex items-center gap-2">
+                  <div class="text-sm text-gray-600">
+                    <i class="fas fa-paper-plane text-info-500 mr-1"></i>
+                    已提交：
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-info-600">${exam.submittedCount}</span>
+                    <span class="text-xs text-gray-400">/ ${exam.totalStudents}</span>
+                    <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-info-500 rounded-full transition-all" style="width: ${submitProgress}%"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">${submitProgress}%</span>
+                  </div>
+                </div>
+              ` : ''}
+              ${(exam.status === 'ongoing' || exam.status === 'finished') && exam.submittedCount > 0 ? `
+                <div class="flex items-center gap-2">
+                  <div class="text-sm text-gray-600">
+                    <i class="fas fa-check-circle text-success-500 mr-1"></i>
+                    已批阅：
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-success-600">${exam.gradedCount}</span>
+                    <span class="text-xs text-gray-400">/ ${exam.submittedCount}</span>
+                    <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-success-500 rounded-full transition-all" style="width: ${gradeProgress}%"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">${gradeProgress}%</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- 右侧：次要操作按钮 -->
+            <div class="flex items-center gap-2">
+              <button onclick="viewConfig('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-purple-600 hover:bg-purple-50 border border-gray-300 hover:border-purple-500 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-cog"></i>
+                <span>查看配置</span>
+              </button>
+              <button onclick="manageStudents('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-primary-600 hover:bg-primary-50 border border-gray-300 hover:border-primary-500 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-users"></i>
+                <span>考生管理</span>
+              </button>
+              ${exam.status === 'ongoing' || exam.status === 'finished' ? `
+                <button onclick="manageGrading('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-warning-600 hover:bg-warning-50 border border-gray-300 hover:border-warning-500 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-tasks"></i>
+                  <span>阅卷管理</span>
                 </button>
               ` : ''}
-              <button onclick="event.stopPropagation(); deleteExam('${exam.id}')" class="p-1.5 text-gray-400 hover:text-error-500 hover:bg-error-50 rounded transition-colors" title="删除" ${exam.status !== 'pending' ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>
-                <i class="fas fa-trash"></i>
-              </button>
             </div>
           </div>
         </div>
@@ -672,209 +885,1147 @@
       renderList();
     }
 
-    // 考试操作
-    function viewExam(id) {
-      showMessage('查看考试详情：' + id, 'info');
-    }
-
+    // 考试操作功能
     function editExam(id) {
-      showMessage('编辑考试：' + id, 'info');
-    }
-
-    function monitorExam(id) {
-      showMessage('监控考试：' + id, 'info');
-    }
-
-    function viewResults(id) {
-      showMessage('查看考试成绩：' + id, 'info');
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        // 跳转到创建页面，传递考试ID进入编辑模式
+        window.location.href = `create.html?id=${id}&mode=edit`;
+      }
     }
 
     function deleteExam(id) {
-      if (confirm('确定要删除这场考试吗？')) {
-        exams = exams.filter(e => e.id !== id);
-        filteredExams = filteredExams.filter(e => e.id !== id);
-        renderList();
-        showMessage('删除成功', 'success');
-      }
-    }
-
-    // 创建考试模态框相关
-    function openCreateModal() {
-      document.getElementById('createModal').classList.add('active');
-      currentStep = 1;
-      resetForm();
-      showStep(1);
-    }
-
-    function closeCreateModal() {
-      document.getElementById('createModal').classList.remove('active');
-    }
-
-    function resetForm() {
-      document.getElementById('examName').value = '';
-      document.getElementById('examDesc').value = '';
-      document.getElementById('examPaper').value = '';
-      document.getElementById('examStartTime').value = '';
-      document.getElementById('examEndTime').value = '';
-      document.getElementById('examDuration').value = '';
-      document.getElementById('examPassScore').value = '60';
-      document.getElementById('examShuffle').checked = false;
-      document.getElementById('examShowAnswer').checked = true;
-      document.getElementById('paperPreview').classList.add('hidden');
-    }
-
-    function showStep(step) {
-      // 隐藏所有步骤内容
-      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-      // 显示当前步骤
-      document.getElementById('step' + step).classList.remove('hidden');
-
-      // 更新步骤指示器
-      for (let i = 1; i <= 4; i++) {
-        const indicator = document.getElementById('step' + i + 'Indicator');
-        indicator.classList.remove('active', 'completed');
-        if (i < step) {
-          indicator.classList.add('completed');
-        } else if (i === step) {
-          indicator.classList.add('active');
-        }
-      }
-
-      // 更新按钮状态
-      document.getElementById('prevStepBtn').classList.toggle('hidden', step === 1);
-      document.getElementById('nextStepBtn').classList.toggle('hidden', step === 4);
-      document.getElementById('submitBtn').classList.toggle('hidden', step !== 4);
-
-      currentStep = step;
-    }
-
-    function nextStep() {
-      // 验证当前步骤
-      if (!validateStep(currentStep)) {
+      const exam = exams.find(e => e.id === id);
+      if (!exam) {
+        showMessage('考试不存在', 'error');
         return;
       }
 
-      if (currentStep === 3) {
-        // 最后一步前，填充确认信息
-        fillConfirmInfo();
+      // 根据开放时间计算当前状态
+      const now = new Date();
+      const startTime = new Date(exam.openStartTime);
+      const endTime = new Date(exam.openEndTime);
+      let currentStatus = '';
+
+      if (now < startTime) {
+        currentStatus = 'pending'; // 未开始
+      } else if (now >= startTime && now <= endTime) {
+        currentStatus = 'ongoing'; // 进行中
+      } else {
+        currentStatus = 'finished'; // 已结束
       }
 
-      if (currentStep < 4) {
-        showStep(currentStep + 1);
-      }
-    }
+      // 检查删除条件
+      let canDelete = false;
+      let errorMessage = '';
 
-    function prevStep() {
-      if (currentStep > 1) {
-        showStep(currentStep - 1);
-      }
-    }
-
-    function validateStep(step) {
-      if (step === 1) {
-        const name = document.getElementById('examName').value.trim();
-        if (!name) {
-          showMessage('请输入考试名称', 'error');
-          return false;
-        }
-      } else if (step === 2) {
-        const paper = document.getElementById('examPaper').value;
-        if (!paper) {
-          showMessage('请选择试卷', 'error');
-          return false;
-        }
-      } else if (step === 3) {
-        const startTime = document.getElementById('examStartTime').value;
-        const endTime = document.getElementById('examEndTime').value;
-        const duration = document.getElementById('examDuration').value;
-
-        if (!startTime || !endTime || !duration) {
-          showMessage('请完善考试时间设置', 'error');
-          return false;
-        }
-
-        if (new Date(startTime) >= new Date(endTime)) {
-          showMessage('结束时间必须晚于开始时间', 'error');
-          return false;
-        }
-
-        if (duration <= 0) {
-          showMessage('考试时长必须大于0', 'error');
-          return false;
-        }
-      }
-      return true;
-    }
-
-    function fillConfirmInfo() {
-      document.getElementById('confirmExamName').textContent = document.getElementById('examName').value;
-      document.getElementById('confirmExamDesc').textContent = document.getElementById('examDesc').value || '无';
-
-      const paperId = document.getElementById('examPaper').value;
-      const paper = papers.find(p => p.id === paperId);
-      document.getElementById('confirmPaperName').textContent = paper ? paper.name : '-';
-
-      document.getElementById('confirmStartTime').textContent = document.getElementById('examStartTime').value.replace('T', ' ');
-      document.getElementById('confirmEndTime').textContent = document.getElementById('examEndTime').value.replace('T', ' ');
-      document.getElementById('confirmDuration').textContent = document.getElementById('examDuration').value + ' 分钟';
-      document.getElementById('confirmPassScore').textContent = document.getElementById('examPassScore').value || '未设置';
-
-      const settings = [];
-      if (document.getElementById('examShuffle').checked) settings.push('题目随机排序');
-      if (document.getElementById('examShowAnswer').checked) settings.push('考后显示答案');
-      document.getElementById('confirmSettings').textContent = settings.length > 0 ? settings.join('、') : '无特殊设置';
-    }
-
-    function submitExam() {
-      const newExam = {
-        id: 'E' + String(exams.length + 1).padStart(3, '0'),
-        name: document.getElementById('examName').value,
-        description: document.getElementById('examDesc').value,
-        paper: papers.find(p => p.id === document.getElementById('examPaper').value),
-        startTime: document.getElementById('examStartTime').value.replace('T', ' '),
-        endTime: document.getElementById('examEndTime').value.replace('T', ' '),
-        duration: parseInt(document.getElementById('examDuration').value),
-        passScore: parseInt(document.getElementById('examPassScore').value) || 60,
-        participants: 0,
-        submitted: 0,
-        status: 'pending',
-        shuffle: document.getElementById('examShuffle').checked,
-        showAnswer: document.getElementById('examShowAnswer').checked,
-        createTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
-      };
-
-      exams.unshift(newExam);
-      filteredExams = [...exams];
-      renderList();
-      closeCreateModal();
-      showMessage('创建考试成功', 'success');
-    }
-
-    // 加载试卷选项
-    function loadPaperOptions() {
-      const select = document.getElementById('examPaper');
-      select.innerHTML = '<option value="">请选择试卷</option>' +
-        papers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
-      // 监听选择变化
-      select.addEventListener('change', function() {
-        const paperId = this.value;
-        if (paperId) {
-          const paper = papers.find(p => p.id === paperId);
-          if (paper) {
-            document.getElementById('paperPreview').classList.remove('hidden');
-            document.getElementById('previewQuestionCount').textContent = paper.questionCount + ' 题';
-            document.getElementById('previewTotalScore').textContent = paper.totalScore + ' 分';
-            document.getElementById('previewPaperMode').textContent = paper.mode;
-          }
+      if (currentStatus === 'pending') {
+        // 未开始：可以删除
+        canDelete = true;
+      } else if (currentStatus === 'ongoing') {
+        // 进行中：检查是否有学生在线或已提交
+        if (exam.onlineCount > 0) {
+          errorMessage = `该考试正在进行中，当前有 ${exam.onlineCount} 名学生在线考试，无法删除！`;
+        } else if (exam.submittedCount > 0) {
+          errorMessage = `该考试已有 ${exam.submittedCount} 名学生提交试卷，无法删除！`;
         } else {
-          document.getElementById('paperPreview').classList.add('hidden');
+          canDelete = true;
         }
+      } else if (currentStatus === 'finished') {
+        // 已结束：检查是否有学生提交
+        if (exam.submittedCount > 0) {
+          errorMessage = `该考试已有 ${exam.submittedCount} 名学生提交试卷，无法删除！`;
+        } else {
+          canDelete = true;
+        }
+      }
+
+      // 如果不能删除，显示错误信息
+      if (!canDelete) {
+        showMessage(errorMessage, 'warning');
+        return;
+      }
+
+      // 显示删除确认模态框
+      deleteTargetId = id;
+      document.getElementById('deleteExamName').textContent = `"${exam.name}"`;
+      document.getElementById('deleteConfirmModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭删除确认模态框
+    function closeDeleteConfirmModal() {
+      document.getElementById('deleteConfirmModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      deleteTargetId = null;
+    }
+
+    // 确认删除考试
+    function confirmDeleteExam() {
+      if (!deleteTargetId) return;
+
+      exams = exams.filter(e => e.id !== deleteTargetId);
+      filteredExams = filteredExams.filter(e => e.id !== deleteTargetId);
+
+      // 同步删除 localStorage 中的数据
+      const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
+      const updatedExams = savedExams.filter(e => e.id !== deleteTargetId);
+      localStorage.setItem('exams', JSON.stringify(updatedExams));
+
+      // 关闭模态框
+      closeDeleteConfirmModal();
+
+      // 刷新列表
+      renderList();
+      showMessage('删除成功', 'success');
+    }
+
+    function monitorExam(id) {
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        showMessage(`正在打开"${exam.name}"的监控面板...`, 'info');
+        // 实际应用中：打开监控页面
+      }
+    }
+
+    function viewResults(id) {
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        showMessage(`正在打开"${exam.name}"的成绩管理页面...`, 'info');
+        // 实际应用中：window.location.href = `results.html?examId=${id}`;
+      }
+    }
+
+    function manageStudents(id) {
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        showMessage(`正在打开"${exam.name}"的考生管理页面...`, 'info');
+        // 实际应用中：打开考生管理页面
+      }
+    }
+
+    function manageGrading(id) {
+      const exam = exams.find(e => e.id === id);
+      if (exam) {
+        showMessage(`正在打开"${exam.name}"的阅卷管理页面...`, 'info');
+        // 实际应用中：打开阅卷管理页面
+      }
+    }
+
+    // 查看考试配置
+    function viewConfig(id) {
+      const exam = exams.find(e => e.id === id);
+      if (!exam || !exam.settings) {
+        showMessage('未找到考试配置信息', 'warning');
+        return;
+      }
+
+      const settings = exam.settings;
+      let configHTML = '';
+
+      // 迟到设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-clock text-warning-500 mr-2"></i>
+            迟到设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const lateSettings = [];
+      if (settings.enableLateLimit) {
+        lateSettings.push(`开考后 ${settings.lateMinutes || 15} 分钟后禁止进入`);
+      }
+      if (settings.enableEarlyEntry) {
+        lateSettings.push(`提前 ${settings.earlyMinutes || 10} 分钟可进入`);
+      }
+
+      if (lateSettings.length > 0) {
+        lateSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未设置迟到限制</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 防作弊设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-shield-alt text-error-500 mr-2"></i>
+            防作弊设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const antiCheatSettings = [];
+      if (settings.enableFaceRecognition) {
+        antiCheatSettings.push('人脸识别验证');
+      }
+      if (settings.enableRandomCapture) {
+        antiCheatSettings.push(`随机抓拍 ${settings.captureCount || 3} 张照片`);
+      }
+
+      if (antiCheatSettings.length > 0) {
+        antiCheatSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未启用防作弊功能</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 交卷限制
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-paper-plane text-info-500 mr-2"></i>
+            交卷限制
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      if (settings.enableMinSubmitTime) {
+        configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">作答至少 ${settings.minSubmitMinutes || 30} 分钟后才可交卷</span></div>`;
+      } else {
+        configHTML += `<div class="text-gray-500">无交卷时间限制</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 成绩公布设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-chart-line text-success-500 mr-2"></i>
+            成绩公布设置
+          </h4>
+          <div class="space-y-3 text-sm">
+      `;
+
+      // 公布方式
+      const resultTypeMap = {
+        'immediate': '交卷后立即公布',
+        'delayAfterSubmit': `交卷后 ${settings.delayDaysAfterSubmit || 1} 天公布`,
+        'afterExamEnd': '考试结束后立即公布',
+        'delayAfterExamEnd': `考试结束后 ${settings.delayDaysAfterExamEnd || 1} 天公布`
+      };
+      const resultTypeText = resultTypeMap[settings.resultPublishType] || '未设置';
+      configHTML += `
+        <div>
+          <div class="text-gray-500 mb-1">公布方式：</div>
+          <div class="flex items-center"><i class="fas fa-calendar-check text-primary-500 mr-2"></i><span class="text-gray-700">${resultTypeText}</span></div>
+        </div>
+      `;
+
+      // 公布内容
+      const resultContentMap = {
+        'scoreOnly': '仅分数',
+        'scoreAndCorrect': '分数及对错',
+        'full': '分数、对错、答案及解析'
+      };
+      const resultContentText = resultContentMap[settings.resultContent] || '仅分数';
+      configHTML += `
+        <div>
+          <div class="text-gray-500 mb-1">公布内容：</div>
+          <div class="flex items-center"><i class="fas fa-list-ul text-primary-500 mr-2"></i><span class="text-gray-700">${resultContentText}</span></div>
+        </div>
+      `;
+
+      configHTML += `</div></div>`;
+
+      // AI批阅设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-robot text-purple-500 mr-2"></i>
+            AI批阅设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const aiSettings = [];
+      if (settings.enableAIGrading) {
+        aiSettings.push('AI自动批阅');
+      }
+      if (settings.enableAIComment) {
+        aiSettings.push('AI生成评语');
+      }
+
+      if (aiSettings.length > 0) {
+        aiSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未启用AI批阅功能</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 显示配置
+      document.getElementById('configContent').innerHTML = configHTML;
+      document.getElementById('configModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭配置模态框
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // 点击遮罩层关闭模态框
+    document.addEventListener('click', function(e) {
+      const configModal = document.getElementById('configModal');
+      if (e.target === configModal) {
+        closeConfigModal();
+      }
+
+      const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+      if (e.target === deleteConfirmModal) {
+        closeDeleteConfirmModal();
+      }
+    });
+
+    // ========== 从 create.html 复用的试卷预览功能 ==========
+
+    // 从 localStorage 读取所有试卷数据
+    let allPapers = JSON.parse(localStorage.getItem('allPapers') || '[]');
+    let previewPaperId = null;
+
+    // 题型配置
+    const questionTypeConfig = {
+      single: { name: '单选题', icon: 'fa-dot-circle', options: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] },
+      multiple: { name: '多选题', icon: 'fa-check-double', options: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] },
+      judge: { name: '判断题', icon: 'fa-check-circle', options: ['正确', '错误'] },
+      blank: { name: '填空题', icon: 'fa-keyboard', options: [] },
+      essay: { name: '简答题', icon: 'fa-align-left', options: [] },
+      cloze: { name: '完形填空', icon: 'fa-puzzle-piece', options: [] },
+      composite: { name: '复合题', icon: 'fa-layer-group', options: [] }
+    };
+
+    // 子题型配置
+    const subQuestionTypes = {
+      single: { name: '单选', options: ['A', 'B', 'C', 'D', 'E', 'F'] },
+      multiple: { name: '多选', options: ['A', 'B', 'C', 'D', 'E', 'F'] },
+      judge: { name: '判断', options: ['正确', '错误'] },
+      blank: { name: '填空', options: [] },
+      essay: { name: '简答', options: [] }
+    };
+
+    // 类型标准化
+    function normalizeType(type) {
+      const typeMap = {
+        'essay': 'shortAnswer',
+        'short': 'shortAnswer',
+        'shortanswer': 'shortAnswer'
+      };
+      return typeMap[type?.toLowerCase()] || type;
+    }
+
+    // 预览试卷（主函数）
+    function previewPaper(id) {
+      const paper = allPapers.find(p => p.id === id);
+      if (!paper) {
+        showMessage('试卷不存在', 'warning');
+        return;
+      }
+
+      // 抽题模式：使用弹窗预览
+      if (paper.mode === 'extraction' || paper.mode === 'random') {
+        // 保存当前预览的试卷ID
+        previewPaperId = id;
+
+        // 设置预览弹窗标题
+        document.getElementById('extractionPreviewModalTitle').textContent = paper.name || '未命名试卷';
+        document.getElementById('extractionPreviewPaperName').textContent = paper.name || '未命名试卷';
+        document.getElementById('extractionPreviewPaperCode').textContent = paper.code || '暂无';
+
+        // 判断是随机抽题还是固定抽题
+        if (paper.extractionType === 'random' && paper.randomRules) {
+          // 随机抽题：隐藏左侧导航栏
+          document.getElementById('extractionPreviewNavigation').classList.add('hidden');
+
+          // 显示抽题规则说明
+          document.getElementById('extractionPreviewTotalScore').textContent = paper.totalScore || 100;
+          renderRandomExtractionRulesPreview(paper.randomRules, paper.totalScore || 100);
+        } else {
+          // 固定抽题：显示左侧导航栏
+          document.getElementById('extractionPreviewNavigation').classList.remove('hidden');
+
+          // 计算并设置总分
+          let totalScore = 0;
+          (paper.questions || []).forEach(q => {
+            totalScore += parseFloat(q.paperScore) || 0;
+          });
+          document.getElementById('extractionPreviewTotalScore').textContent = totalScore;
+
+          // 渲染题目列表
+          renderExtractionPreviewQuestions(paper.questions || []);
+        }
+
+        // 显示弹窗
+        document.getElementById('extractionPreviewModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        return;
+      }
+
+      // 文档模式：在弹窗中预览
+      // 保存当前预览的试卷ID
+      previewPaperId = id;
+
+      // 设置标题
+      document.getElementById('previewPaperTitle').textContent = paper.name || paper.title || '未命名试卷';
+      document.getElementById('previewTotalScore').textContent = paper.totalScore || 100;
+
+      // 设置文件预览
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      const wordNotice = document.getElementById('previewWordNotice');
+      const noFile = document.getElementById('previewNoFile');
+
+      // 先隐藏所有
+      pdfFrame.classList.add('hidden');
+      wordNotice.classList.add('hidden');
+      noFile.classList.add('hidden');
+
+      if (paper.file && paper.file.data) {
+        document.getElementById('previewFileName').textContent = paper.file.name;
+        const isPDF = paper.file.type === 'application/pdf';
+
+        if (isPDF) {
+          pdfFrame.src = paper.file.data;
+          pdfFrame.classList.remove('hidden');
+        } else {
+          document.getElementById('previewWordFileName').textContent = paper.file.name;
+          wordNotice.classList.remove('hidden');
+        }
+      } else {
+        document.getElementById('previewFileName').textContent = '试卷文件';
+        noFile.classList.remove('hidden');
+      }
+
+      // 渲染答题卡预览
+      renderPreviewAnswerCard(paper.answerCard);
+
+      // 显示弹窗
+      document.getElementById('previewModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 渲染预览答题卡
+    function renderPreviewAnswerCard(answerCard) {
+      const container = document.getElementById('previewAnswerCard');
+      container.innerHTML = '';
+
+      if (!answerCard || Object.keys(answerCard).length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-inbox text-3xl mb-2"></i><p>暂无答题卡数据</p></div>';
+        return;
+      }
+
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'essay', 'composite'];
+
+      typeOrder.forEach(type => {
+        if (!answerCard[type]) return;
+
+        const config = questionTypeConfig[type];
+        const data = answerCard[type];
+        const questions = data.questions || [];
+
+        if (questions.length === 0) return;
+
+        const typeSection = document.createElement('div');
+        typeSection.className = 'mb-3 bg-white rounded-lg border border-gray-200';
+
+        if (type === 'composite') {
+          // 复合题预览
+          const totalSubQuestions = questions.reduce((sum, q) => sum + (q.subQuestions?.length || 0), 0);
+          const totalScore = questions.reduce((sum, q) => {
+            return sum + (q.subQuestions?.reduce((subSum, sq) => subSum + (sq.score || 0), 0) || 0);
+          }, 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questions.length}</span> 大题 <span class="font-bold text-gray-900">${totalSubQuestions}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="py-1">
+              ${questions.map((q, qIndex) => renderPreviewCompositeQuestion(q, qIndex)).join('')}
+            </div>
+          `;
+        } else {
+          // 普通题型预览
+          const questionCount = questions.length;
+          const totalScore = questions.reduce((sum, q) => sum + (q.score || 0), 0);
+
+          typeSection.innerHTML = `
+            <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+              <div class="flex items-center space-x-1.5">
+                <i class="fas ${config.icon} text-gray-600 text-xs"></i>
+                <span class="font-medium text-gray-900 text-xs">${config.name}</span>
+                <span class="text-xs text-gray-500">共 <span class="font-bold text-gray-900">${questionCount}</span> 题，共 <span class="font-bold text-red-500">${totalScore}</span> 分</span>
+              </div>
+            </div>
+            <div class="space-y-0.5 py-1">
+              ${questions.map((q, index) => renderPreviewQuestion(type, q, index)).join('')}
+            </div>
+          `;
+        }
+
+        container.appendChild(typeSection);
       });
     }
 
+    // 渲染预览普通题目
+    function renderPreviewQuestion(type, q, index) {
+      const config = questionTypeConfig[type];
+      let answerHtml = '';
+
+      if (config.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(q.answer) ? q.answer : (q.answer ? [q.answer] : []);
+        let currentOptions = q.customOptions || config.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${q.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = q.explanation ? `
+        <div class="px-2 pb-2 ml-6">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${q.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div>
+          <div class="flex items-start space-x-1.5 px-2 py-1 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[20px]">${index + 1}.</span>
+            <span class="text-gray-500 min-w-[40px]">${q.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }
+
+    // 渲染预览复合题
+    function renderPreviewCompositeQuestion(q, qIndex) {
+      const totalScore = (q.subQuestions || []).reduce((sum, sq) => sum + (sq.score || 0), 0);
+
+      return `
+        <div class="border border-gray-200 rounded-lg mx-2 mb-2 bg-white">
+          <div class="flex items-center justify-between px-3 py-2 bg-blue-50 border-b border-gray-200 rounded-t-lg">
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold text-gray-900 text-sm">第 ${qIndex + 1} 大题</span>
+              <span class="text-xs text-gray-500">（共 <span class="font-bold text-gray-900">${(q.subQuestions || []).length}</span> 小题，共 <span class="font-bold text-red-500">${totalScore}</span> 分）</span>
+            </div>
+          </div>
+          <div class="p-2 space-y-1">
+            ${(q.subQuestions || []).map((sq, sqIndex) => renderPreviewSubQuestion(sq, sqIndex)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染预览子题目
+    function renderPreviewSubQuestion(sq, sqIndex) {
+      const subConfig = subQuestionTypes[sq.type] || { name: '未知', options: [] };
+      let answerHtml = '';
+
+      if (subConfig.options.length > 0) {
+        // 有选项的题型
+        const answers = Array.isArray(sq.answer) ? sq.answer : (sq.answer ? [sq.answer] : []);
+        let currentOptions = sq.customOptions || subConfig.options;
+
+        answerHtml = `
+          <div class="flex items-center flex-wrap gap-1 flex-1">
+            ${currentOptions.map(opt => `
+              <span class="px-2 py-0.5 border rounded text-xs font-medium ${answers.includes(opt) ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600'}">
+                ${opt}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      } else if (sq.type === 'essay') {
+        answerHtml = `<div class="flex-1 text-xs text-gray-400">（主观题）</div>`;
+      } else {
+        // 填空题
+        answerHtml = `
+          <div class="flex-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+            ${sq.answer || '<span class="text-gray-400">未设置答案</span>'}
+          </div>
+        `;
+      }
+
+      // 答案解析
+      const explanationHtml = sq.explanation ? `
+        <div class="mt-1 ml-8">
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div class="flex items-center space-x-1 text-xs text-yellow-700 mb-1">
+              <i class="fas fa-lightbulb"></i>
+              <span class="font-medium">答案解析</span>
+            </div>
+            <div class="text-xs text-gray-700">${sq.explanation}</div>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="bg-gray-50 rounded p-2">
+          <div class="flex items-start space-x-1.5 text-xs">
+            <span class="font-semibold text-gray-700 min-w-[32px]">(${sqIndex + 1})</span>
+            <span class="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600 text-xs">${subConfig.name}</span>
+            <span class="text-gray-500 min-w-[40px]">${sq.score || 0}分</span>
+            ${answerHtml}
+          </div>
+          ${explanationHtml}
+        </div>
+      `;
+    }
+
+    // 渲染随机抽题规则预览
+    function renderRandomExtractionRulesPreview(randomRules, totalScore) {
+      // 只替换题目容器，不破坏整个 modal 结构
+      const container = document.getElementById('extractionPreviewQuestionsContainer');
+
+      // 题型配置
+      const typeConfig = {
+        single: { name: '单选题', icon: 'fa-dot-circle', color: 'info' },
+        multiple: { name: '多选题', icon: 'fa-check-double', color: 'purple' },
+        judge: { name: '判断题', icon: 'fa-check-circle', color: 'success' },
+        blank: { name: '填空题', icon: 'fa-keyboard', color: 'warning' },
+        cloze: { name: '完形填空', icon: 'fa-puzzle-piece', color: 'indigo' },
+        short: { name: '简答题', icon: 'fa-align-left', color: 'amber' },
+        composite: { name: '复合题', icon: 'fa-layer-group', color: 'purple' }
+      };
+
+      let html = `
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+            <i class="fas fa-random text-purple-600 text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">随机抽题模式</h2>
+            <p class="text-sm text-gray-500 mt-1">每次考试从题库中随机抽取题目，保证试卷多样性</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+            <div class="flex-1 text-sm text-blue-800">
+              <div class="font-medium mb-1">预览说明</div>
+                  <div>随机抽题模式的试卷在每次考试时才会随机生成，因此无法预览具体题目。下方展示的是抽题规则配置。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                <span class="text-sm font-medium text-gray-700">试卷总分</span>
+                <span class="text-lg font-bold text-primary-600">${totalScore} 分</span>
+              </div>
+      `;
+
+      // 全局筛选条件
+      if (randomRules.globalFilters) {
+        const filters = randomRules.globalFilters;
+
+        html += `
+          <div class="py-3 border-b border-gray-200">
+            <div class="text-sm font-medium text-gray-700 mb-2">全局筛选条件</div>
+            <div class="flex flex-wrap gap-2">
+        `;
+
+        // 难度筛选
+        if (filters.difficulties && filters.difficulties.length > 0) {
+          const difficultyNames = {1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级'};
+          filters.difficulties.forEach(d => {
+            html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">难度：${difficultyNames[d] || d}</span>`;
+          });
+        }
+
+        // 知识点筛选
+        if (filters.knowledgeIds && filters.knowledgeIds.length > 0) {
+          html += `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">已选 ${filters.knowledgeIds.length} 个知识点</span>`;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      // 题型抽取规则
+      html += `
+        <div class="py-3">
+          <div class="text-sm font-medium text-gray-700 mb-3">题型抽取规则</div>
+          <div class="space-y-3">
+      `;
+
+      const typeRules = randomRules.typeRules || {};
+      Object.entries(typeRules).forEach(([type, rule]) => {
+        if (rule.count > 0) {
+          const config = typeConfig[type] || { name: '未知题型', icon: 'fa-question', color: 'gray' };
+          const scoreModeText = rule.scoreMode === 'custom' ? `自设分数：${rule.customScore}分/题` : '题库分数';
+          const totalTypeScore = rule.scoreMode === 'custom' ? (rule.count * rule.customScore).toFixed(1) : '根据题库';
+
+          // 根据题型设置颜色类（固定类名以支持Tailwind）
+          let bgClass = 'bg-gray-50';
+          let iconColorClass = 'text-gray-600';
+          if (config.color === 'info') {
+            bgClass = 'bg-blue-50';
+            iconColorClass = 'text-blue-600';
+          } else if (config.color === 'purple') {
+            bgClass = 'bg-purple-50';
+            iconColorClass = 'text-purple-600';
+          } else if (config.color === 'success') {
+            bgClass = 'bg-green-50';
+            iconColorClass = 'text-green-600';
+          } else if (config.color === 'warning') {
+            bgClass = 'bg-orange-50';
+            iconColorClass = 'text-orange-600';
+          } else if (config.color === 'indigo') {
+            bgClass = 'bg-indigo-50';
+            iconColorClass = 'text-indigo-600';
+          } else if (config.color === 'amber') {
+            bgClass = 'bg-amber-50';
+            iconColorClass = 'text-amber-600';
+          }
+
+          html += `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 ${bgClass} rounded-lg flex items-center justify-center">
+                  <i class="fas ${config.icon} ${iconColorClass}"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-900">${config.name}</div>
+                  <div class="text-xs text-gray-500">${scoreModeText}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-gray-900">${rule.count} 题</div>
+                <div class="text-xs text-gray-500">${totalTypeScore}${rule.scoreMode === 'custom' ? ' 分' : ''}</div>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      html += `
+        </div>
+
+        <div class="mt-6 flex items-center justify-center">
+          <button onclick="closeExtractionPreviewModal()" class="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-times mr-2"></i>关闭预览
+          </button>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // 渲染抽题预览题目
+    function renderExtractionPreviewQuestions(questions) {
+      const container = document.getElementById('extractionPreviewQuestionsContainer');
+      const navContainer = document.getElementById('extractionPreviewNavigationContainer');
+
+      // 按题型分组题目
+      const questionsByType = {};
+      questions.forEach(data => {
+        const q = data.question || data;
+        const normalizedType = normalizeType(q.type);
+        if (!questionsByType[normalizedType]) {
+          questionsByType[normalizedType] = [];
+        }
+        questionsByType[normalizedType].push(data);
+      });
+
+      // 题型顺序
+      const typeOrder = ['single', 'multiple', 'judge', 'blank', 'cloze', 'shortAnswer', 'composite'];
+
+      let html = '';
+      let navHtml = '';
+      let globalQuestionNumber = 1;
+      let navQuestions = [];
+
+      typeOrder.forEach(type => {
+        if (!questionsByType[type] || questionsByType[type].length === 0) return;
+
+        const typeConfig = questionTypeConfig[type] || { name: '未知题型' };
+        const typeQuestions = questionsByType[type];
+
+        html += `
+          <div class="question-type-section">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-primary-500">
+              ${typeConfig.name}（共 ${typeQuestions.length} 题）
+            </h2>
+            <div class="space-y-6">
+        `;
+
+        typeQuestions.forEach(data => {
+          const q = data.question || data;
+          const score = data.paperScore || 0;
+          const questionId = `extraction-preview-question-${globalQuestionNumber}`;
+
+          navQuestions.push({
+            number: globalQuestionNumber,
+            type: typeConfig.name,
+            id: questionId
+          });
+
+          html += `
+            <div class="question-item" id="${questionId}">
+              <div class="flex items-start space-x-3 mb-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold text-sm">
+                  ${globalQuestionNumber}
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm text-gray-500">${typeConfig.name}</span>
+                      ${q.knowledgePath ? `<span class="text-xs text-gray-400">· ${q.knowledgePath}</span>` : ''}
+                    </div>
+                    <span class="text-sm font-medium text-primary-600">${score} 分</span>
+                  </div>
+                  <div class="question-content text-gray-900 text-base leading-relaxed mb-3">
+                    ${q.content}
+                  </div>
+          `;
+
+          // 根据题型显示选项和答案
+          if (type === 'single' || type === 'multiple') {
+            html += '<div class="space-y-2 ml-4">';
+            if (q.options && q.options.length > 0) {
+              q.options.forEach(opt => {
+                const isCorrect = q.correctAnswers && q.correctAnswers.includes(opt.label);
+                html += `
+                  <div class="flex items-start space-x-2">
+                    <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                    <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                  </div>
+                `;
+              });
+            }
+            html += '</div>';
+
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.join('、')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'judge') {
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers[0]}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'blank') {
+            if (q.correctAnswers && q.correctAnswers.length > 0) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <span class="text-sm font-medium text-green-700">答案：</span>
+                  <span class="text-sm text-green-600">${q.correctAnswers.map((ans, idx) => `空${idx + 1}：${ans}`).join('；')}</span>
+                </div>
+              `;
+            }
+          } else if (type === 'cloze') {
+            if (q.blanks && q.blanks.length > 0) {
+              html += '<div class="space-y-3 ml-4 mt-3">';
+              q.blanks.forEach((blank, blankIndex) => {
+                html += `
+                  <div>
+                    <div class="font-medium text-gray-700 mb-2">空 ${blankIndex + 1}：</div>
+                    <div class="space-y-1 ml-4">
+                `;
+                if (blank.options && blank.options.length > 0) {
+                  blank.options.forEach(opt => {
+                    const isCorrect = blank.correctAnswer === opt.label;
+                    html += `
+                      <div class="flex items-start space-x-2">
+                        <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                        <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                      </div>
+                    `;
+                  });
+                }
+                html += `
+                    </div>
+                    <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                      <span class="font-medium text-green-700">答案：</span>
+                      <span class="text-green-600">${blank.correctAnswer}</span>
+                    </div>
+                  </div>
+                `;
+              });
+              html += '</div>';
+            }
+          } else if (type === 'shortAnswer') {
+            if (q.correctAnswers && q.correctAnswers.length > 0 && q.correctAnswers[0]) {
+              html += `
+                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                  <div class="text-sm font-medium text-green-700 mb-2">参考答案：</div>
+                  <div class="text-sm text-green-600 whitespace-pre-wrap">${q.correctAnswers[0]}</div>
+                </div>
+              `;
+            }
+          } else if (type === 'composite') {
+            if (q.subQuestions && q.subQuestions.length > 0) {
+              html += '<div class="mt-4 space-y-4">';
+              q.subQuestions.forEach((sub, subIndex) => {
+                const subType = normalizeType(sub.type);
+                html += `
+                  <div class="ml-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="font-medium text-gray-800">${globalQuestionNumber}.${subIndex + 1} ${sub.content}</div>
+                    </div>
+                `;
+
+                if (subType === 'single' || subType === 'multiple') {
+                  html += '<div class="space-y-1 ml-4 mt-2">';
+                  if (sub.options && sub.options.length > 0) {
+                    sub.options.forEach(opt => {
+                      const isCorrect = sub.correctAnswers && sub.correctAnswers.includes(opt.label);
+                      html += `
+                        <div class="flex items-start space-x-2">
+                          <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-gray-600'}">${opt.label}.</span>
+                          <span class="${isCorrect ? 'text-green-600 font-medium' : 'text-gray-700'}">${opt.text}</span>
+                        </div>
+                      `;
+                    });
+                  }
+                  html += '</div>';
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <span class="font-medium text-green-700">答案：</span>
+                        <span class="text-green-600">${sub.correctAnswers.join('、')}</span>
+                      </div>
+                    `;
+                  }
+                } else if (subType === 'shortAnswer') {
+                  if (sub.correctAnswers && sub.correctAnswers.length > 0 && sub.correctAnswers[0]) {
+                    html += `
+                      <div class="mt-2 p-2 bg-green-50 rounded text-sm">
+                        <div class="font-medium text-green-700 mb-1">参考答案：</div>
+                        <div class="text-green-600 whitespace-pre-wrap">${sub.correctAnswers[0]}</div>
+                      </div>
+                    `;
+                  }
+                }
+
+                html += '</div>';
+              });
+              html += '</div>';
+            }
+          }
+
+          // 显示解析
+          if (q.explanation) {
+            html += `
+              <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                <div class="text-sm font-medium text-blue-700 mb-2">解析：</div>
+                <div class="text-sm text-blue-600 leading-relaxed">${q.explanation}</div>
+              </div>
+            `;
+          }
+
+          html += `
+                </div>
+              </div>
+            </div>
+          `;
+
+          globalQuestionNumber++;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html || '<div class="text-center text-gray-400 py-16">暂无题目</div>';
+
+      // 生成导航
+      if (navQuestions.length > 0) {
+        const navByType = {};
+        const typeOrderList = [];
+
+        navQuestions.forEach(item => {
+          if (!navByType[item.type]) {
+            navByType[item.type] = [];
+            typeOrderList.push(item.type);
+          }
+          navByType[item.type].push(item);
+        });
+
+        navHtml = `
+          <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">题目导航</h3>
+            <div class="text-xs text-gray-500 mb-4">共 ${navQuestions.length} 道题</div>
+          </div>
+        `;
+
+        typeOrderList.forEach(typeName => {
+          const typeQuestions = navByType[typeName];
+          navHtml += `
+            <div class="mb-6">
+              <div class="flex items-center mb-3">
+                <div class="w-1 h-5 bg-primary-500 rounded mr-2"></div>
+                <h4 class="text-sm font-medium text-gray-800">${typeName}</h4>
+              </div>
+              <div class="grid grid-cols-5 gap-2">
+          `;
+
+          typeQuestions.forEach(item => {
+            navHtml += `
+              <button onclick="scrollToExtractionPreviewQuestion('${item.id}')"
+                      class="extraction-preview-nav-item aspect-square flex items-center justify-center text-sm font-medium border border-gray-300 rounded transition-colors"
+                      data-question-id="${item.id}">
+                ${item.number}
+              </button>
+            `;
+          });
+
+          navHtml += `
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        navHtml = '<div class="text-center text-gray-400 py-8">暂无题目</div>';
+      }
+
+      navContainer.innerHTML = navHtml;
+
+      // 设置滚动监听
+      setupExtractionPreviewScrollTracking();
+    }
+
+    // 滚动到指定题目
+    function scrollToExtractionPreviewQuestion(questionId) {
+      const scrollContainer = document.getElementById('extractionPreviewScrollContainer');
+      const questionElement = document.getElementById(questionId);
+
+      if (questionElement && scrollContainer) {
+        const containerTop = scrollContainer.offsetTop;
+        const elementTop = questionElement.offsetTop;
+        const offset = elementTop - containerTop - 100;
+
+        scrollContainer.scrollTo({
+          top: offset,
+          behavior: 'smooth'
+        });
+
+        updateExtractionPreviewActiveNav(questionId);
+      }
+    }
+
+    // 更新导航激活状态
+    function updateExtractionPreviewActiveNav(questionId) {
+      document.querySelectorAll('.extraction-preview-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      const activeNav = document.querySelector(`.extraction-preview-nav-item[data-question-id="${questionId}"]`);
+      if (activeNav) {
+        activeNav.classList.add('active');
+      }
+    }
+
+    // 设置滚动跟踪
+    function setupExtractionPreviewScrollTracking() {
+      const scrollContainer = document.getElementById('extractionPreviewScrollContainer');
+      if (!scrollContainer) return;
+
+      if (scrollContainer._scrollHandler) {
+        scrollContainer.removeEventListener('scroll', scrollContainer._scrollHandler);
+      }
+
+      const scrollHandler = () => {
+        const questions = document.querySelectorAll('#extractionPreviewQuestionsContainer .question-item');
+        const scrollTop = scrollContainer.scrollTop;
+        const containerTop = scrollContainer.offsetTop;
+
+        for (let i = questions.length - 1; i >= 0; i--) {
+          const question = questions[i];
+          const questionTop = question.offsetTop - containerTop - 150;
+
+          if (scrollTop >= questionTop) {
+            updateExtractionPreviewActiveNav(question.id);
+            break;
+          }
+        }
+      };
+
+      scrollContainer._scrollHandler = scrollHandler;
+      scrollContainer.addEventListener('scroll', scrollHandler);
+    }
+
+    // 关闭预览弹窗
+    function closePreviewModal() {
+      document.getElementById('previewModal').classList.add('hidden');
+      document.body.style.overflow = '';
+      previewPaperId = null;
+
+      // 清理 PDF URL
+      const pdfFrame = document.getElementById('previewPdfFrame');
+      if (pdfFrame.src && pdfFrame.src.startsWith('blob:')) {
+        URL.revokeObjectURL(pdfFrame.src);
+      }
+      pdfFrame.src = '';
+    }
+
+    // 关闭抽题预览弹窗
+    function closeExtractionPreviewModal() {
+      document.getElementById('extractionPreviewModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
     // 消息提示
-    function showMessage(text, type = 'info') {
+    function showMessage(message, type = 'info') {
       const container = document.getElementById('messageContainer');
       const colors = {
         success: 'bg-success-50 text-success-700 border-success-200',
@@ -882,26 +2033,26 @@
         warning: 'bg-warning-50 text-warning-700 border-warning-200',
         info: 'bg-info-50 text-info-700 border-info-200'
       };
+
       const icons = {
         success: 'fa-check-circle',
-        error: 'fa-times-circle',
-        warning: 'fa-exclamation-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
         info: 'fa-info-circle'
       };
 
-      const messageEl = document.createElement('div');
-      messageEl.className = `message ${colors[type]} border`;
-      messageEl.innerHTML = `
-        <i class="fas ${icons[type]} mr-2"></i>
-        <span>${text}</span>
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${colors[type]} border`;
+      messageDiv.innerHTML = `
+        <i class="fas ${icons[type]} mr-3"></i>
+        <span>${message}</span>
       `;
 
-      container.appendChild(messageEl);
+      container.appendChild(messageDiv);
 
       setTimeout(() => {
-        messageEl.style.opacity = '0';
-        messageEl.style.transform = 'translateX(100%)';
-        setTimeout(() => messageEl.remove(), 300);
+        messageDiv.style.animation = 'slideIn 0.3s ease-out reverse';
+        setTimeout(() => messageDiv.remove(), 300);
       }, 3000);
     }
   </script>

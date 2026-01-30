@@ -36,29 +36,34 @@
     /* 消息提示样式 */
     .message-container {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
 
     .message {
       min-width: 300px;
+      max-width: 500px;
       padding: 16px 20px;
-      margin-bottom: 10px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       display: flex;
       align-items: center;
-      animation: slideIn 0.3s ease-out;
+      animation: fadeIn 0.3s ease-out;
     }
 
-    @keyframes slideIn {
+    @keyframes fadeIn {
       from {
-        transform: translateX(100%);
+        transform: translateY(-20px);
         opacity: 0;
       }
       to {
-        transform: translateX(0);
+        transform: translateY(0);
         opacity: 1;
       }
     }
@@ -91,10 +96,11 @@
   </header>
 
   <!-- 主内容区 -->
-  <main class="pt-16 min-h-screen">
-    <div class="p-6">
+  <main class="fixed top-16 left-0 right-0 bottom-0 flex flex-col">
+    <!-- 固定筛选区域 -->
+    <div class="flex-none p-6 pb-0">
       <!-- 筛选区域 -->
-      <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4 mt-1">
+      <div class="bg-white rounded-lg border border-gray-200 p-3 mt-1 mb-4">
         <div class="flex items-center justify-between gap-3">
           <!-- 左侧筛选控件 -->
           <div class="flex items-center gap-3">
@@ -118,39 +124,48 @@
           </a>
         </div>
       </div>
+    </div>
 
+    <!-- 可滚动的考试列表区域 -->
+    <div class="flex-1 overflow-auto px-6">
       <!-- 考试卡片列表 -->
-      <div class="mb-16">
-        <!-- 列表容器 -->
-        <div id="examList" class="space-y-3">
-        </div>
-        <!-- 空状态 -->
-        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-lg border border-gray-200">
-          <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-4"></i>
-          <p class="text-gray-500 mb-4">暂无考试数据</p>
-          <a href="create.html" class="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
-            <i class="fas fa-plus mr-2"></i>创建第一场考试
-          </a>
+      <div class="space-y-3" id="examList">
+        <!-- 列表将通过 JavaScript 动态填充 -->
+      </div>
+      <!-- 空状态 -->
+      <div id="emptyState" class="hidden py-16 text-center bg-white rounded-lg border border-gray-200">
+        <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 mb-4">暂无考试数据</p>
+        <a href="create.html" class="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+          <i class="fas fa-plus mr-2"></i>创建第一场考试
+        </a>
+      </div>
+    </div>
+
+    <!-- 固定分页栏 -->
+    <div class="flex-none bg-white border-t border-gray-200 shadow-lg">
+      <div class="flex items-center justify-between px-6 py-3">
+        <p class="text-sm text-gray-600">显示 <span id="pageStart">1</span>-<span id="pageEnd">20</span> 条，共 <span id="totalItems">0</span> 条</p>
+        <div class="flex items-center space-x-2">
+          <button onclick="firstPage()" class="w-9 h-9 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" id="firstBtn" disabled>
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button onclick="prevPage()" class="px-3 h-9 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" id="prevBtn" disabled>
+            <i class="fas fa-chevron-left mr-1"></i>上一页
+          </button>
+          <div id="pageNumbers" class="flex items-center space-x-2">
+            <!-- 页码按钮将动态生成 -->
+          </div>
+          <button onclick="nextPage()" class="px-3 h-9 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" id="nextBtn">
+            下一页<i class="fas fa-chevron-right ml-1"></i>
+          </button>
+          <button onclick="lastPage()" class="w-9 h-9 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" id="lastBtn">
+            <i class="fas fa-angle-double-right"></i>
+          </button>
         </div>
       </div>
     </div>
   </main>
-
-  <!-- 悬浮分页 -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
-    <div class="flex items-center justify-between px-6 py-3">
-      <p class="text-sm text-gray-500">共 <span id="totalItems">0</span> 场考试</p>
-      <div class="flex items-center space-x-2">
-        <button onclick="prevPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="prevBtn" disabled>
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <span class="text-sm text-gray-700">第 <span id="currentPage">1</span> 页，共 <span id="totalPages">1</span> 页</span>
-        <button onclick="nextPage()" class="px-3 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="nextBtn">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- 查看配置模态框 -->
   <div id="configModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -171,10 +186,19 @@
       </div>
 
       <!-- 模态框底部 -->
-      <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
-        <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-          关闭
-        </button>
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+        <div id="configEditBtn"></div>
+        <div class="flex gap-3">
+          <button id="configCancelBtn" onclick="cancelEditConfig()" class="hidden px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            取消
+          </button>
+          <button id="configSaveBtn" onclick="saveConfigChanges()" class="hidden px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+            保存配置
+          </button>
+          <button id="configCloseBtn" onclick="closeConfigModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            关闭
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -328,6 +352,132 @@
   <script>
     // 模拟考试数据（根据create.html的数据结构）
     let exams = [
+      // 监控测试考试 - 开启防作弊
+      {
+        id: 'MONITOR001',
+        code: 'MONITOR001',
+        name: '【监控测试】Web前端开发技术考试',
+        openStartTime: '2026-01-29 10:00',
+        openEndTime: '2026-01-29 16:00',
+        duration: 120,
+        attemptLimit: '1',
+        paperIds: ['P_MONITOR001'],
+        paperInfo: {
+          id: 'P_MONITOR001',
+          code: 'E007',
+          name: 'Web前端开发期末试卷',
+          mode: 'document',
+          questionCount: 50,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 100,
+        submittedCount: 82,
+        gradedCount: 28,
+        onlineCount: 54,
+        createTime: '2026-01-28 10:00:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 30,
+          enableEarlyEntry: false,
+          earlyMinutes: 10,
+          enableFaceRecognition: true,
+          enableRandomCapture: true,
+          captureCount: 5,
+          enableMinSubmitTime: false,
+          minSubmitMinutes: 30,
+          enableBrowserLock: true,
+          enableCopyPaste: false,
+          resultPublishType: 'manual',
+          resultContent: 'scoreOnly',
+          enableAIGrading: false,
+          enableAIComment: false
+        }
+      },
+      // 监控测试考试 - 未开启防作弊
+      {
+        id: 'MONITOR002',
+        code: 'MONITOR002',
+        name: '【监控测试】数据结构基础测试',
+        openStartTime: '2026-01-29 14:00',
+        openEndTime: '2026-01-29 18:00',
+        duration: 90,
+        attemptLimit: '2',
+        paperIds: ['P_MONITOR002'],
+        paperInfo: {
+          id: 'P_MONITOR002',
+          code: 'E008',
+          name: '数据结构综合测试卷',
+          mode: 'random',
+          questionCount: 40,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 85,
+        submittedCount: 45,
+        gradedCount: 12,
+        onlineCount: 38,
+        createTime: '2026-01-28 15:00:00',
+        settings: {
+          enableLateLimit: false,
+          lateMinutes: 15,
+          enableEarlyEntry: true,
+          earlyMinutes: 10,
+          enableFaceRecognition: false,
+          enableRandomCapture: false,
+          captureCount: 3,
+          enableMinSubmitTime: false,
+          minSubmitMinutes: 30,
+          enableBrowserLock: false,
+          enableCopyPaste: true,
+          resultPublishType: 'afterExamEnd',
+          resultContent: 'full',
+          enableAIGrading: true,
+          enableAIComment: true
+        }
+      },
+      // 监控测试考试 - 已结束
+      {
+        id: 'MONITOR003',
+        code: 'MONITOR003',
+        name: '【监控测试】计算机网络期末考试',
+        openStartTime: '2026-01-28 09:00',
+        openEndTime: '2026-01-28 12:00',
+        duration: 120,
+        attemptLimit: '1',
+        paperIds: ['P_MONITOR003'],
+        paperInfo: {
+          id: 'P_MONITOR003',
+          code: 'E009',
+          name: '计算机网络期末试卷',
+          mode: 'document',
+          questionCount: 60,
+          totalScore: 100
+        },
+        status: 'finished',
+        totalStudents: 120,
+        submittedCount: 118,
+        gradedCount: 95,
+        onlineCount: 0,
+        createTime: '2026-01-27 10:00:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 15,
+          enableEarlyEntry: false,
+          earlyMinutes: 10,
+          enableFaceRecognition: true,
+          enableRandomCapture: true,
+          captureCount: 3,
+          enableMinSubmitTime: true,
+          minSubmitMinutes: 30,
+          enableBrowserLock: true,
+          enableCopyPaste: false,
+          resultPublishType: 'afterExamEnd',
+          resultContent: 'scoreAndCorrect',
+          enableAIGrading: false,
+          enableAIComment: false
+        }
+      },
       {
         id: 'E001',
         code: 'E001',
@@ -362,8 +512,8 @@
         id: 'E002',
         code: 'E002',
         name: '数据结构与算法期中测试',
-        openStartTime: '2026-01-28 14:00',
-        openEndTime: '2026-01-28 16:30',
+        openStartTime: '2026-01-29 08:00',
+        openEndTime: '2026-01-29 18:00',
         duration: 90,
         attemptLimit: '2',
         paperIds: ['P002'],
@@ -377,9 +527,9 @@
         },
         status: 'ongoing',
         totalStudents: 128,
-        submittedCount: 85,
-        gradedCount: 45,
-        onlineCount: 43,
+        submittedCount: 45,
+        gradedCount: 20,
+        onlineCount: 35,
         createTime: '2026-01-22 09:00:00',
         settings: {
           enableLateLimit: true,
@@ -453,8 +603,8 @@
         id: 'E005',
         code: 'E005',
         name: '数据库系统概论期末',
-        openStartTime: '2026-01-27 14:00',
-        openEndTime: '2026-01-27 17:00',
+        openStartTime: '2026-01-29 09:00',
+        openEndTime: '2026-01-29 21:00',
         duration: 150,
         attemptLimit: '1',
         paperIds: ['P005', 'P006'],
@@ -468,9 +618,9 @@
         },
         status: 'ongoing',
         totalStudents: 175,
-        submittedCount: 98,
+        submittedCount: 68,
         gradedCount: 12,
-        onlineCount: 77,
+        onlineCount: 58,
         createTime: '2026-01-20 11:00:00',
         settings: {
           enableLateLimit: true,
@@ -510,6 +660,98 @@
           captureCount: 5,
           resultPublishType: 'afterExamEnd'
         }
+      },
+      {
+        id: 'E007',
+        code: 'E007',
+        name: 'Web前端开发技术考试',
+        openStartTime: '2026-01-29 10:00',
+        openEndTime: '2026-01-29 16:00',
+        duration: 120,
+        attemptLimit: '1',
+        paperIds: ['P008'],
+        paperInfo: {
+          id: 'P008',
+          code: 'DOC2026008',
+          name: 'Web前端开发试卷',
+          mode: 'document',
+          questionCount: 42,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 95,
+        submittedCount: 28,
+        gradedCount: 5,
+        onlineCount: 32,
+        createTime: '2026-01-26 14:20:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 15,
+          enableFaceRecognition: true,
+          resultPublishType: 'immediate'
+        }
+      },
+      {
+        id: 'E008',
+        code: 'E008',
+        name: 'Java程序设计期末考试',
+        openStartTime: '2026-01-29 13:30',
+        openEndTime: '2026-01-29 23:00',
+        duration: 150,
+        attemptLimit: '2',
+        paperIds: ['P009'],
+        paperInfo: {
+          id: 'P009',
+          code: 'RND2026009',
+          name: 'Java程序设计随机抽题卷',
+          mode: 'random-extraction',
+          questionCount: 50,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 210,
+        submittedCount: 92,
+        gradedCount: 38,
+        onlineCount: 78,
+        createTime: '2026-01-23 11:15:00',
+        settings: {
+          enableLateLimit: true,
+          lateMinutes: 10,
+          enableFaceRecognition: true,
+          enableRandomCapture: true,
+          captureCount: 4,
+          resultPublishType: 'delayAfterExamEnd',
+          delayDays: 2
+        }
+      },
+      {
+        id: 'E009',
+        code: 'E009',
+        name: '软件工程基础测试',
+        openStartTime: '2026-01-28 14:00',
+        openEndTime: '2026-01-30 18:00',
+        duration: 90,
+        attemptLimit: '1',
+        paperIds: ['P010'],
+        paperInfo: {
+          id: 'P010',
+          code: 'FIX2026010',
+          name: '软件工程固定抽题卷',
+          mode: 'extraction',
+          questionCount: 35,
+          totalScore: 100
+        },
+        status: 'ongoing',
+        totalStudents: 138,
+        submittedCount: 105,
+        gradedCount: 68,
+        onlineCount: 15,
+        createTime: '2026-01-21 09:45:00',
+        settings: {
+          enableLateLimit: false,
+          enableFaceRecognition: true,
+          resultPublishType: 'afterExamEnd'
+        }
       }
     ];
 
@@ -522,18 +764,23 @@
     document.addEventListener('DOMContentLoaded', function() {
       // 从 localStorage 读取考试数据并合并
       const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
-      if (savedExams.length > 0) {
-        // 合并保存的考试和模拟数据
-        exams = [...savedExams, ...exams];
-        // 去重（如果有相同ID的考试，保留localStorage中的）
-        const examMap = new Map();
-        exams.forEach(exam => {
-          if (!examMap.has(exam.id)) {
-            examMap.set(exam.id, exam);
-          }
-        });
-        exams = Array.from(examMap.values());
-      }
+
+      // 合并保存的考试和模拟数据
+      const allExams = [...savedExams, ...exams];
+      // 去重（如果有相同ID的考试，保留localStorage中的）
+      const examMap = new Map();
+      allExams.forEach(exam => {
+        if (!examMap.has(exam.id)) {
+          examMap.set(exam.id, exam);
+        }
+      });
+      exams = Array.from(examMap.values());
+
+      // 将合并后的数据保存到 localStorage（确保模拟数据也被保存）
+      localStorage.setItem('exams', JSON.stringify(exams));
+
+      // 初始化考生数据
+      initializeStudentsData();
 
       // 按创建时间倒序排列
       exams.sort((a, b) => {
@@ -545,6 +792,246 @@
       filteredExams = [...exams];
       renderList();
     });
+
+    // 初始化考生数据
+    function initializeStudentsData() {
+      const existingStudents = JSON.parse(localStorage.getItem('examStudents') || '[]');
+
+      // 检查是否已经有学生数据
+      if (existingStudents.length > 0) {
+        return; // 已经有数据，不需要初始化
+      }
+
+      // 为每个考试生成模拟学生数据
+      const allStudents = [];
+      const names = [
+        '张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十',
+        '郑十一', '冯十二', '陈十三', '褚十四', '卫十五', '蒋十六',
+        '沈十七', '韩十八', '杨十九', '朱二十', '秦二一', '尤二二',
+        '许二三', '何二四', '吕二五', '施二六', '张二七', '孔二八'
+      ];
+      const avatarUrls = [
+        'https://i.pravatar.cc/150?img=1',
+        'https://i.pravatar.cc/150?img=2',
+        'https://i.pravatar.cc/150?img=3',
+        'https://i.pravatar.cc/150?img=4',
+        'https://i.pravatar.cc/150?img=5',
+        'https://i.pravatar.cc/150?img=6',
+        'https://i.pravatar.cc/150?img=7',
+        'https://i.pravatar.cc/150?img=8',
+        'https://i.pravatar.cc/150?img=9',
+        'https://i.pravatar.cc/150?img=10',
+        'https://i.pravatar.cc/150?img=11',
+        'https://i.pravatar.cc/150?img=12',
+        'https://i.pravatar.cc/150?img=13',
+        'https://i.pravatar.cc/150?img=14',
+        'https://i.pravatar.cc/150?img=15',
+        'https://i.pravatar.cc/150?img=16',
+        'https://i.pravatar.cc/150?img=17',
+        'https://i.pravatar.cc/150?img=18',
+        'https://i.pravatar.cc/150?img=19',
+        'https://i.pravatar.cc/150?img=20',
+        'https://i.pravatar.cc/150?img=21',
+        'https://i.pravatar.cc/150?img=22',
+        'https://i.pravatar.cc/150?img=23',
+        'https://i.pravatar.cc/150?img=24',
+        'https://i.pravatar.cc/150?img=25',
+        'https://i.pravatar.cc/150?img=26'
+      ];
+
+      // 定义所有8种状态
+      const allStatuses = [
+        'not_started',
+        'in_progress',
+        'absent',
+        'violation',
+        'cheating',
+        'suspected_cheating',
+        'not_graded',
+        'graded'
+      ];
+
+      exams.forEach((exam, examIndex) => {
+        // 每个考试生成至少25个学生，确保覆盖所有状态
+        const studentCount = 25;
+
+        for (let i = 0; i < studentCount; i++) {
+          const name = names[i % names.length];
+          let status = 'not_started';
+          let attemptedCount = 0;
+          let submitTime = '-';
+          let duration = 0;
+          let highestScore = null;
+          let leaveCount = 0;
+          let faceRecognitionRate = null;
+          let captureImages = [];
+
+          // 确保前8个学生覆盖所有状态
+          if (i < 8) {
+            status = allStatuses[i];
+          } else {
+            // 其余学生随机分配状态，权重分配如下
+            const rand = Math.random();
+            if (exam.status === 'pending') {
+              // 未开始的考试：所有人都是未开始
+              status = 'not_started';
+            } else if (exam.status === 'ongoing') {
+              if (rand < 0.15) {
+                status = 'not_started';
+              } else if (rand < 0.35) {
+                status = 'in_progress';
+              } else if (rand < 0.45) {
+                status = 'absent';
+              } else if (rand < 0.55) {
+                status = 'violation';
+              } else if (rand < 0.6) {
+                status = 'suspected_cheating';
+              } else if (rand < 0.75) {
+                status = 'not_graded';
+              } else {
+                status = 'graded';
+              }
+            } else if (exam.status === 'finished') {
+              if (rand < 0.1) {
+                status = 'absent';
+              } else if (rand < 0.15) {
+                status = 'cheating';
+              } else if (rand < 0.2) {
+                status = 'violation';
+              } else if (rand < 0.25) {
+                status = 'suspected_cheating';
+              } else if (rand < 0.35) {
+                status = 'not_graded';
+              } else {
+                status = 'graded';
+              }
+            }
+          }
+
+          // 根据状态设置数据
+          switch (status) {
+            case 'not_started':
+              // 未开始：无任何数据
+              break;
+
+            case 'in_progress':
+              // 进行中
+              attemptedCount = 1;
+              leaveCount = Math.floor(Math.random() * 3);
+              faceRecognitionRate = Math.floor(Math.random() * 20) + 75; // 75-95%
+              captureImages = generateCaptureImages(2 + Math.floor(Math.random() * 2), examIndex, i);
+              break;
+
+            case 'absent':
+              // 缺考：无任何考试数据
+              break;
+
+            case 'violation':
+              // 违纪
+              attemptedCount = 1;
+              submitTime = `2026-01-2${7 + examIndex % 3} ${String(10 + Math.floor(i / 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+              duration = Math.floor(Math.random() * 30) + 20;
+              leaveCount = Math.floor(Math.random() * 8) + 5;
+              faceRecognitionRate = Math.floor(Math.random() * 30) + 40; // 40-70%
+              captureImages = generateCaptureImages(3 + Math.floor(Math.random() * 2), examIndex, i, true);
+              break;
+
+            case 'cheating':
+              // 作弊：成绩清零
+              attemptedCount = 1;
+              submitTime = `2026-01-2${5 + examIndex % 3} ${String(10 + Math.floor(i / 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+              duration = Math.floor(Math.random() * 50) + 70;
+              highestScore = 0; // 作弊成绩清零
+              leaveCount = Math.floor(Math.random() * 10) + 5;
+              faceRecognitionRate = Math.floor(Math.random() * 40) + 30; // 30-70%
+              captureImages = generateCaptureImages(5, examIndex, i, true);
+              break;
+
+            case 'suspected_cheating':
+              // 疑似作弊
+              attemptedCount = 1;
+              submitTime = `2026-01-2${7 + examIndex % 3} ${String(10 + Math.floor(i / 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+              duration = Math.floor(Math.random() * 40) + 60;
+              leaveCount = Math.floor(Math.random() * 6) + 3;
+              faceRecognitionRate = Math.floor(Math.random() * 25) + 60; // 60-85%
+              captureImages = generateCaptureImages(4, examIndex, i, true);
+              break;
+
+            case 'not_graded':
+              // 未批阅
+              attemptedCount = 1;
+              submitTime = `2026-01-2${7 + examIndex % 3} ${String(10 + Math.floor(i / 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+              duration = Math.floor(Math.random() * 40) + 60;
+              leaveCount = Math.floor(Math.random() * 5);
+              faceRecognitionRate = Math.floor(Math.random() * 15) + 85; // 85-100%
+              captureImages = generateCaptureImages(3, examIndex, i);
+              break;
+
+            case 'graded':
+              // 已批阅
+              attemptedCount = 1;
+              submitTime = `2026-01-2${7 + examIndex % 3} ${String(10 + Math.floor(i / 2)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`;
+              duration = Math.floor(Math.random() * 40) + 60;
+              highestScore = Math.floor(Math.random() * 30) + 70;
+              leaveCount = Math.floor(Math.random() * 5);
+              faceRecognitionRate = Math.floor(Math.random() * 10) + 90; // 90-100%
+              captureImages = generateCaptureImages(3, examIndex, i);
+              break;
+          }
+
+          allStudents.push({
+            id: 'S' + Date.now() + '_' + examIndex + '_' + i,
+            examId: exam.id,
+            username: `user${examIndex * 100 + i + 1}`,
+            name: name,
+            phone: `138${String(examIndex).padStart(4, '0')}${String(i).padStart(4, '0')}`,
+            photo: avatarUrls[i % avatarUrls.length],
+            attemptedCount: attemptedCount,
+            allowedAttempts: parseInt(exam.attemptLimit) || 1,
+            leaveCount: leaveCount,
+            submitTime: submitTime,
+            duration: duration,
+            highestScore: highestScore,
+            faceRecognitionRate: faceRecognitionRate,
+            captureImages: captureImages,
+            status: status
+          });
+        }
+      });
+
+      // 保存到 localStorage
+      localStorage.setItem('examStudents', JSON.stringify(allStudents));
+    }
+
+    // 生成抓拍图片数据
+    function generateCaptureImages(count, examIndex, studentIndex, hasIssue = false) {
+      const images = [];
+      const baseTime = new Date(`2026-01-2${7 + examIndex % 3} 10:00:00`).getTime();
+
+      for (let i = 0; i < count; i++) {
+        const timestamp = baseTime + (i * 15 * 60 * 1000); // 每15分钟一张
+        const captureTime = new Date(timestamp);
+        const timeStr = `${String(captureTime.getHours()).padStart(2, '0')}:${String(captureTime.getMinutes()).padStart(2, '0')}:${String(captureTime.getSeconds()).padStart(2, '0')}`;
+
+        let matched = true;
+        let similarity = Math.floor(Math.random() * 10) + 90; // 90-100%
+
+        if (hasIssue && i === Math.floor(count / 2)) {
+          // 如果有问题，中间的抓拍设为不匹配
+          matched = false;
+          similarity = Math.floor(Math.random() * 40) + 30; // 30-70%
+        }
+
+        images.push({
+          url: `https://i.pravatar.cc/150?img=${(studentIndex + i) % 70 + 1}`,
+          time: timeStr,
+          matched: matched,
+          similarity: similarity
+        });
+      }
+
+      return images;
+    }
 
     // 渲染考试列表
     function renderList() {
@@ -586,7 +1073,6 @@
       }
 
       updatePagination();
-      document.getElementById('totalItems').textContent = filteredExams.length;
     }
 
     // 创建考试卡片
@@ -697,7 +1183,7 @@
             <!-- 右侧：主要操作按钮 -->
             <div class="flex items-center gap-2 ml-4">
               ${exam.status === 'pending' ? `
-                <button onclick="editExam('${exam.id}')" class="px-3 py-1.5 text-sm bg-info-500 hover:bg-info-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
+                <button onclick="editExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-info-500 text-info-500 hover:bg-info-50 rounded-lg transition-colors flex items-center gap-1.5">
                   <i class="fas fa-edit"></i>
                   <span>编辑</span>
                 </button>
@@ -706,29 +1192,25 @@
                   <span>删除</span>
                 </button>
               ` : ''}
-              ${exam.status === 'ongoing' ? `
-                <button onclick="monitorExam('${exam.id}')" class="px-3 py-1.5 text-sm bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
-                  <i class="fas fa-desktop"></i>
-                  <span>监控</span>
+              ${exam.status === 'ongoing' && canDelete ? `
+                <button onclick="editExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-info-500 text-info-500 hover:bg-info-50 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-edit"></i>
+                  <span>编辑</span>
                 </button>
-                ${canDelete ? `
-                  <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
-                    <i class="fas fa-trash"></i>
-                    <span>删除</span>
-                  </button>
-                ` : ''}
+                <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-trash"></i>
+                  <span>删除</span>
+                </button>
               ` : ''}
-              ${exam.status === 'finished' ? `
-                <button onclick="viewResults('${exam.id}')" class="px-3 py-1.5 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors flex items-center gap-1.5">
-                  <i class="fas fa-chart-bar"></i>
-                  <span>成绩管理</span>
+              ${exam.status === 'finished' && canDelete ? `
+                <button onclick="editExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-info-500 text-info-500 hover:bg-info-50 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-edit"></i>
+                  <span>编辑</span>
                 </button>
-                ${canDelete ? `
-                  <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
-                    <i class="fas fa-trash"></i>
-                    <span>删除</span>
-                  </button>
-                ` : ''}
+                <button onclick="deleteExam('${exam.id}')" class="px-3 py-1.5 text-sm border border-error-500 text-error-500 hover:bg-error-50 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-trash"></i>
+                  <span>删除</span>
+                </button>
               ` : ''}
             </div>
           </div>
@@ -797,15 +1279,15 @@
                   </div>
                 </div>
               ` : ''}
-              ${(exam.status === 'ongoing' || exam.status === 'finished') && exam.submittedCount > 0 ? `
+              ${exam.status === 'ongoing' || exam.status === 'finished' ? `
                 <div class="flex items-center gap-2">
                   <div class="text-sm text-gray-600">
                     <i class="fas fa-check-circle text-success-500 mr-1"></i>
                     已批阅：
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-success-600">${exam.gradedCount}</span>
-                    <span class="text-xs text-gray-400">/ ${exam.submittedCount}</span>
+                    <span class="text-sm font-semibold text-success-600">${exam.gradedCount || 0}</span>
+                    <span class="text-xs text-gray-400">/ ${exam.submittedCount || 0}</span>
                     <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div class="h-full bg-success-500 rounded-full transition-all" style="width: ${gradeProgress}%"></div>
                     </div>
@@ -825,12 +1307,18 @@
                 <i class="fas fa-users"></i>
                 <span>考生管理</span>
               </button>
-              ${exam.status === 'ongoing' || exam.status === 'finished' ? `
-                <button onclick="manageGrading('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-warning-600 hover:bg-warning-50 border border-gray-300 hover:border-warning-500 rounded-lg transition-colors flex items-center gap-1.5">
-                  <i class="fas fa-tasks"></i>
-                  <span>阅卷管理</span>
-                </button>
-              ` : ''}
+              <button onclick="monitorExam('${exam.id}')" class="px-3 py-1.5 text-sm ${exam.status === 'ongoing' ? 'bg-info-500 hover:bg-info-600 text-white' : 'text-gray-700 hover:text-info-600 hover:bg-info-50 border border-gray-300 hover:border-info-500'} rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-video"></i>
+                <span>考试监控</span>
+              </button>
+              <button onclick="manageGrading('${exam.id}')" class="px-3 py-1.5 text-sm text-gray-700 hover:text-warning-600 hover:bg-warning-50 border border-gray-300 hover:border-warning-500 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-tasks"></i>
+                <span>阅卷管理</span>
+              </button>
+              <button onclick="viewResults('${exam.id}')" class="px-3 py-1.5 text-sm ${exam.status === 'finished' ? 'bg-primary-500 hover:bg-primary-600 text-white' : 'text-gray-700 hover:text-primary-600 hover:bg-primary-50 border border-gray-300 hover:border-primary-500'} rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-chart-bar"></i>
+                <span>成绩管理</span>
+              </button>
             </div>
           </div>
         </div>
@@ -840,11 +1328,71 @@
     // 分页相关
     function updatePagination() {
       const totalPages = Math.ceil(filteredExams.length / pageSize) || 1;
-      document.getElementById('currentPage').textContent = currentPage;
-      document.getElementById('totalPages').textContent = totalPages;
+      const start = (currentPage - 1) * pageSize + 1;
+      const end = Math.min(currentPage * pageSize, filteredExams.length);
 
+      document.getElementById('pageStart').textContent = filteredExams.length > 0 ? start : 0;
+      document.getElementById('pageEnd').textContent = end;
+      document.getElementById('totalItems').textContent = filteredExams.length;
+
+      document.getElementById('firstBtn').disabled = currentPage === 1;
       document.getElementById('prevBtn').disabled = currentPage === 1;
       document.getElementById('nextBtn').disabled = currentPage === totalPages;
+      document.getElementById('lastBtn').disabled = currentPage === totalPages;
+
+      // 生成页码按钮
+      renderPageNumbers(totalPages);
+    }
+
+    function renderPageNumbers(totalPages) {
+      const container = document.getElementById('pageNumbers');
+      container.innerHTML = '';
+
+      // 计算显示哪些页码
+      let startPage = 1;
+      let endPage = totalPages;
+
+      // 如果总页数大于5，只显示当前页附近的页码
+      if (totalPages > 5) {
+        if (currentPage <= 3) {
+          startPage = 1;
+          endPage = 5;
+        } else if (currentPage >= totalPages - 2) {
+          startPage = totalPages - 4;
+          endPage = totalPages;
+        } else {
+          startPage = currentPage - 2;
+          endPage = currentPage + 2;
+        }
+      }
+
+      // 生成页码按钮
+      for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.className = `w-9 h-9 rounded text-sm font-medium ${
+          i === currentPage
+            ? 'bg-primary-500 text-white'
+            : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+        }`;
+        button.textContent = i;
+        button.onclick = () => goToPage(i);
+        container.appendChild(button);
+      }
+    }
+
+    function goToPage(page) {
+      const totalPages = Math.ceil(filteredExams.length / pageSize);
+      if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        renderList();
+      }
+    }
+
+    function firstPage() {
+      if (currentPage > 1) {
+        currentPage = 1;
+        renderList();
+      }
     }
 
     function prevPage() {
@@ -858,6 +1406,14 @@
       const totalPages = Math.ceil(filteredExams.length / pageSize);
       if (currentPage < totalPages) {
         currentPage++;
+        renderList();
+      }
+    }
+
+    function lastPage() {
+      const totalPages = Math.ceil(filteredExams.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage = totalPages;
         renderList();
       }
     }
@@ -991,26 +1547,46 @@
     function viewResults(id) {
       const exam = exams.find(e => e.id === id);
       if (exam) {
-        showMessage(`正在打开"${exam.name}"的成绩管理页面...`, 'info');
-        // 实际应用中：window.location.href = `results.html?examId=${id}`;
+        // 判断考试状态
+        const now = new Date();
+        const startTime = new Date(exam.openStartTime);
+
+        if (now < startTime) {
+          showMessage(`考试"${exam.name}"尚未开始，暂无成绩数据`, 'warning');
+        } else {
+          // 跳转到成绩管理页面
+          window.location.href = `scores.html?examId=${id}`;
+        }
       }
     }
 
     function manageStudents(id) {
+      // 跳转到考生管理页面
+      window.location.href = `students.html?examId=${id}`;
+    }
+
+    function monitorExam(id) {
       const exam = exams.find(e => e.id === id);
       if (exam) {
-        showMessage(`正在打开"${exam.name}"的考生管理页面...`, 'info');
-        // 实际应用中：打开考生管理页面
+        // 判断考试状态
+        const now = new Date();
+        const startTime = new Date(exam.openStartTime);
+
+        if (now < startTime) {
+          showMessage(`考试"${exam.name}"尚未开始，暂无监控数据`, 'warning');
+        } else {
+          // 跳转到考试监控页面
+          window.location.href = `monitor.html?examId=${id}`;
+        }
       }
     }
 
     function manageGrading(id) {
-      const exam = exams.find(e => e.id === id);
-      if (exam) {
-        showMessage(`正在打开"${exam.name}"的阅卷管理页面...`, 'info');
-        // 实际应用中：打开阅卷管理页面
-      }
+      window.location.href = `grading.html?examId=${id}`;
     }
+
+    // 全局变量：当前正在查看/编辑配置的考试
+    let currentConfigExam = null;
 
     // 查看考试配置
     function viewConfig(id) {
@@ -1018,6 +1594,18 @@
       if (!exam || !exam.settings) {
         showMessage('未找到考试配置信息', 'warning');
         return;
+      }
+
+      currentConfigExam = exam;
+
+      // 判断是否可以编辑（与删除逻辑相同）
+      let canEdit = false;
+      if (exam.status === 'pending') {
+        canEdit = true;
+      } else if (exam.status === 'ongoing') {
+        canEdit = (exam.submittedCount === 0 && exam.onlineCount === 0);
+      } else if (exam.status === 'finished') {
+        canEdit = (exam.submittedCount === 0);
       }
 
       const settings = exam.settings;
@@ -1168,6 +1756,19 @@
 
       // 显示配置
       document.getElementById('configContent').innerHTML = configHTML;
+
+      // 显示或隐藏编辑按钮
+      const editBtnContainer = document.getElementById('configEditBtn');
+      if (canEdit) {
+        editBtnContainer.innerHTML = `
+          <button onclick="enterEditMode()" class="px-4 py-2 border border-primary-500 text-primary-500 hover:bg-primary-50 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-edit mr-2"></i>编辑配置
+          </button>
+        `;
+      } else {
+        editBtnContainer.innerHTML = '';
+      }
+
       document.getElementById('configModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
     }
@@ -1176,6 +1777,269 @@
     function closeConfigModal() {
       document.getElementById('configModal').classList.add('hidden');
       document.body.style.overflow = '';
+      currentConfigExam = null;
+    }
+
+    // 进入编辑模式
+    function enterEditMode() {
+      if (!currentConfigExam) return;
+
+      const settings = currentConfigExam.settings;
+
+      // 生成编辑表单
+      let editHTML = `
+        <div class="space-y-6">
+          <!-- 迟到设置 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <i class="fas fa-clock text-warning-500 mr-2"></i>
+              迟到设置
+            </h4>
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableLateLimit" ${settings.enableLateLimit ? 'checked' : ''} onchange="toggleEditLateLimit()" class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">开考后禁止迟到进入</span>
+              </label>
+              <div id="editLateLimitInput" class="${settings.enableLateLimit ? '' : 'hidden'}">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600">开考后</span>
+                  <input type="number" id="editLateMinutes" value="${settings.lateMinutes || 15}" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <span class="text-sm text-gray-600">分钟后禁止进入</span>
+                </div>
+              </div>
+
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableEarlyEntry" ${settings.enableEarlyEntry ? 'checked' : ''} onchange="toggleEditEarlyEntry()" class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">允许提前进入考试（不可答题）</span>
+              </label>
+              <div id="editEarlyEntryInput" class="${settings.enableEarlyEntry ? '' : 'hidden'}">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600">提前</span>
+                  <input type="number" id="editEarlyMinutes" value="${settings.earlyMinutes || 10}" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <span class="text-sm text-gray-600">分钟可进入</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 防作弊设置 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <i class="fas fa-shield-alt text-error-500 mr-2"></i>
+              防作弊设置
+            </h4>
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableFaceRecognition" ${settings.enableFaceRecognition ? 'checked' : ''} class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">开启人脸识别验证</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableRandomCapture" ${settings.enableRandomCapture ? 'checked' : ''} onchange="toggleEditRandomCapture()" class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">开启随机抓拍</span>
+              </label>
+              <div id="editRandomCaptureInput" class="${settings.enableRandomCapture ? '' : 'hidden'}">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600">抓拍</span>
+                  <input type="number" id="editCaptureCount" value="${settings.captureCount || 3}" min="1" max="10" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <span class="text-sm text-gray-600">张照片</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 交卷限制 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <i class="fas fa-paper-plane text-info-500 mr-2"></i>
+              交卷限制
+            </h4>
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableMinSubmitTime" ${settings.enableMinSubmitTime ? 'checked' : ''} onchange="toggleEditMinSubmitTime()" class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">限制最少作答时间</span>
+              </label>
+              <div id="editMinSubmitTimeInput" class="${settings.enableMinSubmitTime ? '' : 'hidden'}">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-600">作答至少</span>
+                  <input type="number" id="editMinSubmitMinutes" value="${settings.minSubmitMinutes || 30}" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <span class="text-sm text-gray-600">分钟后才可交卷</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 成绩公布设置 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <i class="fas fa-chart-line text-success-500 mr-2"></i>
+              成绩公布设置
+            </h4>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">公布方式：</label>
+                <div class="space-y-3">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="editResultPublishType" value="immediate" ${settings.resultPublishType === 'immediate' ? 'checked' : ''} onchange="toggleEditResultPublish()" class="w-4 h-4 text-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">交卷后立即公布</span>
+                  </label>
+
+                  <div class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="editResultPublishType" value="delayAfterSubmit" ${settings.resultPublishType === 'delayAfterSubmit' ? 'checked' : ''} onchange="toggleEditResultPublish()" class="w-4 h-4 text-primary-600">
+                      <span class="ml-2 text-sm text-gray-700">交卷后延迟公布</span>
+                    </label>
+                    <div id="editDelayAfterSubmitInput" class="${settings.resultPublishType === 'delayAfterSubmit' ? '' : 'hidden'} flex items-center ml-4">
+                      <span class="text-sm text-gray-600 mr-2">交卷后</span>
+                      <input type="number" id="editDelayDaysAfterSubmit" value="${settings.delayDaysAfterSubmit || 1}" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                      <span class="text-sm text-gray-600 ml-2">天后公布</span>
+                    </div>
+                  </div>
+
+                  <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="editResultPublishType" value="afterExamEnd" ${settings.resultPublishType === 'afterExamEnd' ? 'checked' : ''} onchange="toggleEditResultPublish()" class="w-4 h-4 text-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">考试结束后立即公布</span>
+                  </label>
+
+                  <div class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
+                      <input type="radio" name="editResultPublishType" value="delayAfterExamEnd" ${settings.resultPublishType === 'delayAfterExamEnd' ? 'checked' : ''} onchange="toggleEditResultPublish()" class="w-4 h-4 text-primary-600">
+                      <span class="ml-2 text-sm text-gray-700">考试结束后延迟公布</span>
+                    </label>
+                    <div id="editDelayAfterExamEndInput" class="${settings.resultPublishType === 'delayAfterExamEnd' ? '' : 'hidden'} flex items-center ml-4">
+                      <span class="text-sm text-gray-600 mr-2">考试结束后</span>
+                      <input type="number" id="editDelayDaysAfterExamEnd" value="${settings.delayDaysAfterExamEnd || 1}" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                      <span class="text-sm text-gray-600 ml-2">天后公布</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">公布内容：</label>
+                <div class="space-y-2">
+                  <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="editResultContent" value="scoreOnly" ${settings.resultContent === 'scoreOnly' ? 'checked' : ''} class="w-4 h-4 text-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">仅分数</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="editResultContent" value="scoreAndCorrect" ${settings.resultContent === 'scoreAndCorrect' ? 'checked' : ''} class="w-4 h-4 text-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">分数及对错</span>
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="editResultContent" value="full" ${settings.resultContent === 'full' ? 'checked' : ''} class="w-4 h-4 text-primary-600">
+                    <span class="ml-2 text-sm text-gray-700">分数、对错、答案及解析</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI批阅设置 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <i class="fas fa-robot text-purple-500 mr-2"></i>
+              AI批阅设置
+            </h4>
+            <div class="space-y-3">
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableAIGrading" ${settings.enableAIGrading ? 'checked' : ''} class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">AI自动批阅</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" id="editEnableAIComment" ${settings.enableAIComment ? 'checked' : ''} class="w-4 h-4 text-primary-600 rounded">
+                <span class="ml-2 text-sm text-gray-700">AI生成评语</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('configContent').innerHTML = editHTML;
+
+      // 切换按钮显示
+      document.getElementById('configEditBtn').innerHTML = '';
+      document.getElementById('configCloseBtn').classList.add('hidden');
+      document.getElementById('configCancelBtn').classList.remove('hidden');
+      document.getElementById('configSaveBtn').classList.remove('hidden');
+    }
+
+    // 取消编辑
+    function cancelEditConfig() {
+      if (currentConfigExam) {
+        viewConfig(currentConfigExam.id);
+      }
+    }
+
+    // 切换迟到限制输入
+    function toggleEditLateLimit() {
+      const enabled = document.getElementById('editEnableLateLimit').checked;
+      document.getElementById('editLateLimitInput').classList.toggle('hidden', !enabled);
+    }
+
+    // 切换随机抓拍输入
+    function toggleEditRandomCapture() {
+      const enabled = document.getElementById('editEnableRandomCapture').checked;
+      document.getElementById('editRandomCaptureInput').classList.toggle('hidden', !enabled);
+    }
+
+    // 切换最小作答时间输入
+    function toggleEditMinSubmitTime() {
+      const enabled = document.getElementById('editEnableMinSubmitTime').checked;
+      document.getElementById('editMinSubmitTimeInput').classList.toggle('hidden', !enabled);
+    }
+
+    // 切换提前进入输入
+    function toggleEditEarlyEntry() {
+      const enabled = document.getElementById('editEnableEarlyEntry').checked;
+      document.getElementById('editEarlyEntryInput').classList.toggle('hidden', !enabled);
+    }
+
+    // 切换成绩公布方式输入
+    function toggleEditResultPublish() {
+      const type = document.querySelector('input[name="editResultPublishType"]:checked').value;
+      document.getElementById('editDelayAfterSubmitInput').classList.toggle('hidden', type !== 'delayAfterSubmit');
+      document.getElementById('editDelayAfterExamEndInput').classList.toggle('hidden', type !== 'delayAfterExamEnd');
+    }
+
+    // 保存配置修改
+    function saveConfigChanges() {
+      if (!currentConfigExam) return;
+
+      // 读取表单数据
+      const newSettings = {
+        enableLateLimit: document.getElementById('editEnableLateLimit').checked,
+        lateMinutes: parseInt(document.getElementById('editLateMinutes').value) || 15,
+        enableEarlyEntry: document.getElementById('editEnableEarlyEntry').checked,
+        earlyMinutes: parseInt(document.getElementById('editEarlyMinutes').value) || 10,
+        enableFaceRecognition: document.getElementById('editEnableFaceRecognition').checked,
+        enableRandomCapture: document.getElementById('editEnableRandomCapture').checked,
+        captureCount: parseInt(document.getElementById('editCaptureCount').value) || 3,
+        enableMinSubmitTime: document.getElementById('editEnableMinSubmitTime').checked,
+        minSubmitMinutes: parseInt(document.getElementById('editMinSubmitMinutes').value) || 30,
+        resultPublishType: document.querySelector('input[name="editResultPublishType"]:checked').value,
+        delayDaysAfterSubmit: parseInt(document.getElementById('editDelayDaysAfterSubmit').value) || 1,
+        delayDaysAfterExamEnd: parseInt(document.getElementById('editDelayDaysAfterExamEnd').value) || 1,
+        resultContent: document.querySelector('input[name="editResultContent"]:checked').value,
+        enableAIGrading: document.getElementById('editEnableAIGrading').checked,
+        enableAIComment: document.getElementById('editEnableAIComment').checked
+      };
+
+      // 更新考试数据
+      const examIndex = exams.findIndex(e => e.id === currentConfigExam.id);
+      if (examIndex !== -1) {
+        exams[examIndex].settings = newSettings;
+        localStorage.setItem('exams', JSON.stringify(exams));
+
+        showMessage('配置更新成功', 'success');
+
+        // 刷新列表
+        renderList();
+
+        // 关闭模态框
+        closeConfigModal();
+      } else {
+        showMessage('更新失败：考试不存在', 'error');
+      }
     }
 
     // 点击遮罩层关闭模态框
@@ -2051,9 +2915,9 @@
       container.appendChild(messageDiv);
 
       setTimeout(() => {
-        messageDiv.style.animation = 'slideIn 0.3s ease-out reverse';
+        messageDiv.style.animation = 'fadeIn 0.3s ease-out reverse';
         setTimeout(() => messageDiv.remove(), 300);
-      }, 3000);
+      }, 2000);
     }
   </script>
 </body>

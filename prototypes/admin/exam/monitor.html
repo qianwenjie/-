@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>考试监控 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#00B96B","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},
+            success: {"50":"#f0fdf4","100":"#dcfce7","200":"#bbf7d0","300":"#86efac","400":"#4ade80","500":"#22c55e","600":"#16a34a","700":"#15803d","800":"#166534","900":"#14532d","950":"#052e16"},
+            warning: {"50":"#fffbeb","100":"#fef3c7","200":"#fde68a","300":"#fcd34d","400":"#fbbf24","500":"#f59e0b","600":"#d97706","700":"#b45309","800":"#92400e","900":"#78350f","950":"#451a03"},
+            error: {"50":"#fef2f2","100":"#fee2e2","200":"#fecaca","300":"#fca5a5","400":"#f87171","500":"#ef4444","600":"#dc2626","700":"#b91c1c","800":"#991b1b","900":"#7f1d1d","950":"#450a0a"},
+            info: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .student-item.active {
+      background-color: #f0fdf4;
+      border-left: 3px solid #00B96B;
+    }
+
+    @keyframes messageFadeIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Message 提示容器 -->
+  <div id="messageContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">考试管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">考试监控</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <img src="https://via.placeholder.com/32" alt="头像" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="fixed top-16 left-0 right-0 bottom-0 flex flex-col">
+    <!-- 头部信息区域 -->
+    <div class="flex-none bg-white border-b border-gray-200 px-6 py-3">
+      <div class="flex items-center justify-between">
+        <!-- 左侧：考试基本信息 -->
+        <div class="flex items-center gap-4">
+          <a href="list.html" class="text-gray-500 hover:text-gray-700 transition-colors">
+            <i class="fas fa-arrow-left text-lg"></i>
+          </a>
+          <div class="flex items-center gap-3">
+            <h1 class="text-base font-semibold text-gray-900" id="examName">加载中...</h1>
+            <span class="text-xs text-gray-500">|</span>
+            <span class="text-xs text-gray-600"><i class="fas fa-hashtag mr-1"></i><span id="examCode">-</span></span>
+            <span class="text-xs text-gray-600"><i class="fas fa-calendar mr-1"></i><span id="examTime">-</span></span>
+            <span class="text-xs text-gray-600"><i class="fas fa-clock mr-1"></i><span id="examDuration">-</span>分钟</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium" id="examStatusBadge">-</span>
+            <button onclick="showExamConfigModal()" class="text-xs text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1">
+              <i class="fas fa-cog"></i>
+              <span>查看考试配置</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 右侧：统计数据 -->
+        <div class="flex items-center gap-6 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500">在线</span>
+            <span class="text-lg font-bold text-success-600" id="onlineCount">0</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500">离线</span>
+            <span class="text-lg font-bold text-gray-600" id="offlineCount">0</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500 flex items-center gap-1">
+              非正常
+              <div class="relative inline-block group">
+                <i class="fas fa-info-circle text-gray-400 cursor-help"></i>
+                <div class="hidden group-hover:block absolute right-0 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50">
+                  泛指缺考、违纪、作弊、疑似作弊考生
+                  <div class="absolute right-3 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                </div>
+              </div>
+            </span>
+            <span class="text-lg font-bold text-error-600" id="abnormalCount">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="flex-none bg-white border-b border-gray-200 px-6 py-3">
+      <div class="flex items-center justify-between">
+        <!-- 左侧：筛选 -->
+        <div class="flex items-center gap-2">
+          <select id="statusFilter" onchange="filterStudents()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">全部状态</option>
+            <option value="normal">正常</option>
+            <option value="violation">违纪</option>
+            <option value="cheating">作弊</option>
+            <option value="suspected_cheating">疑似作弊</option>
+            <option value="absent">缺考</option>
+          </select>
+          <select id="onlineFilter" onchange="filterStudents()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">全部在线状态</option>
+            <option value="online">在线</option>
+            <option value="offline">离线</option>
+          </select>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="搜索姓名、用户名..."
+            onkeyup="filterStudents()"
+            class="w-48 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+          <button onclick="resetFilter()" class="px-3 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+            <i class="fas fa-redo mr-1"></i>重置
+          </button>
+        </div>
+
+        <!-- 右侧：刷新按钮 -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">自动刷新</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="autoRefresh" checked class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-500"></div>
+          </label>
+          <button onclick="manualRefresh()" class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <i class="fas fa-sync-alt mr-1"></i>立即刷新
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 监控主体区域 -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- 左侧：考生列表 -->
+      <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div class="flex-none px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-900">考生列表</span>
+            <span class="text-xs text-gray-500"><span id="filteredCount">0</span> / <span id="totalCount">0</span></span>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto" id="studentList" onscroll="handleStudentListScroll()">
+          <!-- 考生列表将通过 JS 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 右侧：考生详情 -->
+      <div class="flex-1 bg-gray-50 overflow-y-auto" id="studentDetail">
+        <!-- 考生详情将通过 JS 动态生成 -->
+      </div>
+    </div>
+  </main>
+
+  <!-- 考试配置查看模态框 -->
+  <div id="examConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">考试配置</h3>
+        <button onclick="closeExamConfigModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-6 py-4" id="examConfigContent">
+        <!-- 配置内容将通过 JS 动态生成 -->
+      </div>
+      <div class="flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <button onclick="closeExamConfigModal()" class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 标记状态模态框 -->
+  <div id="markStatusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">标记考生状态</h3>
+        <button onclick="closeMarkStatusModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="mb-4">
+          <div class="text-sm text-gray-700 mb-2">考生信息</div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center gap-3">
+              <img id="markStudentPhoto" src="" alt="" class="w-12 h-12 rounded-full object-cover">
+              <div>
+                <div class="text-sm font-medium text-gray-900" id="markStudentName">-</div>
+                <div class="text-xs text-gray-500" id="markStudentUsername">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm text-gray-700 mb-2">选择状态 <span class="text-error-500">*</span></div>
+          <div class="space-y-2">
+            <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="markStatus" value="normal" class="w-4 h-4 text-primary-600">
+              <span class="ml-3 text-sm text-gray-900">正常</span>
+            </label>
+            <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="markStatus" value="violation" class="w-4 h-4 text-warning-600">
+              <span class="ml-3 text-sm text-gray-900">违纪</span>
+            </label>
+            <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="markStatus" value="cheating" class="w-4 h-4 text-error-600">
+              <span class="ml-3 text-sm text-gray-900">作弊</span>
+            </label>
+            <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="markStatus" value="suspected_cheating" class="w-4 h-4 text-warning-600">
+              <span class="ml-3 text-sm text-gray-900">疑似作弊</span>
+            </label>
+            <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="markStatus" value="absent" class="w-4 h-4 text-gray-600">
+              <span class="ml-3 text-sm text-gray-900">缺考</span>
+            </label>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="text-sm text-gray-700 mb-2">备注</div>
+          <textarea id="markRemark" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" placeholder="选填，如：违纪原因、发现时间等"></textarea>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <button onclick="closeMarkStatusModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="saveMarkStatus()" class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600">
+          确定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 跳过人脸识别模态框 -->
+  <div id="skipFaceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">跳过人脸识别</h3>
+        <button onclick="closeSkipFaceModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <div class="mb-4">
+          <div class="text-sm text-gray-700 mb-2">考生信息</div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center gap-3">
+              <img id="skipFaceStudentPhoto" src="" alt="" class="w-12 h-12 rounded-full object-cover">
+              <div>
+                <div class="text-sm font-medium text-gray-900" id="skipFaceStudentName">-</div>
+                <div class="text-xs text-gray-500" id="skipFaceStudentUsername">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-4">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-exclamation-triangle text-warning-600 mt-0.5"></i>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-warning-900 mb-1">操作说明</div>
+              <div class="text-xs text-warning-700 leading-relaxed space-y-1">
+                <p>• 设置后，该考生刷新页面重新进入考试时将不再需要进行人脸识别验证</p>
+                <p>• 此功能用于解决人脸识别一直不通过导致考生无法及时进入考试的问题</p>
+                <p>• <strong>仅支持未开始答题的考生</strong>，考生开始答题后将无法跳过或取消跳过</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-sm text-gray-700 mb-2">跳过原因 <span class="text-gray-400">(选填)</span></div>
+        <textarea id="skipFaceReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" placeholder="例如：人脸识别多次失败、网络问题等"></textarea>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <button onclick="closeSkipFaceModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="confirmSkipFaceRecognition()" class="px-4 py-2 bg-warning-500 text-white rounded-lg hover:bg-warning-600">
+          <i class="fas fa-user-slash mr-2"></i>确认跳过
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 获取考试ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('examId');
+
+    // 数据存储
+    let currentExam = null;
+    let students = [];
+    let filteredStudents = [];
+    let displayedStudents = []; // 当前显示的学生列表（用于异步加载）
+    let currentPage = 0; // 当前加载的页数
+    const pageSize = 50; // 每页加载数量
+    let isLoadingMore = false; // 是否正在加载更多
+    let currentStudentIndex = 0;
+    let currentStudent = null;
+    let autoRefreshInterval = null;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadExamData();
+      loadStudentsData();
+      renderStudentList(true); // 初始化时重置滚动
+      if (filteredStudents.length > 0) {
+        selectStudent(0);
+      } else {
+        renderStudentDetail();
+      }
+
+      // 键盘导航
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          navigateStudent(-1);
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          navigateStudent(1);
+        }
+      });
+
+      // 自动刷新
+      const autoRefreshCheckbox = document.getElementById('autoRefresh');
+      autoRefreshCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          startAutoRefresh();
+        } else {
+          stopAutoRefresh();
+        }
+      });
+
+      // 启动自动刷新（默认开启）
+      startAutoRefresh();
+    });
+
+    // 加载考试数据
+    function loadExamData() {
+      const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+      currentExam = exams.find(e => e.id === examId);
+
+      if (currentExam) {
+        document.getElementById('examName').textContent = currentExam.name;
+        document.getElementById('examCode').textContent = currentExam.code;
+        document.getElementById('examTime').textContent = `${currentExam.openStartTime} ~ ${currentExam.openEndTime}`;
+        document.getElementById('examDuration').textContent = currentExam.duration || '-';
+
+        // 考试状态（根据时间动态判断）
+        const now = new Date();
+        const startTime = new Date(currentExam.openStartTime);
+        const endTime = new Date(currentExam.openEndTime);
+        let status = '';
+        let statusClass = '';
+        let statusValue = '';
+
+        if (now < startTime) {
+          status = '未开始';
+          statusClass = 'bg-gray-100 text-gray-600';
+          statusValue = 'pending';
+        } else if (now >= startTime && now <= endTime) {
+          status = '进行中';
+          statusClass = 'bg-success-100 text-success-600';
+          statusValue = 'ongoing';
+        } else {
+          status = '已结束';
+          statusClass = 'bg-gray-200 text-gray-700';
+          statusValue = 'finished';
+        }
+
+        // 更新currentExam的status（用于逻辑判断）
+        currentExam.status = statusValue;
+
+        const statusEl = document.getElementById('examStatusBadge');
+        statusEl.textContent = status;
+        statusEl.className = `px-2 py-0.5 rounded text-xs font-medium ${statusClass}`;
+      }
+    }
+
+    // 加载考生数据
+    function loadStudentsData() {
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      let studentsData = allStudentsData[examId] || [];
+
+      // 如果没有数据，生成模拟数据
+      if (studentsData.length === 0) {
+        studentsData = generateMockMonitorData();
+        allStudentsData[examId] = studentsData;
+        localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+      }
+
+      // 添加监控特有字段
+      students = studentsData.map((s, index) => {
+        const enterTime = generateTimeString(0, 15); // 09:00-09:15 进入
+        const facePassTime = addMinutesToTime(enterTime, 0, 2); // 进入后0-2分钟人脸识别
+        const startAnswerTime = addMinutesToTime(facePassTime, 2, 8); // 人脸识别后2-8分钟开始答题
+        const answerDuration = Math.floor(Math.random() * 60) + 30; // 30-90分钟答题时长
+
+        // 离开次数最多2次，90%的学生不离开，8%离开1次，2%离开2次
+        const rand = Math.random();
+        const leaveCount = rand > 0.9 ? (rand > 0.98 ? 2 : 1) : 0;
+
+        // 生成离开和返回时间
+        const leaveTimes = [];
+        const returnTimes = [];
+        if (leaveCount > 0) {
+          let lastTime = startAnswerTime;
+          for (let i = 0; i < leaveCount; i++) {
+            const leaveTime = addMinutesToTime(lastTime, 10 + i * 15, 20 + i * 15);
+            const returnTime = addMinutesToTime(leaveTime, 0, 3);
+            leaveTimes.push(leaveTime);
+            returnTimes.push(returnTime);
+            lastTime = returnTime;
+          }
+        }
+
+        // 判断是否交卷（已结束的考试，正常状态的考生应该有交卷时间）
+        const isFinished = currentExam && currentExam.status === 'finished';
+        const isOngoing = currentExam && currentExam.status === 'ongoing';
+        const isNormal = s.monitorStatus === 'normal' || !s.monitorStatus;
+        const shouldHaveSubmitTime = isFinished && isNormal;
+        const hasSubmitted = shouldHaveSubmitTime || s.progress === 100 || Math.random() > 0.3;
+
+        // 进行中的考试：前5个学生设置为未开始答题（可测试跳过人脸识别）
+        const isNotStarted = isOngoing && index < 5 && !s.progress && !s.answeredCount;
+
+        return {
+          ...s,
+          monitorStatus: s.monitorStatus || (Math.random() > 0.1 ? 'normal' : ['violation', 'cheating', 'suspected_cheating'][Math.floor(Math.random() * 3)]),
+          // 未开始答题的学生确保在线
+          isOnline: s.isOnline !== undefined ? s.isOnline : (isNotStarted ? true : (isFinished ? false : Math.random() > 0.1)),
+          progress: s.progress !== undefined ? s.progress : (isNotStarted ? 0 : (hasSubmitted ? 100 : Math.floor(Math.random() * 100))),
+          currentQuestion: s.currentQuestion || (isNotStarted ? 1 : Math.floor(Math.random() * 50) + 1),
+          answeredCount: s.answeredCount !== undefined ? s.answeredCount : (isNotStarted ? 0 : Math.floor(Math.random() * 40)),
+          enterTime: s.enterTime || enterTime,
+          facePassTime: s.facePassTime || facePassTime,
+          startAnswerTime: s.startAnswerTime || startAnswerTime,
+          answerDuration: s.answerDuration || `${answerDuration}分钟`,
+          submitTime: s.submitTime || (hasSubmitted ? addMinutesToTime(startAnswerTime, answerDuration, answerDuration + 5) : null),
+          leaveCount: s.leaveCount !== undefined ? s.leaveCount : leaveCount,
+          leaveTimes: s.leaveTimes || leaveTimes,
+          returnTimes: s.returnTimes || returnTimes,
+          firstLeaveTime: leaveTimes.length > 0 ? leaveTimes[0] : null,
+          firstReturnTime: returnTimes.length > 0 ? returnTimes[0] : null,
+          // 人脸识别率：只有通过验证(≥90%)才能进入考试，所以都是90-98%
+          faceRecognitionRate: (90 + Math.floor(Math.random() * 9)) + '%',
+          lastFaceCheck: s.lastFaceCheck || generateRecentTime(),
+          // 跳过人脸识别标记（保留原有值或默认为false）
+          skipFaceRecognition: s.skipFaceRecognition || false,
+          // 截图数据总是根据当前考试配置重新生成，确保数量与配置一致
+          screenshots: generateScreenshots(currentExam)
+        };
+      });
+
+      filteredStudents = [...students];
+      updateStatistics();
+    }
+
+    // 生成模拟监控数据
+    function generateMockMonitorData() {
+      const mockData = [];
+      const surnames = ['张', '李', '王', '刘', '陈', '杨', '黄', '赵', '周', '吴'];
+      const givenNames = ['伟', '芳', '娜', '敏', '静', '丽', '强', '磊', '洋', '勇'];
+
+      for (let i = 0; i < 100; i++) {
+        const username = `student${String(i + 1).padStart(3, '0')}`;
+        const name = surnames[Math.floor(Math.random() * surnames.length)] + givenNames[Math.floor(Math.random() * givenNames.length)];
+
+        mockData.push({
+          username,
+          name,
+          photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+          phone: `138****${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
+        });
+      }
+
+      return mockData;
+    }
+
+    // 生成最近时间
+    function generateRecentTime() {
+      const now = new Date();
+      const minutes = Math.floor(Math.random() * 10);
+      now.setMinutes(now.getMinutes() - minutes);
+      return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+
+    // 生成指定范围内的时间字符串 (HH:MM:SS 格式，从 09:00 开始)
+    function generateTimeString(minMinutes, maxMinutes) {
+      const baseHour = 9;
+      const baseMinute = 0;
+      const addMinutes = minMinutes + Math.floor(Math.random() * (maxMinutes - minMinutes + 1));
+      const totalMinutes = baseMinute + addMinutes;
+      const hour = baseHour + Math.floor(totalMinutes / 60);
+      const minute = totalMinutes % 60;
+      const second = Math.floor(Math.random() * 60);
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+    }
+
+    // 在时间字符串上增加分钟数
+    function addMinutesToTime(timeStr, minAdd, maxAdd) {
+      const [hour, minute, second] = timeStr.split(':').map(Number);
+      const addMinutes = minAdd + Math.floor(Math.random() * (maxAdd - minAdd + 1));
+      const totalMinutes = hour * 60 + minute + addMinutes;
+      const newHour = Math.floor(totalMinutes / 60);
+      const newMinute = totalMinutes % 60;
+      return `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+    }
+
+    // 生成截图记录
+    function generateScreenshots(exam) {
+      // 如果没有开启随机抓拍，返回空数组
+      if (!exam || !exam.settings || !exam.settings.enableRandomCapture) {
+        return [];
+      }
+
+      // 根据配置的抓拍数量生成截图
+      const count = exam.settings.captureCount || 3;
+      const screenshots = [];
+      for (let i = 0; i < count; i++) {
+        screenshots.push({
+          time: generateRecentTime(),
+          url: 'https://via.placeholder.com/400x300'
+        });
+      }
+      return screenshots;
+    }
+
+    // 生成时间轴
+    function generateTimeline() {
+      return [
+        { time: '09:00:15', event: '进入考试', type: 'info' },
+        { time: '09:05:32', event: '开始答题', type: 'success' },
+        { time: '09:15:20', event: '离开页面', type: 'warning' },
+        { time: '09:15:45', event: '返回页面', type: 'info' },
+        { time: '09:30:10', event: '人脸识别异常', type: 'error' }
+      ];
+    }
+
+    // 更新统计数据
+    function updateStatistics() {
+      const onlineCount = students.filter(s => s.isOnline).length;
+      const offlineCount = students.length - onlineCount;
+      const abnormalCount = students.filter(s =>
+        s.monitorStatus === 'violation' ||
+        s.monitorStatus === 'cheating' ||
+        s.monitorStatus === 'suspected_cheating'
+      ).length;
+
+      document.getElementById('onlineCount').textContent = onlineCount;
+      document.getElementById('offlineCount').textContent = offlineCount;
+      document.getElementById('abnormalCount').textContent = abnormalCount;
+      document.getElementById('totalCount').textContent = students.length;
+      document.getElementById('filteredCount').textContent = filteredStudents.length;
+    }
+
+    // 渲染考生列表（异步加载）
+    function renderStudentList(resetScroll = false) {
+      const container = document.getElementById('studentList');
+
+      if (filteredStudents.length === 0) {
+        container.innerHTML = `
+          <div class="flex items-center justify-center h-full text-gray-400">
+            <div class="text-center">
+              <i class="fas fa-users text-4xl mb-2"></i>
+              <p>暂无考生数据</p>
+            </div>
+          </div>
+        `;
+        displayedStudents = [];
+        currentPage = 0;
+        return;
+      }
+
+      // 重置滚动则清空已显示列表，重新从第一页开始
+      if (resetScroll) {
+        displayedStudents = [];
+        currentPage = 0;
+        container.innerHTML = '';
+        container.scrollTop = 0;
+      }
+
+      // 加载第一页数据
+      if (displayedStudents.length === 0) {
+        loadMoreStudents();
+      }
+    }
+
+    // 加载更多学生数据
+    function loadMoreStudents() {
+      if (isLoadingMore) return;
+
+      const start = currentPage * pageSize;
+      const end = Math.min(start + pageSize, filteredStudents.length);
+
+      // 没有更多数据了
+      if (start >= filteredStudents.length) return;
+
+      isLoadingMore = true;
+      const container = document.getElementById('studentList');
+
+      // 移除加载提示（如果存在）
+      const loadingElement = container.querySelector('#loadingIndicator');
+      if (loadingElement) {
+        loadingElement.remove();
+      }
+
+      // 加载新的学生数据
+      const newStudents = filteredStudents.slice(start, end);
+      displayedStudents.push(...newStudents);
+
+      // 渲染新加载的学生
+      const fragment = document.createDocumentFragment();
+      newStudents.forEach((student, idx) => {
+        const globalIndex = start + idx;
+        const div = document.createElement('div');
+        div.className = `student-item px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${globalIndex === currentStudentIndex ? 'active' : ''}`;
+        div.onclick = () => selectStudent(globalIndex);
+
+        const statusConfig = {
+          'normal': { text: '正常', color: 'bg-success-100 text-success-700' },
+          'violation': { text: '违纪', color: 'bg-warning-100 text-warning-700' },
+          'cheating': { text: '作弊', color: 'bg-error-100 text-error-700' },
+          'suspected_cheating': { text: '疑似作弊', color: 'bg-warning-100 text-warning-700' },
+          'absent': { text: '缺考', color: 'bg-gray-100 text-gray-600' }
+        };
+        const statusInfo = statusConfig[student.monitorStatus] || statusConfig['normal'];
+
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="${student.photo}" alt="${student.name}" class="w-10 h-10 rounded-full object-cover">
+              ${student.isOnline ?
+                '<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-success-500 border-2 border-white rounded-full"></div>' :
+                '<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 border-2 border-white rounded-full"></div>'
+              }
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-900 truncate">${student.name}</span>
+                <span class="px-1.5 py-0.5 text-xs rounded ${statusInfo.color}">${statusInfo.text}</span>
+                ${student.skipFaceRecognition ? '<span class="px-1.5 py-0.5 text-xs rounded bg-warning-100 text-warning-700"><i class="fas fa-user-slash mr-1"></i>跳过人脸识别</span>' : ''}
+              </div>
+              <div class="text-xs text-gray-500">${student.username} | ${student.phone || '-'}</div>
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-600">
+                <span><i class="fas fa-tasks mr-1"></i>${student.progress}%</span>
+                <span><i class="fas fa-question-circle mr-1"></i>${student.currentQuestion}/50</span>
+              </div>
+            </div>
+          </div>
+        `;
+        fragment.appendChild(div);
+      });
+
+      container.appendChild(fragment);
+
+      // 如果还有更多数据，添加加载提示
+      if (end < filteredStudents.length) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loadingIndicator';
+        loadingDiv.className = 'py-4 text-center text-sm text-gray-500';
+        loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>加载中...';
+        container.appendChild(loadingDiv);
+      } else {
+        // 加载完成提示
+        const endDiv = document.createElement('div');
+        endDiv.className = 'py-3 text-center text-xs text-gray-400';
+        endDiv.innerHTML = `已加载全部 ${filteredStudents.length} 名考生`;
+        container.appendChild(endDiv);
+      }
+
+      currentPage++;
+      isLoadingMore = false;
+    }
+
+    // 处理学生列表滚动事件
+    function handleStudentListScroll() {
+      const container = document.getElementById('studentList');
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+
+      // 滚动到距离底部100px时加载更多
+      if (scrollHeight - scrollTop - clientHeight < 100) {
+        loadMoreStudents();
+      }
+    }
+
+    // 渲染考生详情
+    function renderStudentDetail() {
+      if (filteredStudents.length === 0) {
+        document.getElementById('studentDetail').innerHTML = `
+          <div class="flex items-center justify-center h-full text-gray-400">
+            <div class="text-center">
+              <i class="fas fa-user-slash text-5xl mb-3"></i>
+              <p>请选择考生查看详情</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      currentStudent = filteredStudents[currentStudentIndex];
+
+      const statusConfig = {
+        'normal': { text: '正常', color: 'bg-success-100 text-success-700', icon: 'fa-check-circle' },
+        'violation': { text: '违纪', color: 'bg-warning-100 text-warning-700', icon: 'fa-exclamation-triangle' },
+        'cheating': { text: '作弊', color: 'bg-error-100 text-error-700', icon: 'fa-ban' },
+        'suspected_cheating': { text: '疑似作弊', color: 'bg-warning-100 text-warning-700', icon: 'fa-question-circle' },
+        'absent': { text: '缺考', color: 'bg-gray-100 text-gray-600', icon: 'fa-user-times' }
+      };
+      const statusInfo = statusConfig[currentStudent.monitorStatus] || statusConfig['normal'];
+
+      document.getElementById('studentDetail').innerHTML = `
+        <div class="p-6 space-y-6">
+          <!-- 考生基本信息 -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-4">
+                <img src="${currentStudent.photo}" alt="${currentStudent.name}" class="w-20 h-20 rounded-full object-cover border-4 border-gray-100">
+                <div>
+                  <h2 class="text-xl font-semibold text-gray-900">${currentStudent.name}</h2>
+                  <p class="text-sm text-gray-500 mt-1">${currentStudent.username}</p>
+                  <p class="text-sm text-gray-500">${currentStudent.phone || '-'}</p>
+                  <div class="mt-2 flex items-center gap-2">
+                    <span class="px-3 py-1 text-sm rounded-full ${statusInfo.color}">
+                      <i class="fas ${statusInfo.icon} mr-1"></i>${statusInfo.text}
+                    </span>
+                    ${currentStudent.isOnline ?
+                      '<span class="px-3 py-1 text-sm rounded-full bg-success-100 text-success-700"><i class="fas fa-circle mr-1 text-xs"></i>在线</span>' :
+                      '<span class="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600"><i class="fas fa-circle mr-1 text-xs"></i>离线</span>'
+                    }
+                  </div>
+                </div>
+              </div>
+              ${currentExam && currentExam.status === 'finished' ? `
+                <div class="flex gap-2">
+                  <button class="px-4 py-2 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg text-sm font-medium" disabled>
+                    <i class="fas fa-user-slash mr-2"></i>跳过人脸识别
+                  </button>
+                  <button onclick="showMarkStatusModal()" class="px-4 py-2 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg text-sm font-medium" disabled>
+                    <i class="fas fa-flag mr-2"></i>标记状态
+                  </button>
+                </div>
+              ` : `
+                <div class="flex gap-2">
+                  ${currentExam && currentExam.settings && currentExam.settings.enableFaceRecognition ? `
+                    ${currentStudent.skipFaceRecognition ? `
+                      ${currentStudent.progress > 0 || currentStudent.answeredCount > 0 ? `
+                        <button class="px-4 py-2 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg text-sm font-medium" disabled title="学生已开始答题，无法取消跳过">
+                          <i class="fas fa-undo mr-2"></i>取消跳过
+                        </button>
+                      ` : `
+                        <button onclick="cancelSkipFaceRecognition()" class="px-4 py-2 border border-warning-500 text-warning-600 hover:bg-warning-50 rounded-lg text-sm font-medium">
+                          <i class="fas fa-undo mr-2"></i>取消跳过
+                        </button>
+                      `}
+                    ` : `
+                      ${currentStudent.progress > 0 || currentStudent.answeredCount > 0 ? `
+                        <button class="px-4 py-2 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg text-sm font-medium" disabled title="学生已开始答题，无法跳过人脸识别">
+                          <i class="fas fa-user-slash mr-2"></i>跳过人脸识别
+                        </button>
+                      ` : `
+                        <button onclick="skipFaceRecognition()" class="px-4 py-2 border border-info-500 text-info-600 hover:bg-info-50 rounded-lg text-sm font-medium">
+                          <i class="fas fa-user-slash mr-2"></i>跳过人脸识别
+                        </button>
+                      `}
+                    `}
+                  ` : ''}
+                  <button onclick="showMarkStatusModal()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+                    <i class="fas fa-flag mr-2"></i>标记状态
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+
+          <!-- 答题进度 -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">答题进度</h3>
+            <div class="grid grid-cols-4 gap-4 mb-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-primary-600">${currentStudent.progress}%</div>
+                <div class="text-xs text-gray-500 mt-1">完成进度</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-success-600">${currentStudent.answeredCount}</div>
+                <div class="text-xs text-gray-500 mt-1">已答题数</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-warning-600">${currentStudent.currentQuestion}</div>
+                <div class="text-xs text-gray-500 mt-1">当前题号</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-600">50</div>
+                <div class="text-xs text-gray-500 mt-1">总题数</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-primary-500 h-2 rounded-full transition-all" style="width: ${currentStudent.progress}%"></div>
+            </div>
+          </div>
+
+          <!-- 监控记录 -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">监控记录</h3>
+            <div class="grid grid-cols-5 gap-4">
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-xs text-gray-500 mb-1">进入时间</div>
+                <div class="text-sm font-medium text-gray-900">${currentStudent.enterTime || '09:00:15'}</div>
+              </div>
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-xs text-gray-500 mb-1">开始答题</div>
+                <div class="text-sm font-medium text-gray-900">${currentStudent.startAnswerTime || '09:05:20'}</div>
+              </div>
+              <div class="text-center p-3 bg-warning-50 rounded-lg">
+                <div class="text-xs text-gray-600 mb-1">离开次数<span class="text-gray-400 ml-1">(离开1分钟算1次)</span></div>
+                <div class="text-lg font-bold text-warning-700">${currentStudent.leaveCount || 0}</div>
+              </div>
+              <div class="text-center p-3 bg-success-50 rounded-lg">
+                <div class="text-xs text-gray-600 mb-1">已作答时间</div>
+                <div class="text-sm font-medium text-success-700">${currentStudent.answerDuration || '45分钟'}</div>
+              </div>
+              <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-xs text-gray-500 mb-1">交卷时间</div>
+                <div class="text-sm font-medium text-gray-900">${currentStudent.submitTime || currentStudent.progress === 100 ? (currentStudent.submitTime || '10:30:45') : '-'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 人脸识别（根据考试配置） -->
+          ${currentExam && currentExam.settings && currentExam.settings.enableFaceRecognition ? `
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">人脸识别</h3>
+            ${currentStudent.skipFaceRecognition ? `
+              <!-- 已跳过人脸识别 -->
+              <div class="grid grid-cols-3 gap-4">
+                <!-- 系统照片 -->
+                <div class="text-center">
+                  <div class="relative mb-2">
+                    <img src="https://via.placeholder.com/150" alt="系统照片" class="w-full h-40 object-cover rounded-lg border-2 border-gray-200">
+                    <div class="absolute top-2 left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded">
+                      系统照片
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-500">注册时采集</div>
+                </div>
+
+                <!-- 对比照片（无） -->
+                <div class="text-center">
+                  <div class="relative mb-2 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg h-40">
+                    <div class="text-center">
+                      <i class="fas fa-ban text-3xl text-gray-400 mb-2"></i>
+                      <div class="text-sm text-gray-500">无</div>
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-500">已跳过验证</div>
+                </div>
+
+                <!-- 识别率（--） -->
+                <div class="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-4xl font-bold text-gray-400 mb-2">--</div>
+                  <div class="text-sm text-gray-600 font-medium">识别率</div>
+                  <div class="mt-2 text-xs text-warning-600">
+                    <i class="fas fa-info-circle mr-1"></i>已跳过验证
+                  </div>
+                </div>
+              </div>
+            ` : `
+              <!-- 正常人脸识别 -->
+              <div class="grid grid-cols-3 gap-4">
+                <!-- 系统照片 -->
+                <div class="text-center">
+                  <div class="relative mb-2">
+                    <img src="https://via.placeholder.com/150" alt="系统照片" class="w-full h-40 object-cover rounded-lg border-2 border-gray-200">
+                    <div class="absolute top-2 left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded">
+                      系统照片
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-500">注册时采集</div>
+                </div>
+
+                <!-- 对比照片 -->
+                <div class="text-center">
+                  <div class="relative mb-2">
+                    <img src="https://via.placeholder.com/150" alt="对比照片" class="w-full h-40 object-cover rounded-lg border-2 ${parseInt(currentStudent.faceRecognitionRate) >= 90 ? 'border-success-500' : 'border-warning-500'}">
+                    <div class="absolute top-2 left-2 bg-info-500 text-white text-xs px-2 py-1 rounded">
+                      对比照片
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-500">${currentStudent.lastFaceCheck}</div>
+                </div>
+
+                <!-- 识别率 -->
+                <div class="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg">
+                  <div class="text-4xl font-bold ${parseInt(currentStudent.faceRecognitionRate) >= 90 ? 'text-success-600' : 'text-warning-600'} mb-2">${currentStudent.faceRecognitionRate}</div>
+                  <div class="text-sm text-gray-600 font-medium">识别率</div>
+                  <div class="mt-2 text-xs ${parseInt(currentStudent.faceRecognitionRate) >= 90 ? 'text-success-600' : 'text-warning-600'}">
+                    ${parseInt(currentStudent.faceRecognitionRate) >= 90 ? '✓ 识别通过' : '⚠ 识别率偏低'}
+                  </div>
+                </div>
+              </div>
+            `}
+          </div>
+          ` : ''}
+
+          <!-- 抓拍截图（根据考试配置） -->
+          ${currentExam && currentExam.settings && currentExam.settings.enableRandomCapture ? `
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">随机抓拍 <span class="text-sm font-normal text-gray-500">(已抓拍 ${currentStudent.screenshots.length} 张)</span></h3>
+            <div class="grid grid-cols-3 gap-4">
+              ${currentStudent.screenshots.map(screenshot => `
+                <div class="relative group cursor-pointer">
+                  <img src="${screenshot.url}" alt="截图" class="w-full h-32 object-cover rounded-lg border border-gray-200">
+                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
+                    <i class="fas fa-search-plus text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                  </div>
+                  <div class="absolute bottom-2 left-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                    ${screenshot.time}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- 行为时间轴 -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-base font-semibold text-gray-900 mb-4">行为时间轴</h3>
+            <div class="relative">
+              <!-- 时间线 -->
+              <div class="absolute top-6 left-0 right-0 h-0.5 bg-gray-200"></div>
+
+              <!-- 时间节点 -->
+              <div class="relative flex justify-between items-start">
+                ${generateTimelineEvents(currentStudent, currentExam).map((item, index, array) => `
+                  <div class="flex flex-col items-center" style="width: ${100 / array.length}%;">
+                    <!-- 节点 -->
+                    <div class="relative z-10 w-12 h-12 rounded-full ${item.color} flex items-center justify-center mb-3">
+                      <i class="fas ${item.icon} text-white"></i>
+                    </div>
+                    <!-- 事件名称 -->
+                    <div class="text-xs font-medium text-gray-900 text-center mb-1">${item.event}</div>
+                    <!-- 时间 -->
+                    <div class="text-xs text-gray-500">${item.time}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 生成时间轴事件（根据考试配置）
+    function generateTimelineEvents(student, exam) {
+      const events = [];
+      const hasAntiCheating = exam && exam.settings && (exam.settings.enableFaceRecognition || exam.settings.enableRandomCapture);
+
+      // 1. 进入考试
+      events.push({
+        event: '进入考试',
+        time: student.enterTime || '09:00:15',
+        color: 'bg-info-500',
+        icon: 'fa-sign-in-alt'
+      });
+
+      // 2. 人脸识别（如果开启且未跳过）
+      if (exam && exam.settings && exam.settings.enableFaceRecognition && !student.skipFaceRecognition) {
+        events.push({
+          event: '人脸识别通过',
+          time: student.facePassTime || '09:00:30',
+          color: 'bg-success-500',
+          icon: 'fa-user-check'
+        });
+      }
+
+      // 3. 开始答题
+      events.push({
+        event: '开始答题',
+        time: student.startAnswerTime || '09:05:20',
+        color: 'bg-primary-500',
+        icon: 'fa-edit'
+      });
+
+      // 4. 离开和返回事件（根据leaveCount和leaveTimes/returnTimes生成）
+      if (student.leaveCount && student.leaveCount > 0 && student.leaveTimes && student.returnTimes) {
+        for (let i = 0; i < student.leaveCount; i++) {
+          if (student.leaveTimes[i]) {
+            events.push({
+              event: `第${i + 1}次离开`,
+              time: student.leaveTimes[i],
+              color: 'bg-warning-500',
+              icon: 'fa-external-link-alt'
+            });
+          }
+          if (student.returnTimes[i]) {
+            events.push({
+              event: `第${i + 1}次返回`,
+              time: student.returnTimes[i],
+              color: 'bg-info-500',
+              icon: 'fa-reply'
+            });
+          }
+        }
+      }
+
+      // 5. 抓拍截图（如果开启且有记录）
+      if (exam && exam.settings && exam.settings.enableRandomCapture && student.screenshots && student.screenshots.length > 0) {
+        events.push({
+          event: '随机抓拍',
+          time: student.screenshots[0].time,
+          color: 'bg-purple-500',
+          icon: 'fa-camera'
+        });
+      }
+
+      // 6. 交卷（如果已交卷）
+      if (student.submitTime) {
+        events.push({
+          event: '提交试卷',
+          time: student.submitTime,
+          color: 'bg-success-500',
+          icon: 'fa-check-circle'
+        });
+      }
+
+      return events;
+    }
+
+    // 更新单个学生列表项
+    function updateStudentItem(index) {
+      const studentItems = document.querySelectorAll('.student-item');
+      if (index < 0 || index >= studentItems.length) return;
+
+      const student = filteredStudents[index];
+      if (!student) return;
+
+      const item = studentItems[index];
+      const statusConfig = {
+        'normal': { text: '正常', color: 'bg-success-100 text-success-700' },
+        'violation': { text: '违纪', color: 'bg-warning-100 text-warning-700' },
+        'cheating': { text: '作弊', color: 'bg-error-100 text-error-700' },
+        'suspected_cheating': { text: '疑似作弊', color: 'bg-warning-100 text-warning-700' },
+        'absent': { text: '缺考', color: 'bg-gray-100 text-gray-600' }
+      };
+      const statusInfo = statusConfig[student.monitorStatus] || statusConfig['normal'];
+
+      item.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="${student.photo}" alt="${student.name}" class="w-10 h-10 rounded-full object-cover">
+            ${student.isOnline ?
+              '<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-success-500 border-2 border-white rounded-full"></div>' :
+              '<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 border-2 border-white rounded-full"></div>'
+            }
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-900 truncate">${student.name}</span>
+              <span class="px-1.5 py-0.5 text-xs rounded ${statusInfo.color}">${statusInfo.text}</span>
+              ${student.skipFaceRecognition ? '<span class="px-1.5 py-0.5 text-xs rounded bg-warning-100 text-warning-700"><i class="fas fa-user-slash mr-1"></i>跳过人脸识别</span>' : ''}
+            </div>
+            <div class="text-xs text-gray-500">${student.username} | ${student.phone || '-'}</div>
+            <div class="mt-1 flex items-center gap-2 text-xs text-gray-600">
+              <span><i class="fas fa-tasks mr-1"></i>${student.progress}%</span>
+              <span><i class="fas fa-question-circle mr-1"></i>${student.currentQuestion}/50</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 选择考生
+    function selectStudent(index) {
+      currentStudentIndex = index;
+      currentStudent = filteredStudents[index];
+
+      // 更新列表高亮状态（不重新渲染整个列表）
+      const studentItems = document.querySelectorAll('.student-item');
+      studentItems.forEach((item, idx) => {
+        if (idx === index) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
+      renderStudentDetail();
+    }
+
+    // 键盘导航
+    function navigateStudent(direction) {
+      const newIndex = currentStudentIndex + direction;
+      if (newIndex >= 0 && newIndex < filteredStudents.length) {
+        selectStudent(newIndex);
+
+        // 计算在已显示列表中的位置
+        const displayedIndex = displayedStudents.findIndex(s => s.username === filteredStudents[newIndex].username);
+
+        // 滚动到可见区域
+        const studentItems = document.querySelectorAll('.student-item');
+        if (displayedIndex >= 0 && studentItems[displayedIndex]) {
+          studentItems[displayedIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    // 筛选考生
+    function filterStudents() {
+      const status = document.getElementById('statusFilter').value;
+      const online = document.getElementById('onlineFilter').value;
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      filteredStudents = students.filter(student => {
+        if (status && student.monitorStatus !== status) return false;
+        if (online === 'online' && !student.isOnline) return false;
+        if (online === 'offline' && student.isOnline) return false;
+        if (search && !student.name.toLowerCase().includes(search) && !student.username.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      currentStudentIndex = 0;
+      updateStatistics();
+      renderStudentList(true); // 重置滚动，从第一页开始
+      if (filteredStudents.length > 0) {
+        selectStudent(0);
+      } else {
+        renderStudentDetail();
+      }
+    }
+
+    // 重置筛选
+    function resetFilter() {
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('onlineFilter').value = '';
+      document.getElementById('searchInput').value = '';
+      filterStudents();
+    }
+
+    // 显示标记状态模态框
+    function showMarkStatusModal() {
+      if (!currentStudent) return;
+
+      // 已结束的考试不能标记状态
+      if (currentExam && currentExam.status === 'finished') {
+        showMessage('考试已结束，不能标记状态', 'warning');
+        return;
+      }
+
+      document.getElementById('markStudentPhoto').src = currentStudent.photo;
+      document.getElementById('markStudentName').textContent = currentStudent.name;
+      document.getElementById('markStudentUsername').textContent = currentStudent.username;
+
+      // 选中当前状态
+      const radios = document.querySelectorAll('input[name="markStatus"]');
+      radios.forEach(radio => {
+        radio.checked = radio.value === currentStudent.monitorStatus;
+      });
+
+      document.getElementById('markRemark').value = '';
+      document.getElementById('markStatusModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭标记状态模态框
+    function closeMarkStatusModal() {
+      document.getElementById('markStatusModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // 保存标记状态
+    function saveMarkStatus() {
+      const selectedStatus = document.querySelector('input[name="markStatus"]:checked');
+      if (!selectedStatus) {
+        showMessage('请选择状态', 'warning');
+        return;
+      }
+
+      const remark = document.getElementById('markRemark').value;
+      const newStatus = selectedStatus.value;
+
+      // 更新学生状态
+      currentStudent.monitorStatus = newStatus;
+      currentStudent.markRemark = remark;
+      currentStudent.markTime = new Date().toLocaleString();
+
+      // 更新到原始数据
+      const originalStudent = students.find(s => s.username === currentStudent.username);
+      if (originalStudent) {
+        originalStudent.monitorStatus = newStatus;
+        originalStudent.markRemark = remark;
+        originalStudent.markTime = currentStudent.markTime;
+      }
+
+      // 保存到 localStorage
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      allStudentsData[examId] = students;
+      localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+
+      closeMarkStatusModal();
+      updateStatistics();
+      updateStudentItem(currentStudentIndex);
+      renderStudentDetail();
+      showMessage(`已将 ${currentStudent.name} 标记为"${selectedStatus.parentElement.textContent.trim()}"`, 'success');
+    }
+
+    // 跳过人脸识别
+    function skipFaceRecognition() {
+      if (!currentStudent) return;
+
+      // 已结束的考试不能操作
+      if (currentExam && currentExam.status === 'finished') {
+        showMessage('考试已结束，不能操作', 'warning');
+        return;
+      }
+
+      // 检查学生是否已开始答题
+      if (currentStudent.progress > 0 || currentStudent.answeredCount > 0) {
+        showMessage('该考生已开始答题，无法跳过人脸识别', 'warning');
+        return;
+      }
+
+      // 显示模态框
+      document.getElementById('skipFaceStudentPhoto').src = currentStudent.photo;
+      document.getElementById('skipFaceStudentName').textContent = currentStudent.name;
+      document.getElementById('skipFaceStudentUsername').textContent = currentStudent.username;
+      document.getElementById('skipFaceReason').value = '';
+      document.getElementById('skipFaceModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭跳过人脸识别模态框
+    function closeSkipFaceModal() {
+      document.getElementById('skipFaceModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // 确认跳过人脸识别
+    function confirmSkipFaceRecognition() {
+      if (!currentStudent) return;
+
+      const reason = document.getElementById('skipFaceReason').value;
+
+      // 更新学生状态
+      currentStudent.skipFaceRecognition = true;
+      currentStudent.skipFaceReason = reason;
+      currentStudent.skipFaceTime = new Date().toLocaleString();
+
+      // 更新到原始数据
+      const originalStudent = students.find(s => s.username === currentStudent.username);
+      if (originalStudent) {
+        originalStudent.skipFaceRecognition = true;
+        originalStudent.skipFaceReason = reason;
+        originalStudent.skipFaceTime = currentStudent.skipFaceTime;
+      }
+
+      // 保存到 localStorage
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      allStudentsData[examId] = students;
+      localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+
+      closeSkipFaceModal();
+      updateStatistics();
+      updateStudentItem(currentStudentIndex);
+      renderStudentDetail();
+      showMessage(`已为 ${currentStudent.name} 设置跳过人脸识别`, 'success');
+    }
+
+    // 取消跳过人脸识别
+    function cancelSkipFaceRecognition() {
+      if (!currentStudent) return;
+
+      // 已结束的考试不能操作
+      if (currentExam && currentExam.status === 'finished') {
+        showMessage('考试已结束，不能操作', 'warning');
+        return;
+      }
+
+      // 检查学生是否已开始答题
+      if (currentStudent.progress > 0 || currentStudent.answeredCount > 0) {
+        showMessage('该考生已开始答题，无法取消跳过人脸识别', 'warning');
+        return;
+      }
+
+      // 确认操作（简单确认即可）
+      if (!confirm(`确定要取消 ${currentStudent.name} 的跳过人脸识别设置吗？\n\n取消后，该考生刷新页面重新进入时将需要进行人脸识别验证。`)) {
+        return;
+      }
+
+      // 更新学生状态
+      currentStudent.skipFaceRecognition = false;
+      currentStudent.skipFaceReason = null;
+      currentStudent.skipFaceTime = null;
+
+      // 更新到原始数据
+      const originalStudent = students.find(s => s.username === currentStudent.username);
+      if (originalStudent) {
+        originalStudent.skipFaceRecognition = false;
+        originalStudent.skipFaceReason = null;
+        originalStudent.skipFaceTime = null;
+      }
+
+      // 保存到 localStorage
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      allStudentsData[examId] = students;
+      localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+
+      updateStatistics();
+      updateStudentItem(currentStudentIndex);
+      renderStudentDetail();
+      showMessage(`已取消 ${currentStudent.name} 的跳过人脸识别设置`, 'success');
+    }
+
+    // 手动刷新
+    function manualRefresh() {
+      // 模拟数据更新
+      students.forEach(student => {
+        if (student.isOnline) {
+          student.progress = Math.min(100, student.progress + Math.floor(Math.random() * 5));
+          student.answeredCount = Math.min(50, student.answeredCount + Math.floor(Math.random() * 2));
+          student.currentQuestion = Math.min(50, student.currentQuestion + Math.floor(Math.random() * 2));
+        }
+      });
+
+      filterStudents();
+      showMessage('数据已刷新', 'success');
+    }
+
+    // 启动自动刷新
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      autoRefreshInterval = setInterval(() => {
+        manualRefresh();
+      }, 30000); // 30秒刷新一次
+    }
+
+    // 停止自动刷新
+    function stopAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+
+    // 显示考试配置模态框
+    function showExamConfigModal() {
+      if (!currentExam || !currentExam.settings) {
+        showMessage('未找到考试配置信息', 'warning');
+        return;
+      }
+
+      const settings = currentExam.settings;
+      let configHTML = '';
+
+      // 迟到设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-clock text-warning-500 mr-2"></i>
+            迟到设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const lateSettings = [];
+      if (settings.enableLateLimit) {
+        lateSettings.push(`开考后 ${settings.lateMinutes || 15} 分钟后禁止进入`);
+      }
+      if (settings.enableEarlyEntry) {
+        lateSettings.push(`提前 ${settings.earlyMinutes || 10} 分钟可进入`);
+      }
+
+      if (lateSettings.length > 0) {
+        lateSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未设置迟到限制</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 防作弊设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-shield-alt text-error-500 mr-2"></i>
+            防作弊设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const antiCheatSettings = [];
+      if (settings.enableFaceRecognition) {
+        antiCheatSettings.push('人脸识别验证');
+      }
+      if (settings.enableRandomCapture) {
+        antiCheatSettings.push(`随机抓拍 ${settings.captureCount || 3} 张照片`);
+      }
+
+      if (antiCheatSettings.length > 0) {
+        antiCheatSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未启用防作弊功能</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 交卷限制
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-paper-plane text-info-500 mr-2"></i>
+            交卷限制
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      if (settings.enableMinSubmitTime) {
+        configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">作答至少 ${settings.minSubmitMinutes || 30} 分钟后才可交卷</span></div>`;
+      } else {
+        configHTML += `<div class="text-gray-500">无交卷时间限制</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 成绩公布设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-chart-line text-success-500 mr-2"></i>
+            成绩公布设置
+          </h4>
+          <div class="space-y-3 text-sm">
+      `;
+
+      // 公布方式
+      const resultTypeMap = {
+        'immediate': '交卷后立即公布',
+        'delayAfterSubmit': `交卷后 ${settings.delayDaysAfterSubmit || 1} 天公布`,
+        'afterExamEnd': '考试结束后立即公布',
+        'delayAfterExamEnd': `考试结束后 ${settings.delayDaysAfterExamEnd || 1} 天公布`
+      };
+      const resultTypeText = resultTypeMap[settings.resultPublishType] || '未设置';
+      configHTML += `
+        <div>
+          <div class="text-gray-500 mb-1">公布方式：</div>
+          <div class="flex items-center"><i class="fas fa-calendar-check text-primary-500 mr-2"></i><span class="text-gray-700">${resultTypeText}</span></div>
+        </div>
+      `;
+
+      // 公布内容
+      const resultContentMap = {
+        'scoreOnly': '仅分数',
+        'scoreAndCorrect': '分数及对错',
+        'full': '分数、对错、答案及解析'
+      };
+      const resultContentText = resultContentMap[settings.resultContent] || '仅分数';
+      configHTML += `
+        <div>
+          <div class="text-gray-500 mb-1">公布内容：</div>
+          <div class="flex items-center"><i class="fas fa-list-ul text-primary-500 mr-2"></i><span class="text-gray-700">${resultContentText}</span></div>
+        </div>
+      `;
+
+      configHTML += `</div></div>`;
+
+      // AI批阅设置
+      configHTML += `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <i class="fas fa-robot text-purple-500 mr-2"></i>
+            AI批阅设置
+          </h4>
+          <div class="space-y-2 text-sm">
+      `;
+
+      const aiSettings = [];
+      if (settings.enableAIGrading) {
+        aiSettings.push('AI自动批阅');
+      }
+      if (settings.enableAIComment) {
+        aiSettings.push('AI生成评语');
+      }
+
+      if (aiSettings.length > 0) {
+        aiSettings.forEach(text => {
+          configHTML += `<div class="flex items-center"><i class="fas fa-check text-success-500 mr-2"></i><span class="text-gray-700">${text}</span></div>`;
+        });
+      } else {
+        configHTML += `<div class="text-gray-500">未启用AI批阅功能</div>`;
+      }
+
+      configHTML += `</div></div>`;
+
+      // 显示配置
+      document.getElementById('examConfigContent').innerHTML = configHTML;
+      document.getElementById('examConfigModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭考试配置模态框
+    function closeExamConfigModal() {
+      document.getElementById('examConfigModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Message 提示系统
+    function showMessage(message, type = 'info') {
+      const container = document.getElementById('messageContainer');
+
+      const colors = {
+        success: 'bg-success-50 text-success-700 border-success-200',
+        error: 'bg-error-50 text-error-700 border-error-200',
+        warning: 'bg-warning-50 text-warning-700 border-warning-200',
+        info: 'bg-info-50 text-info-700 border-info-200'
+      };
+
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+      };
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${colors[type]} min-w-[300px] max-w-[500px]`;
+      messageEl.style.animation = 'messageFadeIn 0.3s ease-out';
+      messageEl.innerHTML = `
+        <i class="fas ${icons[type]} text-lg"></i>
+        <span class="font-medium">${message}</span>
+      `;
+
+      container.appendChild(messageEl);
+
+      setTimeout(() => {
+        messageEl.style.opacity = '0';
+        messageEl.style.transform = 'translateY(-20px)';
+        messageEl.style.transition = 'all 0.3s ease-out';
+        setTimeout(() => messageEl.remove(), 300);
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

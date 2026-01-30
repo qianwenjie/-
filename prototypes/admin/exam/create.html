@@ -2404,6 +2404,11 @@
         return;
       }
 
+      // 如果跳转到第4步，填充确认信息
+      if (step === 4) {
+        fillConfirmInfo();
+      }
+
       currentStep = step;
       updateStepUI();
     }

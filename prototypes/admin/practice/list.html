@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>刷题列表 - 考试系统</title>
+  <title>刷题管理 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
@@ -11,199 +11,721 @@
       theme: {
         extend: {
           colors: {
-            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
-            success: { 50: '#E8FFEA', 500: '#00B42A' },
-            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
-            error: { 50: '#FFECE8', 500: '#F53F3F' },
-            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+            primary: { 50: '#E6F9F0', 100: '#B2E9D0', 500: '#00B96B', 600: '#00A35C', 700: '#008C4F' },
+            success: { 50: '#E8FFEA', 100: '#AFF0B5', 200: '#7BE188', 500: '#00B42A', 600: '#009A29' },
+            warning: { 50: '#FFF7E8', 100: '#FFE4BA', 200: '#FFCF8B', 500: '#FF7D00', 600: '#E86F00' },
+            error: { 50: '#FFECE8', 100: '#FDCDC5', 200: '#FBACA3', 500: '#F53F3F', 600: '#CB2634' },
+            info: { 50: '#E8F7FF', 100: '#C2E7FF', 200: '#94D4FF', 500: '#14C9C9', 600: '#0FC6C2' },
+            gray: { 50: '#F7F8FA', 100: '#F2F3F5', 200: '#E5E6EB', 300: '#C9CDD4', 400: '#A9AEB8', 500: '#86909C', 600: '#6B7785', 700: '#4E5969', 800: '#272E3B', 900: '#1D2129' }
           }
         }
       }
     }
   </script>
+  <style>
+    /* 日期输入框样式 */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+    }
+
+    input[type="date"]::-webkit-datetime-edit {
+      color: transparent;
+    }
+
+    input[type="date"]:focus::-webkit-datetime-edit,
+    input[type="date"]:not(.empty)::-webkit-datetime-edit {
+      color: #1F2937;
+    }
+
+    /* 自定义滚动条 */
+    .overflow-auto::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .overflow-auto::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .overflow-auto::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    .overflow-auto::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+  </style>
 </head>
 <body class="bg-gray-50">
   <div class="min-h-screen">
+    <!-- 顶部导航栏 -->
     <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
       <div class="flex items-center justify-between h-full px-6">
-        <div class="flex items-center space-x-4">
-          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
-            <i class="fas fa-graduation-cap text-white"></i>
+        <div class="flex items-center space-x-6">
+          <a href="../dashboard.html" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-book text-white text-lg"></i>
+            </div>
+            <span class="text-xl font-semibold text-gray-900">考试系统</span>
+          </a>
+          <div class="flex items-center space-x-2 text-sm">
+            <a href="../dashboard.html" class="text-gray-600 hover:text-primary-500">首页</a>
+            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+            <span class="text-gray-900">刷题管理</span>
           </div>
-          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" alt="用户头像" class="w-8 h-8 rounded-full">
+          <span class="text-sm text-gray-700">管理员</span>
         </div>
       </div>
     </header>
 
-    <main class="pt-16">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-semibold text-gray-900">刷题管理</h1>
-            <p class="mt-1 text-sm text-gray-500">创建和管理刷题任务</p>
-          </div>
-          <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded font-medium text-sm">
-            <i class="fas fa-plus mr-2"></i>创建刷题
-          </button>
-        </div>
+    <main class="fixed top-16 left-0 right-0 bottom-16 flex flex-col">
+      <!-- 固定筛选区域 -->
+      <div class="flex-none p-6 pb-0">
+        <!-- 筛选栏 -->
+        <div class="bg-white rounded-lg border border-gray-200 p-3 mt-1 mb-4">
+          <div class="flex items-center justify-between gap-3">
+            <!-- 左侧筛选控件 -->
+            <div class="flex items-center gap-3">
+              <!-- 搜索框 -->
+              <input
+                type="text"
+                id="keywordFilter"
+                onkeyup="applyFilters()"
+                placeholder="搜索刷题名称..."
+                class="w-64 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
 
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500">总刷题数</p>
-                <p class="text-3xl font-semibold text-gray-900 mt-2">28</p>
-              </div>
-              <div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center">
-                <i class="fas fa-brain text-xl text-primary-500"></i>
-              </div>
-            </div>
-          </div>
+              <!-- 状态筛选 -->
+              <select
+                id="statusFilter"
+                onchange="applyFilters()"
+                class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value="">全部状态</option>
+                <option value="ongoing">进行中</option>
+                <option value="ended">已结束</option>
+              </select>
 
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500">参与人数</p>
-                <p class="text-3xl font-semibold text-gray-900 mt-2">456</p>
+              <!-- 开始时间筛选 -->
+              <div class="relative">
+                <input
+                  type="date"
+                  id="startDateFilter"
+                  onchange="applyFilters(); updateDateInput()"
+                  onfocus="document.getElementById('datePlaceholder').classList.add('hidden')"
+                  onblur="updateDateInput()"
+                  onclick="this.showPicker()"
+                  class="empty px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-w-[160px]"
+                >
+                <label id="datePlaceholder" for="startDateFilter" class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none cursor-text">开始时间</label>
               </div>
-              <div class="w-12 h-12 bg-info-50 rounded-full flex items-center justify-center">
-                <i class="fas fa-users text-xl text-info-500"></i>
-              </div>
-            </div>
-          </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500">完成率</p>
-                <p class="text-3xl font-semibold text-success-500 mt-2">78%</p>
-              </div>
-              <div class="w-12 h-12 bg-success-50 rounded-full flex items-center justify-center">
-                <i class="fas fa-chart-line text-xl text-success-500"></i>
-              </div>
-            </div>
-          </div>
+              <!-- 筛选按钮 -->
+              <button
+                onclick="applyFilters()"
+                class="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                <i class="fas fa-search mr-2"></i>筛选
+              </button>
 
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-500">正确率</p>
-                <p class="text-3xl font-semibold text-warning-500 mt-2">82%</p>
-              </div>
-              <div class="w-12 h-12 bg-warning-50 rounded-full flex items-center justify-center">
-                <i class="fas fa-bullseye text-xl text-warning-500"></i>
-              </div>
+              <!-- 重置按钮 -->
+              <button
+                onclick="resetFilters()"
+                class="px-4 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <i class="fas fa-redo mr-2"></i>重置
+              </button>
             </div>
-          </div>
-        </div>
 
-        <!-- 刷题列表 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900">计算机基础专项练习</h3>
-                <span class="bg-success-50 text-success-600 px-2 py-0.5 rounded text-xs font-medium">进行中</span>
-              </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">题目数量</span>
-                  <span class="font-medium text-gray-900">100 题</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">参与人数</span>
-                  <span class="font-medium text-gray-900">156 人</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">完成率</span>
-                  <span class="font-medium text-success-500">85%</span>
-                </div>
-              </div>
-              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
-                <div class="h-full bg-primary-500 rounded-full" style="width: 85%"></div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  查看详情
-                </button>
-                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  统计分析
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900">数学错题强化训练</h3>
-                <span class="bg-info-50 text-info-600 px-2 py-0.5 rounded text-xs font-medium">已发布</span>
-              </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">题目数量</span>
-                  <span class="font-medium text-gray-900">50 题</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">参与人数</span>
-                  <span class="font-medium text-gray-900">98 人</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">完成率</span>
-                  <span class="font-medium text-warning-500">62%</span>
-                </div>
-              </div>
-              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
-                <div class="h-full bg-primary-500 rounded-full" style="width: 62%"></div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  查看详情
-                </button>
-                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  统计分析
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div class="p-6">
-              <div class="flex items-start justify-between mb-4">
-                <h3 class="text-base font-semibold text-gray-900">英语语法专项</h3>
-                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">草稿</span>
-              </div>
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">题目数量</span>
-                  <span class="font-medium text-gray-900">80 题</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">参与人数</span>
-                  <span class="font-medium text-gray-900">0 人</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-600">完成率</span>
-                  <span class="font-medium text-gray-500">--</span>
-                </div>
-              </div>
-              <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
-                <div class="h-full bg-gray-300 rounded-full" style="width: 0%"></div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <button class="flex-1 bg-primary-50 text-primary-600 px-3 py-2 rounded text-sm font-medium">
-                  查看详情
-                </button>
-                <button class="flex-1 bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded text-sm font-medium">
-                  编辑
-                </button>
-              </div>
-            </div>
+            <!-- 右侧创建按钮 -->
+            <button
+              onclick="addPractice()"
+              class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <i class="fas fa-plus mr-2"></i>创建刷题
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- 可滚动的刷题列表区域 -->
+      <div class="flex-1 overflow-auto px-6 pb-6">
+        <!-- 列表容器 -->
+        <div id="practiceListContainer" class="space-y-4">
+          <!-- 卡片由 JavaScript 动态生成 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden py-16 text-center bg-white rounded-lg border border-gray-200">
+          <i class="fas fa-brain text-4xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 mb-4">暂无刷题任务</p>
+          <button onclick="addPractice()" class="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+            <i class="fas fa-plus mr-2"></i>创建刷题
+          </button>
+        </div>
+      </div>
     </main>
+
+    <!-- 分页（固定在底部） -->
+    <div id="pagination" class="hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50">
+      <div class="h-full px-6 flex items-center justify-between">
+        <!-- 左侧统计信息 -->
+        <div class="text-sm text-gray-600">
+          显示 <span id="pageStart" class="text-gray-900">0</span>-<span id="pageEnd" class="text-gray-900">0</span> 条，共 <span id="totalCount" class="text-gray-900">0</span> 条
+        </div>
+
+        <!-- 右侧分页按钮 -->
+        <div class="flex items-center space-x-2">
+          <!-- 首页 -->
+          <button
+            id="firstPageBtn"
+            onclick="goToPage(1)"
+            class="w-9 h-9 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+
+          <!-- 上一页 -->
+          <button
+            id="prevPageBtn"
+            onclick="prevPage()"
+            class="h-9 px-3 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-gray-600 text-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-left mr-1.5"></i>上一页
+          </button>
+
+          <!-- 页码 -->
+          <div id="pageNumbers" class="flex items-center space-x-2">
+            <!-- 页码由 JavaScript 动态生成 -->
+          </div>
+
+          <!-- 下一页 -->
+          <button
+            id="nextPageBtn"
+            onclick="nextPage()"
+            class="h-9 px-3 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-gray-600 text-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+            disabled
+          >
+            下一页<i class="fas fa-angle-right ml-1.5"></i>
+          </button>
+
+          <!-- 尾页 -->
+          <button
+            id="lastPageBtn"
+            onclick="goToLastPage()"
+            class="w-9 h-9 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- 删除确认模态框 -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 w-10 h-10 bg-error-50 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-error-500"></i>
+          </div>
+          <div class="ml-4 flex-1">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
+            <p class="text-sm text-gray-600" id="deleteMessage">确定要删除这个刷题任务吗？此操作不可恢复。</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="confirmDelete()" class="px-4 py-2 bg-error-500 text-white rounded-lg text-sm font-medium hover:bg-error-600">
+          确认删除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 模拟数据
+    let allPractices = [];
+    let filteredPractices = [];
+    let currentPage = 1;
+    const pageSize = 20; // 每页显示20条
+    let deleteTargetId = null;
+
+    // 初始化
+    function init() {
+      generateMockData();
+      applyFilters();
+      updateDateInput();
+    }
+
+    // 更新日期输入框占位符显示
+    function updateDateInput() {
+      const dateInput = document.getElementById('startDateFilter');
+      const placeholder = document.getElementById('datePlaceholder');
+
+      if (dateInput.value) {
+        placeholder.classList.add('hidden');
+        dateInput.classList.remove('empty');
+      } else {
+        placeholder.classList.remove('hidden');
+        dateInput.classList.add('empty');
+      }
+    }
+
+    // 生成模拟数据
+    function generateMockData() {
+      const knowledgePoints = [
+        '计算机基础', '数据结构', '算法设计', '操作系统', '计算机网络',
+        '数据库原理', '软件工程', 'Web开发', '人工智能', '机器学习',
+        '高等数学', '线性代数', '概率论', '离散数学', '数值分析',
+        '大学英语', '英语语法', '英语听力', '英语阅读', '英语写作'
+      ];
+
+      const questionTypes = [
+        '单选题', '多选题', '判断题', '填空题', '简答题'
+      ];
+
+      const now = new Date();
+
+      // 生成28个刷题任务，确保各种状态都有
+      const statusDistribution = [
+        // 前10个：进行中
+        ...Array(10).fill('ongoing'),
+        // 中间10个：已结束
+        ...Array(10).fill('ended'),
+        // 最后8个：未开始
+        ...Array(8).fill('not_started')
+      ];
+
+      for (let i = 1; i <= 28; i++) {
+        const targetStatus = statusDistribution[i - 1];
+        let startDate, endDate;
+
+        // 根据目标状态设置时间
+        if (targetStatus === 'ongoing') {
+          // 进行中：开始时间在过去，结束时间在未来或不限
+          const startDaysAgo = Math.floor(Math.random() * 20) + 1; // 1-20天前开始
+          startDate = new Date(now.getTime() - startDaysAgo * 24 * 60 * 60 * 1000);
+
+          const hasEndDate = Math.random() > 0.3; // 70%有结束时间
+          if (hasEndDate) {
+            const endDaysLater = Math.floor(Math.random() * 30) + 10; // 10-40天后结束
+            endDate = new Date(now.getTime() + endDaysLater * 24 * 60 * 60 * 1000);
+          } else {
+            endDate = null;
+          }
+        } else if (targetStatus === 'ended') {
+          // 已结束：开始和结束时间都在过去
+          const startDaysAgo = Math.floor(Math.random() * 40) + 20; // 20-60天前开始
+          startDate = new Date(now.getTime() - startDaysAgo * 24 * 60 * 60 * 1000);
+
+          const endDaysAgo = Math.floor(Math.random() * 15) + 1; // 1-15天前结束
+          endDate = new Date(now.getTime() - endDaysAgo * 24 * 60 * 60 * 1000);
+        } else { // not_started
+          // 未开始：开始时间在未来
+          const startDaysLater = Math.floor(Math.random() * 15) + 1; // 1-15天后开始
+          startDate = new Date(now.getTime() + startDaysLater * 24 * 60 * 60 * 1000);
+
+          const hasEndDate = Math.random() > 0.4; // 60%有结束时间
+          if (hasEndDate) {
+            const duration = Math.floor(Math.random() * 40) + 20; // 开始后20-60天结束
+            endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
+          } else {
+            endDate = null;
+          }
+        }
+
+        // 创建时间比开始时间早1-5天
+        const createDaysEarly = Math.floor(Math.random() * 5) + 1;
+        const createDate = new Date(startDate.getTime() - createDaysEarly * 24 * 60 * 60 * 1000);
+
+        const questionCount = (Math.floor(Math.random() * 15) + 1) * 10; // 10-150题
+
+        // 随机选择2-4种题型
+        const typeCount = Math.floor(Math.random() * 3) + 2;
+        const selectedTypes = [];
+        const shuffled = [...questionTypes].sort(() => 0.5 - Math.random());
+        for (let j = 0; j < typeCount; j++) {
+          selectedTypes.push(shuffled[j]);
+        }
+
+        // 根据状态设置参与人数
+        let totalParticipants, completedParticipants;
+        if (targetStatus === 'not_started') {
+          totalParticipants = 0;
+          completedParticipants = 0;
+        } else if (targetStatus === 'ended') {
+          totalParticipants = Math.floor(Math.random() * 300) + 100;
+          // 已结束，完成率较高 (70-95%)
+          completedParticipants = Math.floor(totalParticipants * (0.7 + Math.random() * 0.25));
+        } else { // ongoing
+          totalParticipants = Math.floor(Math.random() * 300) + 100;
+          // 进行中，完成率中等 (40-70%)
+          completedParticipants = Math.floor(totalParticipants * (0.4 + Math.random() * 0.3));
+        }
+
+        allPractices.push({
+          id: `PT${String(i).padStart(4, '0')}`,
+          name: `${knowledgePoints[Math.floor(Math.random() * knowledgePoints.length)]}专项练习${i > 15 ? ' - ' + (i % 5 === 0 ? '强化' : '基础') : ''}`,
+          code: `PT${String(i).padStart(4, '0')}`,
+          status: targetStatus,
+          startTime: formatDate(startDate),
+          endTime: endDate ? formatDate(endDate) : '不限',
+          questionCount: questionCount,
+          questionTypes: selectedTypes,
+          totalParticipants: totalParticipants,
+          completedParticipants: completedParticipants,
+          passRate: targetStatus === 'not_started' ? 0 : Math.floor(Math.random() * 30) + 60,
+          createTime: formatDateTime(createDate)
+        });
+      }
+
+      // 按创建时间倒序排列
+      allPractices.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
+
+    // 应用筛选
+    function applyFilters() {
+      const status = document.getElementById('statusFilter').value;
+      const startDate = document.getElementById('startDateFilter').value;
+      const keyword = document.getElementById('keywordFilter').value.trim().toLowerCase();
+
+      filteredPractices = allPractices.filter(practice => {
+        // 状态筛选
+        if (status && practice.status !== status) return false;
+
+        // 开始时间筛选
+        if (startDate && practice.startTime < startDate) return false;
+
+        // 关键词搜索
+        if (keyword) {
+          const searchText = `${practice.name} ${practice.code}`.toLowerCase();
+          if (!searchText.includes(keyword)) return false;
+        }
+
+        return true;
+      });
+
+      currentPage = 1;
+      renderTable();
+    }
+
+    // 重置筛选
+    function resetFilters() {
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('startDateFilter').value = '';
+      document.getElementById('keywordFilter').value = '';
+      updateDateInput();
+      applyFilters();
+    }
+
+    // 渲染表格
+    function renderTable() {
+      const container = document.getElementById('practiceListContainer');
+      const emptyState = document.getElementById('emptyState');
+      const pagination = document.getElementById('pagination');
+
+      if (filteredPractices.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        pagination.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      pagination.classList.remove('hidden');
+
+      const start = (currentPage - 1) * pageSize;
+      const end = Math.min(start + pageSize, filteredPractices.length);
+      const pageData = filteredPractices.slice(start, end);
+
+      container.innerHTML = pageData.map(practice => createPracticeCard(practice)).join('');
+
+      updatePagination();
+    }
+
+    // 创建刷题卡片
+    function createPracticeCard(practice) {
+      const statusConfig = {
+        ongoing: {
+          text: '进行中',
+          textColor: 'text-primary-600',
+          bgColor: 'bg-primary-50',
+          icon: 'fa-fire fa-beat', // 火焰跳动效果（热火朝天）
+          iconColor: 'text-primary-500'
+        },
+        ended: {
+          text: '已结束',
+          textColor: 'text-gray-600',
+          bgColor: 'bg-gray-100',
+          icon: 'fa-trophy', // 奖杯（成就完成）
+          iconColor: 'text-gray-500'
+        },
+        not_started: {
+          text: '未开始',
+          textColor: 'text-warning-600',
+          bgColor: 'bg-warning-50',
+          icon: 'fa-rocket', // 火箭（准备发射）
+          iconColor: 'text-warning-500'
+        }
+      };
+
+      const status = statusConfig[practice.status] || statusConfig.ongoing;
+
+      // 计算完成率百分比
+      const completionPercent = practice.totalParticipants > 0
+        ? Math.round((practice.completedParticipants / practice.totalParticipants) * 100)
+        : 0;
+
+      return `
+        <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <!-- 顶部区域 -->
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-3">
+                <span class="${status.iconColor} text-lg mr-3">
+                  <i class="fas ${status.icon}"></i>
+                </span>
+                <h3 class="text-lg font-semibold text-gray-900">${practice.name}</h3>
+              </div>
+              <div class="flex items-center space-x-6 text-sm text-gray-400">
+                <span># ${practice.code}</span>
+                <span>任务时间: ${practice.startTime} ~ ${practice.endTime}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 text-sm text-gray-400">
+              <button onclick="event.stopPropagation(); editPractice('${practice.id}')" class="hover:text-primary-600">
+                <i class="fas fa-edit mr-1"></i>编辑
+              </button>
+              <button onclick="event.stopPropagation(); deletePractice('${practice.id}')" class="hover:text-error-600">
+                <i class="fas fa-trash-alt mr-1"></i>删除
+              </button>
+            </div>
+          </div>
+
+          <!-- 数据区域 -->
+          <div class="flex items-center justify-between pt-4 mt-4 px-4 py-3 bg-gray-50 rounded-lg">
+            <!-- 左侧数据 -->
+            <div class="flex items-center space-x-12 flex-1">
+              <div>
+                <div class="text-sm text-gray-500 mb-2">状态</div>
+                <div class="font-medium text-gray-900">
+                  <span class="px-2.5 py-1 rounded-md text-xs ${status.textColor} ${status.bgColor}">
+                    ${status.text}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-sm text-gray-500 mb-2">题目数量</div>
+                <div class="flex items-center">
+                  <span class="font-medium text-gray-900">${practice.questionCount}题</span>
+                  <span class="ml-2 text-xs text-gray-400">包含${practice.questionTypes.join('、')}</span>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-sm text-gray-500 mb-2">完成人数</div>
+                <div class="flex items-center">
+                  <span class="font-medium text-gray-900">${practice.completedParticipants}/${practice.totalParticipants}人</span>
+                  <div class="ml-3 w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-primary-500 rounded-full" style="width: ${Math.min(completionPercent, 100)}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-sm text-gray-500 mb-2">整体通过率</div>
+                <div class="text-sm font-medium text-gray-900">${practice.passRate || 0}%</div>
+              </div>
+            </div>
+
+            <!-- 右侧按钮 -->
+            <div class="flex items-center space-x-3 ml-8">
+              <button onclick="manageStudents('${practice.id}')" class="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                学生管理
+              </button>
+              <button onclick="monitorPractice('${practice.id}')" class="px-5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors">
+                刷题监控
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 更新分页
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredPractices.length / pageSize);
+      const start = filteredPractices.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+      const end = Math.min(currentPage * pageSize, filteredPractices.length);
+
+      document.getElementById('pageStart').textContent = start;
+      document.getElementById('pageEnd').textContent = end;
+      document.getElementById('totalCount').textContent = filteredPractices.length;
+
+      // 更新按钮状态
+      document.getElementById('firstPageBtn').disabled = currentPage === 1;
+      document.getElementById('prevPageBtn').disabled = currentPage === 1;
+      document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+      document.getElementById('lastPageBtn').disabled = currentPage === totalPages;
+
+      // 生成页码
+      const pageNumbers = document.getElementById('pageNumbers');
+      pageNumbers.innerHTML = '';
+
+      const maxPages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+      let endPage = Math.min(totalPages, startPage + maxPages - 1);
+
+      if (endPage - startPage < maxPages - 1) {
+        startPage = Math.max(1, endPage - maxPages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `min-w-[36px] h-9 px-2 flex items-center justify-center rounded text-sm font-medium transition-colors ${
+          i === currentPage
+            ? 'bg-primary-500 text-white shadow-sm'
+            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+        }`;
+        btn.onclick = () => goToPage(i);
+        pageNumbers.appendChild(btn);
+      }
+    }
+
+    // 翻页操作
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(filteredPractices.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderTable();
+    }
+
+    function goToLastPage() {
+      const totalPages = Math.ceil(filteredPractices.length / pageSize);
+      currentPage = totalPages;
+      renderTable();
+    }
+
+    // 操作函数
+    function addPractice() {
+      window.location.href = 'add.html';
+    }
+
+    function editPractice(id) {
+      window.location.href = `add.html?id=${id}`;
+    }
+
+    function manageStudents(id) {
+      // 跳转到学生管理页面（可以使用统计页面或单独的学生管理页面）
+      window.location.href = `statistics.html?id=${id}&tab=students`;
+    }
+
+    function monitorPractice(id) {
+      // 跳转到刷题监控页面
+      window.location.href = `statistics.html?id=${id}&tab=monitor`;
+    }
+
+    function deletePractice(id) {
+      const practice = allPractices.find(p => p.id === id);
+      if (!practice) return;
+
+      deleteTargetId = id;
+
+      let message = `确定要删除刷题任务 "${practice.name}" 吗？`;
+      if (practice.totalParticipants > 0) {
+        message += `<br><span class="text-error-600 font-medium">注意：该任务已有 ${practice.totalParticipants} 人参与，删除后将无法恢复。</span>`;
+      }
+
+      document.getElementById('deleteMessage').innerHTML = message;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      deleteTargetId = null;
+    }
+
+    function confirmDelete() {
+      if (!deleteTargetId) return;
+
+      // 执行删除
+      const index = allPractices.findIndex(p => p.id === deleteTargetId);
+      if (index > -1) {
+        allPractices.splice(index, 1);
+        applyFilters();
+
+        // 显示成功提示
+        showToast('删除成功', 'success');
+      }
+
+      closeDeleteModal();
+    }
+
+    // Toast 提示
+    function showToast(message, type = 'success') {
+      const bgColor = type === 'success' ? 'bg-success-500' : 'bg-error-500';
+      const toast = document.createElement('div');
+      toast.className = `fixed top-20 right-6 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2`;
+      toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // 格式化日期
+    function formatDate(date) {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatDateTime(date) {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    // 页面加载完成后初始化
+    window.onload = init;
+  </script>
 </body>
 </html>

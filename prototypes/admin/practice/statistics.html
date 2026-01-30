@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>刷题统计 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 100: '#B2E9D0', 500: '#00B96B', 600: '#00A35C', 700: '#008C4F' },
+            success: { 50: '#E8FFEA', 100: '#AFF0B5', 200: '#7BE188', 500: '#00B42A', 600: '#009A29' },
+            warning: { 50: '#FFF7E8', 100: '#FFE4BA', 200: '#FFCF8B', 500: '#FF7D00', 600: '#E86F00' },
+            error: { 50: '#FFECE8', 100: '#FDCDC5', 200: '#FBACA3', 500: '#F53F3F', 600: '#CB2634' },
+            info: { 50: '#E8F7FF', 100: '#C2E7FF', 200: '#94D4FF', 500: '#14C9C9', 600: '#0FC6C2' },
+            gray: { 50: '#F7F8FA', 100: '#F2F3F5', 200: '#E5E6EB', 300: '#C9CDD4', 400: '#A9AEB8', 500: '#86909C', 600: '#6B7785', 700: '#4E5969', 800: '#272E3B', 900: '#1D2129' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .stat-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .date-range-input input[type="date"] {
+      border: 1px solid #E5E6EB;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .date-range-input input[type="date"]:focus {
+      outline: none;
+      border-color: #00B96B;
+      box-shadow: 0 0 0 3px rgba(0, 185, 107, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <div class="flex items-center justify-between h-full px-6">
+        <div class="flex items-center space-x-6">
+          <a href="../dashboard.html" class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-book text-white text-lg"></i>
+            </div>
+            <span class="text-xl font-semibold text-gray-900">考试系统</span>
+          </a>
+          <div class="flex items-center space-x-2 text-sm">
+            <a href="../dashboard.html" class="text-gray-600 hover:text-primary-500">首页</a>
+            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+            <a href="list.html" class="text-gray-600 hover:text-primary-500">刷题管理</a>
+            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+            <span class="text-gray-900">统计分析</span>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" alt="用户头像" class="w-8 h-8 rounded-full">
+          <span class="text-sm text-gray-700">管理员</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="pt-16">
+      <div class="p-6 max-w-[1600px] mx-auto">
+        <!-- 页面标题 -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="flex items-center space-x-3">
+              <button onclick="goBack()" class="text-gray-600 hover:text-gray-900">
+                <i class="fas fa-arrow-left"></i>
+              </button>
+              <div>
+                <h1 class="text-2xl font-semibold text-gray-900" id="practiceTitle">计算机基础专项练习</h1>
+                <p class="mt-1 text-sm text-gray-500">刷题编号：<span id="practiceCode">PT0001</span></p>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="refreshData()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-sync-alt mr-2"></i>刷新数据
+            </button>
+            <button onclick="exportReport()" class="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">
+              <i class="fas fa-download mr-2"></i>导出报告
+            </button>
+          </div>
+        </div>
+
+        <!-- 数据总览看板 -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div class="stat-card bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-500">应参加人数</span>
+              <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-gray-500"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-semibold text-gray-900" id="totalStudents">0</p>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-500">实际参加人数</span>
+              <div class="w-10 h-10 bg-info-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-check text-info-500"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-semibold text-info-500" id="participatedStudents">0</p>
+            <p class="text-xs text-gray-400 mt-1">参与率 <span id="participationRate">0%</span></p>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-500">通过人数</span>
+              <div class="w-10 h-10 bg-success-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-trophy text-success-500"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-semibold text-success-500" id="passedStudents">0</p>
+            <p class="text-xs text-gray-400 mt-1">通过率 <span id="passRate">0%</span></p>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-500">平均刷题进度</span>
+              <div class="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chart-line text-primary-500"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-semibold text-primary-500" id="avgProgress">0%</p>
+          </div>
+
+          <div class="stat-card bg-white rounded-lg border border-gray-200 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm text-gray-500">平均掌握比例</span>
+              <div class="w-10 h-10 bg-warning-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-brain text-warning-500"></i>
+              </div>
+            </div>
+            <p class="text-3xl font-semibold text-warning-500" id="avgMastery">0%</p>
+          </div>
+        </div>
+
+        <!-- 掌握情况分布 -->
+        <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-chart-bar text-primary-500 mr-2"></i>
+              掌握情况分布
+            </h2>
+            <div class="flex items-center space-x-3">
+              <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <button id="chartViewBtn" onclick="switchView('chart')" class="px-4 py-1.5 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm">
+                  <i class="fas fa-chart-bar mr-1"></i>图表
+                </button>
+                <button id="tableViewBtn" onclick="switchView('table')" class="px-4 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900">
+                  <i class="fas fa-table mr-1"></i>表格
+                </button>
+              </div>
+              <button onclick="downloadChart()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-image mr-2"></i>下载图表
+              </button>
+            </div>
+          </div>
+
+          <!-- 图表视图 -->
+          <div id="chartView">
+            <div id="masteryChart" style="width: 100%; height: 400px;"></div>
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h3 class="text-sm font-medium text-gray-900 mb-2">智能诊断结论</h3>
+              <p class="text-sm text-gray-600" id="diagnosisText">正在分析数据...</p>
+            </div>
+          </div>
+
+          <!-- 表格视图 -->
+          <div id="tableView" class="hidden">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">等级</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">掌握比例范围</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">人数</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">占比</th>
+                </tr>
+              </thead>
+              <tbody id="masteryTableBody" class="divide-y divide-gray-200">
+                <!-- 数据由 JavaScript 生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 学生刷题详情 -->
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-list text-primary-500 mr-2"></i>
+              学生刷题详情
+            </h2>
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-gray-500">
+                <i class="fas fa-sync-alt mr-1"></i>
+                <span id="countdown">60</span> 秒后自动刷新
+              </span>
+              <button onclick="exportStudentData()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-file-excel mr-2"></i>导出数据
+              </button>
+            </div>
+          </div>
+
+          <!-- 筛选栏 -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium text-gray-700 mb-2">搜索</label>
+              <input type="text" id="studentSearch" onkeyup="applyStudentFilters()" placeholder="用户名或姓名" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">刷题状态</label>
+              <select id="statusFilter" onchange="applyStudentFilters()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">全部</option>
+                <option value="not_started">未开始</option>
+                <option value="in_progress">刷题中</option>
+                <option value="mastered">全部掌握</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-3 date-range-input">
+              <label class="block text-sm font-medium text-gray-700 mb-2">开始日期</label>
+              <input type="date" id="startDateFilter" onchange="applyStudentFilters()" class="w-full text-sm text-gray-700">
+            </div>
+
+            <div class="md:col-span-3 date-range-input">
+              <label class="block text-sm font-medium text-gray-700 mb-2">结束日期</label>
+              <input type="date" id="endDateFilter" onchange="applyStudentFilters()" class="w-full text-sm text-gray-700">
+            </div>
+
+            <div class="md:col-span-1 flex items-end">
+              <button onclick="resetStudentFilters()" class="w-full border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">
+                <i class="fas fa-redo-alt"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 表格 -->
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th class="px-6 py-3 text-left">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" class="rounded border-gray-300 text-primary-500 focus:ring-primary-500">
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('username')">
+                    用户名 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('name')">
+                    姓名 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('practiceCount')">
+                    已刷题数 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('progress')">
+                    刷题进度 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('masteredCount')">
+                    已掌握数 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100" onclick="sortBy('masteryRate')">
+                    掌握比例 <i class="fas fa-sort ml-1"></i>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最后刷题时间</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody" class="divide-y divide-gray-200">
+                <!-- 数据由 JavaScript 生成 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 分页 -->
+          <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+              已选择 <span id="selectedCount" class="font-medium">0</span> 条，
+              共 <span id="totalStudentCount" class="font-medium">0</span> 条
+            </div>
+            <div class="flex items-center space-x-2">
+              <button id="prevStudentPageBtn" onclick="prevStudentPage()" class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                上一页
+              </button>
+              <div id="studentPageNumbers" class="flex items-center space-x-1">
+                <!-- 页码由 JavaScript 动态生成 -->
+              </div>
+              <button id="nextStudentPageBtn" onclick="nextStudentPage()" class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                下一页
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 全局变量
+    let allStudents = [];
+    let filteredStudents = [];
+    let currentStudentPage = 1;
+    const studentPageSize = 20;
+    let sortField = '';
+    let sortOrder = 'asc';
+    let selectedStudentIds = new Set();
+    let masteryChart = null;
+    let countdownTimer = null;
+    let countdownSeconds = 60;
+
+    // 初始化
+    function init() {
+      loadPracticeInfo();
+      generateMockData();
+      updateOverviewStats();
+      renderMasteryChart();
+      applyStudentFilters();
+      startCountdown();
+    }
+
+    // 加载刷题信息
+    function loadPracticeInfo() {
+      // 模拟数据
+      document.getElementById('practiceTitle').textContent = '计算机基础专项练习';
+      document.getElementById('practiceCode').textContent = 'PT0001';
+    }
+
+    // 生成模拟数据
+    function generateMockData() {
+      const names = [
+        '张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十',
+        '郑小明', '王小红', '李明', '陈静', '刘洋', '黄磊', '杨帆', '朱莉',
+        '徐文', '何丽', '高峰', '林娜', '罗伟', '梁艳', '宋军', '唐敏'
+      ];
+
+      const totalQuestions = 100; // 总题数
+
+      for (let i = 0; i < 156; i++) {
+        const practiceCount = Math.floor(Math.random() * totalQuestions);
+        const masteredCount = Math.max(0, practiceCount - Math.floor(Math.random() * practiceCount * 0.3));
+        const progress = totalQuestions > 0 ? Math.round((practiceCount / totalQuestions) * 100) : 0;
+        const masteryRate = practiceCount > 0 ? Math.round((masteredCount / practiceCount) * 100) : 0;
+
+        let status = 'not_started';
+        if (practiceCount === 0) {
+          status = 'not_started';
+        } else if (masteryRate >= 100) {
+          status = 'mastered';
+        } else {
+          status = 'in_progress';
+        }
+
+        // 随机最后刷题时间
+        const daysSinceLastPractice = status === 'not_started' ? null : Math.floor(Math.random() * 7);
+        const lastPracticeTime = daysSinceLastPractice !== null
+          ? new Date(Date.now() - daysSinceLastPractice * 24 * 60 * 60 * 1000)
+          : null;
+
+        allStudents.push({
+          id: `S${String(i + 1).padStart(4, '0')}`,
+          username: `user${String(i + 1).padStart(3, '0')}`,
+          name: names[i % names.length] + (i >= names.length ? (Math.floor(i / names.length) + 1) : ''),
+          status: status,
+          practiceCount: practiceCount,
+          progress: progress,
+          masteredCount: masteredCount,
+          masteryRate: masteryRate,
+          lastPracticeTime: lastPracticeTime
+        });
+      }
+    }
+
+    // 更新总览统计
+    function updateOverviewStats() {
+      const totalStudents = allStudents.length;
+      const participatedStudents = allStudents.filter(s => s.status !== 'not_started').length;
+      const passedStudents = allStudents.filter(s => s.masteryRate >= 60).length; // 假设60%为通过标准
+
+      const participationRate = totalStudents > 0 ? Math.round((participatedStudents / totalStudents) * 100) : 0;
+      const passRate = participatedStudents > 0 ? Math.round((passedStudents / participatedStudents) * 100) : 0;
+
+      const avgProgress = participatedStudents > 0
+        ? Math.round(allStudents.reduce((sum, s) => sum + s.progress, 0) / totalStudents)
+        : 0;
+
+      const avgMastery = participatedStudents > 0
+        ? Math.round(allStudents.filter(s => s.status !== 'not_started').reduce((sum, s) => sum + s.masteryRate, 0) / participatedStudents)
+        : 0;
+
+      document.getElementById('totalStudents').textContent = totalStudents;
+      document.getElementById('participatedStudents').textContent = participatedStudents;
+      document.getElementById('passedStudents').textContent = passedStudents;
+      document.getElementById('participationRate').textContent = participationRate + '%';
+      document.getElementById('passRate').textContent = passRate + '%';
+      document.getElementById('avgProgress').textContent = avgProgress + '%';
+      document.getElementById('avgMastery').textContent = avgMastery + '%';
+    }
+
+    // 渲染掌握情况图表
+    function renderMasteryChart() {
+      const chartDom = document.getElementById('masteryChart');
+      masteryChart = echarts.init(chartDom);
+
+      // 统计各等级人数
+      const distribution = [
+        { level: '未通过 (0-59%)', min: 0, max: 59, count: 0, color: '#F53F3F' },
+        { level: '通过 (60-100%)', min: 60, max: 100, count: 0, color: '#00B42A' }
+      ];
+
+      allStudents.forEach(student => {
+        if (student.status === 'not_started') return;
+
+        for (let i = 0; i < distribution.length; i++) {
+          if (student.masteryRate >= distribution[i].min && student.masteryRate <= distribution[i].max) {
+            distribution[i].count++;
+            break;
+          }
+        }
+      });
+
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          },
+          formatter: function(params) {
+            const data = params[0];
+            const total = allStudents.filter(s => s.status !== 'not_started').length;
+            const percent = total > 0 ? ((data.value / total) * 100).toFixed(1) : 0;
+            return `${data.name}<br/>人数: ${data.value} (${percent}%)`;
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '10%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: distribution.map(d => d.level),
+          axisLabel: {
+            fontSize: 12,
+            color: '#4E5969'
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: '人数',
+          axisLabel: {
+            fontSize: 12,
+            color: '#4E5969'
+          }
+        },
+        series: [
+          {
+            name: '人数',
+            type: 'bar',
+            data: distribution.map(d => ({
+              value: d.count,
+              itemStyle: { color: d.color }
+            })),
+            barWidth: '40%',
+            label: {
+              show: true,
+              position: 'top',
+              fontSize: 12,
+              color: '#1D2129'
+            }
+          }
+        ]
+      };
+
+      masteryChart.setOption(option);
+
+      // 生成智能诊断
+      generateDiagnosis(distribution);
+
+      // 渲染表格数据
+      renderMasteryTable(distribution);
+    }
+
+    // 生成智能诊断结论
+    function generateDiagnosis(distribution) {
+      const total = allStudents.filter(s => s.status !== 'not_started').length;
+      const passCount = distribution.find(d => d.min === 60).count;
+      const failCount = distribution.find(d => d.min === 0).count;
+
+      const passPercent = total > 0 ? ((passCount / total) * 100).toFixed(1) : 0;
+
+      let diagnosis = `本次刷题共有 ${total} 名学生参与。`;
+
+      if (passPercent >= 80) {
+        diagnosis += `通过人数 ${passCount} 人，占比 ${passPercent}%，整体掌握情况优秀。`;
+      } else if (passPercent >= 60) {
+        diagnosis += `通过人数 ${passCount} 人，占比 ${passPercent}%，整体掌握情况良好。`;
+      } else if (passPercent >= 40) {
+        diagnosis += `通过人数 ${passCount} 人，占比 ${passPercent}%，整体掌握情况一般，建议关注未通过学生。`;
+      } else {
+        diagnosis += `通过人数 ${passCount} 人，占比 ${passPercent}%，整体掌握情况较差，需重点关注。`;
+      }
+
+      if (failCount > 0) {
+        diagnosis += ` 未通过人数 ${failCount} 人，需要加强学习。`;
+      }
+
+      document.getElementById('diagnosisText').textContent = diagnosis;
+    }
+
+    // 渲染掌握情况表格
+    function renderMasteryTable(distribution) {
+      const tbody = document.getElementById('masteryTableBody');
+      const total = allStudents.filter(s => s.status !== 'not_started').length;
+
+      tbody.innerHTML = distribution.map(d => {
+        const percent = total > 0 ? ((d.count / total) * 100).toFixed(1) : 0;
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm font-medium text-gray-900">${d.level}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${d.min}% - ${d.max}%</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${d.count} 人</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${percent}%</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 切换视图
+    function switchView(view) {
+      if (view === 'chart') {
+        document.getElementById('chartView').classList.remove('hidden');
+        document.getElementById('tableView').classList.add('hidden');
+        document.getElementById('chartViewBtn').classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        document.getElementById('chartViewBtn').classList.remove('text-gray-600');
+        document.getElementById('tableViewBtn').classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        document.getElementById('tableViewBtn').classList.add('text-gray-600');
+
+        // 重新渲染图表（解决切换后尺寸问题）
+        setTimeout(() => {
+          if (masteryChart) masteryChart.resize();
+        }, 100);
+      } else {
+        document.getElementById('chartView').classList.add('hidden');
+        document.getElementById('tableView').classList.remove('hidden');
+        document.getElementById('tableViewBtn').classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+        document.getElementById('tableViewBtn').classList.remove('text-gray-600');
+        document.getElementById('chartViewBtn').classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+        document.getElementById('chartViewBtn').classList.add('text-gray-600');
+      }
+    }
+
+    // 下载图表
+    function downloadChart() {
+      if (!masteryChart) return;
+      const url = masteryChart.getDataURL({
+        type: 'png',
+        pixelRatio: 2,
+        backgroundColor: '#fff'
+      });
+      const link = document.createElement('a');
+      link.download = '掌握情况分布.png';
+      link.href = url;
+      link.click();
+      showToast('图表下载成功', 'success');
+    }
+
+    // 应用学生筛选
+    function applyStudentFilters() {
+      const search = document.getElementById('studentSearch').value.trim().toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const startDate = document.getElementById('startDateFilter').value;
+      const endDate = document.getElementById('endDateFilter').value;
+
+      filteredStudents = allStudents.filter(student => {
+        // 搜索筛选
+        if (search) {
+          const searchText = `${student.username} ${student.name}`.toLowerCase();
+          if (!searchText.includes(search)) return false;
+        }
+
+        // 状态筛选
+        if (status && student.status !== status) return false;
+
+        // 时间范围筛选
+        if (student.lastPracticeTime) {
+          const practiceDate = formatDate(student.lastPracticeTime);
+          if (startDate && practiceDate < startDate) return false;
+          if (endDate && practiceDate > endDate) return false;
+        } else {
+          // 未开始的学生没有刷题时间，时间筛选时排除
+          if (startDate || endDate) return false;
+        }
+
+        return true;
+      });
+
+      currentStudentPage = 1;
+      renderStudentTable();
+    }
+
+    // 重置学生筛选
+    function resetStudentFilters() {
+      document.getElementById('studentSearch').value = '';
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('startDateFilter').value = '';
+      document.getElementById('endDateFilter').value = '';
+      applyStudentFilters();
+    }
+
+    // 渲染学生表格
+    function renderStudentTable() {
+      const tbody = document.getElementById('studentTableBody');
+
+      if (filteredStudents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">暂无数据</td></tr>';
+        updateStudentPagination();
+        return;
+      }
+
+      const start = (currentStudentPage - 1) * studentPageSize;
+      const end = Math.min(start + studentPageSize, filteredStudents.length);
+      const pageData = filteredStudents.slice(start, end);
+
+      tbody.innerHTML = pageData.map(student => createStudentRow(student)).join('');
+
+      updateStudentPagination();
+      updateSelectedCount();
+    }
+
+    // 创建学生表格行
+    function createStudentRow(student) {
+      const statusConfig = {
+        not_started: { text: '未开始', class: 'bg-gray-100 text-gray-600' },
+        in_progress: { text: '刷题中', class: 'bg-info-50 text-info-600' },
+        mastered: { text: '全部掌握', class: 'bg-success-50 text-success-600' }
+      };
+
+      const status = statusConfig[student.status] || statusConfig.not_started;
+      const isChecked = selectedStudentIds.has(student.id);
+
+      return `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleStudentSelection('${student.id}')" class="rounded border-gray-300 text-primary-500 focus:ring-primary-500">
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900">${student.username}</td>
+          <td class="px-6 py-4 text-sm text-gray-900">${student.name}</td>
+          <td class="px-6 py-4">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${status.class}">
+              ${status.text}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900">${student.practiceCount} 题</td>
+          <td class="px-6 py-4 text-sm">
+            <div class="flex items-center">
+              <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                <div class="bg-primary-500 h-2 rounded-full" style="width: ${student.progress}%"></div>
+              </div>
+              <span class="text-gray-900">${student.progress}%</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-900">${student.masteredCount} 题</td>
+          <td class="px-6 py-4 text-sm">
+            <span class="${student.masteryRate >= 60 ? 'text-success-600 font-medium' : 'text-gray-900'}">${student.masteryRate}%</span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">${student.lastPracticeTime ? formatDateTime(student.lastPracticeTime) : '--'}</td>
+        </tr>
+      `;
+    }
+
+    // 切换学生选择
+    function toggleStudentSelection(id) {
+      if (selectedStudentIds.has(id)) {
+        selectedStudentIds.delete(id);
+      } else {
+        selectedStudentIds.add(id);
+      }
+      updateSelectedCount();
+    }
+
+    // 全选/取消全选
+    function toggleSelectAll() {
+      const checkbox = document.getElementById('selectAll');
+      const start = (currentStudentPage - 1) * studentPageSize;
+      const end = Math.min(start + studentPageSize, filteredStudents.length);
+      const pageData = filteredStudents.slice(start, end);
+
+      if (checkbox.checked) {
+        pageData.forEach(student => selectedStudentIds.add(student.id));
+      } else {
+        pageData.forEach(student => selectedStudentIds.delete(student.id));
+      }
+
+      renderStudentTable();
+    }
+
+    // 更新选中数量
+    function updateSelectedCount() {
+      document.getElementById('selectedCount').textContent = selectedStudentIds.size;
+    }
+
+    // 排序
+    function sortBy(field) {
+      if (sortField === field) {
+        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortField = field;
+        sortOrder = 'asc';
+      }
+
+      filteredStudents.sort((a, b) => {
+        let aVal = a[field];
+        let bVal = b[field];
+
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = bVal.toLowerCase();
+        }
+
+        if (sortOrder === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+
+      currentStudentPage = 1;
+      renderStudentTable();
+    }
+
+    // 更新学生分页
+    function updateStudentPagination() {
+      const totalPages = Math.ceil(filteredStudents.length / studentPageSize);
+
+      document.getElementById('totalStudentCount').textContent = filteredStudents.length;
+
+      document.getElementById('prevStudentPageBtn').disabled = currentStudentPage === 1;
+      document.getElementById('nextStudentPageBtn').disabled = currentStudentPage === totalPages;
+
+      const pageNumbers = document.getElementById('studentPageNumbers');
+      pageNumbers.innerHTML = '';
+
+      const maxPages = 5;
+      let startPage = Math.max(1, currentStudentPage - Math.floor(maxPages / 2));
+      let endPage = Math.min(totalPages, startPage + maxPages - 1);
+
+      if (endPage - startPage < maxPages - 1) {
+        startPage = Math.max(1, endPage - maxPages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-1 rounded text-sm ${i === currentStudentPage ? 'bg-primary-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`;
+        btn.onclick = () => goToStudentPage(i);
+        pageNumbers.appendChild(btn);
+      }
+    }
+
+    // 学生翻页
+    function prevStudentPage() {
+      if (currentStudentPage > 1) {
+        currentStudentPage--;
+        renderStudentTable();
+      }
+    }
+
+    function nextStudentPage() {
+      const totalPages = Math.ceil(filteredStudents.length / studentPageSize);
+      if (currentStudentPage < totalPages) {
+        currentStudentPage++;
+        renderStudentTable();
+      }
+    }
+
+    function goToStudentPage(page) {
+      currentStudentPage = page;
+      renderStudentTable();
+    }
+
+    // 自动刷新倒计时
+    function startCountdown() {
+      countdownTimer = setInterval(() => {
+        countdownSeconds--;
+        document.getElementById('countdown').textContent = countdownSeconds;
+
+        if (countdownSeconds <= 0) {
+          refreshData();
+          countdownSeconds = 60;
+        }
+      }, 1000);
+    }
+
+    // 刷新数据
+    function refreshData() {
+      showToast('数据已刷新', 'success');
+      // 实际应该从后端重新加载数据
+      updateOverviewStats();
+      renderMasteryChart();
+      applyStudentFilters();
+      countdownSeconds = 60;
+    }
+
+    // 导出学生数据
+    function exportStudentData() {
+      if (selectedStudentIds.size === 0) {
+        showToast('请先选择要导出的学生', 'error');
+        return;
+      }
+
+      const selectedStudents = filteredStudents.filter(s => selectedStudentIds.has(s.id));
+      console.log('导出学生数据:', selectedStudents);
+      showToast(`正在导出 ${selectedStudents.length} 条数据...`, 'success');
+
+      // 模拟导出
+      setTimeout(() => {
+        showToast('导出成功', 'success');
+      }, 1500);
+    }
+
+    // 导出报告
+    function exportReport() {
+      showToast('正在生成统计报告...', 'success');
+
+      setTimeout(() => {
+        showToast('报告导出成功', 'success');
+      }, 1500);
+    }
+
+    // 返回列表
+    function goBack() {
+      window.location.href = 'list.html';
+    }
+
+    // Toast 提示
+    function showToast(message, type = 'success') {
+      const bgColor = type === 'success' ? 'bg-success-500' : 'bg-error-500';
+      const toast = document.createElement('div');
+      toast.className = `fixed top-20 right-6 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2`;
+      toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // 格式化日期
+    function formatDate(date) {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatDateTime(date) {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    // 页面加载完成后初始化
+    window.onload = init;
+
+    // 窗口大小改变时重新渲染图表
+    window.addEventListener('resize', () => {
+      if (masteryChart) {
+        masteryChart.resize();
+      }
+    });
+
+    // 页面卸载时清除定时器
+    window.addEventListener('beforeunload', () => {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+      }
+    });
+  </script>
+</body>
+</html>

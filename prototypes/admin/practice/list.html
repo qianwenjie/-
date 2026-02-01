@@ -609,8 +609,8 @@
           name: taskName,
           code: `LX${String(i).padStart(4, '0')}`,
           status: targetStatus,
-          startTime: formatDate(startDate),
-          endTime: endDate ? formatDate(endDate) : null,
+          startTime: formatDateTimeNoSeconds(startDate),
+          endTime: endDate ? formatDateTimeNoSeconds(endDate) : null,
           remark: `本次刷题涵盖${knowledgeLabel}等知识点，共${questionIds.length}道题目，旨在帮助学生巩固基础知识，提升解题能力。`,
           knowledgeIds: knowledgeIds,
           questionIds: questionIds,
@@ -840,10 +840,10 @@
             <!-- 右侧按钮 -->
             <div class="flex items-center space-x-3 ml-8">
               <button onclick="manageStudents('${practice.id}')" class="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                考生管理
+                <i class="fas fa-users mr-2"></i>考生管理
               </button>
               <button onclick="monitorPractice('${practice.id}')" class="px-5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors">
-                刷题监控
+                <i class="fas fa-chart-line mr-2"></i>刷题统计
               </button>
             </div>
           </div>
@@ -934,7 +934,7 @@
     }
 
     function monitorPractice(id) {
-      // 跳转到刷题监控页面
+      // 跳转到刷题统计页面
       window.location.href = `statistics.html?id=${id}&tab=monitor`;
     }
 
@@ -1028,6 +1028,17 @@
       const minutes = String(d.getMinutes()).padStart(2, '0');
       const seconds = String(d.getSeconds()).padStart(2, '0');
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 格式化日期时间（不含秒）- 与手动创建的任务保持一致
+    function formatDateTimeNoSeconds(date) {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
 
     // 页面加载完成后初始化

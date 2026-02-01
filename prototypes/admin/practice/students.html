@@ -62,13 +62,15 @@
   <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
     <div class="flex items-center justify-between h-full px-6">
       <div class="flex items-center space-x-4">
-        <a href="list.html" class="flex items-center space-x-3">
+        <div class="flex items-center space-x-3">
           <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
             <i class="fas fa-graduation-cap text-white"></i>
           </div>
           <span class="text-xl font-semibold text-gray-900">考试系统</span>
-        </a>
+        </div>
         <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
           <a href="list.html" class="hover:text-primary-500">刷题管理</a>
           <i class="fas fa-chevron-right text-xs text-gray-400"></i>
           <span class="text-gray-900 font-medium">考生管理</span>
@@ -358,7 +360,7 @@
       // 填充刷题任务信息
       document.getElementById('practiceName').textContent = currentPractice.name;
       document.getElementById('practiceCode').textContent = currentPractice.code;
-      document.getElementById('practiceTime').textContent = `${currentPractice.startTime} ~ ${currentPractice.endTime}`;
+      document.getElementById('practiceTime').textContent = `${currentPractice.startTime} ~ ${currentPractice.endTime || '不限'}`;
 
       // 抽题方式徽章
       const questionMode = currentPractice.questionMode || 'fixed';
@@ -402,11 +404,21 @@
     function generateMockData() {
       const surnames = ['张', '李', '王', '刘', '陈', '杨', '赵', '黄', '周', '吴'];
       const names = ['明', '华', '伟', '芳', '静', '阳', '丽', '敏', '杰', '刚'];
-      const statuses = ['未开始', '进行中', '已完成'];
 
       students = [];
       for (let i = 0; i < 30; i++) {
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        // 调整状态分布：40%进行中，30%已完成，30%未开始
+        // 这样当任务结束时间过期后，会有更多逾期未完成的学生
+        let status;
+        const rand = Math.random();
+        if (rand < 0.4) {
+          status = '进行中';  // 40%
+        } else if (rand < 0.7) {
+          status = '已完成';  // 30%
+        } else {
+          status = '未开始';  // 30%
+        }
+
         const practiceCount = status === '未开始' ? 0 : (status === '进行中' ? Math.floor(Math.random() * 10) + 1 : Math.floor(Math.random() * 20) + 10);
         const accuracy = status === '未开始' ? 0 : (status === '进行中' ? Math.floor(Math.random() * 40) + 40 : Math.floor(Math.random() * 30) + 60);
 
@@ -456,13 +468,24 @@
 
     // 创建考生行
     function createStudentRow(student) {
+      // 判断是否逾期未完成
+      let displayStatus = student.status;
+      if (currentPractice.endTime && student.status === '进行中') {
+        const now = new Date();
+        const endTime = new Date(currentPractice.endTime);
+        if (now > endTime) {
+          displayStatus = '逾期未完成';
+        }
+      }
+
       const statusMap = {
         '未开始': { text: '未开始', class: 'bg-gray-100 text-gray-600' },
         '进行中': { text: '进行中', class: 'bg-info-100 text-info-600' },
-        '已完成': { text: '已完成', class: 'bg-success-100 text-success-600' }
+        '已完成': { text: '已完成', class: 'bg-success-100 text-success-600' },
+        '逾期未完成': { text: '逾期未完成', class: 'bg-error-100 text-error-600' }
       };
 
-      const status = statusMap[student.status] || statusMap['未开始'];
+      const status = statusMap[displayStatus] || statusMap['未开始'];
       const isChecked = selectedStudentIds.includes(student.id);
       const photoUrl = student.photo || 'https://via.placeholder.com/40';
 

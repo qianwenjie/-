@@ -509,8 +509,8 @@
         // 回填基本信息
         document.getElementById('practiceName').value = practice.name || '';
         document.getElementById('practiceCode').value = practice.code || '';
-        document.getElementById('startTime').value = practice.startTime || '';
-        document.getElementById('endTime').value = practice.endTime || '';
+        document.getElementById('startTime').value = practice.startTime ? practice.startTime.replace(' ', 'T') : '';
+        document.getElementById('endTime').value = practice.endTime ? practice.endTime.replace(' ', 'T') : '';
         document.getElementById('remarkEditor').innerHTML = practice.remark || '';
 
         // 回填抽题方式
@@ -1241,8 +1241,8 @@
           id: existingPractice.id,  // 保持原有ID
           code: document.getElementById('practiceCode').value,
           name: document.getElementById('practiceName').value,
-          startTime: document.getElementById('startTime').value,
-          endTime: document.getElementById('endTime').value || null,
+          startTime: document.getElementById('startTime').value.replace('T', ' '),
+          endTime: document.getElementById('endTime').value ? document.getElementById('endTime').value.replace('T', ' ') : null,
           remark: document.getElementById('remarkEditor').innerHTML.trim(),
           knowledgeIds: leafNodeIds,
           questionIds: questionIds,
@@ -1284,8 +1284,8 @@
           id: 'PR' + Date.now(),  // 生成唯一ID
           code: document.getElementById('practiceCode').value,
           name: document.getElementById('practiceName').value,
-          startTime: document.getElementById('startTime').value,
-          endTime: document.getElementById('endTime').value || null,
+          startTime: document.getElementById('startTime').value.replace('T', ' '),
+          endTime: document.getElementById('endTime').value ? document.getElementById('endTime').value.replace('T', ' ') : null,
           remark: document.getElementById('remarkEditor').innerHTML.trim(),
           knowledgeIds: leafNodeIds,
           questionIds: questionIds,

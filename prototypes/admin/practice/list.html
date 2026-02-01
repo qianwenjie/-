@@ -56,9 +56,49 @@
     .overflow-auto::-webkit-scrollbar-thumb:hover {
       background: #a8a8a8;
     }
+
+    /* Message 消息样式 */
+    .message-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .message {
+      min-width: 320px;
+      max-width: 500px;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideIn 0.3s ease-out;
+      transition: all 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-50">
+  <!-- Message 消息提示容器 -->
+  <div id="messageContainer" class="message-container"></div>
+
   <div class="min-h-screen">
     <!-- 顶部导航栏 -->
     <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
@@ -265,9 +305,59 @@
 
     // 初始化
     function init() {
-      generateMockData();
+      loadPractices();
       applyFilters();
       updateDateInput();
+    }
+
+    // 加载刷题任务数据
+    function loadPractices() {
+      console.log('==================== 加载刷题任务 ====================');
+      try {
+        const stored = localStorage.getItem('practices');
+        if (stored) {
+          const practices = JSON.parse(stored);
+          if (practices.length > 0) {
+            allPractices = practices;
+            console.log('从 localStorage 加载:', allPractices.length, '个任务');
+
+            console.log('📥 加载后（排序前）前5个任务:');
+            allPractices.slice(0, 5).forEach((p, i) => {
+              const timestamp = parseDateTime(p.createTime);
+              console.log(`  ${i+1}. ${p.name} - ${p.createTime} (${timestamp})`);
+            });
+
+            // 加载后立即排序
+            allPractices.sort((a, b) => {
+              const timeA = parseDateTime(a.createTime);
+              const timeB = parseDateTime(b.createTime);
+              if (a === allPractices[0] || b === allPractices[0]) {
+                console.log(`🔍 排序比较: ${a.name}(${timeA}) vs ${b.name}(${timeB}) = ${timeB - timeA}`);
+              }
+              return timeB - timeA;  // 倒序：新的在前
+            });
+
+            console.log('📥 排序后前5个任务:');
+            allPractices.slice(0, 5).forEach((p, i) => {
+              const timestamp = parseDateTime(p.createTime);
+              console.log(`  ${i+1}. ${p.name} - ${p.createTime} (${timestamp})`);
+            });
+
+            // ✅ 关键：排序后写回 localStorage，确保数据持久化
+            localStorage.setItem('practices', JSON.stringify(allPractices));
+            console.log('✅ 排序完成并写回 localStorage');
+            console.log('====================================================');
+
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('加载刷题任务失败:', e);
+      }
+
+      // 如果localStorage中没有数据，生成模拟数据
+      console.log('localStorage 无数据，生成模拟数据...');
+      generateMockData();
     }
 
     // 更新日期输入框占位符显示
@@ -284,32 +374,89 @@
       }
     }
 
-    // 生成模拟数据
+    // 解析日期时间字符串
+    function parseDateTime(dateStr) {
+      if (!dateStr) return 0;
+
+      try {
+        // 支持多种格式：
+        // 1. "2026-02-01 10:30:45" (精确到秒)
+        // 2. "2026-02-01 10:30" (精确到分)
+        // 3. "2026-02-01T10:30:00.000Z" (ISO 格式)
+
+        let dateObj;
+        if (dateStr.includes('T')) {
+          // ISO 格式，直接解析
+          dateObj = new Date(dateStr);
+        } else if (dateStr.includes(' ')) {
+          // 自定义格式，转换为 ISO 格式
+          const isoFormat = dateStr.replace(' ', 'T');
+          dateObj = new Date(isoFormat);
+        } else {
+          // 其他格式，尝试直接解析
+          dateObj = new Date(dateStr);
+        }
+
+        const timestamp = dateObj.getTime();
+        if (isNaN(timestamp)) {
+          console.error('❌ 日期解析失败:', dateStr);
+          return 0;
+        }
+        return timestamp;
+      } catch (e) {
+        console.error('❌ 日期解析异常:', dateStr, e);
+        return 0;
+      }
+    }
+
+    // 生成模拟数据（使用真实题库数据）
     function generateMockData() {
-      const knowledgePoints = [
-        '计算机基础', '数据结构', '算法设计', '操作系统', '计算机网络',
-        '数据库原理', '软件工程', 'Web开发', '人工智能', '机器学习',
-        '高等数学', '线性代数', '概率论', '离散数学', '数值分析',
-        '大学英语', '英语语法', '英语听力', '英语阅读', '英语写作'
+      // 清空现有数据
+      allPractices = [];
+
+      // 从localStorage加载真实题库数据
+      let allQuestions = [];
+      try {
+        const stored = localStorage.getItem('allQuestions');
+        if (stored) {
+          allQuestions = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error('加载题目数据失败:', e);
+      }
+
+      // 真实知识点配置（与题库一致）
+      const knowledgeConfig = [
+        { id: 11, name: '计算机系统' },
+        { id: 12, name: '操作系统' },
+        { id: 13, name: '数据结构' },
+        { id: 21, name: 'Python基础' },
+        { id: 22, name: 'Java基础' },
+        { id: 31, name: 'SQL语法' },
+        { id: 32, name: '数据库设计' },
+        { id: 41, name: '网络协议' },
+        { id: 42, name: '网络安全' }
       ];
 
-      const questionTypes = [
-        '单选题', '多选题', '判断题', '填空题', '简答题'
+      const taskNames = [
+        '基础强化训练', '专项突破练习', '综合能力提升', '知识点巩固',
+        '每日一练', '周末专项', '月度测评', '技能提升计划',
+        '核心考点突破', '高频题型训练', '查漏补缺', '重点知识复习',
+        '模拟实战演练', '错题集中训练', '考前冲刺', '基础巩固',
+        '进阶提升', '精英挑战', '专题训练', '系统复习',
+        '能力测试', '知识梳理', '重点突破', '全面复习', '技能检测'
       ];
 
       const now = new Date();
 
-      // 生成28个刷题任务，确保各种状态都有
+      // 生成25个刷题任务，分布：未开始8个、进行中10个、已结束7个
       const statusDistribution = [
-        // 前10个：进行中
-        ...Array(10).fill('ongoing'),
-        // 中间10个：已结束
-        ...Array(10).fill('ended'),
-        // 最后8个：未开始
-        ...Array(8).fill('not_started')
+        ...Array(8).fill('not_started'),  // 未开始
+        ...Array(10).fill('ongoing'),      // 进行中
+        ...Array(7).fill('ended')          // 已结束
       ];
 
-      for (let i = 1; i <= 28; i++) {
+      for (let i = 1; i <= 25; i++) {
         const targetStatus = statusDistribution[i - 1];
         let startDate, endDate;
 
@@ -347,18 +494,92 @@
           }
         }
 
-        // 创建时间比开始时间早1-5天
-        const createDaysEarly = Math.floor(Math.random() * 5) + 1;
-        const createDate = new Date(startDate.getTime() - createDaysEarly * 24 * 60 * 60 * 1000);
+        // ✅ 修复：创建时间应该始终是过去时间，与任务状态无关
+        // 创建时间：1-60天前的随机时间
+        const createDaysAgo = Math.floor(Math.random() * 60) + 1;
+        const createDate = new Date(now.getTime() - createDaysAgo * 24 * 60 * 60 * 1000);
 
-        const questionCount = (Math.floor(Math.random() * 15) + 1) * 10; // 10-150题
+        // 随机选择1-3个知识点
+        const knowledgeCount = Math.floor(Math.random() * 3) + 1;
+        const selectedKnowledge = [];
+        const shuffledKnowledge = [...knowledgeConfig].sort(() => 0.5 - Math.random());
+        for (let j = 0; j < knowledgeCount; j++) {
+          selectedKnowledge.push(shuffledKnowledge[j]);
+        }
+        const knowledgeIds = selectedKnowledge.map(k => k.id);
 
-        // 随机选择2-4种题型
-        const typeCount = Math.floor(Math.random() * 3) + 2;
-        const selectedTypes = [];
-        const shuffled = [...questionTypes].sort(() => 0.5 - Math.random());
-        for (let j = 0; j < typeCount; j++) {
-          selectedTypes.push(shuffled[j]);
+        // 根据选择的知识点筛选题目
+        let availableQuestions = [];
+        if (allQuestions.length > 0) {
+          availableQuestions = allQuestions.filter(q =>
+            knowledgeIds.includes(parseInt(q.knowledgeId))
+          );
+        }
+
+        // 如果没有真实题目，生成模拟题目ID
+        let questionIds = [];
+        let questionTypes = [];
+        let questionTypeConfig = [];
+
+        if (availableQuestions.length > 0) {
+          // 按题型分组
+          const typeGroups = {};
+          availableQuestions.forEach(q => {
+            if (!typeGroups[q.typeName]) {
+              typeGroups[q.typeName] = [];
+            }
+            typeGroups[q.typeName].push(q);
+          });
+
+          // 随机选择题型和数量
+          const availableTypes = Object.keys(typeGroups);
+          const selectedTypeCount = Math.min(
+            Math.floor(Math.random() * 3) + 2,  // 2-4种题型
+            availableTypes.length
+          );
+
+          const shuffledTypes = availableTypes.sort(() => 0.5 - Math.random());
+          for (let j = 0; j < selectedTypeCount; j++) {
+            const typeName = shuffledTypes[j];
+            const typeQuestions = typeGroups[typeName];
+            const count = Math.min(
+              Math.floor(Math.random() * 8) + 3,  // 3-10题
+              typeQuestions.length
+            );
+
+            questionTypes.push(typeName);
+            questionTypeConfig.push({
+              typeName: typeName,
+              count: count,
+              maxCount: typeQuestions.length
+            });
+
+            // 随机抽取题目
+            const shuffled = [...typeQuestions].sort(() => 0.5 - Math.random());
+            for (let k = 0; k < count; k++) {
+              questionIds.push(shuffled[k].id);
+            }
+          }
+        } else {
+          // 没有真实题目时使用默认题型
+          const defaultTypes = ['单选题', '多选题', '判断题', '填空题', '简答题'];
+          const typeCount = Math.floor(Math.random() * 3) + 2;
+          const shuffled = [...defaultTypes].sort(() => 0.5 - Math.random());
+
+          for (let j = 0; j < typeCount; j++) {
+            const typeName = shuffled[j];
+            const count = Math.floor(Math.random() * 8) + 3;
+            questionTypes.push(typeName);
+            questionTypeConfig.push({
+              typeName: typeName,
+              count: count,
+              maxCount: count + 10
+            });
+            // 生成模拟题目ID
+            for (let k = 0; k < count; k++) {
+              questionIds.push(`Q${String(i).padStart(3, '0')}_${j}_${k}`);
+            }
+          }
         }
 
         // 根据状态设置参与人数
@@ -376,15 +597,28 @@
           completedParticipants = Math.floor(totalParticipants * (0.4 + Math.random() * 0.3));
         }
 
+        // 生成任务名称
+        const taskSuffix = taskNames[i - 1];
+        const knowledgeLabel = selectedKnowledge.length === 1
+          ? selectedKnowledge[0].name
+          : selectedKnowledge.map(k => k.name).slice(0, 2).join('+');
+        const taskName = `${knowledgeLabel} - ${taskSuffix}`;
+
         allPractices.push({
-          id: `PT${String(i).padStart(4, '0')}`,
-          name: `${knowledgePoints[Math.floor(Math.random() * knowledgePoints.length)]}专项练习${i > 15 ? ' - ' + (i % 5 === 0 ? '强化' : '基础') : ''}`,
-          code: `PT${String(i).padStart(4, '0')}`,
+          id: `PR${Date.now() + i}`,
+          name: taskName,
+          code: `LX${String(i).padStart(4, '0')}`,
           status: targetStatus,
           startTime: formatDate(startDate),
-          endTime: endDate ? formatDate(endDate) : '不限',
-          questionCount: questionCount,
-          questionTypes: selectedTypes,
+          endTime: endDate ? formatDate(endDate) : null,
+          remark: `本次刷题涵盖${knowledgeLabel}等知识点，共${questionIds.length}道题目，旨在帮助学生巩固基础知识，提升解题能力。`,
+          knowledgeIds: knowledgeIds,
+          questionIds: questionIds,
+          questionCount: questionIds.length,
+          questionTypes: questionTypes,
+          questionTypeConfig: questionTypeConfig,
+          answerDisplay: 'immediate',
+          questionMode: Math.random() > 0.5 ? 'fixed' : 'random',  // 随机分配抽题方式
           totalParticipants: totalParticipants,
           completedParticipants: completedParticipants,
           passRate: targetStatus === 'not_started' ? 0 : Math.floor(Math.random() * 30) + 60,
@@ -393,11 +627,25 @@
       }
 
       // 按创建时间倒序排列
-      allPractices.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+      allPractices.sort((a, b) => {
+        const timeA = parseDateTime(a.createTime);
+        const timeB = parseDateTime(b.createTime);
+        return timeB - timeA;
+      });
+
+      // 保存到 localStorage
+      localStorage.setItem('practices', JSON.stringify(allPractices));
+
+      console.log('✅ 生成25个刷题任务，状态分布:', {
+        未开始: allPractices.filter(p => p.status === 'not_started').length,
+        进行中: allPractices.filter(p => p.status === 'ongoing').length,
+        已结束: allPractices.filter(p => p.status === 'ended').length
+      });
     }
 
     // 应用筛选
     function applyFilters() {
+      console.log('==================== 应用筛选 ====================');
       const status = document.getElementById('statusFilter').value;
       const startDate = document.getElementById('startDateFilter').value;
       const keyword = document.getElementById('keywordFilter').value.trim().toLowerCase();
@@ -417,6 +665,28 @@
 
         return true;
       });
+
+      console.log('筛选后数量:', filteredPractices.length);
+      console.log('筛选前前3个:');
+      filteredPractices.slice(0, 3).forEach((p, i) => {
+        const timestamp = parseDateTime(p.createTime);
+        console.log(`  ${i+1}. ${p.name} - ${p.createTime} (${timestamp})`);
+      });
+
+      // 按创建时间倒序排列（最新的在前）
+      filteredPractices.sort((a, b) => {
+        // 处理日期格式，确保兼容性
+        const timeA = parseDateTime(a.createTime);
+        const timeB = parseDateTime(b.createTime);
+        return timeB - timeA;  // 倒序：新的在前
+      });
+
+      console.log('筛选+排序后前3个:');
+      filteredPractices.slice(0, 3).forEach((p, i) => {
+        const timestamp = parseDateTime(p.createTime);
+        console.log(`  ${i+1}. ${p.name} - ${p.createTime} (${timestamp})`);
+      });
+      console.log('====================================================');
 
       currentPage = 1;
       renderTable();
@@ -458,6 +728,17 @@
 
     // 创建刷题卡片
     function createPracticeCard(practice) {
+      // 数据兼容性处理
+      if (!practice.questionTypes) {
+        practice.questionTypes = practice.questionTypeConfig
+          ? practice.questionTypeConfig.map(t => t.typeName)
+          : [];
+      }
+      if (!practice.totalParticipants) practice.totalParticipants = 0;
+      if (!practice.completedParticipants) practice.completedParticipants = 0;
+      if (!practice.id) practice.id = 'PR' + Date.now() + Math.random();
+      if (!practice.questionMode) practice.questionMode = 'fixed';  // 默认固定抽题
+
       const statusConfig = {
         ongoing: {
           text: '进行中',
@@ -501,8 +782,12 @@
                 <h3 class="text-lg font-semibold text-gray-900">${practice.name}</h3>
               </div>
               <div class="flex items-center space-x-6 text-sm text-gray-400">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${practice.questionMode === 'fixed' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}">
+                  <i class="fas fa-${practice.questionMode === 'fixed' ? 'lock' : 'random'} mr-1"></i>
+                  ${practice.questionMode === 'fixed' ? '固定抽题' : '随机抽题'}
+                </span>
                 <span># ${practice.code}</span>
-                <span>任务时间: ${practice.startTime} ~ ${practice.endTime}</span>
+                <span>任务时间: ${practice.startTime} ~ ${practice.endTime || '不限'}</span>
               </div>
             </div>
             <div class="flex items-center space-x-3 text-sm text-gray-400">
@@ -680,28 +965,48 @@
       const index = allPractices.findIndex(p => p.id === deleteTargetId);
       if (index > -1) {
         allPractices.splice(index, 1);
+
+        // 同步到 localStorage
+        localStorage.setItem('practices', JSON.stringify(allPractices));
+
         applyFilters();
 
         // 显示成功提示
-        showToast('删除成功', 'success');
+        showMessage('删除成功', 'success');
       }
 
       closeDeleteModal();
     }
 
-    // Toast 提示
-    function showToast(message, type = 'success') {
-      const bgColor = type === 'success' ? 'bg-success-500' : 'bg-error-500';
-      const toast = document.createElement('div');
-      toast.className = `fixed top-20 right-6 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2`;
-      toast.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
+    // Message 消息提示（统一样式）
+    function showMessage(text, type = 'info') {
+      const container = document.getElementById('messageContainer');
+      const colors = {
+        success: 'bg-success-50 text-success-700 border-success-200',
+        error: 'bg-error-50 text-error-700 border-error-200',
+        warning: 'bg-warning-50 text-warning-700 border-warning-200',
+        info: 'bg-info-50 text-info-700 border-info-200'
+      };
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+      };
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `message ${colors[type]} border`;
+      messageEl.innerHTML = `
+        <i class="fas ${icons[type]} mr-2"></i>
+        <span>${text}</span>
       `;
-      document.body.appendChild(toast);
+
+      container.appendChild(messageEl);
 
       setTimeout(() => {
-        toast.remove();
+        messageEl.style.opacity = '0';
+        messageEl.style.transform = 'translateY(-20px)';
+        setTimeout(() => messageEl.remove(), 300);
       }, 3000);
     }
 
@@ -721,11 +1026,36 @@
       const day = String(d.getDate()).padStart(2, '0');
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day} ${hours}:${minutes}`;
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     // 页面加载完成后初始化
     window.onload = init;
+
+    // 调试工具：在控制台验证数据
+    window.debugPractices = function() {
+      console.log('==================== 调试信息 ====================');
+      const stored = localStorage.getItem('practices');
+      if (stored) {
+        const practices = JSON.parse(stored);
+        console.log('localStorage 中的任务数:', practices.length);
+        console.log('前5个任务:');
+        practices.slice(0, 5).forEach((p, i) => {
+          const timestamp = parseDateTime(p.createTime);
+          const date = new Date(timestamp);
+          console.log(`${i+1}. ${p.name}`);
+          console.log(`   创建时间: ${p.createTime}`);
+          console.log(`   时间戳: ${timestamp}`);
+          console.log(`   解析日期: ${date.toLocaleString()}`);
+        });
+      } else {
+        console.log('localStorage 中没有数据');
+      }
+      console.log('====================================================');
+    };
+
+    console.log('💡 提示：在控制台输入 debugPractices() 可查看详细调试信息');
   </script>
 </body>
 </html>

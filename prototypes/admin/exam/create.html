@@ -159,6 +159,13 @@
         opacity: 1;
       }
     }
+
+    /* 富文本编辑器 placeholder */
+    [contenteditable=true]:empty:before {
+      content: attr(placeholder);
+      color: #9CA3AF;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -300,6 +307,46 @@
                     <span class="ml-2 text-sm text-gray-500">次</span>
                   </div>
                   <p class="mt-1 text-xs text-gray-500">输入0表示不限制作答次数</p>
+                </div>
+
+                <!-- 备注说明 -->
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    备注说明 <span class="text-gray-400 text-xs font-normal">（选填）</span>
+                  </label>
+                  <div class="border border-gray-300 rounded-lg overflow-hidden">
+                    <!-- 富文本工具栏 -->
+                    <div class="bg-gray-50 border-b border-gray-300 px-3 py-2 flex items-center gap-1">
+                      <button type="button" onclick="execCommand('bold')" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600" title="加粗">
+                        <i class="fas fa-bold text-sm"></i>
+                      </button>
+                      <button type="button" onclick="execCommand('italic')" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600" title="斜体">
+                        <i class="fas fa-italic text-sm"></i>
+                      </button>
+                      <button type="button" onclick="execCommand('underline')" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600" title="下划线">
+                        <i class="fas fa-underline text-sm"></i>
+                      </button>
+                      <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                      <button type="button" onclick="execCommand('insertUnorderedList')" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600" title="无序列表">
+                        <i class="fas fa-list-ul text-sm"></i>
+                      </button>
+                      <button type="button" onclick="execCommand('insertOrderedList')" class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600" title="有序列表">
+                        <i class="fas fa-list-ol text-sm"></i>
+                      </button>
+                      <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                      <select onchange="execCommandWithArg('foreColor', this.value); this.value='';" class="h-8 px-2 text-sm border border-gray-300 rounded hover:bg-gray-200 text-gray-600" title="文字颜色">
+                        <option value="">颜色</option>
+                        <option value="#F53F3F" style="color:#F53F3F">红色</option>
+                        <option value="#FF7D00" style="color:#FF7D00">橙色</option>
+                        <option value="#00B96B" style="color:#00B96B">绿色</option>
+                        <option value="#14C9C9" style="color:#14C9C9">青色</option>
+                        <option value="#1677FF" style="color:#1677FF">蓝色</option>
+                      </select>
+                    </div>
+                    <!-- 编辑区域 -->
+                    <div id="examRemark" contenteditable="true" class="min-h-[120px] px-4 py-3 text-sm text-gray-900 focus:outline-none" placeholder="请输入备注说明..."></div>
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">可填写考试注意事项、答题要求等说明信息</p>
                 </div>
               </div>
             </div>
@@ -815,6 +862,17 @@
   </style>
 
   <script>
+    // 富文本编辑器命令
+    function execCommand(command) {
+      document.execCommand(command, false, null);
+    }
+
+    function execCommandWithArg(command, arg) {
+      if (arg) {
+        document.execCommand(command, false, arg);
+      }
+    }
+
     let currentStep = 1;
 
     // 从 localStorage 读取所有试卷数据
@@ -2634,6 +2692,11 @@
       document.getElementById('examDuration').value = exam.duration || '';
       document.getElementById('attemptLimit').value = exam.attemptLimit || '0';
 
+      // 填充备注说明
+      if (exam.remark) {
+        document.getElementById('examRemark').innerHTML = exam.remark;
+      }
+
       // 填充第二步：选中的试卷
       if (exam.paperIds && exam.paperIds.length > 0) {
         selectedPaperIds = [...exam.paperIds];
@@ -2734,6 +2797,7 @@
         openEndTime: document.getElementById('openEndTime').value.replace('T', ' '),
         duration: parseInt(document.getElementById('examDuration').value),
         attemptLimit: document.getElementById('attemptLimit').value || '0',
+        remark: document.getElementById('examRemark').innerHTML.trim() || '',
         paperIds: selectedPaperIds,
         // 保存所有选中试卷的信息
         papers: selectedPaperIds.length > 0 ? (() => {

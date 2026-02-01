@@ -1,0 +1,2543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>阅卷管理 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E8FFF3',
+              100: '#C3F5CD',
+              500: '#00B96B',
+              600: '#009E5A'
+            },
+            success: {
+              50: '#E8FFEA',
+              100: '#C3F5CD',
+              500: '#00B42A',
+              600: '#00A35C',
+              200: '#B3E5BE'
+            },
+            warning: {
+              50: '#FFF7E8',
+              100: '#FFE7BA',
+              500: '#FF7D00',
+              600: '#F57C00',
+              200: '#FFD79D'
+            },
+            error: {
+              50: '#FFECE8',
+              100: '#FFD4CC',
+              500: '#F53F3F',
+              600: '#E53935',
+              200: '#FFB8B0'
+            },
+            info: {
+              50: '#E8F7FF',
+              100: '#B8E8F5',
+              500: '#14C9C9',
+              600: '#00ACC1',
+              200: '#99DDE8'
+            },
+            purple: {
+              50: '#F3E8FF',
+              100: '#E0C5FF',
+              500: '#9333EA',
+              600: '#7E22CE'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Message 提示组件样式 */
+    .message-enter {
+      animation: messageSlideIn 0.3s ease-out;
+    }
+
+    .message-exit {
+      animation: messageSlideOut 0.3s ease-out;
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes messageSlideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Message 提示容器 -->
+  <div id="messageContainer" class="fixed top-20 right-4 z-[60] flex flex-col gap-2"></div>
+
+  <!-- 顶部导航 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <a href="../dashboard.html" class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </a>
+        <nav class="flex items-center space-x-2 text-sm text-gray-600">
+          <a href="../dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <a href="list.html" class="hover:text-primary-500">考试管理</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">阅卷管理</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-3">
+        <img src="https://via.placeholder.com/32" alt="头像" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="fixed top-16 left-0 right-0 bottom-0 flex flex-col">
+    <!-- 头部信息区域 - 紧凑设计 -->
+    <div class="flex-none bg-white border-b border-gray-200 px-6 pt-3">
+      <div class="flex items-center justify-between">
+        <!-- 左侧：考试基本信息 -->
+        <div class="flex items-center gap-4">
+          <a href="list.html" class="text-gray-500 hover:text-gray-700 transition-colors">
+            <i class="fas fa-arrow-left text-lg"></i>
+          </a>
+          <div class="flex items-center gap-3">
+            <h1 class="text-base font-semibold text-gray-900" id="examName">加载中...</h1>
+            <span class="text-xs text-gray-500">|</span>
+            <span class="text-xs text-gray-600"><i class="fas fa-hashtag mr-1"></i><span id="examCode">-</span></span>
+            <span class="text-xs text-gray-600"><i class="fas fa-calendar mr-1"></i><span id="examTime">-</span></span>
+            <span class="text-xs text-gray-600"><i class="fas fa-clock mr-1"></i><span id="examDuration">-</span>分钟</span>
+            <span class="px-2 py-0.5 rounded text-xs font-medium" id="examStatusBadge">-</span>
+          </div>
+        </div>
+
+        <!-- 右侧：统计数据 -->
+        <div class="flex items-center gap-6 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500">已提交</span>
+            <span class="text-lg font-bold text-primary-600" id="submittedCount">0</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500">已批阅</span>
+            <span class="text-lg font-bold text-success-600" id="gradedCount">0</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-gray-500">未批阅</span>
+            <span class="text-lg font-bold text-warning-600" id="ungradedCount">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 切换 -->
+      <div class="flex items-center gap-4 mt-3 border-t border-gray-100 pt-3">
+        <button onclick="switchMainTab('graders')" id="tabGraders" class="py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600">
+          阅卷人员管理
+        </button>
+        <button onclick="switchMainTab('papers')" id="tabPapers" class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900">
+          考生阅卷管理
+        </button>
+      </div>
+    </div>
+
+    <!-- 阅卷人员管理 -->
+    <div id="gradersPanel" class="flex-1 flex flex-col min-h-0">
+      <!-- 操作栏 -->
+      <div class="flex-none px-6 py-4 bg-white border-b border-gray-200">
+        <div class="flex items-center justify-between gap-4">
+          <!-- 左侧：搜索和筛选 -->
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              id="graderSearchInput"
+              placeholder="搜索姓名、工号、手机号..."
+              class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              onkeyup="searchGraders()"
+            >
+            <button onclick="searchGraders()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+              <i class="fas fa-search mr-1"></i>筛选
+            </button>
+            <button onclick="resetGraderSearch()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+              <i class="fas fa-redo mr-1"></i>重置
+            </button>
+          </div>
+
+          <!-- 右侧：操作按钮 -->
+          <div class="flex items-center gap-2">
+            <button onclick="addGrader()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+              <i class="fas fa-user-plus"></i>
+              添加阅卷人员
+            </button>
+            <button onclick="importGraders()" class="px-4 py-2 bg-info-500 hover:bg-info-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+              <i class="fas fa-file-import"></i>
+              批量导入
+            </button>
+            <button onclick="batchDeleteGraders()" id="batchDeleteGradersBtn" disabled class="px-4 py-2 border border-error-500 text-error-500 hover:bg-error-50 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="fas fa-trash"></i>
+              批量删除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 阅卷人员表格 -->
+      <div class="flex-1 overflow-auto px-6 pb-4 min-h-0">
+        <table class="w-full border-collapse bg-white rounded-lg shadow-sm">
+          <thead class="bg-gray-50 sticky top-0 z-10">
+            <tr>
+              <th class="px-2 py-2.5 text-left whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <input type="checkbox" id="selectAllGraders" onchange="toggleAllGraders()" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                  <div class="relative">
+                    <button onclick="toggleSelectMenuGraders(event)" class="text-gray-600 hover:text-gray-900 p-1">
+                      <i class="fas fa-caret-down"></i>
+                    </button>
+                    <div id="selectMenuGraders" class="hidden absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 whitespace-nowrap">
+                      <button onclick="selectCurrentPageGraders()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fas fa-file text-gray-400 w-4"></i>
+                        <span>选择当前页</span>
+                      </button>
+                      <button onclick="selectFilteredGraders()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fas fa-filter text-gray-400 w-4"></i>
+                        <span>选择筛选结果</span>
+                      </button>
+                      <button onclick="selectAllGraders()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fas fa-list text-gray-400 w-4"></i>
+                        <span>选择全部数据</span>
+                      </button>
+                      <div class="border-t border-gray-100 my-1"></div>
+                      <button onclick="clearSelectionGraders()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fas fa-times text-gray-400 w-4"></i>
+                        <span>取消全选</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">工号</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">手机号</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已阅数量</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">添加时间</th>
+              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">操作</th>
+            </tr>
+          </thead>
+          <tbody id="gradersTableBody" class="divide-y divide-gray-200">
+            <!-- 数据将通过 JS 动态生成 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="flex-none bg-white border-t border-gray-200 shadow-lg" style="min-height: 60px;">
+        <div class="flex items-center justify-between px-6 py-3">
+          <p class="text-sm text-gray-600">
+            显示 <span id="graderPageStart">1</span>-<span id="graderPageEnd">20</span> 条，共 <span id="graderTotalItems">25</span> 条
+          </p>
+          <div class="flex items-center space-x-2">
+            <button onclick="graderFirstPage()" id="graderFirstBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              &lt;&lt;
+            </button>
+            <button onclick="graderPrevPage()" id="graderPrevBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              &lt; 上一页
+            </button>
+            <div id="graderPageNumbers" class="flex items-center space-x-1">
+              <!-- 页码按钮将在这里动态生成 -->
+              <button class="w-9 h-9 rounded text-sm font-medium bg-primary-500 text-white">1</button>
+              <button class="w-9 h-9 rounded text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50">2</button>
+            </div>
+            <button onclick="graderNextPage()" id="graderNextBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              下一页 &gt;
+            </button>
+            <button onclick="graderLastPage()" id="graderLastBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              &gt;&gt;
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 考生阅卷管理 -->
+    <div id="papersPanel" class="flex-1 flex-col hidden min-h-0">
+      <!-- 子 Tab 切换 -->
+      <div class="flex items-center gap-4 bg-white border-b border-gray-200 px-6">
+        <button onclick="switchPaperTab('ungraded')" id="tabUngraded" class="py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 flex items-center gap-2">
+          未阅试卷
+          <span class="px-2 py-0.5 bg-warning-100 text-warning-700 rounded-full text-xs font-semibold" id="ungradedBadge">0</span>
+        </button>
+        <button onclick="switchPaperTab('graded')" id="tabGraded" class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 flex items-center gap-2">
+          已阅试卷
+          <span class="px-2 py-0.5 bg-success-100 text-success-700 rounded-full text-xs font-semibold" id="gradedBadge">0</span>
+        </button>
+      </div>
+
+      <!-- 未阅试卷 -->
+      <div id="ungradedPanel" class="flex-1 flex flex-col min-h-0">
+        <!-- 筛选栏 -->
+        <div class="flex-none px-6 py-4 bg-white border-b border-gray-200">
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              id="ungradedSearch"
+              placeholder="搜索用户名、姓名..."
+              class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              onkeyup="filterUngraded()"
+            >
+            <button onclick="filterUngraded()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+              <i class="fas fa-search mr-1"></i>筛选
+            </button>
+            <button onclick="resetUngradedFilter()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+              <i class="fas fa-redo mr-1"></i>重置
+            </button>
+          </div>
+        </div>
+
+        <!-- 未阅试卷表格 -->
+        <div class="flex-1 overflow-x-auto px-6 pb-4 min-h-0" id="ungradedTableContainer">
+          <table class="w-full min-w-max border-collapse bg-white rounded-lg shadow-sm" id="ungradedTable" style="table-layout: auto;">
+            <thead class="bg-gray-50 sticky top-0 z-10">
+              <tr>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">照片</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 100px;">用户名</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">姓名</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 110px;">手机号</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 160px;">开始答卷时间</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 160px;">交卷时间</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">用时</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 120px;">试卷名称</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap w-32">操作</th>
+              </tr>
+            </thead>
+            <tbody id="ungradedTableBody" class="divide-y divide-gray-200">
+              <!-- 数据将通过 JS 动态生成 -->
+            </tbody>
+          </table>
+          <!-- 空状态提示 -->
+          <div id="ungradedEmptyState" class="hidden flex items-center justify-center h-full">
+            <div class="text-center py-16">
+              <i class="fas fa-calendar-times text-5xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500 text-lg mb-2">考试尚未开始</p>
+              <p class="text-gray-400 text-sm">考生答卷数据将在考试开始后显示</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="flex-none bg-white border-t border-gray-200 shadow-lg min-h-[60px]">
+          <div class="flex items-center justify-between px-6 py-3">
+            <p class="text-sm text-gray-600">
+              显示 <span id="ungradedPageStart">1</span>-<span id="ungradedPageEnd">20</span> 条，共 <span id="ungradedTotalItems">0</span> 条
+            </p>
+            <div class="flex items-center space-x-2">
+              <button onclick="ungradedFirstPage()" id="ungradedFirstBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &lt;&lt;
+              </button>
+              <button onclick="ungradedPrevPage()" id="ungradedPrevBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &lt; 上一页
+              </button>
+              <div id="ungradedPageNumbers" class="flex items-center space-x-1">
+                <!-- 页码按钮将在这里动态生成 -->
+              </div>
+              <button onclick="ungradedNextPage()" id="ungradedNextBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                下一页 &gt;
+              </button>
+              <button onclick="ungradedLastPage()" id="ungradedLastBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &gt;&gt;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已阅试卷 -->
+      <div id="gradedPanel" class="flex-1 flex flex-col hidden min-h-0">
+        <!-- 筛选栏 -->
+        <div class="flex-none px-6 py-4 bg-white border-b border-gray-200">
+          <div class="flex items-center justify-between gap-4">
+            <!-- 左侧：搜索和筛选 -->
+            <div class="flex items-center gap-2">
+              <input
+                type="text"
+                id="gradedSearch"
+                placeholder="搜索用户名、姓名..."
+                class="w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                onkeyup="filterGraded()"
+              >
+              <select id="graderFilter" onchange="filterGraded()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">全部批阅人</option>
+              </select>
+              <button onclick="filterGraded()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium">
+                <i class="fas fa-search mr-1"></i>筛选
+              </button>
+              <button onclick="resetGradedFilter()" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium">
+                <i class="fas fa-redo mr-1"></i>重置
+              </button>
+            </div>
+
+            <!-- 右侧：导出按钮 -->
+            <div class="flex items-center gap-2">
+              <button onclick="exportGradedPapersPDF()" id="exportPDFBtn" disabled class="px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-file-pdf"></i>
+                导出答卷
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已阅试卷表格 -->
+        <div class="flex-1 overflow-x-auto px-6 pb-4 min-h-0" id="gradedTableContainer">
+          <table class="w-full min-w-max border-collapse bg-white rounded-lg shadow-sm" id="gradedTable" style="table-layout: auto;">
+            <thead class="bg-gray-50 sticky top-0 z-10">
+              <tr>
+                <th class="px-2 py-2.5 text-left whitespace-nowrap">
+                  <div class="flex items-center gap-1">
+                    <input type="checkbox" id="selectAllGradedPapers" onchange="toggleAllGradedPapers()" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+                    <div class="relative">
+                      <button onclick="toggleSelectMenuGraded(event)" class="text-gray-600 hover:text-gray-900 p-1">
+                        <i class="fas fa-caret-down"></i>
+                      </button>
+                      <div id="selectMenuGraded" class="hidden absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 whitespace-nowrap">
+                        <button onclick="selectCurrentPageGraded()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <i class="fas fa-file text-gray-400 w-4"></i>
+                          <span>选择当前页</span>
+                        </button>
+                        <button onclick="selectFilteredGraded()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <i class="fas fa-filter text-gray-400 w-4"></i>
+                          <span>选择筛选结果</span>
+                        </button>
+                        <button onclick="selectAllGraded()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <i class="fas fa-list text-gray-400 w-4"></i>
+                          <span>选择全部数据</span>
+                        </button>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button onclick="clearSelectionGraded()" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <i class="fas fa-times text-gray-400 w-4"></i>
+                          <span>取消全选</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">照片</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 100px;">用户名</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">姓名</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 110px;">手机号</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 160px;">开始答卷时间</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 160px;">交卷时间</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">用时</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 120px;">试卷名称</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">批阅人</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 160px;">批阅时间</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap" style="min-width: 80px;">分数</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap w-32">操作</th>
+              </tr>
+            </thead>
+            <tbody id="gradedTableBody" class="divide-y divide-gray-200">
+              <!-- 数据将通过 JS 动态生成 -->
+            </tbody>
+          </table>
+          <!-- 空状态提示 -->
+          <div id="gradedEmptyState" class="hidden flex items-center justify-center h-full">
+            <div class="text-center py-16">
+              <i class="fas fa-calendar-times text-5xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500 text-lg mb-2">考试尚未开始</p>
+              <p class="text-gray-400 text-sm">考生答卷数据将在考试开始后显示</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="flex-none bg-white border-t border-gray-200 shadow-lg min-h-[60px]">
+          <div class="flex items-center justify-between px-6 py-3">
+            <p class="text-sm text-gray-600">
+              显示 <span id="gradedPageStart">1</span>-<span id="gradedPageEnd">20</span> 条，共 <span id="gradedTotalItems">0</span> 条
+            </p>
+            <div class="flex items-center space-x-2">
+              <button onclick="gradedFirstPage()" id="gradedFirstBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &lt;&lt;
+              </button>
+              <button onclick="gradedPrevPage()" id="gradedPrevBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &lt; 上一页
+              </button>
+              <div id="gradedPageNumbers" class="flex items-center space-x-1">
+                <!-- 页码按钮将在这里动态生成 -->
+              </div>
+              <button onclick="gradedNextPage()" id="gradedNextBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                下一页 &gt;
+              </button>
+              <button onclick="gradedLastPage()" id="gradedLastBtn" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                &gt;&gt;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 添加/编辑阅卷人员弹窗 -->
+  <div id="graderModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900" id="graderModalTitle">添加阅卷人员</h3>
+        <button onclick="closeGraderModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">姓名 <span class="text-error-500">*</span></label>
+          <input type="text" id="graderName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="请输入姓名">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">工号 <span class="text-error-500">*</span></label>
+          <input type="text" id="graderJobNum" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="请输入工号">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">手机号</label>
+          <input type="text" id="graderPhone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="请输入手机号（选填）">
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button onclick="closeGraderModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="saveGrader()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg">
+          确定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">确认删除</h3>
+        <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="px-6 py-4">
+        <p class="text-gray-700" id="deleteMessage">确定要删除该阅卷人员吗？</p>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="confirmDelete()" class="px-4 py-2 bg-error-500 hover:bg-error-600 text-white rounded-lg">
+          确定删除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量导入弹窗 -->
+  <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">批量导入阅卷人员</h3>
+        <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-auto px-6 py-4">
+        <!-- 上传区域 -->
+        <div class="mb-4">
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+            <input type="file" id="importFile" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event)">
+            <label for="importFile" class="cursor-pointer">
+              <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+              <p class="text-sm text-gray-600">点击上传或拖拽文件到此处</p>
+              <p class="text-xs text-gray-400 mt-1">支持 .xlsx、.xls 格式，文件大小不超过 5MB</p>
+            </label>
+          </div>
+        </div>
+
+        <!-- 说明信息 -->
+        <div class="bg-info-50 border border-info-200 rounded-lg p-4 mb-4">
+          <div class="flex items-start">
+            <i class="fas fa-info-circle text-info-500 mt-0.5 mr-2"></i>
+            <div class="flex-1 text-sm text-info-700">
+              <p class="font-medium mb-1">导入说明：</p>
+              <ul class="list-disc list-inside space-y-1 text-xs">
+                <li>Excel 表格需包含：<strong>姓名</strong>（必填）、<strong>工号</strong>（必填）、手机号（选填）</li>
+                <li>第一行为表头，从第二行开始为数据</li>
+                <li>手机号格式：1 开头的 11 位数字（填写时会验证格式）</li>
+                <li>工号重复的数据将被跳过</li>
+              </ul>
+              <button onclick="downloadTemplate()" class="mt-2 text-info-600 hover:text-info-700 font-medium flex items-center gap-1">
+                <i class="fas fa-download"></i>
+                下载导入模板
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已选文件 -->
+        <div id="selectedFileInfo" class="hidden mb-4">
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-file-excel text-success-500"></i>
+              <span class="text-sm text-gray-700" id="fileName"></span>
+              <span class="text-xs text-gray-500" id="fileSize"></span>
+            </div>
+            <button onclick="clearFile()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 数据预览 -->
+        <div id="previewSection" class="hidden">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-medium text-gray-900">数据预览</h4>
+            <span class="text-xs text-gray-500">
+              共 <span id="previewTotal" class="font-semibold text-primary-600">0</span> 条，
+              有效 <span id="previewValid" class="font-semibold text-success-600">0</span> 条，
+              无效 <span id="previewInvalid" class="font-semibold text-error-600">0</span> 条
+            </span>
+          </div>
+          <div class="border border-gray-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">行号</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">姓名</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">工号</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">手机号</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">状态</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody" class="divide-y divide-gray-200">
+                <!-- 数据将通过 JS 动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button onclick="closeImportModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button id="confirmImportBtn" onclick="confirmImport()" disabled class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          确认导入
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看详情模态框 -->
+  <div id="paperDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <!-- 模态框头部 -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-primary-50 to-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center">
+            <i class="fas fa-file-alt text-white text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">试卷详情</h3>
+            <p class="text-xs text-gray-500" id="paperDetailSubtitle">查看考生答卷详细信息</p>
+          </div>
+        </div>
+        <button onclick="closePaperDetailModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+
+      <!-- 模态框内容 -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="space-y-6">
+          <!-- 考生信息 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <i class="fas fa-user text-primary-500"></i>
+              考生信息
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">姓名：</span>
+                <span class="font-medium text-gray-900" id="detailStudentName">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">用户名：</span>
+                <span class="font-medium text-gray-900" id="detailUsername">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">手机号：</span>
+                <span class="font-medium text-gray-900" id="detailPhone">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">状态：</span>
+                <span class="font-medium" id="detailStatus">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 试卷信息 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <i class="fas fa-file-alt text-primary-500"></i>
+              试卷信息
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">试卷名称：</span>
+                <span class="font-medium text-gray-900" id="detailPaperName">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">开始答卷：</span>
+                <span class="font-medium text-gray-900" id="detailStartTime">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">交卷时间：</span>
+                <span class="font-medium text-gray-900" id="detailSubmitTime">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">答卷用时：</span>
+                <span class="font-medium text-gray-900" id="detailDuration">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 批阅信息 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <i class="fas fa-check-circle text-success-500"></i>
+              批阅信息
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">批阅人：</span>
+                <span class="font-medium text-gray-900" id="detailGrader">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">批阅时间：</span>
+                <span class="font-medium text-gray-900" id="detailGradeTime">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">得分：</span>
+                <span class="font-semibold text-lg" id="detailScore">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 监控信息 -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <i class="fas fa-video text-info-500"></i>
+              监控信息
+            </h4>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">离开次数：</span>
+                <span class="font-medium text-gray-900" id="detailLeaveCount">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">人脸识别率：</span>
+                <span class="font-medium text-gray-900" id="detailFaceRecognition">-</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500">抓拍次数：</span>
+                <span class="font-medium text-gray-900" id="detailCaptures">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模态框底部 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <button onclick="closePaperDetailModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+          关闭
+        </button>
+        <button onclick="reGradePaper()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <i class="fas fa-edit"></i>
+          重新批阅
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 获取考试ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('examId');
+
+    // 数据存储
+    let currentExam = null;
+    let currentPaper = null; // 当前试卷信息
+    let graders = [];
+    let students = [];
+    let selectedGraders = new Set();
+    let selectedGradedPapers = []; // 已阅试卷选中的考生
+    let currentGraderId = null;
+    let deleteCallback = null;
+
+    // 分页相关
+    const graderPageSize = 20;
+    let graderCurrentPage = 1;
+    let graderFilteredData = [];
+
+    const ungradedPageSize = 20;
+    let ungradedCurrentPage = 1;
+    let ungradedFilteredData = [];
+
+    const gradedPageSize = 20;
+    let gradedCurrentPage = 1;
+    let gradedFilteredData = [];
+
+    // 当前激活的 tab
+    let activeMainTab = 'graders';
+    let activePaperTab = 'ungraded';
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadExamData();
+      loadPaperData();
+      loadGradersData();
+      // 延迟加载学生数据，确保其他数据已加载
+      setTimeout(() => {
+        loadStudentsData();
+        renderAll();
+      }, 100);
+
+      // 点击外部关闭下拉菜单
+      document.addEventListener('click', function(e) {
+        // 关闭阅卷人员菜单
+        const selectMenuGraders = document.getElementById('selectMenuGraders');
+        if (selectMenuGraders && !selectMenuGraders.classList.contains('hidden')) {
+          const isClickInsideMenu = selectMenuGraders.contains(e.target);
+          const isClickOnToggle = e.target.closest('button[onclick*="toggleSelectMenuGraders"]');
+          if (!isClickInsideMenu && !isClickOnToggle) {
+            selectMenuGraders.classList.add('hidden');
+          }
+        }
+
+        // 关闭已阅试卷菜单
+        const selectMenuGraded = document.getElementById('selectMenuGraded');
+        if (selectMenuGraded && !selectMenuGraded.classList.contains('hidden')) {
+          const isClickInsideMenu = selectMenuGraded.contains(e.target);
+          const isClickOnToggle = e.target.closest('button[onclick*="toggleSelectMenuGraded"]');
+          if (!isClickInsideMenu && !isClickOnToggle) {
+            selectMenuGraded.classList.add('hidden');
+          }
+        }
+      });
+    });
+
+    // 加载考试数据
+    function loadExamData() {
+      const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+      currentExam = exams.find(e => e.id === examId);
+
+      if (currentExam) {
+        document.getElementById('examName').textContent = currentExam.name;
+        document.getElementById('examCode').textContent = currentExam.code;
+
+        // 考试时间
+        const examTime = `${currentExam.openStartTime} ~ ${currentExam.openEndTime}`;
+        document.getElementById('examTime').textContent = examTime;
+
+        // 考试时长
+        document.getElementById('examDuration').textContent = currentExam.duration || '-';
+
+        // 考试状态
+        const now = new Date();
+        const startTime = new Date(currentExam.openStartTime);
+        const endTime = new Date(currentExam.openEndTime);
+        let status = '';
+        let statusClass = '';
+        let examStatus = ''; // 保存考试状态用于后续判断
+
+        if (now < startTime) {
+          status = '未开始';
+          statusClass = 'bg-gray-100 text-gray-600';
+          examStatus = 'not_started';
+        } else if (now >= startTime && now <= endTime) {
+          status = '进行中';
+          statusClass = 'bg-success-100 text-success-600';
+          examStatus = 'ongoing';
+        } else {
+          status = '已结束';
+          statusClass = 'bg-gray-200 text-gray-700';
+          examStatus = 'finished';
+        }
+
+        currentExam.examStatus = examStatus; // 保存到currentExam对象
+
+        const statusBadge = document.getElementById('examStatusBadge');
+        statusBadge.textContent = status;
+        statusBadge.className = `px-2 py-0.5 rounded text-xs font-medium ${statusClass}`;
+      }
+    }
+
+    // 加载阅卷人员数据
+    function loadGradersData() {
+      const storageKey = `exam_${examId}_graders`;
+      const versionKey = `exam_${examId}_graders_version`;
+      const currentVersion = '2.0'; // 版本号，修改此值强制更新数据
+
+      const storedData = localStorage.getItem(storageKey);
+      const storedVersion = localStorage.getItem(versionKey);
+
+      // 检查版本
+      if (storedData && storedVersion === currentVersion) {
+        graders = JSON.parse(storedData);
+      } else {
+        // 版本不匹配或无数据，生成新数据
+        graders = generateMockGraders();
+        localStorage.setItem(storageKey, JSON.stringify(graders));
+        localStorage.setItem(versionKey, currentVersion);
+      }
+
+      // 按添加时间倒序排列
+      graders.sort((a, b) => {
+        return new Date(b.addTime) - new Date(a.addTime);
+      });
+
+      console.log('加载的阅卷人员数量:', graders.length);
+    }
+
+    // 生成模拟阅卷人员数据
+    function generateMockGraders() {
+      const names = [
+        '王老师', '李老师', '张老师', '刘老师', '陈老师',
+        '杨老师', '黄老师', '赵老师', '周老师', '吴老师',
+        '徐老师', '孙老师', '马老师', '朱老师', '胡老师',
+        '郭老师', '林老师', '何老师', '高老师', '梁老师',
+        '郑老师', '罗老师', '宋老师', '谢老师', '唐老师'
+      ];
+      const mockGraders = [];
+
+      for (let i = 0; i < 25; i++) {
+        mockGraders.push({
+          id: `GR${String(i + 1).padStart(3, '0')}`,
+          name: names[i],
+          jobNum: `T202600${String(i + 1).padStart(2, '0')}`,
+          phone: `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+          gradedCount: Math.floor(Math.random() * 20),
+          addTime: `2026-01-${String(20 + Math.floor(Math.random() * 9)).padStart(2, '0')} ${String(8 + Math.floor(Math.random() * 12)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
+        });
+      }
+
+      return mockGraders;
+    }
+
+    // 加载学生数据
+    function loadStudentsData() {
+      // 🔥 第一步：彻底清除所有旧数据
+      console.log('[阅卷管理] 🗑️  正在彻底清除所有旧数据...');
+      localStorage.removeItem('examStudents');
+      console.log('[阅卷管理] ✅ 旧数据已彻底清除');
+
+      // 🔥 第二步：生成100条新的模拟数据
+      console.log('[阅卷管理] 🔄 正在生成100条模拟考生数据...');
+      const newStudents = generateMockStudents();
+      console.log('[阅卷管理] ✅ 已生成100条模拟数据');
+
+      // 🔥 第三步：保存到localStorage（新格式：对象）
+      const allStudentsData = {};
+      allStudentsData[examId] = newStudents;
+      localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+      console.log('[阅卷管理] ✅ 数据已保存到localStorage');
+      console.log('[阅卷管理] 📊 当前考试ID:', examId);
+      console.log('[阅卷管理] 📊 考生总数:', newStudents.length);
+
+      // 🔥 第四步：过滤出已提交的学生（用于阅卷管理）
+      students = newStudents.filter(s =>
+        s.status === 'not_graded' ||
+        s.status === 'graded' ||
+        s.status === 'absent' ||
+        s.status === 'violation' ||
+        s.status === 'cheating' ||
+        s.status === 'suspected_cheating'
+      );
+
+      // 为每个学生添加试卷信息和时间信息
+      students.forEach(student => {
+        // 试卷名称（从 currentPaper 获取，如果没有则使用考试名称）
+        student.paperName = currentPaper ? currentPaper.name : (currentExam ? currentExam.name + '试卷' : '试卷');
+
+        // 答卷时间（开始答题时间）- 如果有 answerTime 则使用，否则根据交卷时间倒推
+        if (!student.startTime && student.answerTime) {
+          // 根据交卷时间和用时倒推答卷时间
+          if (student.duration) {
+            // 从 "60分钟" 格式中提取数字
+            const durationMatch = student.duration.match(/\d+/);
+            const durationMinutes = durationMatch ? parseInt(durationMatch[0]) : 0;
+
+            if (durationMinutes > 0) {
+              const submitDate = new Date(student.answerTime);
+              submitDate.setMinutes(submitDate.getMinutes() - durationMinutes);
+              student.startTime = submitDate.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+            } else {
+              student.startTime = student.answerTime;
+            }
+          } else {
+            student.startTime = student.answerTime;
+          }
+        }
+
+        // 交卷时间 = answerTime（提交时间）
+        student.submitTime = student.answerTime || '';
+
+        // 为已批阅的学生添加批阅信息（如果没有的话）
+        if (student.status === 'graded' && !student.gradeTime) {
+          // 模拟批阅人列表
+          const graders = ['张老师', '李老师', '王老师', '刘老师', '陈老师'];
+          const randomGrader = graders[Math.floor(Math.random() * graders.length)];
+
+          student.graderName = randomGrader;
+          student.graderId = 'TEACHER_' + Math.floor(Math.random() * 1000);
+
+          // 批阅时间 = 交卷时间 + 10-60分钟
+          if (student.submitTime) {
+            const submitDate = new Date(student.submitTime);
+            const gradeDelay = Math.floor(Math.random() * 50) + 10; // 10-60分钟
+            submitDate.setMinutes(submitDate.getMinutes() + gradeDelay);
+            student.gradeTime = submitDate.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+          } else {
+            student.gradeTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+          }
+
+          // 确保有分数
+          if (!student.score && !student.highestScore) {
+            student.score = 60 + Math.floor(Math.random() * 40); // 60-100分
+            student.highestScore = String(student.score);
+          }
+        }
+
+        // 对于异常状态的学生，确保得分为0
+        if (student.status === 'absent' || student.status === 'violation' ||
+            student.status === 'cheating' || student.status === 'suspected_cheating') {
+          student.score = 0;
+          student.highestScore = '0';
+
+          // 如果还没有批阅信息，自动添加系统批阅信息
+          if (!student.gradeTime) {
+            student.graderId = 'SYSTEM';
+            student.graderName = '系统';
+            student.gradeTime = student.submitTime || new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+          }
+        }
+      });
+
+      console.log('加载的答卷数量:', students.length);
+      console.log('未批阅数量:', students.filter(s => s.status === 'not_graded').length);
+      console.log('已批阅数量:', students.filter(s => s.status === 'graded').length);
+      console.log('异常状态数量:', students.filter(s => ['absent', 'violation', 'cheating', 'suspected_cheating'].includes(s.status)).length);
+    }
+
+    // 🔥 生成100条模拟考生数据
+    function generateMockStudents() {
+      const mockData = [];
+      const surnames = ['张', '李', '王', '刘', '陈', '杨', '黄', '赵', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭', '林', '何', '高', '梁'];
+      const givenNames = ['明', '华', '伟', '芳', '静', '阳', '丽', '敏', '杰', '刚', '磊', '娜', '超', '婷', '军', '强', '雪', '涛', '峰', '艳'];
+
+      for (let i = 0; i < 100; i++) {
+        const surname = surnames[Math.floor(Math.random() * surnames.length)];
+        const givenName = givenNames[Math.floor(Math.random() * givenNames.length)];
+        const name = surname + givenName;
+
+        // 状态分布：40%未批阅，20%已批阅，10%未开始，10%进行中，20%异常状态
+        let status;
+        const rand = Math.random();
+        if (rand < 0.4) {
+          status = 'not_graded'; // 40% 未批阅
+        } else if (rand < 0.6) {
+          status = 'graded'; // 20% 已批阅
+        } else if (rand < 0.7) {
+          status = 'not_started'; // 10% 未开始
+        } else if (rand < 0.8) {
+          status = 'in_progress'; // 10% 进行中
+        } else if (rand < 0.85) {
+          status = 'absent'; // 5% 缺考
+        } else if (rand < 0.9) {
+          status = 'violation'; // 5% 违纪
+        } else if (rand < 0.95) {
+          status = 'cheating'; // 5% 作弊
+        } else {
+          status = 'suspected_cheating'; // 5% 疑似作弊
+        }
+
+        const hasSubmitted = ['not_graded', 'graded', 'absent', 'violation', 'cheating', 'suspected_cheating'].includes(status);
+        const attemptedCount = status === 'not_started' ? 0 : (hasSubmitted ? 1 : 0);
+
+        // 提交时间
+        const submitDay = 20 + Math.floor(Math.random() * 8);
+        const submitHour = 8 + Math.floor(Math.random() * 12);
+        const submitMinute = Math.floor(Math.random() * 60);
+        const submitSecond = Math.floor(Math.random() * 60);
+        const submitTime = hasSubmitted
+          ? `2026-01-${String(submitDay).padStart(2, '0')} ${String(submitHour).padStart(2, '0')}:${String(submitMinute).padStart(2, '0')}:${String(submitSecond).padStart(2, '0')}`
+          : '';
+
+        const duration = hasSubmitted ? Math.floor(Math.random() * 60) + 60 : 0; // 60-120分钟
+        const durationText = hasSubmitted ? `${duration}分钟` : '';
+
+        mockData.push({
+          id: `STU${String(i + 1).padStart(5, '0')}`,
+          examId: examId,
+          username: `student${String(i + 1).padStart(3, '0')}`,
+          name: name,
+          phone: i % 5 === 0 ? '' : `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
+          photo: `https://i.pravatar.cc/150?u=student${i}`,
+          status: status,
+          statusText: '',
+          completedCount: attemptedCount,
+          allowedAttempts: currentExam ? currentExam.attemptLimit : 3,
+          leaveCount: hasSubmitted ? Math.floor(Math.random() * 3) : 0,
+          answerTime: submitTime,
+          duration: durationText,
+          faceRecognition: hasSubmitted ? `${85 + Math.floor(Math.random() * 15)}%` : '',
+          captures: hasSubmitted ? Math.floor(Math.random() * 20) + 10 : 0,
+          highestScore: status === 'graded' ? String(60 + Math.floor(Math.random() * 40)) : (status === 'absent' || status === 'violation' || status === 'cheating' || status === 'suspected_cheating' ? '0' : ''),
+          addTime: `2026-01-${String(15 + Math.floor(i / 10)).padStart(2, '0')} ${String(8 + Math.floor(i % 10)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
+        });
+      }
+
+      return mockData;
+    }
+
+    // 加载试卷信息
+    function loadPaperData() {
+      // 从 localStorage 读取试卷列表
+      const papers = JSON.parse(localStorage.getItem('papers') || '[]');
+
+      // 根据考试配置的试卷ID查找试卷
+      if (currentExam && currentExam.paperId) {
+        currentPaper = papers.find(p => p.id === currentExam.paperId);
+      }
+
+      console.log('当前试卷:', currentPaper);
+    }
+
+    // 生成模拟答卷数据（已废弃，改用从考生管理读取）
+    function generateMockPapers() {
+      return [];
+    }
+
+    // 渲染所有内容
+    function renderAll() {
+      renderGraders();
+      renderUngraded();
+      renderGraded();
+      updateStatistics();
+      updateHeaderStatistics();
+    }
+
+    // 更新头部统计数据
+    function updateHeaderStatistics() {
+      const submittedCount = students.length;
+      const gradedCount = students.filter(s => s.status === 'graded').length;
+      const ungradedCount = students.filter(s => s.status === 'not_graded').length;
+
+      document.getElementById('submittedCount').textContent = submittedCount;
+      document.getElementById('gradedCount').textContent = gradedCount;
+      document.getElementById('ungradedCount').textContent = ungradedCount;
+    }
+
+    // 更新统计数据
+    function updateStatistics() {
+      const ungradedCount = students.filter(s => s.status === 'not_graded').length;
+      const gradedCount = students.filter(s =>
+        s.status === 'graded' ||
+        s.status === 'absent' ||
+        s.status === 'violation' ||
+        s.status === 'cheating' ||
+        s.status === 'suspected_cheating'
+      ).length;
+
+      document.getElementById('ungradedBadge').textContent = ungradedCount;
+      document.getElementById('gradedBadge').textContent = gradedCount;
+
+      // 更新批阅人筛选器
+      const graderFilter = document.getElementById('graderFilter');
+      graderFilter.innerHTML = '<option value="">全部批阅人</option>';
+      graders.forEach(g => {
+        graderFilter.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+      });
+      // 添加系统选项（用于异常状态）
+      graderFilter.innerHTML += '<option value="SYSTEM">系统</option>';
+    }
+
+    // 切换主 Tab
+    function switchMainTab(tab) {
+      activeMainTab = tab;
+
+      document.getElementById('tabGraders').className = tab === 'graders'
+        ? 'py-2 text-sm font-medium border-b-2 border-primary-500 text-primary-600'
+        : 'py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900';
+
+      document.getElementById('tabPapers').className = tab === 'papers'
+        ? 'py-2 text-sm font-medium border-b-2 border-primary-500 text-primary-600'
+        : 'py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900';
+
+      if (tab === 'graders') {
+        document.getElementById('gradersPanel').classList.remove('hidden');
+        document.getElementById('gradersPanel').classList.add('flex');
+        document.getElementById('papersPanel').classList.add('hidden');
+        document.getElementById('papersPanel').classList.remove('flex');
+      } else {
+        document.getElementById('gradersPanel').classList.add('hidden');
+        document.getElementById('gradersPanel').classList.remove('flex');
+        document.getElementById('papersPanel').classList.remove('hidden');
+        document.getElementById('papersPanel').classList.add('flex');
+      }
+    }
+
+    // 切换试卷 Tab
+    function switchPaperTab(tab) {
+      activePaperTab = tab;
+
+      document.getElementById('tabUngraded').className = tab === 'ungraded'
+        ? 'py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 flex items-center gap-2'
+        : 'py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 flex items-center gap-2';
+
+      document.getElementById('tabGraded').className = tab === 'graded'
+        ? 'py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 flex items-center gap-2'
+        : 'py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 flex items-center gap-2';
+
+      if (tab === 'ungraded') {
+        document.getElementById('ungradedPanel').classList.remove('hidden');
+        document.getElementById('ungradedPanel').classList.add('flex');
+        document.getElementById('gradedPanel').classList.add('hidden');
+        document.getElementById('gradedPanel').classList.remove('flex');
+      } else {
+        document.getElementById('ungradedPanel').classList.add('hidden');
+        document.getElementById('ungradedPanel').classList.remove('flex');
+        document.getElementById('gradedPanel').classList.remove('hidden');
+        document.getElementById('gradedPanel').classList.add('flex');
+      }
+    }
+
+    // ========== 阅卷人员管理 ==========
+
+    // 渲染阅卷人员列表
+    function renderGraders() {
+      // 按添加时间倒序排列（最新的在前面）
+      graders.sort((a, b) => {
+        return new Date(b.addTime) - new Date(a.addTime);
+      });
+
+      graderFilteredData = [...graders];
+      graderCurrentPage = 1;
+      updateGraderTable();
+    }
+
+    // 搜索阅卷人员
+    function searchGraders() {
+      const searchTerm = document.getElementById('graderSearchInput').value.trim().toLowerCase();
+
+      if (!searchTerm) {
+        graderFilteredData = [...graders];
+      } else {
+        graderFilteredData = graders.filter(grader => {
+          return grader.name.toLowerCase().includes(searchTerm) ||
+                 grader.jobNum.toLowerCase().includes(searchTerm) ||
+                 (grader.phone && grader.phone.includes(searchTerm));
+        });
+      }
+
+      // 按添加时间倒序排列
+      graderFilteredData.sort((a, b) => {
+        return new Date(b.addTime) - new Date(a.addTime);
+      });
+
+      graderCurrentPage = 1;
+      updateGraderTable();
+    }
+
+    // 重置搜索
+    function resetGraderSearch() {
+      document.getElementById('graderSearchInput').value = '';
+      graderFilteredData = [...graders];
+
+      // 按添加时间倒序排列
+      graderFilteredData.sort((a, b) => {
+        return new Date(b.addTime) - new Date(a.addTime);
+      });
+
+      graderCurrentPage = 1;
+      updateGraderTable();
+    }
+
+    function updateGraderTable() {
+      const tbody = document.getElementById('gradersTableBody');
+      const start = (graderCurrentPage - 1) * graderPageSize;
+      const end = start + graderPageSize;
+      const pageData = graderFilteredData.slice(start, end);
+
+      console.log('渲染阅卷人员表格，当前页:', graderCurrentPage, '数据量:', pageData.length);
+
+      tbody.innerHTML = pageData.map(grader => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3">
+            <input type="checkbox" class="grader-checkbox w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              data-id="${grader.id}" onchange="toggleGraderSelection('${grader.id}')" ${selectedGraders.has(grader.id) ? 'checked' : ''}>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-900">${grader.name}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">${grader.jobNum}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">${grader.phone || '-'}</td>
+          <td class="px-4 py-3 text-sm">
+            <span class="text-primary-600 font-semibold">${grader.gradedCount}</span> 份
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-600">${grader.addTime}</td>
+          <td class="px-4 py-3 text-center">
+            <button onclick="deleteGrader('${grader.id}')" class="text-error-600 hover:text-error-700">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      updateGraderPagination();
+      updateSelectAllGradersCheckbox();
+    }
+
+    // 阅卷人员分页
+    function updateGraderPagination() {
+      const totalPages = Math.ceil(graderFilteredData.length / graderPageSize) || 1;
+      const start = (graderCurrentPage - 1) * graderPageSize + 1;
+      const end = Math.min(graderCurrentPage * graderPageSize, graderFilteredData.length);
+
+      document.getElementById('graderPageStart').textContent = graderFilteredData.length > 0 ? start : 0;
+      document.getElementById('graderPageEnd').textContent = end;
+      document.getElementById('graderTotalItems').textContent = graderFilteredData.length;
+
+      document.getElementById('graderFirstBtn').disabled = graderCurrentPage === 1;
+      document.getElementById('graderPrevBtn').disabled = graderCurrentPage === 1;
+      document.getElementById('graderNextBtn').disabled = graderCurrentPage === totalPages;
+      document.getElementById('graderLastBtn').disabled = graderCurrentPage === totalPages;
+
+      renderGraderPageNumbers(totalPages);
+    }
+
+    function renderGraderPageNumbers(totalPages) {
+      const container = document.getElementById('graderPageNumbers');
+      if (!container) {
+        console.error('graderPageNumbers 容器未找到');
+        return;
+      }
+
+      container.innerHTML = '';
+
+      // 即使只有1页也显示页码
+      if (totalPages < 1) totalPages = 1;
+
+      console.log('渲染阅卷人员页码，总页数:', totalPages, '当前页:', graderCurrentPage);
+
+      let startPage = Math.max(1, graderCurrentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+
+      if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.className = `w-9 h-9 rounded text-sm font-medium transition-colors ${
+          i === graderCurrentPage ? 'bg-primary-500 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+        }`;
+        button.textContent = i;
+        button.onclick = () => {
+          graderCurrentPage = i;
+          updateGraderTable();
+        };
+        container.appendChild(button);
+      }
+
+      console.log('页码按钮已添加，数量:', container.children.length);
+    }
+
+    function graderFirstPage() {
+      graderCurrentPage = 1;
+      updateGraderTable();
+    }
+
+    function graderPrevPage() {
+      if (graderCurrentPage > 1) {
+        graderCurrentPage--;
+        updateGraderTable();
+      }
+    }
+
+    function graderNextPage() {
+      const totalPages = Math.ceil(graderFilteredData.length / graderPageSize);
+      if (graderCurrentPage < totalPages) {
+        graderCurrentPage++;
+        updateGraderTable();
+      }
+    }
+
+    function graderLastPage() {
+      graderCurrentPage = Math.ceil(graderFilteredData.length / graderPageSize);
+      updateGraderTable();
+    }
+
+    // 选择阅卷人员
+    function toggleGraderSelection(id) {
+      if (selectedGraders.has(id)) {
+        selectedGraders.delete(id);
+      } else {
+        selectedGraders.add(id);
+      }
+      updateBatchDeleteButton();
+      updateSelectAllGradersCheckbox();
+    }
+
+    function toggleAllGraders() {
+      const checkbox = document.getElementById('selectAllGraders');
+      const isChecked = checkbox.checked;
+
+      if (isChecked) {
+        // 勾选时，选择当前页
+        selectCurrentPageGraders();
+      } else {
+        // 取消勾选时，移除当前页所有阅卷人员
+        const pageData = graderFilteredData.slice((graderCurrentPage - 1) * graderPageSize, graderCurrentPage * graderPageSize);
+        pageData.forEach(grader => {
+          selectedGraders.delete(grader.id);
+        });
+        updateGraderTable();
+        updateBatchDeleteButton();
+      }
+    }
+
+    // 选择当前页
+    function selectCurrentPageGraders() {
+      const pageData = graderFilteredData.slice((graderCurrentPage - 1) * graderPageSize, graderCurrentPage * graderPageSize);
+
+      // 添加当前页所有阅卷人员
+      pageData.forEach(grader => {
+        selectedGraders.add(grader.id);
+      });
+
+      updateGraderTable();
+      updateBatchDeleteButton();
+      updateSelectAllGradersCheckbox();
+      showMessage(`已选择当前页 ${pageData.length} 名阅卷人员`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraders').classList.add('hidden');
+    }
+
+    // 选择筛选结果
+    function selectFilteredGraders() {
+      // 添加所有筛选结果
+      graderFilteredData.forEach(grader => {
+        selectedGraders.add(grader.id);
+      });
+
+      updateGraderTable();
+      updateBatchDeleteButton();
+      updateSelectAllGradersCheckbox();
+      showMessage(`已选择筛选结果中的 ${graderFilteredData.length} 名阅卷人员`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraders').classList.add('hidden');
+    }
+
+    // 选择全部数据
+    function selectAllGraders() {
+      // 添加所有阅卷人员
+      graders.forEach(grader => {
+        selectedGraders.add(grader.id);
+      });
+
+      updateGraderTable();
+      updateBatchDeleteButton();
+      updateSelectAllGradersCheckbox();
+      showMessage(`已选择全部 ${graders.length} 名阅卷人员`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraders').classList.add('hidden');
+    }
+
+    // 取消全选
+    function clearSelectionGraders() {
+      selectedGraders.clear();
+      updateGraderTable();
+      updateBatchDeleteButton();
+      updateSelectAllGradersCheckbox();
+      showMessage('已取消全部选择', 'info');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraders').classList.add('hidden');
+    }
+
+    // 切换下拉菜单
+    function toggleSelectMenuGraders(event) {
+      event.stopPropagation();
+      const menu = document.getElementById('selectMenuGraders');
+      menu.classList.toggle('hidden');
+    }
+
+    function updateSelectAllGradersCheckbox() {
+      const checkbox = document.getElementById('selectAllGraders');
+      const pageData = graderFilteredData.slice((graderCurrentPage - 1) * graderPageSize, graderCurrentPage * graderPageSize);
+
+      if (pageData.length === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+        return;
+      }
+
+      const selectedInPage = pageData.filter(grader => selectedGraders.has(grader.id)).length;
+
+      if (selectedInPage === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+      } else if (selectedInPage === pageData.length) {
+        checkbox.checked = true;
+        checkbox.indeterminate = false;
+      } else {
+        checkbox.checked = false;
+        checkbox.indeterminate = true;
+      }
+    }
+
+    function updateBatchDeleteButton() {
+      const btn = document.getElementById('batchDeleteGradersBtn');
+      if (selectedGraders.size > 0) {
+        btn.disabled = false;
+        btn.className = 'px-4 py-2 border border-error-500 text-error-500 hover:bg-error-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2';
+      } else {
+        btn.disabled = true;
+        btn.className = 'px-4 py-2 border border-gray-300 text-gray-400 rounded-lg text-sm font-medium flex items-center gap-2 cursor-not-allowed';
+      }
+    }
+
+    // 添加阅卷人员
+    function addGrader() {
+      currentGraderId = null;
+      document.getElementById('graderModalTitle').textContent = '添加阅卷人员';
+      document.getElementById('graderName').value = '';
+      document.getElementById('graderJobNum').value = '';
+      document.getElementById('graderPhone').value = '';
+      document.getElementById('graderModal').classList.remove('hidden');
+    }
+
+    // 编辑阅卷人员
+    function editGrader(id) {
+      const grader = graders.find(g => g.id === id);
+      if (grader) {
+        currentGraderId = id;
+        document.getElementById('graderModalTitle').textContent = '编辑阅卷人员';
+        document.getElementById('graderName').value = grader.name;
+        document.getElementById('graderJobNum').value = grader.jobNum;
+        document.getElementById('graderPhone').value = grader.phone;
+        document.getElementById('graderModal').classList.remove('hidden');
+      }
+    }
+
+    // 保存阅卷人员
+    function saveGrader() {
+      const name = document.getElementById('graderName').value.trim();
+      const jobNum = document.getElementById('graderJobNum').value.trim();
+      const phone = document.getElementById('graderPhone').value.trim();
+
+      if (!name || !jobNum) {
+        showMessage('请填写完整信息（姓名和工号为必填项）', 'warning');
+        return;
+      }
+
+      // 手机号非必填，但如果填写了需要验证格式
+      if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+        showMessage('手机号格式不正确', 'error');
+        return;
+      }
+
+      if (currentGraderId) {
+        // 编辑
+        const grader = graders.find(g => g.id === currentGraderId);
+        if (grader) {
+          grader.name = name;
+          grader.jobNum = jobNum;
+          grader.phone = phone || '';
+        }
+        showMessage('阅卷人员信息已更新', 'success');
+      } else {
+        // 添加
+        const newId = `GR${String(graders.length + 1).padStart(3, '0')}`;
+        const newGrader = {
+          id: newId,
+          name,
+          jobNum,
+          phone: phone || '',
+          gradedCount: 0,
+          addTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
+        };
+        graders.push(newGrader);
+        console.log('新增阅卷人员:', newGrader);
+        console.log('当前阅卷人员列表:', graders);
+        showMessage('阅卷人员添加成功', 'success');
+      }
+
+      saveGradersData();
+      closeGraderModal();
+      renderGraders();
+    }
+
+    // 删除阅卷人员
+    function deleteGrader(id) {
+      const grader = graders.find(g => g.id === id);
+      if (grader) {
+        document.getElementById('deleteMessage').textContent = `确定要删除阅卷人员"${grader.name}"吗？`;
+        deleteCallback = () => {
+          graders = graders.filter(g => g.id !== id);
+          saveGradersData();
+          renderGraders();
+        };
+        document.getElementById('deleteModal').classList.remove('hidden');
+      }
+    }
+
+    // 批量删除阅卷人员
+    function batchDeleteGraders() {
+      if (selectedGraders.size === 0) return;
+
+      document.getElementById('deleteMessage').textContent = `确定要删除选中的 ${selectedGraders.size} 位阅卷人员吗？`;
+      deleteCallback = () => {
+        graders = graders.filter(g => !selectedGraders.has(g.id));
+        selectedGraders.clear();
+        saveGradersData();
+        renderGraders();
+        updateBatchDeleteButton();
+      };
+      document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    // 导入阅卷人员
+    function importGraders() {
+      openImportModal();
+    }
+
+    // 保存阅卷人员数据
+    function saveGradersData() {
+      const storageKey = `exam_${examId}_graders`;
+      localStorage.setItem(storageKey, JSON.stringify(graders));
+      console.log('保存阅卷人员数据:', graders.length, '位');
+    }
+
+    // 关闭弹窗
+    function closeGraderModal() {
+      document.getElementById('graderModal').classList.add('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      deleteCallback = null;
+    }
+
+    function confirmDelete() {
+      if (deleteCallback) {
+        deleteCallback();
+      }
+      closeDeleteModal();
+    }
+
+    // ========== 未阅试卷管理 ==========
+
+    // 筛选未阅试卷
+    function filterUngraded() {
+      const search = document.getElementById('ungradedSearch').value.trim().toLowerCase();
+
+      ungradedFilteredData = students.filter(s => {
+        if (s.status !== 'not_graded') return false;
+        if (search && !s.username.toLowerCase().includes(search) && !s.name.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      ungradedCurrentPage = 1;
+      updateUngradedTable();
+    }
+
+    // 重置未阅试卷筛选
+    function resetUngradedFilter() {
+      document.getElementById('ungradedSearch').value = '';
+      filterUngraded();
+    }
+
+    // 渲染未阅试卷列表
+    function renderUngraded() {
+      ungradedFilteredData = students.filter(s => s.status === 'not_graded');
+      ungradedCurrentPage = 1;
+      updateUngradedTable();
+    }
+
+    function updateUngradedTable() {
+      const tbody = document.getElementById('ungradedTableBody');
+      const table = document.getElementById('ungradedTable');
+      const emptyState = document.getElementById('ungradedEmptyState');
+
+      // 如果考试未开始，显示空状态
+      if (currentExam && currentExam.examStatus === 'not_started') {
+        table.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        document.getElementById('ungradedPageStart').textContent = '0';
+        document.getElementById('ungradedPageEnd').textContent = '0';
+        document.getElementById('ungradedTotalItems').textContent = '0';
+        return;
+      }
+
+      // 考试已开始或已结束，显示表格
+      table.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      const start = (ungradedCurrentPage - 1) * ungradedPageSize;
+      const end = start + ungradedPageSize;
+      const pageData = ungradedFilteredData.slice(start, end);
+
+      tbody.innerHTML = pageData.map(student => {
+        // 照片
+        const photoUrl = student.photo || 'https://via.placeholder.com/40';
+
+        // 格式化时间显示（MM-DD HH:MM:SS）
+        const formatTime = (time) => {
+          if (!time || time === '-') return '-';
+          if (time.includes && time.includes(' ')) {
+            const parts = time.split(' ');
+            if (parts.length === 2) {
+              return parts[0].substring(5) + ' ' + parts[1]; // MM-DD HH:MM:SS
+            }
+          }
+          return time;
+        };
+
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <img src="${photoUrl}" alt="照片" class="w-10 h-10 rounded-full object-cover mx-auto border border-gray-200">
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.username}</td>
+            <td class="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">${student.name}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.phone || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${formatTime(student.startTime)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${formatTime(student.submitTime)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 text-center whitespace-nowrap">${student.duration || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.paperName || '-'}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <button onclick="gradeStudent('${student.username}')" class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded text-sm">
+                去批阅
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateUngradedPagination();
+    }
+
+    // 未阅试卷分页
+    function updateUngradedPagination() {
+      const totalPages = Math.ceil(ungradedFilteredData.length / ungradedPageSize) || 1;
+      const start = (ungradedCurrentPage - 1) * ungradedPageSize + 1;
+      const end = Math.min(ungradedCurrentPage * ungradedPageSize, ungradedFilteredData.length);
+
+      document.getElementById('ungradedPageStart').textContent = ungradedFilteredData.length > 0 ? start : 0;
+      document.getElementById('ungradedPageEnd').textContent = end;
+      document.getElementById('ungradedTotalItems').textContent = ungradedFilteredData.length;
+
+      document.getElementById('ungradedFirstBtn').disabled = ungradedCurrentPage === 1;
+      document.getElementById('ungradedPrevBtn').disabled = ungradedCurrentPage === 1;
+      document.getElementById('ungradedNextBtn').disabled = ungradedCurrentPage === totalPages;
+      document.getElementById('ungradedLastBtn').disabled = ungradedCurrentPage === totalPages;
+
+      renderUngradedPageNumbers(totalPages);
+    }
+
+    function renderUngradedPageNumbers(totalPages) {
+      const container = document.getElementById('ungradedPageNumbers');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      // 即使只有1页也显示页码
+      if (totalPages < 1) totalPages = 1;
+
+      let startPage = Math.max(1, ungradedCurrentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+
+      if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.className = `w-9 h-9 rounded text-sm font-medium transition-colors ${
+          i === ungradedCurrentPage ? 'bg-primary-500 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+        }`;
+        button.textContent = i;
+        button.onclick = () => {
+          ungradedCurrentPage = i;
+          updateUngradedTable();
+        };
+        container.appendChild(button);
+      }
+    }
+
+    function ungradedFirstPage() {
+      ungradedCurrentPage = 1;
+      updateUngradedTable();
+    }
+
+    function ungradedPrevPage() {
+      if (ungradedCurrentPage > 1) {
+        ungradedCurrentPage--;
+        updateUngradedTable();
+      }
+    }
+
+    function ungradedNextPage() {
+      const totalPages = Math.ceil(ungradedFilteredData.length / ungradedPageSize);
+      if (ungradedCurrentPage < totalPages) {
+        ungradedCurrentPage++;
+        updateUngradedTable();
+      }
+    }
+
+    function ungradedLastPage() {
+      ungradedCurrentPage = Math.ceil(ungradedFilteredData.length / ungradedPageSize);
+      updateUngradedTable();
+    }
+
+    // 保存答卷数据
+    function savePapersData() {
+      // 更新到 examStudents
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      if (!allStudentsData[examId]) {
+        allStudentsData[examId] = [];
+      }
+
+      // 更新修改过的学生数据
+      students.forEach(student => {
+        const index = allStudentsData[examId].findIndex(s => s.username === student.username);
+        if (index !== -1) {
+          allStudentsData[examId][index] = student;
+        }
+      });
+
+      localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+      console.log('保存答卷数据到 examStudents');
+    }
+
+    // 去批阅
+    function gradeStudent(username) {
+      // 实际项目中跳转到批阅页面
+      // window.location.href = `grade-paper.html?examId=${examId}&studentId=${username}`;
+
+      // 模拟批阅操作
+      const student = students.find(s => s.username === username);
+      if (!student) {
+        showMessage('未找到该学生的答卷', 'error');
+        return;
+      }
+
+      // 随机分配阅卷人员
+      const randomGrader = graders[Math.floor(Math.random() * graders.length)];
+      if (!randomGrader) {
+        showMessage('请先添加阅卷人员', 'warning');
+        return;
+      }
+
+      // 模拟批阅完成
+      const now = new Date();
+      const gradeTime = now.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+      const score = 60 + Math.floor(Math.random() * 40); // 60-100分
+
+      student.status = 'graded';
+      student.graderId = randomGrader.id;
+      student.graderName = randomGrader.name;
+      student.gradeTime = gradeTime;
+      student.score = score;
+      student.highestScore = String(score);
+
+      // 更新阅卷人员的已阅数量
+      randomGrader.gradedCount = (randomGrader.gradedCount || 0) + 1;
+      saveGradersData();
+
+      savePapersData();
+      renderUngraded();
+      renderGraded();
+      updateStatistics();
+      updateHeaderStatistics();
+      showMessage(`批阅完成！得分：${score}分`, 'success');
+    }
+
+    // ========== 已阅试卷管理 ==========
+
+    // 筛选已阅试卷
+    function filterGraded() {
+      const grader = document.getElementById('graderFilter').value;
+      const search = document.getElementById('gradedSearch').value.trim().toLowerCase();
+
+      gradedFilteredData = students.filter(s => {
+        // 已阅包括：graded、absent、violation、cheating、suspected_cheating
+        if (s.status !== 'graded' &&
+            s.status !== 'absent' &&
+            s.status !== 'violation' &&
+            s.status !== 'cheating' &&
+            s.status !== 'suspected_cheating') return false;
+        if (grader && s.graderId !== grader) return false;
+        if (search && !s.username.toLowerCase().includes(search) && !s.name.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      gradedCurrentPage = 1;
+      updateGradedTable();
+    }
+
+    // 重置已阅试卷筛选
+    function resetGradedFilter() {
+      document.getElementById('graderFilter').value = '';
+      document.getElementById('gradedSearch').value = '';
+      filterGraded();
+    }
+
+    // 渲染已阅试卷列表
+    function renderGraded() {
+      gradedFilteredData = students.filter(s =>
+        s.status === 'graded' ||
+        s.status === 'absent' ||
+        s.status === 'violation' ||
+        s.status === 'cheating' ||
+        s.status === 'suspected_cheating'
+      );
+      gradedCurrentPage = 1;
+      updateGradedTable();
+    }
+
+    function updateGradedTable() {
+      const tbody = document.getElementById('gradedTableBody');
+      const table = document.getElementById('gradedTable');
+      const emptyState = document.getElementById('gradedEmptyState');
+
+      // 如果考试未开始，显示空状态
+      if (currentExam && currentExam.examStatus === 'not_started') {
+        table.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        document.getElementById('gradedPageStart').textContent = '0';
+        document.getElementById('gradedPageEnd').textContent = '0';
+        document.getElementById('gradedTotalItems').textContent = '0';
+        return;
+      }
+
+      // 考试已开始或已结束，显示表格
+      table.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      const start = (gradedCurrentPage - 1) * gradedPageSize;
+      const end = start + gradedPageSize;
+      const pageData = gradedFilteredData.slice(start, end);
+
+      tbody.innerHTML = pageData.map(student => {
+        // 照片
+        const photoUrl = student.photo || 'https://via.placeholder.com/40';
+
+        // 格式化时间显示（MM-DD HH:MM:SS）
+        const formatTime = (time) => {
+          if (!time || time === '-') return '-';
+          if (time.includes && time.includes(' ')) {
+            const parts = time.split(' ');
+            if (parts.length === 2) {
+              return parts[0].substring(5) + ' ' + parts[1]; // MM-DD HH:MM:SS
+            }
+          }
+          return time;
+        };
+
+        // 得分显示（异常状态显示0分）
+        let scoreDisplay = '';
+        if (student.status === 'graded') {
+          scoreDisplay = `<span class="text-primary-600 font-semibold">${student.score || student.highestScore || 0}</span>`;
+        } else {
+          // 缺考、违纪、作弊、疑似作弊都显示0分，并标注状态
+          const statusText = {
+            'absent': '缺考',
+            'violation': '违纪',
+            'cheating': '作弊',
+            'suspected_cheating': '疑似作弊'
+          }[student.status] || '';
+          scoreDisplay = `<span class="text-error-600 font-semibold">0</span><br><span class="text-xs text-error-500">(${statusText})</span>`;
+        }
+
+        // 检查是否已选中
+        const isChecked = selectedGradedPapers.includes(student.username);
+
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 whitespace-nowrap">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleGradedPaper('${student.username}')" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            </td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <img src="${photoUrl}" alt="照片" class="w-10 h-10 rounded-full object-cover mx-auto border border-gray-200">
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.username}</td>
+            <td class="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">${student.name}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.phone || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${formatTime(student.startTime)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${formatTime(student.submitTime)}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 text-center whitespace-nowrap">${student.duration || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.paperName || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${student.graderName || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${formatTime(student.gradeTime)}</td>
+            <td class="px-4 py-3 text-sm text-center whitespace-nowrap">${scoreDisplay}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap">
+              <button onclick="viewGradedPaper('${student.username}')" class="text-primary-600 hover:text-primary-700 text-sm">
+                查看详情
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateGradedPagination();
+    }
+
+    // 已阅试卷分页
+    function updateGradedPagination() {
+      const totalPages = Math.ceil(gradedFilteredData.length / gradedPageSize) || 1;
+      const start = (gradedCurrentPage - 1) * gradedPageSize + 1;
+      const end = Math.min(gradedCurrentPage * gradedPageSize, gradedFilteredData.length);
+
+      document.getElementById('gradedPageStart').textContent = gradedFilteredData.length > 0 ? start : 0;
+      document.getElementById('gradedPageEnd').textContent = end;
+      document.getElementById('gradedTotalItems').textContent = gradedFilteredData.length;
+
+      document.getElementById('gradedFirstBtn').disabled = gradedCurrentPage === 1;
+      document.getElementById('gradedPrevBtn').disabled = gradedCurrentPage === 1;
+      document.getElementById('gradedNextBtn').disabled = gradedCurrentPage === totalPages;
+      document.getElementById('gradedLastBtn').disabled = gradedCurrentPage === totalPages;
+
+      renderGradedPageNumbers(totalPages);
+      updateSelectAllGradedCheckbox();
+    }
+
+    function renderGradedPageNumbers(totalPages) {
+      const container = document.getElementById('gradedPageNumbers');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      // 即使只有1页也显示页码
+      if (totalPages < 1) totalPages = 1;
+
+      let startPage = Math.max(1, gradedCurrentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+
+      if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const button = document.createElement('button');
+        button.className = `w-9 h-9 rounded text-sm font-medium transition-colors ${
+          i === gradedCurrentPage ? 'bg-primary-500 text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+        }`;
+        button.textContent = i;
+        button.onclick = () => {
+          gradedCurrentPage = i;
+          updateGradedTable();
+        };
+        container.appendChild(button);
+      }
+    }
+
+    function gradedFirstPage() {
+      gradedCurrentPage = 1;
+      updateGradedTable();
+    }
+
+    function gradedPrevPage() {
+      if (gradedCurrentPage > 1) {
+        gradedCurrentPage--;
+        updateGradedTable();
+      }
+    }
+
+    function gradedNextPage() {
+      const totalPages = Math.ceil(gradedFilteredData.length / gradedPageSize);
+      if (gradedCurrentPage < totalPages) {
+        gradedCurrentPage++;
+        updateGradedTable();
+      }
+    }
+
+    function gradedLastPage() {
+      gradedCurrentPage = Math.ceil(gradedFilteredData.length / gradedPageSize);
+      updateGradedTable();
+    }
+
+    // ========== 已阅试卷复选框功能 ==========
+
+    // 全选/取消全选已阅试卷
+    function toggleAllGradedPapers() {
+      const checkbox = document.getElementById('selectAllGradedPapers');
+      const isChecked = checkbox.checked;
+
+      if (isChecked) {
+        // 勾选时，选择当前页
+        selectCurrentPageGraded();
+      } else {
+        // 取消勾选时，移除当前页所有考生
+        const pageUsernames = gradedFilteredData.slice((gradedCurrentPage - 1) * gradedPageSize, gradedCurrentPage * gradedPageSize).map(s => s.username);
+        selectedGradedPapers = selectedGradedPapers.filter(username => !pageUsernames.includes(username));
+        updateGradedTable();
+        updateExportPDFButton();
+      }
+    }
+
+    // 选择当前页
+    function selectCurrentPageGraded() {
+      const pageData = gradedFilteredData.slice((gradedCurrentPage - 1) * gradedPageSize, gradedCurrentPage * gradedPageSize);
+
+      // 添加当前页所有考生
+      pageData.forEach(student => {
+        if (!selectedGradedPapers.includes(student.username)) {
+          selectedGradedPapers.push(student.username);
+        }
+      });
+
+      updateGradedTable();
+      updateExportPDFButton();
+      updateSelectAllGradedCheckbox();
+      showMessage(`已选择当前页 ${pageData.length} 份试卷`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraded').classList.add('hidden');
+    }
+
+    // 选择筛选结果
+    function selectFilteredGraded() {
+      // 添加所有筛选结果
+      gradedFilteredData.forEach(student => {
+        if (!selectedGradedPapers.includes(student.username)) {
+          selectedGradedPapers.push(student.username);
+        }
+      });
+
+      updateGradedTable();
+      updateExportPDFButton();
+      updateSelectAllGradedCheckbox();
+      showMessage(`已选择筛选结果中的 ${gradedFilteredData.length} 份试卷`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraded').classList.add('hidden');
+    }
+
+    // 选择全部数据
+    function selectAllGraded() {
+      const gradedData = students.filter(s => s.status === 'graded');
+
+      // 添加所有已批阅试卷
+      gradedData.forEach(student => {
+        if (!selectedGradedPapers.includes(student.username)) {
+          selectedGradedPapers.push(student.username);
+        }
+      });
+
+      updateGradedTable();
+      updateExportPDFButton();
+      updateSelectAllGradedCheckbox();
+      showMessage(`已选择全部 ${gradedData.length} 份试卷`, 'success');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraded').classList.add('hidden');
+    }
+
+    // 取消全选
+    function clearSelectionGraded() {
+      selectedGradedPapers = [];
+      updateGradedTable();
+      updateExportPDFButton();
+      updateSelectAllGradedCheckbox();
+      showMessage('已取消全部选择', 'info');
+
+      // 关闭菜单
+      document.getElementById('selectMenuGraded').classList.add('hidden');
+    }
+
+    // 更新全选复选框状态
+    function updateSelectAllGradedCheckbox() {
+      const checkbox = document.getElementById('selectAllGradedPapers');
+      const pageData = gradedFilteredData.slice((gradedCurrentPage - 1) * gradedPageSize, gradedCurrentPage * gradedPageSize);
+
+      if (pageData.length === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+        return;
+      }
+
+      const selectedInPage = pageData.filter(s => selectedGradedPapers.includes(s.username)).length;
+
+      if (selectedInPage === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+      } else if (selectedInPage === pageData.length) {
+        checkbox.checked = true;
+        checkbox.indeterminate = false;
+      } else {
+        checkbox.checked = false;
+        checkbox.indeterminate = true;
+      }
+    }
+
+    // 切换下拉菜单
+    function toggleSelectMenuGraded(event) {
+      event.stopPropagation();
+      const menu = document.getElementById('selectMenuGraded');
+      menu.classList.toggle('hidden');
+    }
+
+    // 切换单个已阅试卷选中状态
+    function toggleGradedPaper(username) {
+      const index = selectedGradedPapers.indexOf(username);
+      if (index > -1) {
+        selectedGradedPapers.splice(index, 1);
+      } else {
+        selectedGradedPapers.push(username);
+      }
+
+      updateGradedTable();
+      updateExportPDFButton();
+      updateSelectAllGradedCheckbox();
+    }
+
+    // 更新导出PDF按钮状态
+    function updateExportPDFButton() {
+      const btn = document.getElementById('exportPDFBtn');
+      if (selectedGradedPapers.length > 0) {
+        btn.disabled = false;
+        btn.title = `已选择 ${selectedGradedPapers.length} 份试卷`;
+      } else {
+        btn.disabled = true;
+        btn.title = '请先选择要导出的试卷';
+      }
+    }
+
+    // 导出PDF（功能按钮，不实现具体功能）
+    function exportGradedPapersPDF() {
+      if (selectedGradedPapers.length === 0) {
+        showMessage('请先选择要导出的试卷', 'warning');
+        return;
+      }
+
+      showMessage(`已选择 ${selectedGradedPapers.length} 份试卷，导出PDF功能待开发...`, 'info');
+    }
+
+    // 查看已批阅试卷
+    function viewGradedPaper(username) {
+      const student = students.find(s => s.username === username);
+      if (!student) {
+        showMessage('未找到该试卷', 'error');
+        return;
+      }
+
+      // 状态文本和颜色
+      const statusConfig = {
+        'graded': { text: '正常批阅', color: 'text-success-600' },
+        'absent': { text: '缺考', color: 'text-gray-600' },
+        'violation': { text: '违纪', color: 'text-warning-600' },
+        'cheating': { text: '作弊', color: 'text-error-600' },
+        'suspected_cheating': { text: '疑似作弊', color: 'text-warning-600' }
+      };
+      const status = statusConfig[student.status] || { text: '未知', color: 'text-gray-600' };
+
+      // 填充模态框数据
+      document.getElementById('detailStudentName').textContent = student.name;
+      document.getElementById('detailUsername').textContent = student.username;
+      document.getElementById('detailPhone').textContent = student.phone || '-';
+      document.getElementById('detailStatus').innerHTML = `<span class="${status.color} font-semibold">${status.text}</span>`;
+
+      document.getElementById('detailPaperName').textContent = student.paperName || '-';
+      document.getElementById('detailStartTime').textContent = student.startTime || '-';
+      document.getElementById('detailSubmitTime').textContent = student.submitTime || '-';
+      document.getElementById('detailDuration').textContent = student.duration || '-';
+
+      document.getElementById('detailGrader').textContent = student.graderName || '-';
+      document.getElementById('detailGradeTime').textContent = student.gradeTime || '-';
+
+      // 得分显示
+      const score = student.score || student.highestScore || 0;
+      const scoreColor = student.status === 'graded' ? 'text-primary-600' : 'text-error-600';
+      document.getElementById('detailScore').innerHTML = `<span class="${scoreColor}">${score}</span> 分`;
+
+      document.getElementById('detailLeaveCount').textContent = student.leaveCount || 0;
+      document.getElementById('detailFaceRecognition').textContent = student.faceRecognition || student.faceRecognitionRate || '-';
+      document.getElementById('detailCaptures').textContent = student.captures || 0;
+
+      // 显示模态框
+      document.getElementById('paperDetailModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭查看详情模态框
+    function closePaperDetailModal() {
+      document.getElementById('paperDetailModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // 重新批阅试卷
+    function reGradePaper() {
+      showMessage('重新批阅功能待开发...', 'info');
+    }
+
+    // ========== Message 提示系统 ==========
+
+    function showMessage(message, type = 'info') {
+      const container = document.getElementById('messageContainer');
+
+      const colors = {
+        success: 'bg-success-50 text-success-700 border-success-200',
+        error: 'bg-error-50 text-error-700 border-error-200',
+        warning: 'bg-warning-50 text-warning-700 border-warning-200',
+        info: 'bg-info-50 text-info-700 border-info-200'
+      };
+
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+      };
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `${colors[type]} border px-4 py-3 rounded-lg shadow-lg flex items-start gap-3 min-w-[300px] max-w-md message-enter`;
+
+      messageEl.innerHTML = `
+        <i class="fas ${icons[type]} mt-0.5"></i>
+        <div class="flex-1 text-sm">${message}</div>
+        <button onclick="this.parentElement.remove()" class="text-current opacity-50 hover:opacity-100">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+
+      container.appendChild(messageEl);
+
+      // 3秒后自动消失
+      setTimeout(() => {
+        messageEl.classList.remove('message-enter');
+        messageEl.classList.add('message-exit');
+        setTimeout(() => {
+          messageEl.remove();
+        }, 300);
+      }, 3000);
+    }
+
+    // ========== 批量导入功能 ==========
+
+    let importData = [];
+    let validImportData = [];
+
+    // 打开导入模态框
+    function openImportModal() {
+      clearFile();
+      document.getElementById('importModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭导入模态框
+    function closeImportModal() {
+      document.getElementById('importModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+      clearFile();
+    }
+
+    // 清除文件
+    function clearFile() {
+      document.getElementById('importFile').value = '';
+      document.getElementById('selectedFileInfo').classList.add('hidden');
+      document.getElementById('previewSection').classList.add('hidden');
+      document.getElementById('confirmImportBtn').disabled = true;
+      importData = [];
+      validImportData = [];
+    }
+
+    // 处理文件选择
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 检查文件大小（5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        showMessage('文件大小不能超过 5MB', 'error');
+        return;
+      }
+
+      // 检查文件类型
+      const fileName = file.name;
+      const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+      if (!['.xlsx', '.xls'].includes(fileExt)) {
+        showMessage('只支持 .xlsx 或 .xls 格式的文件', 'error');
+        return;
+      }
+
+      // 显示文件信息
+      document.getElementById('fileName').textContent = fileName;
+      document.getElementById('fileSize').textContent = formatFileSize(file.size);
+      document.getElementById('selectedFileInfo').classList.remove('hidden');
+
+      // 模拟解析Excel文件
+      parseExcelFile(file);
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // 解析Excel文件（模拟）
+    function parseExcelFile(file) {
+      // 模拟异步解析
+      setTimeout(() => {
+        // 生成模拟数据（实际项目中使用 SheetJS 等库解析）
+        const mockData = [
+          { row: 2, name: '王老师', jobNum: 'T2026100', phone: '13800138000', valid: true, error: '' },
+          { row: 3, name: '李老师', jobNum: 'T2026101', phone: '13800138001', valid: true, error: '' },
+          { row: 4, name: '张老师', jobNum: 'T2026102', phone: '', valid: true, error: '' },
+          { row: 5, name: '', jobNum: 'T2026103', phone: '13800138003', valid: false, error: '姓名不能为空' },
+          { row: 6, name: '刘老师', jobNum: '', phone: '13800138004', valid: false, error: '工号不能为空' },
+          { row: 7, name: '陈老师', jobNum: 'T2026104', phone: '1380013800', valid: false, error: '手机号格式不正确' },
+          { row: 8, name: '杨老师', jobNum: 'T2026105', phone: '13800138005', valid: true, error: '' }
+        ];
+
+        importData = mockData;
+        validImportData = mockData.filter(d => d.valid);
+
+        // 显示预览
+        renderPreview();
+        showMessage('文件解析成功，请检查数据', 'success');
+      }, 500);
+    }
+
+    // 渲染预览
+    function renderPreview() {
+      const tbody = document.getElementById('previewTableBody');
+      const totalCount = importData.length;
+      const validCount = validImportData.length;
+      const invalidCount = totalCount - validCount;
+
+      document.getElementById('previewTotal').textContent = totalCount;
+      document.getElementById('previewValid').textContent = validCount;
+      document.getElementById('previewInvalid').textContent = invalidCount;
+
+      tbody.innerHTML = importData.map(item => {
+        const statusClass = item.valid ? 'text-success-600' : 'text-error-600';
+        const statusText = item.valid ? '有效' : item.error;
+        const rowClass = item.valid ? '' : 'bg-error-50';
+
+        return `
+          <tr class="${rowClass}">
+            <td class="px-4 py-2 text-gray-600">${item.row}</td>
+            <td class="px-4 py-2 text-gray-900">${item.name || '-'}</td>
+            <td class="px-4 py-2 text-gray-900">${item.jobNum || '-'}</td>
+            <td class="px-4 py-2 text-gray-600">${item.phone || '-'}</td>
+            <td class="px-4 py-2 ${statusClass} text-xs">${statusText}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('previewSection').classList.remove('hidden');
+      document.getElementById('confirmImportBtn').disabled = validCount === 0;
+    }
+
+    // 确认导入
+    function confirmImport() {
+      if (validImportData.length === 0) {
+        showMessage('没有有效数据可以导入', 'warning');
+        return;
+      }
+
+      // 检查工号重复
+      const existingJobNums = new Set(graders.map(g => g.jobNum));
+      const duplicates = validImportData.filter(item => existingJobNums.has(item.jobNum));
+
+      if (duplicates.length > 0) {
+        showMessage(`跳过 ${duplicates.length} 条工号重复的数据`, 'warning');
+      }
+
+      // 导入有效且不重复的数据
+      const toImport = validImportData.filter(item => !existingJobNums.has(item.jobNum));
+
+      if (toImport.length === 0) {
+        showMessage('所有数据的工号均已存在，无法导入', 'error');
+        return;
+      }
+
+      const now = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+      toImport.forEach(item => {
+        const newId = `GR${String(graders.length + 1).padStart(3, '0')}`;
+        graders.push({
+          id: newId,
+          name: item.name,
+          jobNum: item.jobNum,
+          phone: item.phone || '',
+          gradedCount: 0,
+          addTime: now
+        });
+      });
+
+      saveGradersData();
+      renderGraders();
+      closeImportModal();
+      showMessage(`成功导入 ${toImport.length} 条数据`, 'success');
+    }
+
+    // 下载导入模板
+    function downloadTemplate() {
+      // 创建模板数据
+      const template = [
+        ['姓名', '工号', '手机号'],
+        ['王老师', 'T2026100', '13800138000'],
+        ['李老师', 'T2026101', '13800138001'],
+        ['张老师', 'T2026102', '']
+      ];
+
+      // 创建CSV内容
+      const csvContent = template.map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '阅卷人员导入模板.csv';
+      link.click();
+
+      showMessage('模板下载成功', 'success');
+    }
+  </script>
+</body>
+</html>

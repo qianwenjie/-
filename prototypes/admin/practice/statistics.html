@@ -64,7 +64,7 @@
             <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
             <a href="list.html" class="text-gray-600 hover:text-primary-500">刷题管理</a>
             <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-            <span class="text-gray-900">刷题统计</span>
+            <span class="text-gray-900 font-semibold">刷题统计</span>
           </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -74,10 +74,10 @@
       </div>
     </header>
 
-    <main class="pt-16">
-      <div class="max-w-[1600px] mx-auto">
-        <!-- 任务信息栏 -->
-        <div class="bg-white border-b border-gray-200 px-6 py-3">
+    <main class="pt-28">
+      <!-- 任务信息栏 - 固定在顶部导航下方 -->
+      <div class="bg-white border-b border-gray-200 px-6 py-3 fixed top-16 left-0 right-0 z-40">
+        <div class="max-w-[1600px] mx-auto">
           <div class="flex items-center justify-between">
             <!-- 左侧：任务详情 -->
             <div class="flex items-center gap-4">
@@ -95,7 +95,9 @@
             </div>
           </div>
         </div>
+      </div>
 
+      <div class="max-w-[1600px] mx-auto">
         <div class="p-6">
 
         <!-- 关键指标卡片 -->
@@ -770,19 +772,19 @@
           let masteryLevel, masteryClass, masteryIcon;
           if (student.masteryRate >= 80) {
             masteryLevel = '掌握';
-            masteryClass = 'bg-success-50 text-success-600 border-2 border-success-300';
+            masteryClass = 'bg-success-50 text-success-600 border border-success-200';
             masteryIcon = 'fa-solid fa-medal';
           } else if (student.masteryRate >= 60) {
             masteryLevel = '一般';
-            masteryClass = 'bg-warning-50 text-warning-600 border-2 border-warning-300';
-            masteryIcon = 'fa-solid fa-circle';
+            masteryClass = 'bg-warning-50 text-warning-600 border border-warning-200';
+            masteryIcon = 'fa-solid fa-circle-half-stroke';
           } else {
             masteryLevel = '薄弱';
-            masteryClass = 'bg-error-50 text-error-600 border-2 border-error-300';
+            masteryClass = 'bg-error-50 text-error-600 border border-error-200';
             masteryIcon = 'fa-solid fa-triangle-exclamation';
           }
-          masteryHtml = `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${masteryClass}">
-            <i class="${masteryIcon}"></i>
+          masteryHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${masteryClass}">
+            <i class="${masteryIcon} text-xs"></i>
             <span>${masteryLevel}</span>
           </span>`;
         }

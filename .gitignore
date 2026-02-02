@@ -16,3 +16,6 @@
 # Playwright MCP cache
 .playwright-mcp/
 .serena/
+
+# Git worktrees
+.worktrees/

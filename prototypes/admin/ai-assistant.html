@@ -544,6 +544,25 @@
       return title || '新对话';
     }
 
+    // ============================================
+    // 智能参数提取器
+    // ============================================
+    class SmartParamExtractor {
+      constructor() {
+        this.synonyms = {};
+        this.patterns = {};
+      }
+
+      // 主提取方法
+      extract(input, context = {}) {
+        const params = {};
+        const confidence = {};
+        const ambiguous = [];
+
+        return { params, confidence, ambiguous };
+      }
+    }
+
     // ========== 对话流程管理器 ==========
     class ConversationManager {
       constructor(task) {

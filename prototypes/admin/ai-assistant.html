@@ -561,6 +561,13 @@
           quantity: {
             '多': ['多点', '多来点', '多一些', '多几道', '多个'],
             '少': ['少点', '少来点', '几道', '少一些', '少个']
+          },
+          difficulty: {
+            '1': ['简单', '容易', '基础', '入门', '初级', '一级'],
+            '2': ['中等', '中级', '普通', '二级'],
+            '3': ['困难', '难', '高级', '三级'],
+            '4': ['很难', '超难', '四级'],
+            '5': ['极难', '最难', '五级']
           }
         };
         this.patterns = {};
@@ -638,6 +645,49 @@
         return null;
       }
 
+      // 提取难度
+      extractDifficulty(input) {
+        const lowerInput = input.toLowerCase();
+
+        // 特殊处理：如果包含"中等"，直接返回中等难度
+        if (lowerInput.includes('中等') || lowerInput.includes('中级') || lowerInput.includes('普通')) {
+          return {
+            value: 2,
+            name: '中等',
+            confidence: 1.0
+          };
+        }
+
+        // 按难度等级从高到低遍历，优先匹配更具体的表达
+        const difficultyLevels = ['5', '4', '3', '1'];  // 跳过2，因为已经特殊处理
+
+        for (const diffKey of difficultyLevels) {
+          const synonymList = this.synonyms.difficulty[diffKey];
+          // 按同义词长度从长到短排序，优先匹配更长的词
+          const sortedSynonyms = [...synonymList].sort((a, b) => b.length - a.length);
+
+          for (const synonym of sortedSynonyms) {
+            if (lowerInput.includes(synonym)) {
+              const diffNames = {
+                '1': '简单',
+                '2': '中等',
+                '3': '困难',
+                '4': '很难',
+                '5': '极难'
+              };
+
+              return {
+                value: parseInt(diffKey),
+                name: diffNames[diffKey],
+                confidence: 1.0
+              };
+            }
+          }
+        }
+
+        return null;
+      }
+
       // 主提取方法
       extract(input, context = {}) {
         const params = {};
@@ -657,6 +707,14 @@
         if (countResult) {
           params.count = countResult.value;
           confidence.count = countResult.confidence;
+        }
+
+        // 3. 难度识别
+        const diffResult = this.extractDifficulty(input);
+        if (diffResult) {
+          params.difficulty = diffResult.value;
+          params.difficultyName = diffResult.name;
+          confidence.difficulty = diffResult.confidence;
         }
 
         return { params, confidence, ambiguous };

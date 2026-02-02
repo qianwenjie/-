@@ -549,8 +549,47 @@
     // ============================================
     class SmartParamExtractor {
       constructor() {
-        this.synonyms = {};
+        this.synonyms = {
+          type: {
+            'single': ['单选', '单选题', '选择题', '单项选择', '单选题目'],
+            'multiple': ['多选', '多选题', '多项选择', '多选题目'],
+            'judge': ['判断', '判断题', '对错题', '是非题'],
+            'fill': ['填空', '填空题', '填写题'],
+            'essay': ['简答', '简答题', '问答题', '主观题'],
+            'all': ['所有', '全部', '所有题型', '全部题型', '混合', '随机题型', '各种题型', '任意题型']
+          }
+        };
         this.patterns = {};
+      }
+
+      // 提取题型
+      extractType(input) {
+        const lowerInput = input.toLowerCase();
+
+        // 遍历所有题型及其同义词
+        for (const [typeKey, synonymList] of Object.entries(this.synonyms.type)) {
+          for (const synonym of synonymList) {
+            if (lowerInput.includes(synonym)) {
+              // 获取题型中文名
+              const typeNames = {
+                'single': '单选题',
+                'multiple': '多选题',
+                'judge': '判断题',
+                'fill': '填空题',
+                'essay': '简答题',
+                'all': '所有题型'
+              };
+
+              return {
+                value: typeKey,
+                name: typeNames[typeKey],
+                confidence: 1.0  // 精确匹配，高置信度
+              };
+            }
+          }
+        }
+
+        return null;
       }
 
       // 主提取方法
@@ -558,6 +597,14 @@
         const params = {};
         const confidence = {};
         const ambiguous = [];
+
+        // 1. 题型识别
+        const typeResult = this.extractType(input);
+        if (typeResult) {
+          params.type = typeResult.value;
+          params.typeName = typeResult.name;
+          confidence.type = typeResult.confidence;
+        }
 
         return { params, confidence, ambiguous };
       }

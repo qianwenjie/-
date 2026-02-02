@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>领导驾驶舱 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tech: {
+              900: '#0a0e27',
+              800: '#0f1535',
+              700: '#151d42',
+              600: '#1a2550'
+            },
+            neon: {
+              cyan: '#00f5ff',
+              purple: '#bf00ff',
+              blue: '#0066ff',
+              green: '#00ff88'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 科技风背景 */
+    .tech-bg {
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(0, 245, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(191, 0, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(0, 102, 255, 0.05) 0%, transparent 70%);
+    }
+
+    /* 霓虹光效边框 */
+    .neon-border {
+      border: 1px solid rgba(0, 245, 255, 0.3);
+      box-shadow: 0 0 20px rgba(0, 245, 255, 0.1), inset 0 0 20px rgba(0, 245, 255, 0.05);
+    }
+
+    /* 数字卡片 */
+    .stat-card {
+      background: linear-gradient(135deg, rgba(15, 21, 53, 0.9) 0%, rgba(10, 14, 39, 0.9) 100%);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      border-color: rgba(0, 245, 255, 0.5);
+      box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* 数字动画 */
+    .stat-number {
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px currentColor;
+    }
+
+    /* 脉冲动画 */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    /* 扫描线动画 */
+    @keyframes scan-line {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+    .scan-line::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.5), transparent);
+      animation: scan-line 3s linear infinite;
+    }
+
+    /* 模块标签 */
+    .module-tab {
+      background: rgba(15, 21, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    .module-tab:hover, .module-tab.active {
+      border-color: rgba(0, 245, 255, 0.5);
+      background: rgba(0, 245, 255, 0.1);
+    }
+    .module-tab.active {
+      box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+    }
+
+    /* 排行榜样式 */
+    .rank-item {
+      background: rgba(15, 21, 53, 0.6);
+      border-left: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .rank-item:hover {
+      background: rgba(0, 245, 255, 0.1);
+      border-left-color: #00f5ff;
+    }
+    .rank-badge {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+
+    /* 图表容器 */
+    .chart-container {
+      background: rgba(15, 21, 53, 0.6);
+      border: 1px solid rgba(0, 245, 255, 0.15);
+      border-radius: 12px;
+    }
+
+    /* 滚动条样式 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 21, 53, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 245, 255, 0.3);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 245, 255, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-tech-900 h-screen text-white tech-bg overflow-hidden flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="h-14 bg-tech-800/80 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center gap-4">
+        <a href="dashboard.html" class="flex items-center gap-2 text-gray-400 hover:text-neon-cyan transition-colors">
+          <i class="fas fa-arrow-left"></i>
+          <span class="text-sm">返回首页</span>
+        </a>
+        <div class="h-6 w-px bg-white/20"></div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-gradient-to-br from-neon-cyan/30 to-neon-purple/30 rounded-lg flex items-center justify-center border border-neon-cyan/30">
+            <i class="fas fa-chart-line text-neon-cyan text-sm"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">领导驾驶舱</h1>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+          <span class="w-2 h-2 bg-neon-green rounded-full pulse-glow"></span>
+          <span>数据实时更新</span>
+        </div>
+        <div class="text-xs text-gray-500">
+          更新时间: <span id="updateTime"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-1 p-4 overflow-hidden flex flex-col">
+    <!-- 模块切换标签 -->
+    <div class="flex items-center gap-3 mb-4 flex-shrink-0">
+      <button class="module-tab active px-4 py-2 rounded-lg text-sm font-medium" data-module="question">
+        <i class="fas fa-book mr-2 text-neon-cyan"></i>题库管理
+      </button>
+      <button class="module-tab px-4 py-2 rounded-lg text-sm font-medium" data-module="paper">
+        <i class="fas fa-file-alt mr-2 text-neon-cyan"></i>试卷管理
+      </button>
+      <button class="module-tab px-4 py-2 rounded-lg text-sm font-medium" data-module="exam">
+        <i class="fas fa-clipboard-list mr-2 text-neon-cyan"></i>考试管理
+      </button>
+      <button class="module-tab px-4 py-2 rounded-lg text-sm font-medium" data-module="practice">
+        <i class="fas fa-brain mr-2 text-neon-cyan"></i>刷题管理
+      </button>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="flex-1 overflow-hidden" id="contentPanel">
+      <!-- 动态内容 -->
+    </div>
+  </main>
+
+  <script>
+    // 更新时间
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('updateTime').textContent = now.toLocaleString('zh-CN');
+    }
+    updateTime();
+    setInterval(updateTime, 60000);
+
+    // 当前模块
+    let currentModule = 'question';
+
+    // 颜色映射
+    const colorMap = {
+      cyan: '#00f5ff',
+      purple: '#bf00ff',
+      blue: '#0066ff',
+      green: '#00ff88',
+      yellow: '#ffd700',
+      orange: '#ff7d00',
+      red: '#ff6b6b'
+    };
+
+    // 模拟数据
+    const mockData = {
+      // ========== 题库管理数据 ==========
+      question: {
+        total: 1245,
+        knowledgeCount: 86,
+        duplicateRate: 3.2,
+        neverUsed: 156,
+        unusedLongTime: 89,
+        easyErrorCount: 156,
+        hardQuestionCount: 78,
+        typeDistribution: [
+          { name: '单选题', value: 520 },
+          { name: '多选题', value: 280 },
+          { name: '判断题', value: 180 },
+          { name: '填空题', value: 145 },
+          { name: '简答题', value: 120 }
+        ],
+        topErrorQuestions: [
+          { id: 'Q001', content: '关于TCP三次握手的描述，以下哪项是错误的？', correctRate: 23, useCount: 156 },
+          { id: 'Q002', content: '在OSI七层模型中，负责数据加密的是哪一层？', correctRate: 31, useCount: 142 },
+          { id: 'Q003', content: '以下哪种排序算法的平均时间复杂度最低？', correctRate: 35, useCount: 128 },
+          { id: 'Q004', content: 'HTTP状态码502表示什么含义？', correctRate: 38, useCount: 115 },
+          { id: 'Q005', content: '关于进程和线程的区别，以下说法错误的是？', correctRate: 42, useCount: 98 }
+        ],
+        knowledgeRanking: [
+          { name: '数据结构', correctRate: 78, questionCount: 156 },
+          { name: '计算机网络', correctRate: 65, questionCount: 142 },
+          { name: '操作系统', correctRate: 72, questionCount: 128 },
+          { name: '数据库原理', correctRate: 81, questionCount: 115 },
+          { name: '软件工程', correctRate: 85, questionCount: 98 }
+        ],
+        highFreqUsed: [
+          { id: 'Q101', content: '数据库事务的ACID特性包括？', useCount: 89 },
+          { id: 'Q102', content: '以下哪个不是HTTP请求方法？', useCount: 76 },
+          { id: 'Q103', content: '关于面向对象的三大特性？', useCount: 68 }
+        ]
+      },
+      // ========== 试卷管理数据 ==========
+      paper: {
+        total: 86,
+        published: 72,
+        draft: 14,
+        neverUsed: 23,
+        modeDistribution: [
+          { name: '固定抽题', value: 45 },
+          { name: '随机抽题', value: 28 },
+          { name: '顺序抽题', value: 13 }
+        ],
+        papers: [
+          { name: '2025年计算机基础期末试卷A', mode: '固定抽题', useCount: 45, correctRate: 72, typeRatio: { single: 40, multi: 20, judge: 15, fill: 15, essay: 10 } },
+          { name: '数据结构与算法模拟试卷', mode: '随机抽题', useCount: 38, correctRate: 68, typeRatio: { single: 35, multi: 25, judge: 10, fill: 20, essay: 10 } },
+          { name: '计算机网络期中测试', mode: '固定抽题', useCount: 32, correctRate: 75, typeRatio: { single: 50, multi: 20, judge: 20, fill: 5, essay: 5 } },
+          { name: '操作系统综合练习', mode: '顺序抽题', useCount: 28, correctRate: 71, typeRatio: { single: 30, multi: 30, judge: 10, fill: 15, essay: 15 } },
+          { name: '数据库原理期末试卷', mode: '随机抽题', useCount: 25, correctRate: 78, typeRatio: { single: 45, multi: 15, judge: 15, fill: 15, essay: 10 } }
+        ]
+      },
+      // ========== 考试管理数据 ==========
+      exam: {
+        total: 23,
+        ongoing: 2,
+        monthCount: 8,
+        // 正在进行的考试
+        ongoingExams: [
+          {
+            name: '计算机基础期末考试',
+            endTime: '2026-02-01 17:00',
+            totalStudents: 180,
+            submitted: 45,
+            inProgress: 128,
+            absent: 7,
+            avgTime: 42,
+            timeDistribution: [
+              { range: '0-30分钟', count: 12 },
+              { range: '30-60分钟', count: 28 },
+              { range: '60-90分钟', count: 5 },
+              { range: '90分钟以上', count: 0 }
+            ],
+            submitByHour: [
+              { hour: '14:00', count: 0 },
+              { hour: '14:30', count: 5 },
+              { hour: '15:00', count: 12 },
+              { hour: '15:30', count: 18 },
+              { hour: '16:00', count: 10 }
+            ],
+            warnings: [
+              { type: 'absent', message: '缺考率达 3.9%', level: 'info' }
+            ]
+          },
+          {
+            name: '数据结构模拟测试',
+            endTime: '2026-02-01 18:30',
+            totalStudents: 156,
+            submitted: 89,
+            inProgress: 52,
+            absent: 15,
+            avgTime: 56,
+            timeDistribution: [
+              { range: '0-30分钟', count: 8 },
+              { range: '30-60分钟', count: 45 },
+              { range: '60-90分钟', count: 32 },
+              { range: '90分钟以上', count: 4 }
+            ],
+            submitByHour: [
+              { hour: '15:00', count: 0 },
+              { hour: '15:30', count: 12 },
+              { hour: '16:00', count: 28 },
+              { hour: '16:30', count: 35 },
+              { hour: '17:00', count: 14 }
+            ],
+            warnings: [
+              { type: 'absent', message: '缺考率达 9.6%，超过预警阈值', level: 'warning' },
+              { type: 'violation', message: '发现 3 起疑似作弊行为', level: 'danger' }
+            ]
+          }
+        ],
+        // 历史统计
+        historyStats: {
+          totalParticipants: 2856,
+          avgParticipationRate: 94.2,
+          avgScore: 71.5,
+          passRate: 76.8,
+          excellentRate: 12.5,
+          totalAbsent: 168,
+          totalViolation: 12
+        }
+      },
+      // ========== 刷题管理数据 ==========
+      practice: {
+        total: 15,
+        ongoing: 3,
+        totalParticipants: 486,
+        todayActive: 156,
+        weeklyActive: 328,
+        avgCorrectRate: 68.5,
+        avgCompletionRate: 72.3,
+        masteryDistribution: [
+          { name: '掌握', value: 186, color: '#00ff88' },
+          { name: '一般', value: 198, color: '#ffd700' },
+          { name: '薄弱', value: 102, color: '#ff6b6b' }
+        ],
+        topImprovers: [
+          { name: '张三', improvement: '+28%', currentRate: 85 },
+          { name: '李四', improvement: '+25%', currentRate: 78 },
+          { name: '王五', improvement: '+22%', currentRate: 72 },
+          { name: '赵六', improvement: '+18%', currentRate: 68 },
+          { name: '钱七', improvement: '+15%', currentRate: 65 }
+        ],
+        topErrorQuestions: [
+          { id: 'Q101', content: '关于二叉树遍历的描述，错误的是？', errorRate: 68, practiceCount: 256 },
+          { id: 'Q102', content: 'SQL中HAVING和WHERE的区别是？', errorRate: 62, practiceCount: 198 },
+          { id: 'Q103', content: '以下哪个不是死锁的必要条件？', errorRate: 58, practiceCount: 175 },
+          { id: 'Q104', content: 'TCP和UDP的主要区别是什么？', errorRate: 52, practiceCount: 168 },
+          { id: 'Q105', content: '关于索引的描述，错误的是？', errorRate: 48, practiceCount: 145 }
+        ],
+        knowledgeMastery: [
+          { name: '数据结构', mastery: '掌握', rate: 82 },
+          { name: '计算机网络', mastery: '一般', rate: 65 },
+          { name: '操作系统', mastery: '一般', rate: 68 },
+          { name: '数据库原理', mastery: '掌握', rate: 78 },
+          { name: '软件工程', mastery: '薄弱', rate: 52 }
+        ]
+      }
+    };
+
+    // 渲染题库管理模块
+    function renderQuestionModule() {
+      const data = mockData.question;
+      return `
+        <div class="h-full flex gap-4">
+          <!-- 左侧：核心指标 + 题型分布 -->
+          <div class="w-1/4 flex flex-col gap-3">
+            <!-- 核心数字 -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-cyan">${data.total}</div>
+                <div class="text-xs text-gray-400">题目总数</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-purple">${data.knowledgeCount}</div>
+                <div class="text-xs text-gray-400">知识点</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-yellow-400">${data.neverUsed}</div>
+                <div class="text-xs text-gray-400">从未使用</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-red-400">${data.duplicateRate}%</div>
+                <div class="text-xs text-gray-400">重复率</div>
+              </div>
+            </div>
+            <!-- 题型分布饼图 -->
+            <div class="chart-container flex-1 p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">题型分布</div>
+              <div id="questionTypeChart" class="h-full" style="min-height: 160px;"></div>
+            </div>
+          </div>
+          <!-- 中间：知识点正确率排行 -->
+          <div class="w-1/4 flex flex-col">
+            <div class="chart-container flex-1 p-3 flex flex-col">
+              <div class="text-xs font-medium text-gray-300 mb-2">知识点正确率排行</div>
+              <div class="flex-1 space-y-2 overflow-auto">
+                ${data.knowledgeRanking.map((item, index) => `
+                  <div class="rank-item rounded-lg p-2 flex items-center gap-2">
+                    <span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'bg-gray-700 text-gray-300'}">${index + 1}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-xs text-gray-200 truncate">${item.name}</div>
+                      <div class="text-xs text-gray-500">${item.questionCount} 题</div>
+                    </div>
+                    <div class="text-sm font-bold" style="color: ${item.correctRate >= 80 ? '#00ff88' : item.correctRate >= 60 ? '#00f5ff' : '#ff6b6b'};">${item.correctRate}%</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <!-- 右侧：高频错题 + 高频使用 -->
+          <div class="flex-1 flex flex-col gap-3">
+            <div class="chart-container flex-1 p-3 flex flex-col">
+              <div class="text-xs font-medium text-gray-300 mb-2">高频错题 TOP 5 <span class="text-red-400">(正确率最低)</span></div>
+              <div class="flex-1 space-y-1.5 overflow-auto">
+                ${data.topErrorQuestions.map((item, index) => `
+                  <div class="rank-item rounded-lg p-2 flex items-center gap-2">
+                    <span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'bg-gray-700 text-gray-300'}">${index + 1}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-xs text-gray-200 truncate">${item.content}</div>
+                      <div class="text-xs text-gray-500">使用 ${item.useCount} 次</div>
+                    </div>
+                    <div class="text-sm font-bold text-red-400">${item.correctRate}%</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="chart-container p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">高频使用题目</div>
+              <div class="space-y-1.5">
+                ${data.highFreqUsed.map((item, index) => `
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="w-5 h-5 rounded bg-neon-cyan/20 text-neon-cyan flex items-center justify-center text-xs">${index + 1}</span>
+                    <span class="flex-1 text-gray-300 truncate">${item.content}</span>
+                    <span class="text-neon-cyan font-medium">${item.useCount}次</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染试卷管理模块
+    function renderPaperModule() {
+      const data = mockData.paper;
+      return `
+        <div class="h-full flex gap-4">
+          <!-- 左侧：核心指标 + 抽题模式分布 -->
+          <div class="w-1/3 flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-cyan">${data.total}</div>
+                <div class="text-xs text-gray-400">试卷总数</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-green">${data.published}</div>
+                <div class="text-xs text-gray-400">已发布</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-yellow-400">${data.draft}</div>
+                <div class="text-xs text-gray-400">草稿</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-red-400">${data.neverUsed}</div>
+                <div class="text-xs text-gray-400">从未使用</div>
+              </div>
+            </div>
+            <!-- 抽题模式分布 -->
+            <div class="chart-container flex-1 p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">抽题模式分布</div>
+              <div id="paperModeChart" class="h-full" style="min-height: 180px;"></div>
+            </div>
+          </div>
+          <!-- 右侧：试卷列表（含题型比例和正确率） -->
+          <div class="flex-1 flex flex-col">
+            <div class="chart-container flex-1 p-3 flex flex-col">
+              <div class="text-xs font-medium text-gray-300 mb-3">试卷详情（题型分布 & 正确率）</div>
+              <div class="flex-1 space-y-2 overflow-auto">
+                ${data.papers.map((paper, index) => `
+                  <div class="rank-item rounded-lg p-3">
+                    <div class="flex items-center gap-3 mb-2">
+                      <span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'bg-gray-700 text-gray-300'}">${index + 1}</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-sm text-gray-200 truncate">${paper.name}</div>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                          <span class="px-1.5 py-0.5 rounded ${paper.mode === '固定抽题' ? 'bg-cyan-500/20 text-cyan-400' : paper.mode === '随机抽题' ? 'bg-purple-500/20 text-purple-400' : 'bg-yellow-500/20 text-yellow-400'}">${paper.mode}</span>
+                          <span>使用 ${paper.useCount} 次</span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <div class="text-lg font-bold" style="color: ${paper.correctRate >= 75 ? '#00ff88' : paper.correctRate >= 60 ? '#00f5ff' : '#ff6b6b'};">${paper.correctRate}%</div>
+                        <div class="text-xs text-gray-500">正确率</div>
+                      </div>
+                    </div>
+                    <!-- 题型比例条 -->
+                    <div class="flex h-2 rounded-full overflow-hidden bg-gray-800">
+                      <div class="bg-cyan-500" style="width: ${paper.typeRatio.single}%;" title="单选 ${paper.typeRatio.single}%"></div>
+                      <div class="bg-purple-500" style="width: ${paper.typeRatio.multi}%;" title="多选 ${paper.typeRatio.multi}%"></div>
+                      <div class="bg-green-500" style="width: ${paper.typeRatio.judge}%;" title="判断 ${paper.typeRatio.judge}%"></div>
+                      <div class="bg-yellow-500" style="width: ${paper.typeRatio.fill}%;" title="填空 ${paper.typeRatio.fill}%"></div>
+                      <div class="bg-red-400" style="width: ${paper.typeRatio.essay}%;" title="简答 ${paper.typeRatio.essay}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-500"></span>单选${paper.typeRatio.single}%</span>
+                      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span>多选${paper.typeRatio.multi}%</span>
+                      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>判断${paper.typeRatio.judge}%</span>
+                      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span>填空${paper.typeRatio.fill}%</span>
+                      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span>简答${paper.typeRatio.essay}%</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染考试管理模块
+    function renderExamModule() {
+      const data = mockData.exam;
+      return `
+        <div class="h-full flex gap-4">
+          <!-- 左侧：历史统计概览 -->
+          <div class="w-1/4 flex flex-col gap-3">
+            <div class="stat-card rounded-xl p-3 text-center">
+              <div class="stat-number text-3xl font-bold text-neon-cyan">${data.total}</div>
+              <div class="text-xs text-gray-400">考试总数</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="stat-card rounded-xl p-2 text-center">
+                <div class="stat-number text-xl font-bold text-neon-green">${data.ongoing}</div>
+                <div class="text-xs text-gray-400">进行中</div>
+              </div>
+              <div class="stat-card rounded-xl p-2 text-center">
+                <div class="stat-number text-xl font-bold text-neon-purple">${data.monthCount}</div>
+                <div class="text-xs text-gray-400">本月</div>
+              </div>
+            </div>
+            <div class="chart-container flex-1 p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">历史统计</div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">总参与人次</span>
+                  <span class="text-sm font-bold text-neon-cyan">${data.historyStats.totalParticipants}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">平均参与率</span>
+                  <span class="text-sm font-bold text-neon-green">${data.historyStats.avgParticipationRate}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">平均分</span>
+                  <span class="text-sm font-bold text-neon-cyan">${data.historyStats.avgScore}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">及格率</span>
+                  <span class="text-sm font-bold text-neon-green">${data.historyStats.passRate}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">优秀率</span>
+                  <span class="text-sm font-bold text-neon-purple">${data.historyStats.excellentRate}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">累计缺考</span>
+                  <span class="text-sm font-bold text-yellow-400">${data.historyStats.totalAbsent}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">累计违规</span>
+                  <span class="text-sm font-bold text-red-400">${data.historyStats.totalViolation}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 右侧：正在进行的考试详情 -->
+          <div class="flex-1 flex flex-col gap-3 overflow-auto">
+            ${data.ongoingExams.map((exam, index) => `
+              <div class="chart-container p-3">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-neon-green rounded-full pulse-glow"></span>
+                    <span class="text-sm font-medium text-gray-200">${exam.name}</span>
+                  </div>
+                  <div class="text-xs text-gray-400">截止: ${exam.endTime}</div>
+                </div>
+                <div class="grid grid-cols-4 gap-3 mb-3">
+                  <!-- 参与情况 -->
+                  <div class="bg-tech-800/50 rounded-lg p-2 text-center">
+                    <div class="text-lg font-bold text-neon-cyan">${exam.totalStudents}</div>
+                    <div class="text-xs text-gray-400">应考人数</div>
+                  </div>
+                  <div class="bg-tech-800/50 rounded-lg p-2 text-center">
+                    <div class="text-lg font-bold text-neon-green">${exam.submitted}</div>
+                    <div class="text-xs text-gray-400">已交卷</div>
+                  </div>
+                  <div class="bg-tech-800/50 rounded-lg p-2 text-center">
+                    <div class="text-lg font-bold text-neon-purple">${exam.inProgress}</div>
+                    <div class="text-xs text-gray-400">答题中</div>
+                  </div>
+                  <div class="bg-tech-800/50 rounded-lg p-2 text-center">
+                    <div class="text-lg font-bold text-yellow-400">${exam.absent}</div>
+                    <div class="text-xs text-gray-400">缺考</div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <!-- 用时分布 -->
+                  <div class="bg-tech-800/30 rounded-lg p-2">
+                    <div class="text-xs text-gray-400 mb-2">用时分布 (平均 ${exam.avgTime} 分钟)</div>
+                    <div id="examTimeChart${index}" style="height: 80px;"></div>
+                  </div>
+                  <!-- 提交时段 -->
+                  <div class="bg-tech-800/30 rounded-lg p-2">
+                    <div class="text-xs text-gray-400 mb-2">各时段提交人数</div>
+                    <div id="examSubmitChart${index}" style="height: 80px;"></div>
+                  </div>
+                </div>
+                <!-- 预警信息 -->
+                ${exam.warnings.length > 0 ? `
+                  <div class="mt-2 space-y-1">
+                    ${exam.warnings.map(w => `
+                      <div class="flex items-center gap-2 px-2 py-1 rounded ${w.level === 'danger' ? 'bg-red-500/20 text-red-400' : w.level === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}">
+                        <i class="fas ${w.level === 'danger' ? 'fa-exclamation-triangle' : w.level === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle'} text-xs"></i>
+                        <span class="text-xs">${w.message}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染刷题管理模块
+    function renderPracticeModule() {
+      const data = mockData.practice;
+      return `
+        <div class="h-full flex gap-4">
+          <!-- 左侧：核心指标 + 掌握度分布 -->
+          <div class="w-1/4 flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-cyan">${data.total}</div>
+                <div class="text-xs text-gray-400">刷题任务</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-green">${data.ongoing}</div>
+                <div class="text-xs text-gray-400">进行中</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-neon-purple">${data.totalParticipants}</div>
+                <div class="text-xs text-gray-400">参与人数</div>
+              </div>
+              <div class="stat-card rounded-xl p-3 text-center">
+                <div class="stat-number text-2xl font-bold text-yellow-400">${data.todayActive}</div>
+                <div class="text-xs text-gray-400">今日活跃</div>
+              </div>
+            </div>
+            <!-- 学习效果 -->
+            <div class="chart-container p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">学习效果</div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">整体正确率</span>
+                  <span class="text-sm font-bold text-neon-cyan">${data.avgCorrectRate}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">平均完成率</span>
+                  <span class="text-sm font-bold text-neon-green">${data.avgCompletionRate}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-xs text-gray-400">本周活跃</span>
+                  <span class="text-sm font-bold text-neon-purple">${data.weeklyActive}</span>
+                </div>
+              </div>
+            </div>
+            <!-- 掌握度分布 -->
+            <div class="chart-container flex-1 p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">知识点掌握度分布</div>
+              <div id="masteryChart" class="h-full" style="min-height: 120px;"></div>
+            </div>
+          </div>
+          <!-- 中间：知识点掌握详情 -->
+          <div class="w-1/4 flex flex-col">
+            <div class="chart-container flex-1 p-3 flex flex-col">
+              <div class="text-xs font-medium text-gray-300 mb-2">知识点掌握情况</div>
+              <div class="flex-1 space-y-2 overflow-auto">
+                ${data.knowledgeMastery.map((item, index) => `
+                  <div class="rank-item rounded-lg p-2">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-xs text-gray-200">${item.name}</span>
+                      <span class="px-1.5 py-0.5 rounded text-xs ${item.mastery === '掌握' ? 'bg-green-500/20 text-green-400' : item.mastery === '一般' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}">${item.mastery}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <div class="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full" style="width: ${item.rate}%; background: ${item.rate >= 75 ? '#00ff88' : item.rate >= 60 ? '#ffd700' : '#ff6b6b'};"></div>
+                      </div>
+                      <span class="text-xs font-medium" style="color: ${item.rate >= 75 ? '#00ff88' : item.rate >= 60 ? '#ffd700' : '#ff6b6b'};">${item.rate}%</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <!-- 右侧：进步榜 + 高频错题 -->
+          <div class="flex-1 flex flex-col gap-3">
+            <div class="chart-container p-3">
+              <div class="text-xs font-medium text-gray-300 mb-2">进步最大学员 TOP 5</div>
+              <div class="space-y-1.5">
+                ${data.topImprovers.map((item, index) => `
+                  <div class="rank-item rounded-lg p-2 flex items-center gap-2">
+                    <span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'bg-gray-700 text-gray-300'}">${index + 1}</span>
+                    <div class="flex-1">
+                      <div class="text-xs text-gray-200">${item.name}</div>
+                      <div class="text-xs text-gray-500">当前正确率 ${item.currentRate}%</div>
+                    </div>
+                    <div class="text-sm font-bold text-neon-green">${item.improvement}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="chart-container flex-1 p-3 flex flex-col">
+              <div class="text-xs font-medium text-gray-300 mb-2">高频错题 TOP 5</div>
+              <div class="flex-1 space-y-1.5 overflow-auto">
+                ${data.topErrorQuestions.map((item, index) => `
+                  <div class="rank-item rounded-lg p-2 flex items-center gap-2">
+                    <span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'bg-gray-700 text-gray-300'}">${index + 1}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-xs text-gray-200 truncate">${item.content}</div>
+                      <div class="text-xs text-gray-500">练习 ${item.practiceCount} 次</div>
+                    </div>
+                    <div class="text-sm font-bold text-red-400">${item.errorRate}%</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 渲染模块内容
+    function renderModule(module) {
+      const contentPanel = document.getElementById('contentPanel');
+      let html = '';
+
+      switch(module) {
+        case 'question':
+          html = renderQuestionModule();
+          break;
+        case 'paper':
+          html = renderPaperModule();
+          break;
+        case 'exam':
+          html = renderExamModule();
+          break;
+        case 'practice':
+          html = renderPracticeModule();
+          break;
+      }
+
+      contentPanel.innerHTML = html;
+
+      // 渲染图表
+      setTimeout(() => {
+        renderCharts(module);
+      }, 100);
+    }
+
+    // 渲染图表
+    function renderCharts(module) {
+      if (module === 'question') {
+        renderPieChart('questionTypeChart', mockData.question.typeDistribution);
+      } else if (module === 'paper') {
+        renderPieChart('paperModeChart', mockData.paper.modeDistribution);
+      } else if (module === 'exam') {
+        // 渲染每个考试的图表
+        mockData.exam.ongoingExams.forEach((exam, index) => {
+          renderMiniBarChart(`examTimeChart${index}`, exam.timeDistribution.map(d => ({ name: d.range, value: d.count })));
+          renderMiniBarChart(`examSubmitChart${index}`, exam.submitByHour.map(d => ({ name: d.hour, value: d.count })));
+        });
+      } else if (module === 'practice') {
+        renderPieChart('masteryChart', mockData.practice.masteryDistribution);
+      }
+    }
+
+    // 渲染饼图
+    function renderPieChart(containerId, data) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const chart = echarts.init(container);
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: 'rgba(15, 21, 53, 0.9)',
+          borderColor: 'rgba(0, 245, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 11 }
+        },
+        series: [{
+          type: 'pie',
+          radius: ['35%', '65%'],
+          center: ['50%', '50%'],
+          itemStyle: {
+            borderRadius: 4,
+            borderColor: '#0a0e27',
+            borderWidth: 2
+          },
+          label: {
+            show: true,
+            color: '#9ca3af',
+            fontSize: 10,
+            formatter: '{b}: {c}'
+          },
+          data: data.map((item, index) => ({
+            name: item.name,
+            value: item.value,
+            itemStyle: {
+              color: item.color || ['#00f5ff', '#bf00ff', '#0066ff', '#00ff88', '#ff6b6b'][index % 5]
+            }
+          }))
+        }]
+      };
+      chart.setOption(option);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    // 渲染迷你柱状图
+    function renderMiniBarChart(containerId, data) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const chart = echarts.init(container);
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(15, 21, 53, 0.9)',
+          borderColor: 'rgba(0, 245, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 10 }
+        },
+        grid: {
+          left: '2%',
+          right: '2%',
+          bottom: '15%',
+          top: '5%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: data.map(d => d.name),
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+          axisLabel: { color: '#9ca3af', fontSize: 8, rotate: 0 },
+          axisTick: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+          axisLabel: { color: '#9ca3af', fontSize: 8 }
+        },
+        series: [{
+          type: 'bar',
+          data: data.map(d => d.value),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#00f5ff' },
+              { offset: 1, color: '#0066ff' }
+            ]),
+            borderRadius: [2, 2, 0, 0]
+          },
+          barWidth: '50%'
+        }]
+      };
+      chart.setOption(option);
+      window.addEventListener('resize', () => chart.resize());
+    }
+
+    // 模块切换
+    document.querySelectorAll('.module-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentModule = this.dataset.module;
+        renderModule(currentModule);
+      });
+    });
+
+    // 初始化
+    renderModule('question');
+  </script>
+</body>
+</html>

@@ -49,6 +49,21 @@
       transition: transform 0.3s ease;
     }
 
+    /* 驾驶舱卡片悬停效果 */
+    .cockpit-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cockpit-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+    }
+    .cockpit-card:hover .cockpit-icon {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .cockpit-card:hover .arrow-icon {
+      transform: translateX(4px);
+    }
+
     /* 背景装饰 */
     .bg-pattern {
       background-image:
@@ -101,21 +116,21 @@
         <p class="text-gray-500">今天是 <span id="currentDate"></span>，选择一个模块开始工作</p>
       </div>
 
-      <!-- 功能模块卡片 - 2x2 网格 -->
-      <div class="grid grid-cols-4 gap-6">
+      <!-- 功能模块卡片 - 4列网格 -->
+      <div class="grid grid-cols-4 gap-5">
         <!-- 题库管理 -->
-        <a href="question-bank/list.html" class="module-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-5">
-            <div class="module-icon w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-book text-white text-xl"></i>
+        <a href="question-bank/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="module-icon w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-book text-white text-lg"></i>
             </div>
             <span class="arrow-icon text-gray-300 group-hover:text-primary-500 transition-colors">
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-2">题库管理</h3>
-          <p class="text-sm text-gray-500 mb-4 line-clamp-2">管理题目和知识点分类</p>
-          <div class="flex items-center gap-4 text-xs">
+          <h3 class="text-base font-bold text-gray-900 mb-1.5">题库管理</h3>
+          <p class="text-sm text-gray-500 mb-3 line-clamp-1">管理题目和知识点分类</p>
+          <div class="flex items-center gap-3 text-xs">
             <span class="flex items-center gap-1.5 text-gray-500">
               <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
               12 知识点
@@ -128,18 +143,18 @@
         </a>
 
         <!-- 试卷管理 -->
-        <a href="paper/list.html" class="module-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-5">
-            <div class="module-icon w-14 h-14 bg-gradient-to-br from-info-500 to-info-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-file-alt text-white text-xl"></i>
+        <a href="paper/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="module-icon w-12 h-12 bg-gradient-to-br from-info-500 to-info-600 rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-file-alt text-white text-lg"></i>
             </div>
             <span class="arrow-icon text-gray-300 group-hover:text-info-500 transition-colors">
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-2">试卷管理</h3>
-          <p class="text-sm text-gray-500 mb-4 line-clamp-2">创建和管理考试试卷</p>
-          <div class="flex items-center gap-4 text-xs">
+          <h3 class="text-base font-bold text-gray-900 mb-1.5">试卷管理</h3>
+          <p class="text-sm text-gray-500 mb-3 line-clamp-1">创建和管理考试试卷</p>
+          <div class="flex items-center gap-3 text-xs">
             <span class="flex items-center gap-1.5 text-gray-500">
               <span class="w-1.5 h-1.5 bg-info-500 rounded-full"></span>
               86 试卷
@@ -152,18 +167,18 @@
         </a>
 
         <!-- 考试管理 -->
-        <a href="exam/list.html" class="module-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-5">
-            <div class="module-icon w-14 h-14 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-clipboard-list text-white text-xl"></i>
+        <a href="exam/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="module-icon w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-clipboard-list text-white text-lg"></i>
             </div>
             <span class="arrow-icon text-gray-300 group-hover:text-warning-500 transition-colors">
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-2">考试管理</h3>
-          <p class="text-sm text-gray-500 mb-4 line-clamp-2">组织考试和查看成绩</p>
-          <div class="flex items-center gap-4 text-xs">
+          <h3 class="text-base font-bold text-gray-900 mb-1.5">考试管理</h3>
+          <p class="text-sm text-gray-500 mb-3 line-clamp-1">组织考试和查看成绩</p>
+          <div class="flex items-center gap-3 text-xs">
             <span class="flex items-center gap-1.5 text-gray-500">
               <span class="w-1.5 h-1.5 bg-warning-500 rounded-full"></span>
               23 考试
@@ -176,18 +191,18 @@
         </a>
 
         <!-- 刷题管理 -->
-        <a href="practice/list.html" class="module-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-5">
-            <div class="module-icon w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-brain text-white text-xl"></i>
+        <a href="practice/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="module-icon w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-brain text-white text-lg"></i>
             </div>
             <span class="arrow-icon text-gray-300 group-hover:text-purple-500 transition-colors">
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-2">刷题管理</h3>
-          <p class="text-sm text-gray-500 mb-4 line-clamp-2">配置刷题任务和进度</p>
-          <div class="flex items-center gap-4 text-xs">
+          <h3 class="text-base font-bold text-gray-900 mb-1.5">刷题管理</h3>
+          <p class="text-sm text-gray-500 mb-3 line-clamp-1">配置刷题任务和进度</p>
+          <div class="flex items-center gap-3 text-xs">
             <span class="flex items-center gap-1.5 text-gray-500">
               <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
               15 任务
@@ -199,6 +214,44 @@
           </div>
         </a>
       </div>
+
+      <!-- 领导驾驶舱入口 -->
+      <a href="cockpit.html" class="cockpit-card mt-5 block bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group hover:border-gray-200 transition-all">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="cockpit-icon w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl flex items-center justify-center shadow-md relative overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20"></div>
+              <i class="fas fa-chart-line text-cyan-400 text-lg relative z-10"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-gray-900 mb-0.5 flex items-center gap-2">
+                领导驾驶舱
+                <span class="px-2 py-0.5 bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-xs rounded-full font-normal">数据中心</span>
+              </h3>
+              <p class="text-sm text-gray-500">全局数据概览，实时监控题库、试卷、考试、刷题四大模块核心指标</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4 text-xs">
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
+                实时数据
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                4 模块
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                50+ 指标
+              </span>
+            </div>
+            <span class="arrow-icon text-gray-300 group-hover:text-cyan-500 transition-colors">
+              <i class="fas fa-arrow-right"></i>
+            </span>
+          </div>
+        </div>
+      </a>
     </div>
   </main>
 

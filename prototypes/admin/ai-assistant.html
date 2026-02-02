@@ -570,7 +570,12 @@
             '5': ['极难', '最难', '五级']
           }
         };
-        this.patterns = {};
+        this.patterns = {
+          '来点': { action: 'generate', quantity: 'default', confidence: 0.7 },
+          '随便': { confidence: 0.3, needConfirm: true },
+          '和上次一样': { useHistory: true, confidence: 0.9 },
+          '按习惯来': { usePreference: true, confidence: 0.8 }
+        };
       }
 
       // 提取题型
@@ -711,6 +716,40 @@
         return null;
       }
 
+      // 匹配口语化模式
+      matchPatterns(input) {
+        const lowerInput = input.toLowerCase();
+        const result = {
+          params: {},
+          ambiguous: []
+        };
+
+        for (const [pattern, config] of Object.entries(this.patterns)) {
+          if (lowerInput.includes(pattern)) {
+            // 如果是"来点"，设置默认数量
+            if (pattern === '来点' && !result.params.count) {
+              result.params.count = 10;
+              result.params._countSource = 'pattern';
+            }
+
+            // 如果是"随便"，标记为需要确认
+            if (pattern === '随便') {
+              result.ambiguous.push('用户表达模糊，建议确认');
+            }
+
+            // 如果是"和上次一样"或"按习惯来"，标记使用历史/偏好
+            if (config.useHistory) {
+              result.params._useHistory = true;
+            }
+            if (config.usePreference) {
+              result.params._usePreference = true;
+            }
+          }
+        }
+
+        return result;
+      }
+
       // 主提取方法
       extract(input, context = {}) {
         const params = {};
@@ -745,6 +784,13 @@
         if (kpResult) {
           params.knowledgePoint = kpResult.value;
           confidence.knowledgePoint = kpResult.confidence;
+        }
+
+        // 5. 特殊模式识别
+        const patternResult = this.matchPatterns(input);
+        if (patternResult) {
+          Object.assign(params, patternResult.params);
+          ambiguous.push(...patternResult.ambiguous);
         }
 
         return { params, confidence, ambiguous };

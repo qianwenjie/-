@@ -688,6 +688,29 @@
         return null;
       }
 
+      // 提取知识点
+      extractKnowledgePoint(input) {
+        // 匹配"关于XX的"、"XX相关"、"XX知识点"等模式
+        const patterns = [
+          /关于["\""]?([^"\""\\s，。！？]{2,10})["\""]?的/,
+          /([^，。！？\\s]{2,10})相关/,
+          /([^，。！？\\s]{2,10})知识点/,
+          /([^，。！？\\s]{2,10})方面/
+        ];
+
+        for (const pattern of patterns) {
+          const match = input.match(pattern);
+          if (match) {
+            return {
+              value: match[1],
+              confidence: 0.9  // 模式匹配，高置信度
+            };
+          }
+        }
+
+        return null;
+      }
+
       // 主提取方法
       extract(input, context = {}) {
         const params = {};
@@ -715,6 +738,13 @@
           params.difficulty = diffResult.value;
           params.difficultyName = diffResult.name;
           confidence.difficulty = diffResult.confidence;
+        }
+
+        // 4. 知识点识别
+        const kpResult = this.extractKnowledgePoint(input);
+        if (kpResult) {
+          params.knowledgePoint = kpResult.value;
+          confidence.knowledgePoint = kpResult.confidence;
         }
 
         return { params, confidence, ambiguous };

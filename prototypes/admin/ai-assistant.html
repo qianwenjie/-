@@ -557,6 +557,10 @@
             'fill': ['填空', '填空题', '填写题'],
             'essay': ['简答', '简答题', '问答题', '主观题'],
             'all': ['所有', '全部', '所有题型', '全部题型', '混合', '随机题型', '各种题型', '任意题型']
+          },
+          quantity: {
+            '多': ['多点', '多来点', '多一些', '多几道', '多个'],
+            '少': ['少点', '少来点', '几道', '少一些', '少个']
           }
         };
         this.patterns = {};
@@ -592,6 +596,48 @@
         return null;
       }
 
+      // 提取数量
+      extractCount(input) {
+        // 1. 精确数字匹配（如"10道"、"5个"、"20题"）
+        const exactMatch = input.match(/(\d+)\s*[道个题]/);
+        if (exactMatch) {
+          return {
+            value: parseInt(exactMatch[1]),
+            confidence: 1.0  // 精确匹配
+          };
+        }
+
+        // 2. 纯数字匹配（如"10"、"5"）
+        const numberMatch = input.match(/\b(\d+)\b/);
+        if (numberMatch) {
+          const num = parseInt(numberMatch[1]);
+          // 合理范围内的数字（1-100）
+          if (num >= 1 && num <= 100) {
+            return {
+              value: num,
+              confidence: 0.8  // 推断，中高置信度
+            };
+          }
+        }
+
+        // 3. 模糊表达（"多点"、"少点"）
+        const lowerInput = input.toLowerCase();
+        if (this.synonyms.quantity['多'].some(syn => lowerInput.includes(syn))) {
+          return {
+            value: 15,  // 默认"多"为15道
+            confidence: 0.5  // 模糊表达，中置信度
+          };
+        }
+        if (this.synonyms.quantity['少'].some(syn => lowerInput.includes(syn))) {
+          return {
+            value: 5,  // 默认"少"为5道
+            confidence: 0.5
+          };
+        }
+
+        return null;
+      }
+
       // 主提取方法
       extract(input, context = {}) {
         const params = {};
@@ -604,6 +650,13 @@
           params.type = typeResult.value;
           params.typeName = typeResult.name;
           confidence.type = typeResult.confidence;
+        }
+
+        // 2. 数量识别
+        const countResult = this.extractCount(input);
+        if (countResult) {
+          params.count = countResult.value;
+          confidence.count = countResult.confidence;
         }
 
         return { params, confidence, ambiguous };

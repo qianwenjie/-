@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI智能助手 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E6F9F0', 500: '#00B96B', 600: '#00A35C' },
+            success: { 50: '#E8FFEA', 500: '#00B42A' },
+            warning: { 50: '#FFF7E8', 500: '#FF7D00' },
+            error: { 50: '#FFECE8', 500: '#F53F3F' },
+            info: { 50: '#E8F7FF', 500: '#14C9C9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 自定义滚动条 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f9fafb;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+
+    /* 任务卡片动画 */
+    .task-card {
+      transition: all 0.2s ease;
+    }
+    .task-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 2px 8px rgba(0, 185, 107, 0.15);
+    }
+
+    /* 消息动画 */
+    .message-enter {
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* AI按钮闪烁动画 */
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+    .ai-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* 参数卡片浮动 */
+    .params-card {
+      position: sticky;
+      top: 20px;
+      z-index: 10;
+    }
+
+    /* 渐变背景 */
+    .gradient-bg {
+      background: linear-gradient(135deg, #00B96B 0%, #14C9C9 100%);
+    }
+
+    /* 响应式设计 */
+    /* 移动端底部Tab栏 */
+    .mobile-tab-bar {
+      display: none;
+    }
+
+    /* 移动端（<768px）*/
+    @media (max-width: 767px) {
+      /* 显示底部Tab栏 */
+      .mobile-tab-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        z-index: 50;
+        height: 60px;
+      }
+
+      /* 主内容区底部留出Tab栏空间 */
+      .main-content {
+        padding-bottom: 60px;
+      }
+
+      /* 默认隐藏所有面板 */
+      .panel {
+        display: none !important;
+      }
+
+      /* 激活的面板显示 */
+      .panel.active {
+        display: flex !important;
+        width: 100% !important;
+      }
+
+      /* 移动端消息输入区调整 */
+      #messageInput {
+        font-size: 16px; /* 防止iOS自动缩放 */
+      }
+    }
+
+    /* 平板端（768px-1023px）*/
+    @media (min-width: 768px) and (max-width: 1023px) {
+      /* 左栏折叠为侧边栏 */
+      aside {
+        position: fixed;
+        left: -100%;
+        top: 64px;
+        bottom: 0;
+        width: 280px;
+        z-index: 40;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+      }
+
+      aside.open {
+        left: 0;
+      }
+
+      /* 中栏和右栏调整 */
+      main {
+        width: 50% !important;
+      }
+
+      section {
+        width: 50% !important;
+      }
+
+      /* 添加侧边栏切换按钮 */
+      .sidebar-toggle {
+        display: block;
+      }
+    }
+
+    /* 桌面端（>=1024px）*/
+    @media (min-width: 1024px) {
+      .sidebar-toggle {
+        display: none;
+      }
+    }
+
+    /* Tab按钮样式 */
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      transition: all 0.2s;
+      border-top: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: #00B96B;
+      border-top-color: #00B96B;
+    }
+
+    .tab-btn i {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .tab-btn span {
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部导航栏 -->
+  <header class="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+    <div class="flex items-center justify-between h-full px-6">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-primary-500 rounded flex items-center justify-center">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <span class="text-xl font-semibold text-gray-900">考试系统</span>
+        </div>
+        <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+          <a href="dashboard.html" class="hover:text-primary-500">首页</a>
+          <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+          <span class="text-gray-900 font-medium">AI智能助手</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <!-- AI助手按钮（当前页面） -->
+        <div class="px-4 py-2 bg-gradient-to-r from-primary-500 to-info-500 text-white rounded-lg flex items-center space-x-2">
+          <i class="fas fa-robot"></i>
+          <span class="text-sm font-medium">AI助手</span>
+        </div>
+        <button class="px-4 py-2 text-sm text-gray-700 hover:text-primary-500 transition-colors">
+          <i class="fas fa-question-circle mr-1"></i>
+          帮助
+        </button>
+        <img src="https://via.placeholder.com/32" alt="用户" class="w-8 h-8 rounded-full">
+        <span class="text-sm text-gray-700 font-medium">管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <div class="pt-16 h-screen flex main-content">
+    <!-- 左侧：任务卡片列表 (默认隐藏) -->
+    <aside class="panel w-1/5 bg-white border-r border-gray-200 flex flex-col transition-all duration-300" id="taskPanel" style="margin-left: -20%; opacity: 0;">
+      <!-- 任务列表标题 -->
+      <div class="p-4 border-b border-gray-200 flex-shrink-0">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">对话列表</h3>
+          <button id="closeTaskPanel" class="p-1 text-gray-400 hover:text-gray-600 transition-colors" title="收起">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 任务列表（可滚动区域）-->
+      <div id="taskList" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+        <!-- 空状态 -->
+        <div id="emptyState" class="flex flex-col items-center justify-center h-full text-center text-gray-400">
+          <i class="fas fa-inbox text-5xl mb-4"></i>
+          <p class="text-sm">暂无任务</p>
+          <p class="text-xs mt-2 max-w-[200px]">在下方输入框直接告诉我您想做什么</p>
+        </div>
+      </div>
+
+      <!-- 底部新建任务按钮（固定）-->
+      <div class="p-4 border-t border-gray-200 bg-white flex-shrink-0">
+        <button id="newTaskBtn" class="w-full px-4 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center space-x-2 shadow-lg">
+          <i class="fas fa-plus"></i>
+          <span class="font-medium">新建任务</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 中间：对话区域 (默认占据更多空间) -->
+    <main class="panel active flex-1 bg-white flex flex-col transition-all duration-300" id="chatPanel">
+      <!-- 对话标题栏 -->
+      <div class="h-14 px-6 border-b border-gray-200 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <!-- 展开任务列表按钮 -->
+          <button id="toggleTaskPanel" class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="显示对话列表">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div>
+            <h2 id="chatTitle" class="text-lg font-semibold text-gray-900">AI智能助手</h2>
+            <p id="chatSubtitle" class="text-xs text-gray-500">选择一个任务开始对话</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="清空对话">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="设置">
+            <i class="fas fa-cog"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 对话消息区 -->
+      <div id="messageContainer" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+        <!-- 欢迎消息 -->
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-info-500 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-robot text-white text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
+              <p class="text-gray-800 text-sm leading-relaxed">您好！我是AI智能助手 🤖</p>
+              <p class="text-gray-800 text-sm leading-relaxed mt-2">我可以帮您：</p>
+              <ul class="mt-2 space-y-1 text-sm text-gray-700">
+                <li class="flex items-center">
+                  <i class="fas fa-check text-primary-500 mr-2 text-xs"></i>
+                  生成题目和试卷
+                </li>
+                <li class="flex items-center">
+                  <i class="fas fa-check text-primary-500 mr-2 text-xs"></i>
+                  创建和管理考试
+                </li>
+                <li class="flex items-center">
+                  <i class="fas fa-check text-primary-500 mr-2 text-xs"></i>
+                  发布刷题任务
+                </li>
+                <li class="flex items-center">
+                  <i class="fas fa-check text-primary-500 mr-2 text-xs"></i>
+                  解答您的问题
+                </li>
+              </ul>
+              <p class="text-gray-600 text-xs mt-3 pt-3 border-t border-gray-200">
+                💡 直接告诉我您想做什么，我会尽力帮助您！
+              </p>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">刚刚</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷提示词 -->
+      <div id="quickActions" class="px-6 py-3 border-t border-gray-100">
+        <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar">
+          <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
+            📝 生成题目
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
+            📋 智能组卷
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
+            🎯 创建考试
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
+            💪 刷题任务
+          </button>
+        </div>
+      </div>
+
+      <!-- 输入区域 -->
+      <div class="px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center space-x-2 mb-3">
+          <button id="uploadBtn" class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="上传文档">
+            <i class="fas fa-paperclip"></i>
+          </button>
+          <button class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="提示词模板">
+            <i class="fas fa-lightbulb"></i>
+          </button>
+          <button class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="参数设置">
+            <i class="fas fa-sliders-h"></i>
+          </button>
+        </div>
+        <div class="flex items-end space-x-2">
+          <div class="flex-1 relative">
+            <textarea
+              id="messageInput"
+              rows="1"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="输入您的需求... 支持拖拽文档到此处上传"
+            ></textarea>
+          </div>
+          <button id="sendBtn" class="px-6 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2">
+            <i class="fas fa-paper-plane"></i>
+            <span>发送</span>
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">按 Enter 发送，Shift + Enter 换行</p>
+      </div>
+    </main>
+
+    <!-- 右侧：预览/编辑区 (自适应宽度) -->
+    <section class="panel flex-1 bg-gray-50 border-l border-gray-200 flex flex-col overflow-hidden transition-all duration-300" id="previewPanel">
+      <!-- 预览区标题栏 -->
+      <div class="h-14 px-6 bg-white border-b border-gray-200 flex items-center justify-between">
+        <h3 id="previewTitle" class="text-lg font-semibold text-gray-900">预览区</h3>
+        <div class="flex items-center space-x-2">
+          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="刷新">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="全屏">
+            <i class="fas fa-expand"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 预览内容区 -->
+      <div id="previewContainer" class="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <!-- 参数卡片（ChatGPT模式下不再使用，保留代码以备后用）-->
+        <div id="paramsCard" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 mb-6" style="display: none !important;">
+          <div class="p-4 border-b border-gray-200">
+            <h4 class="text-sm font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-sliders-h text-primary-500 mr-2"></i>
+              任务参数
+            </h4>
+          </div>
+          <div class="p-4">
+            <!-- 参数列表 -->
+            <div id="paramsList" class="space-y-3">
+              <!-- 动态生成参数项 -->
+            </div>
+
+            <!-- 进度条 -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <div class="flex items-center justify-between text-xs text-gray-600 mb-2">
+                <span>参数完整度</span>
+                <span id="paramsProgress" class="font-medium">0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="paramsProgressBar" class="bg-primary-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="previewEmpty" class="flex flex-col items-center justify-center h-full text-center text-gray-400">
+          <i class="fas fa-eye-slash text-6xl mb-4"></i>
+          <p class="text-sm">等待AI生成内容...</p>
+          <p class="text-xs mt-2 max-w-xs">生成的题目、试卷等内容将在这里实时显示</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 移动端底部Tab栏 -->
+  <nav class="mobile-tab-bar">
+    <button class="tab-btn active" data-panel="chatPanel">
+      <i class="fas fa-comments"></i>
+      <span>对话</span>
+    </button>
+    <button class="tab-btn" data-panel="previewPanel">
+      <i class="fas fa-eye"></i>
+      <span>预览</span>
+    </button>
+    <button class="tab-btn" data-panel="taskPanel">
+      <i class="fas fa-list"></i>
+      <span>任务</span>
+    </button>
+  </nav>
+
+  <!-- 隐藏的文件上传input -->
+  <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.txt,.jpg,.png" class="hidden">
+
+  <script>
+    // ========== 全局变量 ==========
+    const STORAGE_VERSION = '1.0';
+    let currentTask = null;
+    let tasks = [];
+    let messages = [];
+
+    // 题库数据缓存
+    let questionsCache = null;
+    let knowledgeTreeCache = null;
+
+    // ========== 常量定义 ==========
+
+    // 任务类型（简化为通用对话）
+    const TASK_TYPES = {
+      CONVERSATION: {
+        id: 'conversation',
+        name: '新对话',
+        icon: '💬',
+        color: 'primary',
+        description: '通用对话任务'
+      }
+    };
+
+    // 任务状态（ChatGPT模式下不再使用状态管理）
+    // const TASK_STATUS = { ... }
+
+    // 消息类型
+    const MESSAGE_TYPES = {
+      TEXT: 'text',               // 文本消息
+      OPTIONS: 'options',         // 选项消息
+      CONFIRM: 'confirm',         // 确认消息
+      PROGRESS: 'progress'        // 进度消息
+    };
+
+    // ========== 辅助函数 ==========
+
+    // 创建任务模板
+    function createTaskTemplate(taskType) {
+      const type = Object.values(TASK_TYPES).find(t => t.id === taskType);
+      if (!type) return null;
+
+      const now = new Date();
+      const taskId = `task_${now.getTime()}`;
+
+      return {
+        id: taskId,
+        title: type.name,
+        type: taskType,
+        // status: TASK_STATUS.PENDING, // ChatGPT模式下不再使用状态
+        createTime: now.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        updateTime: now.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        params: {},
+        messages: [],
+        progress: null,
+        results: []
+      };
+    }
+
+    // 获取任务类型信息
+    function getTaskTypeInfo(taskType) {
+      return Object.values(TASK_TYPES).find(t => t.id === taskType);
+    }
+
+    // 获取状态图标（ChatGPT模式下不再使用）
+    // function getStatusIcon(status) { ... }
+
+    // 获取状态颜色（ChatGPT模式下不再使用）
+    // function getStatusColor(status) { ... }
+
+    // ========== 标题生成 ==========
+
+    // 从用户第一句话生成任务标题
+    function generateTaskTitle(firstMessage) {
+      // 简单截取前20个字符作为标题
+      let title = firstMessage.trim();
+
+      // 如果太长，截取并添加省略号
+      if (title.length > 20) {
+        title = title.substring(0, 20) + '...';
+      }
+
+      return title || '新对话';
+    }
+
+    // ========== 对话流程管理器 ==========
+    class ConversationManager {
+      constructor(task) {
+        this.task = task;
+      }
+
+      // 处理用户输入，生成AI响应
+      processUserInput(userInput) {
+        // 通用对话处理
+        return this.generateResponse(userInput);
+      }
+
+      // 生成AI响应
+      generateResponse(input) {
+        // 如果任务已经在生成题目的流程中，直接继续处理
+        if (this.task.generateParams && this.task.generateParams.step && this.task.generateParams.step !== 'init') {
+          return this.handleGenerateQuestions(input);
+        }
+
+        // 识别用户意图并给出相应回复
+        const intent = this.recognizeIntent(input);
+
+        switch (intent) {
+          case 'generate_questions':
+            return this.handleGenerateQuestions(input);
+          case 'create_paper':
+            return this.handleCreatePaper(input);
+          case 'create_exam':
+            return this.handleCreateExam(input);
+          case 'create_practice':
+            return this.handleCreatePractice(input);
+          case 'greeting':
+            return '您好！我可以帮您生成题目、创建试卷、组织考试、发布刷题任务等。请告诉我您需要什么帮助？';
+          default:
+            return '我理解了。请继续告诉我更多信息，或者告诉我您想做什么？';
+        }
+      }
+
+      // 识别用户意图
+      recognizeIntent(input) {
+        const lower = input.toLowerCase();
+
+        // 问候语
+        if (/^(你好|您好|hi|hello|嗨)/.test(lower)) {
+          return 'greeting';
+        }
+
+        // 生成题目
+        if (lower.includes('生成题目') || lower.includes('出题') || lower.includes('生成') && lower.includes('题')) {
+          return 'generate_questions';
+        }
+
+        // 创建试卷
+        if (lower.includes('组卷') || lower.includes('试卷') || lower.includes('出卷')) {
+          return 'create_paper';
+        }
+
+        // 创建考试
+        if (lower.includes('考试') && (lower.includes('创建') || lower.includes('发布') || lower.includes('组织'))) {
+          return 'create_exam';
+        }
+
+        // 刷题任务
+        if (lower.includes('刷题') || lower.includes('练习')) {
+          return 'create_practice';
+        }
+
+        return 'general';
+      }
+
+      // 处理生成题目
+      handleGenerateQuestions(input) {
+        // 初始化参数对象
+        if (!this.task.generateParams) {
+          this.task.generateParams = {
+            step: 'init' // 当前步骤：init, type, count, difficulty, knowledge, document, confirm
+          };
+        }
+
+        const params = this.task.generateParams;
+        const currentStep = params.step || 'init';
+
+        // 提取用户输入中的参数
+        const extracted = this.extractQuestionParams(input);
+
+        // 根据当前步骤处理
+        switch (currentStep) {
+          case 'init':
+            // 初始阶段，检查用户是否提供了完整信息
+            if (extracted.type) {
+              params.type = extracted.type;
+              params.typeName = extracted.typeName;
+            }
+            if (extracted.count) {
+              params.count = extracted.count;
+            }
+            if (extracted.difficulty) {
+              params.difficulty = extracted.difficulty;
+              params.difficultyName = extracted.difficultyName;
+            }
+            if (extracted.knowledgePoint) {
+              params.knowledgePoint = extracted.knowledgePoint;
+            }
+
+            // 开始引导流程
+            if (!params.type) {
+              params.step = 'type';
+              return '好的，我来帮您生成题目。\n\n📝 **第1步：选择题型**\n\n请问需要生成什么题型？\n• 单选题\n• 多选题\n• 判断题\n• 填空题\n• 简答题\n• 复合题\n• 所有题型（随机混合）\n\n您可以选择一种题型，或者选择"所有题型"。';
+            } else if (!params.count) {
+              params.step = 'count';
+              return `好的，我将为您生成${params.typeName}。\n\n🔢 **第2步：设置数量**\n\n请问需要生成多少道题？`;
+            } else if (params.hasDocument === undefined) {
+              // 询问是否有参考文档
+              params.step = 'document';
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）`;
+            } else if (!params.hasDocument && params.difficulty === undefined) {
+              // 如果没有文档，询问难度
+              params.step = 'difficulty';
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+            } else {
+              // 如果题型、数量、文档状态都有了，跳到难度步骤
+              params.step = 'difficulty';
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **第${params.hasDocument ? '4' : '3'}步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+            }
+
+          case 'type':
+            // 收集题型
+            if (extracted.type) {
+              params.type = extracted.type;
+              params.typeName = extracted.typeName;
+              params.step = 'count';
+              return `好的，我将为您生成${params.typeName}。\n\n🔢 **第2步：设置数量**\n\n请问需要生成多少道题？`;
+            } else {
+              return '请选择一个题型：单选题、多选题、判断题、填空题、简答题或复合题。';
+            }
+
+          case 'count':
+            // 收集数量
+            if (extracted.count) {
+              params.count = extracted.count;
+              params.step = 'document'; // 改为跳转到文档步骤
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）`;
+            } else {
+              return '请告诉我需要生成多少道题，例如："5道"、"10个"等。';
+            }
+
+          case 'document':
+            // 收集参考文档（可选）
+            const hasDocument = input.includes('有') && !input.includes('没有');
+            const noDocument = input.includes('没有') || input.includes('没') || input.includes('跳过');
+
+            if (hasDocument) {
+              params.hasDocument = true;
+              params.step = 'waiting_document';
+              return '好的，请上传您的参考文档，或者直接粘贴文档内容。\n\n支持的格式：\n• 文本内容（直接粘贴）\n• Word文档（.docx）\n• PDF文档（.pdf）\n• Markdown文档（.md）';
+            } else if (noDocument) {
+              params.hasDocument = false;
+              params.step = 'difficulty';
+              return `好的，我将从题库中为您选择题目。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+            } else {
+              return '请回复"有"或"没有"。';
+            }
+
+          case 'waiting_document':
+            // 等待文档上传
+            // 这里简化处理，假设用户粘贴了文档内容
+            if (input.length > 50) {
+              params.documentContent = input;
+              params.step = 'difficulty';
+              return `好的，我已收到您的参考文档（${input.length}字）。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+            } else {
+              return '文档内容似乎太短了。请粘贴完整的文档内容，或者回复"跳过"直接从题库生成。';
+            }
+
+          case 'difficulty':
+            // 收集难度（可选）
+            const skipKeywords = ['跳过', '不需要', '随机', '不用', '算了'];
+            const shouldSkip = skipKeywords.some(keyword => input.includes(keyword));
+
+            if (extracted.difficulty) {
+              params.difficulty = extracted.difficulty;
+              params.difficultyName = extracted.difficultyName;
+            } else if (!shouldSkip) {
+              // 用户输入了内容但没有识别到难度，提示重新输入
+              if (input.trim().length > 0 && !skipKeywords.some(k => input.includes(k))) {
+                return '请选择一个难度：简单、中等、困难、很难或极难。您也可以回复"跳过"来随机选择。';
+              }
+            }
+
+            // 进入下一步：知识点
+            params.step = 'knowledge';
+            const difficultyInfo = params.difficultyName ? `难度为${params.difficultyName}的` : '';
+            return `好的，我将为您生成${params.count}道${difficultyInfo}${params.typeName}。\n\n📚 **第5步：选择知识点**（可选）\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+
+          case 'knowledge':
+            // 收集知识点（可选）
+            const skipKnowledge = ['跳过', '不需要', '随机', '不用', '算了'];
+            const shouldSkipKnowledge = skipKnowledge.some(keyword => input.includes(keyword));
+
+            if (extracted.knowledgePoint) {
+              params.knowledgePoint = extracted.knowledgePoint;
+            }
+
+            // 进入确认步骤
+            params.step = 'confirm';
+            return this.showGenerateConfirmation(params);
+
+          case 'confirm':
+            // 确认并生成
+            const confirmKeywords = ['确认', '开始', '生成', '好的', '是的', 'yes', 'ok'];
+            const cancelKeywords = ['取消', '重新', '修改', '不'];
+
+            if (confirmKeywords.some(keyword => input.includes(keyword))) {
+              // 开始生成题目
+              return this.generateQuestionsNow(params);
+            } else if (cancelKeywords.some(keyword => input.includes(keyword))) {
+              // 取消或重新开始
+              this.task.generateParams = { step: 'init' };
+              return '好的，已取消。如果您想重新生成题目，请告诉我。';
+            } else {
+              return '请回复"确认"开始生成，或回复"取消"重新设置。';
+            }
+
+          default:
+            params.step = 'init';
+            return '好的，我可以帮您生成题目。请告诉我您需要什么题型的题目？';
+        }
+      }
+
+      // 显示生成确认信息
+      showGenerateConfirmation(params) {
+        let summary = '📋 **生成题目确认**\n\n';
+        summary += `• 题型：${params.typeName}\n`;
+        summary += `• 数量：${params.count}道\n`;
+
+        if (params.difficultyName) {
+          summary += `• 难度：${params.difficultyName}\n`;
+        } else {
+          summary += `• 难度：随机\n`;
+        }
+
+        if (params.knowledgePoint) {
+          summary += `• 知识点：${params.knowledgePoint}\n`;
+        } else {
+          summary += `• 知识点：随机\n`;
+        }
+
+        if (params.hasDocument) {
+          summary += `• 参考文档：已提供\n`;
+        } else {
+          summary += `• 参考文档：从题库选择\n`;
+        }
+
+        summary += '\n请确认以上信息，回复"确认"开始生成题目。';
+
+        return summary;
+      }
+
+      // 立即生成题目
+      generateQuestionsNow(params) {
+        try {
+          // 从题库中筛选题目
+          const allQuestions = loadQuestionsData();
+
+          if (!allQuestions || allQuestions.length === 0) {
+            return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
+          }
+
+          // 筛选符合条件的题目
+          let filteredQuestions = allQuestions.filter(q => {
+            // 题型匹配（如果选择了"所有题型"，则不筛选题型）
+            if (params.type && params.type !== 'all' && q.type !== params.type) {
+              return false;
+            }
+
+            // 难度匹配（如果指定了难度）
+            if (params.difficulty && q.difficulty !== params.difficulty) {
+              return false;
+            }
+
+            // 知识点匹配（如果指定了知识点）
+            if (params.knowledgePoint && q.knowledgePath &&
+                !q.knowledgePath.includes(params.knowledgePoint)) {
+              return false;
+            }
+
+            return true;
+          });
+
+          if (filteredQuestions.length === 0) {
+            return `抱歉，题库中没有符合条件的${params.typeName}。\n\n建议：\n• 尝试其他题型\n• 降低筛选条件\n• 在题库管理中添加更多题目`;
+          }
+
+          // 随机选择题目
+          const selectedQuestions = this.randomSelectQuestions(filteredQuestions, params.count);
+
+          // 显示生成结果
+          displayGeneratedQuestions(selectedQuestions, params);
+
+          // 重置步骤状态，允许用户继续生成
+          this.task.generateParams = { step: 'init' };
+
+          // 返回成功消息
+          const difficultyText = params.difficultyName ? `（难度：${params.difficultyName}）` : '';
+          const knowledgeText = params.knowledgePoint ? `（知识点：${params.knowledgePoint}）` : '';
+          const documentText = params.hasDocument ? '（基于参考文档）' : '';
+
+          return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 将这些题目加入试卷（点击"加入试卷"按钮）\n• 导出题目（点击"导出"按钮）`;
+        } catch (error) {
+          console.error('生成题目失败:', error);
+          return `抱歉，生成题目时出现错误：${error.message}\n\n请稍后重试或联系管理员。`;
+        }
+      }
+
+      // 随机选择题目
+      randomSelectQuestions(questions, count) {
+        // 如果题目数量不足，返回所有题目
+        if (questions.length <= count) {
+          return questions;
+        }
+
+        // 随机打乱数组
+        const shuffled = [...questions].sort(() => Math.random() - 0.5);
+
+        // 返回前count个
+        return shuffled.slice(0, count);
+      }
+
+      // 处理创建试卷
+      handleCreatePaper(input) {
+        const nameMatch = input.match(/[《「『](.+?)[》」』]/);
+        const scoreMatch = input.match(/(\d+)\s*分/);
+
+        if (nameMatch && scoreMatch) {
+          return `好的，我将为您创建试卷《${nameMatch[1]}》，总分${scoreMatch[1]}分。\n\n请稍等，正在准备试卷...`;
+        } else if (nameMatch) {
+          return `好的，我将为您创建试卷《${nameMatch[1]}》。请问总分是多少？`;
+        } else if (scoreMatch) {
+          return `好的，总分${scoreMatch[1]}分。请问试卷名称是什么？`;
+        } else {
+          return '好的，我可以帮您创建试卷。请告诉我：\n1. 试卷名称（例如：《期末考试》）\n2. 总分（例如：100分）';
+        }
+      }
+
+      // 处理创建考试
+      handleCreateExam(input) {
+        const nameMatch = input.match(/[《「『](.+?)[》」』]/);
+        const durationMatch = input.match(/(\d+)\s*分钟/);
+
+        if (nameMatch && durationMatch) {
+          return `好的，我将为您创建考试《${nameMatch[1]}》，时长${durationMatch[1]}分钟。\n\n请稍等，正在配置考试...`;
+        } else if (nameMatch) {
+          return `好的，我将为您创建考试《${nameMatch[1]}》。请问考试时长是多少分钟？`;
+        } else if (durationMatch) {
+          return `好的，考试时长${durationMatch[1]}分钟。请问考试名称是什么？`;
+        } else {
+          return '好的，我可以帮您创建考试。请告诉我：\n1. 考试名称（例如：《期末考试》）\n2. 考试时长（例如：120分钟）';
+        }
+      }
+
+      // 处理刷题任务
+      handleCreatePractice(input) {
+        const nameMatch = input.match(/[《「『](.+?)[》」』]/);
+        const countMatch = input.match(/(\d+)\s*[道个题]/);
+
+        if (nameMatch && countMatch) {
+          return `好的，我将为您创建刷题任务《${nameMatch[1]}》，包含${countMatch[1]}道题目。\n\n请稍等，正在准备任务...`;
+        } else if (nameMatch) {
+          return `好的，我将为您创建刷题任务《${nameMatch[1]}》。请问需要多少道题？`;
+        } else if (countMatch) {
+          return `好的，包含${countMatch[1]}道题目。请问任务名称是什么？`;
+        } else {
+          return '好的，我可以帮您创建刷题任务。请告诉我：\n1. 任务名称（例如：《每日练习》）\n2. 题目数量（例如：20道题）';
+        }
+      }
+
+      // 提取题目参数
+      extractQuestionParams(input) {
+        const params = {};
+
+        // 检查是否选择所有题型
+        if (input.includes('所有') || input.includes('全部') || input.includes('所有题型') || input.includes('全部题型')) {
+          params.type = 'all';
+          params.typeName = '所有题型';
+          return params; // 直接返回，不再检查具体题型
+        }
+
+        // 题型提取
+        const typeMap = {
+          '单选': { type: 'single', name: '单选题' },
+          '多选': { type: 'multiple', name: '多选题' },
+          '判断': { type: 'judge', name: '判断题' },
+          '填空': { type: 'blank', name: '填空题' },
+          '简答': { type: 'shortAnswer', name: '简答题' },
+          '复合': { type: 'composite', name: '复合题' }
+        };
+
+        for (const [key, value] of Object.entries(typeMap)) {
+          if (input.includes(key)) {
+            params.type = value.type;
+            params.typeName = value.name;
+            break;
+          }
+        }
+
+        // 数量提取
+        const countMatch = input.match(/(\d+)\s*[道个题]/);
+        if (countMatch) {
+          params.count = parseInt(countMatch[1]);
+        }
+
+        // 难度提取
+        const difficultyMap = {
+          '简单': { level: 1, name: '简单' },
+          '容易': { level: 1, name: '简单' },
+          '一级': { level: 1, name: '一级' },
+          '中等': { level: 2, name: '中等' },
+          '二级': { level: 2, name: '二级' },
+          '困难': { level: 3, name: '困难' },
+          '难': { level: 3, name: '困难' },
+          '三级': { level: 3, name: '三级' },
+          '很难': { level: 4, name: '很难' },
+          '四级': { level: 4, name: '四级' },
+          '极难': { level: 5, name: '极难' },
+          '五级': { level: 5, name: '五级' }
+        };
+
+        for (const [key, value] of Object.entries(difficultyMap)) {
+          if (input.includes(key)) {
+            params.difficulty = value.level;
+            params.difficultyName = value.name;
+            break;
+          }
+        }
+
+        // 知识点提取（简单匹配）
+        const knowledgeMatch = input.match(/关于(.+?)的|(.+?)相关|(.+?)知识点/);
+        if (knowledgeMatch) {
+          params.knowledgePoint = knowledgeMatch[1] || knowledgeMatch[2] || knowledgeMatch[3];
+        }
+
+        return params;
+      }
+    }
+
+    // ========== 题库数据加载 ==========
+
+    // 加载题库数据
+    function loadQuestionsData() {
+      if (questionsCache) {
+        return questionsCache;
+      }
+
+      try {
+        const data = localStorage.getItem('allQuestions');
+        if (data) {
+          questionsCache = JSON.parse(data);
+          console.log('题库数据加载成功，共', questionsCache.length, '道题目');
+          return questionsCache;
+        }
+      } catch (error) {
+        console.error('加载题库数据失败:', error);
+      }
+
+      console.warn('题库为空，请先在题库管理中添加题目');
+      return [];
+    }
+
+    // 加载知识点树数据
+    function loadKnowledgeTreeData() {
+      if (knowledgeTreeCache) {
+        return knowledgeTreeCache;
+      }
+
+      try {
+        const data = localStorage.getItem('knowledgePoints');
+        if (data) {
+          knowledgeTreeCache = JSON.parse(data);
+          console.log('知识点数据加载成功');
+          return knowledgeTreeCache;
+        }
+      } catch (error) {
+        console.error('加载知识点数据失败:', error);
+      }
+
+      console.warn('知识点树为空');
+      return [];
+    }
+
+    // 搜索题目
+    function searchQuestions(params) {
+      const questions = loadQuestionsData();
+
+      if (questions.length === 0) {
+        return {
+          success: false,
+          message: '题库为空，请先在题库管理中添加题目。',
+          total: 0,
+          returned: 0,
+          results: []
+        };
+      }
+
+      let filtered = questions;
+
+      // 按题型筛选
+      if (params.questionType) {
+        filtered = filtered.filter(q => q.type === params.questionType);
+      }
+
+      // 按难度筛选
+      if (params.difficulty) {
+        filtered = filtered.filter(q => q.difficulty === params.difficulty);
+      }
+
+      // 按知识点筛选
+      if (params.knowledge) {
+        filtered = filtered.filter(q => {
+          return q.knowledgePath && q.knowledgePath.includes(params.knowledge);
+        });
+      }
+
+      // 限制数量
+      const count = params.count || filtered.length;
+      const results = filtered.slice(0, count);
+
+      if (filtered.length === 0) {
+        return {
+          success: false,
+          message: '未找到符合条件的题目，请调整搜索条件。',
+          total: 0,
+          returned: 0,
+          results: []
+        };
+      }
+
+      return {
+        success: true,
+        message: `找到 ${filtered.length} 道符合条件的题目，返回前 ${results.length} 道。`,
+        total: filtered.length,
+        returned: results.length,
+        results: results
+      };
+    }
+
+    // 显示生成的题目到预览区
+    function displayGeneratedQuestions(questions, params) {
+      const previewContainer = document.getElementById('previewContainer');
+      const previewEmpty = document.getElementById('previewEmpty');
+      const previewTitle = document.getElementById('previewTitle');
+
+      // 隐藏空状态
+      if (previewEmpty) {
+        previewEmpty.classList.add('hidden');
+      }
+
+      // 更新标题
+      if (previewTitle) {
+        const difficultyText = params.difficultyName ? ` - ${params.difficultyName}` : '';
+        previewTitle.textContent = `生成的${params.typeName}${difficultyText}`;
+      }
+
+      // 清除旧内容（保留参数卡片）
+      const existingResults = previewContainer.querySelectorAll('.generated-questions-container');
+      existingResults.forEach(el => el.remove());
+
+      // 创建题目容器
+      const container = document.createElement('div');
+      container.className = 'generated-questions-container space-y-4';
+
+      // 添加统计信息
+      const statsDiv = document.createElement('div');
+      statsDiv.className = 'bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4';
+      statsDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle text-primary-500"></i>
+            <span class="text-sm font-medium text-gray-900">已生成 ${questions.length} 道题目</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="exportGeneratedQuestions()" class="px-3 py-1 bg-white border border-primary-300 text-primary-600 rounded hover:bg-primary-50 text-sm">
+              <i class="fas fa-download mr-1"></i>导出
+            </button>
+            <button onclick="addToExam()" class="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
+              <i class="fas fa-plus mr-1"></i>加入试卷
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(statsDiv);
+
+      // 渲染每道题目
+      questions.forEach((question, index) => {
+        const questionCard = createQuestionCard(question, index + 1);
+        container.appendChild(questionCard);
+      });
+
+      // 添加到预览区
+      previewContainer.appendChild(container);
+
+      // 保存生成的题目到当前任务（用于导出和加入试卷）
+      if (currentTask) {
+        currentTask.generatedQuestions = questions;
+        saveTasksToStorage();
+      }
+
+      // 滚动到顶部
+      previewContainer.scrollTop = 0;
+    }
+
+    // 渲染搜索结果到预览区
+    function renderSearchResults(searchResult) {
+      const previewContainer = document.getElementById('previewContainer');
+      const previewEmpty = document.getElementById('previewEmpty');
+
+      // 移除旧的搜索结果
+      const oldResults = document.getElementById('searchResults');
+      if (oldResults) {
+        oldResults.remove();
+      }
+
+      // 如果搜索失败，显示错误提示
+      if (!searchResult.success) {
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'searchResults';
+        errorDiv.className = 'bg-white rounded-xl shadow-sm border border-red-200 p-6';
+        errorDiv.innerHTML = `
+          <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-exclamation-circle text-red-600"></i>
+            </div>
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-gray-900 mb-1">搜索失败</h4>
+              <p class="text-sm text-gray-600">${searchResult.message}</p>
+              ${searchResult.total === 0 && searchResult.message.includes('题库为空') ? `
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                  <p class="text-xs text-gray-500 mb-2">您可以：</p>
+                  <a href="question-bank/add.html" class="inline-flex items-center text-xs text-primary-500 hover:text-primary-600">
+                    <i class="fas fa-plus-circle mr-1"></i>
+                    前往题库管理添加题目
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        // 添加到参数卡片之后
+        const paramsCard = document.getElementById('paramsCard');
+        if (paramsCard.nextSibling) {
+          previewContainer.insertBefore(errorDiv, paramsCard.nextSibling);
+        } else {
+          previewContainer.appendChild(errorDiv);
+        }
+        return;
+      }
+
+      // 隐藏空状态
+      previewEmpty.classList.add('hidden');
+
+      // 创建结果容器
+      const resultsDiv = document.createElement('div');
+      resultsDiv.id = 'searchResults';
+      resultsDiv.className = 'space-y-4';
+
+      // 结果统计
+      const statsDiv = document.createElement('div');
+      statsDiv.className = 'bg-white rounded-xl shadow-sm border border-gray-200 p-4';
+      statsDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-1">搜索结果</h4>
+            <p class="text-xs text-gray-500">${searchResult.message}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-bold text-primary-500">${searchResult.returned}</div>
+            <div class="text-xs text-gray-500">道题目</div>
+          </div>
+        </div>
+      `;
+      resultsDiv.appendChild(statsDiv);
+
+      // 题目列表
+      if (searchResult.results.length > 0) {
+        searchResult.results.forEach((question, index) => {
+          const questionCard = createQuestionCard(question, index + 1);
+          resultsDiv.appendChild(questionCard);
+        });
+      }
+
+      // 添加新结果（在参数卡片之后）
+      const paramsCard = document.getElementById('paramsCard');
+      if (paramsCard.nextSibling) {
+        previewContainer.insertBefore(resultsDiv, paramsCard.nextSibling);
+      } else {
+        previewContainer.appendChild(resultsDiv);
+      }
+    }
+
+    // 创建题目卡片
+    function createQuestionCard(question, index) {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow';
+
+      // 题型颜色映射
+      const typeColors = {
+        'single': 'info',
+        'multiple': 'purple',
+        'judge': 'success',
+        'blank': 'warning',
+        'shortAnswer': 'primary'
+      };
+      const color = typeColors[question.type] || 'gray';
+
+      // 难度星级
+      const difficultyStars = '★'.repeat(question.difficulty || 1) + '☆'.repeat(5 - (question.difficulty || 1));
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-1 bg-${color}-100 text-${color}-600 text-xs font-medium rounded">${question.typeName || question.type}</span>
+            <span class="text-xs text-gray-500">${question.id}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-warning-500" title="难度">${difficultyStars}</span>
+            <span class="text-xs text-gray-500">${question.score || 2}分</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-start">
+            <span class="text-sm font-medium text-gray-700 mr-2">${index}.</span>
+            <div class="flex-1">
+              <p class="text-sm text-gray-800 leading-relaxed">${question.content}</p>
+            </div>
+          </div>
+        </div>
+
+        ${question.options && question.options.length > 0 ? `
+          <div class="space-y-1 mb-3">
+            ${question.options.map(opt => `
+              <div class="flex items-start text-xs text-gray-600">
+                <span class="font-medium mr-2">${opt.label}.</span>
+                <span>${opt.text}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div class="flex items-center space-x-3 text-xs text-gray-500">
+            <span><i class="fas fa-check-circle text-success-500 mr-1"></i>答案: ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(', ') : question.correctAnswers}</span>
+            ${question.knowledgePath ? `<span><i class="fas fa-folder text-primary-500 mr-1"></i>${question.knowledgePath}</span>` : ''}
+          </div>
+          <button class="text-xs text-primary-500 hover:text-primary-600" onclick="alert('查看详情功能待实现')">
+            查看详情 <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // 导出生成的题目
+    function exportGeneratedQuestions() {
+      const container = document.querySelector('.generated-questions-container');
+      if (!container) {
+        alert('没有可导出的题目');
+        return;
+      }
+
+      // 获取当前任务中保存的生成参数
+      if (!currentTask || !currentTask.generatedQuestions) {
+        alert('没有找到生成的题目数据');
+        return;
+      }
+
+      const questions = currentTask.generatedQuestions;
+      const params = currentTask.generateParams;
+
+      // 构建导出内容
+      let content = `# 生成的${params.typeName}\n\n`;
+      content += `生成时间：${new Date().toLocaleString()}\n`;
+      content += `题目数量：${questions.length}道\n`;
+      if (params.difficultyName) {
+        content += `难度：${params.difficultyName}\n`;
+      }
+      if (params.knowledgePoint) {
+        content += `知识点：${params.knowledgePoint}\n`;
+      }
+      content += `\n---\n\n`;
+
+      questions.forEach((q, index) => {
+        content += `## 题目 ${index + 1}\n\n`;
+        content += `**题型**：${q.typeName}\n`;
+        content += `**难度**：${q.difficultyName || '未设置'}\n`;
+        content += `**分值**：${q.score || 2}分\n`;
+        if (q.knowledgePath) {
+          content += `**知识点**：${q.knowledgePath}\n`;
+        }
+        content += `\n**题干**：\n${q.content}\n\n`;
+
+        if (q.options && q.options.length > 0) {
+          content += `**选项**：\n`;
+          q.options.forEach(opt => {
+            content += `${opt.label}. ${opt.text}\n`;
+          });
+          content += `\n`;
+        }
+
+        content += `**正确答案**：${Array.isArray(q.correctAnswers) ? q.correctAnswers.join(', ') : q.correctAnswers}\n`;
+
+        if (q.explanation) {
+          content += `\n**解析**：\n${q.explanation}\n`;
+        }
+
+        content += `\n---\n\n`;
+      });
+
+      // 创建下载
+      const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `生成的${params.typeName}_${new Date().getTime()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // 添加AI消息提示
+      addAIMessage(`✅ 已导出${questions.length}道${params.typeName}到Markdown文件`);
+    }
+
+    // 将生成的题目加入试卷
+    function addToExam() {
+      if (!currentTask || !currentTask.generatedQuestions) {
+        alert('没有找到生成的题目数据');
+        return;
+      }
+
+      const questions = currentTask.generatedQuestions;
+      const params = currentTask.generateParams;
+
+      // 模拟加入试卷的操作
+      addAIMessage(`✅ 已将${questions.length}道${params.typeName}加入试卷草稿\n\n您可以：\n• 前往"试卷管理"查看和编辑\n• 继续生成更多题目\n• 调整题目顺序和分值`);
+
+      // 这里可以将题目保存到LocalStorage的试卷草稿中
+      // 实际实现时需要与试卷模块集成
+      console.log('加入试卷的题目:', questions);
+    }
+
+    // ========== 初始化 ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeApp();
+      setupEventListeners();
+      loadTasksFromStorage();
+      setupMobileTabs();
+      setupTaskPanelToggle(); // 设置任务面板展开/收起
+    });
+
+    function initializeApp() {
+      console.log('AI智能助手初始化...');
+
+      // 自动调整textarea高度
+      const messageInput = document.getElementById('messageInput');
+      messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+      });
+
+      // 拖拽上传
+      setupDragAndDrop();
+    }
+
+    // 设置任务面板展开/收起功能
+    function setupTaskPanelToggle() {
+      const taskPanel = document.getElementById('taskPanel');
+      const toggleBtn = document.getElementById('toggleTaskPanel');
+      const closeBtn = document.getElementById('closeTaskPanel');
+
+      // 检查元素是否存在
+      if (!taskPanel || !toggleBtn || !closeBtn) {
+        console.error('任务面板元素未找到:', { taskPanel, toggleBtn, closeBtn });
+        return;
+      }
+
+      let isTaskPanelVisible = false;
+
+      // 展开/收起任务面板
+      function toggleTaskPanel() {
+        isTaskPanelVisible = !isTaskPanelVisible;
+
+        if (isTaskPanelVisible) {
+          // 显示任务面板
+          taskPanel.style.marginLeft = '0';
+          taskPanel.style.opacity = '1';
+          toggleBtn.title = '隐藏对话列表';
+        } else {
+          // 隐藏任务面板
+          taskPanel.style.marginLeft = '-20%';
+          taskPanel.style.opacity = '0';
+          toggleBtn.title = '显示对话列表';
+        }
+      }
+
+      // 绑定事件
+      toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        toggleTaskPanel();
+      });
+
+      closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        toggleTaskPanel();
+      });
+
+      console.log('任务面板展开/收起功能已初始化');
+    }
+
+    // ========== 事件监听 ==========
+    function setupEventListeners() {
+      // 新建任务
+      const newTaskBtn = document.getElementById('newTaskBtn');
+      if (newTaskBtn) {
+        newTaskBtn.addEventListener('click', createNewTask);
+      }
+
+      // 发送消息
+      const sendBtn = document.getElementById('sendBtn');
+      const messageInput = document.getElementById('messageInput');
+
+      if (sendBtn) {
+        sendBtn.addEventListener('click', sendMessage);
+      }
+
+      if (messageInput) {
+        messageInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+        console.log('消息输入框事件已绑定');
+      } else {
+        console.error('messageInput元素未找到');
+      }
+
+      // 上传文档
+      const uploadBtn = document.getElementById('uploadBtn');
+      const fileInput = document.getElementById('fileInput');
+
+      if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', function() {
+          fileInput.click();
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+      }
+
+      // 快捷操作
+      document.querySelectorAll('.quick-action').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const action = this.dataset.action;
+          handleQuickAction(action);
+        });
+      });
+
+      // 任务筛选（ChatGPT模式下已移除）
+      // document.querySelectorAll('.filter-btn').forEach(btn => { ... });
+    }
+
+    // ========== 拖拽上传 ==========
+    function setupDragAndDrop() {
+      const messageInput = document.getElementById('messageInput');
+
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        messageInput.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        messageInput.addEventListener(eventName, function() {
+          this.classList.add('border-primary-500', 'bg-primary-50');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        messageInput.addEventListener(eventName, function() {
+          this.classList.remove('border-primary-500', 'bg-primary-50');
+        });
+      });
+
+      messageInput.addEventListener('drop', function(e) {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+
+    // ========== 任务管理 ==========
+    function createNewTask() {
+      // 直接创建通用对话任务
+      createTask('conversation');
+    }
+
+    // 创建任务
+    function createTask(taskType, skipWelcome = false) {
+      const task = createTaskTemplate(taskType);
+
+      if (!task) {
+        console.error('创建任务失败：未知的任务类型', taskType);
+        return;
+      }
+
+      // 添加到任务列表
+      tasks.unshift(task); // 新任务放在最前面
+
+      // 保存到 LocalStorage
+      saveTasksToStorage();
+
+      // 渲染任务列表
+      renderTaskList();
+
+      // 切换到该任务
+      loadTask(task);
+
+      // 如果不跳过欢迎消息，则发送欢迎消息
+      if (!skipWelcome) {
+        const typeInfo = getTaskTypeInfo(taskType);
+        let welcomeMessage = `好的！我将帮您${typeInfo.name}。\n\n`;
+
+        // 根据任务类型提供具体引导
+        switch (taskType) {
+          case 'generate_questions':
+            welcomeMessage += '请告诉我您需要生成的题目信息：\n• 题型（单选、多选、判断、填空、简答）\n• 数量（例如：10道题）\n• 难度（可选）\n• 知识点（可选）';
+            break;
+          case 'create_paper':
+            welcomeMessage += '请告诉我试卷的基本信息：\n• 试卷名称（例如：《期末考试》）\n• 总分（例如：100分）';
+            break;
+          case 'create_exam':
+            welcomeMessage += '请告诉我考试的基本信息：\n• 考试名称（例如：《期末考试》）\n• 考试时长（例如：120分钟）';
+            break;
+          case 'create_practice':
+            welcomeMessage += '请告诉我刷题任务的基本信息：\n• 任务名称（例如：《每日练习》）\n• 题目数量（例如：20道题）';
+            break;
+          default:
+            welcomeMessage += '请告诉我您的具体需求，我会一步步引导您完成。';
+        }
+
+        addAIMessage(welcomeMessage);
+      }
+
+      // 更新任务状态为进行中（如果状态系统还在使用）
+      // updateTaskStatus(task.id, TASK_STATUS.IN_PROGRESS);
+    }
+
+    function loadTasksFromStorage() {
+      try {
+        const stored = localStorage.getItem('aiAssistantTasks');
+        if (!stored) {
+          console.log('暂无任务数据');
+          return;
+        }
+
+        const data = JSON.parse(stored);
+
+        // 版本检查
+        if (data.version !== STORAGE_VERSION) {
+          console.warn(`数据版本不匹配（当前: ${STORAGE_VERSION}, 存储: ${data.version || '未知'}），清空旧数据`);
+          localStorage.removeItem('aiAssistantTasks');
+          return;
+        }
+
+        // 数据校验
+        if (Array.isArray(data.tasks)) {
+          tasks = data.tasks;
+          renderTaskList();
+          console.log(`成功加载 ${tasks.length} 个任务`);
+        } else {
+          console.error('任务数据格式错误');
+          localStorage.removeItem('aiAssistantTasks');
+        }
+      } catch (error) {
+        console.error('加载任务数据失败:', error);
+        localStorage.removeItem('aiAssistantTasks');
+      }
+    }
+
+    function saveTasksToStorage() {
+      try {
+        const data = {
+          version: STORAGE_VERSION,
+          tasks: tasks,
+          lastUpdate: new Date().toISOString()
+        };
+        localStorage.setItem('aiAssistantTasks', JSON.stringify(data));
+        console.log('任务数据已保存');
+      } catch (error) {
+        console.error('保存任务数据失败:', error);
+        // 可能是存储空间不足
+        if (error.name === 'QuotaExceededError') {
+          alert('存储空间不足，请清理浏览器数据');
+        }
+      }
+    }
+
+    // 更新任务状态（ChatGPT模式下不再使用）
+    // function updateTaskStatus(taskId, status) { ... }
+
+    // 更新任务进度
+    function updateTaskProgress(taskId, current, total) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        task.progress = {
+          current: current,
+          total: total,
+          percentage: Math.round((current / total) * 100)
+        };
+        saveTasksToStorage();
+        renderTaskList();
+      }
+    }
+
+    // 删除任务
+    function deleteTask(taskId) {
+      showDeleteConfirmDialog(taskId);
+    }
+
+    // 显示删除确认对话框
+    function showDeleteConfirmDialog(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const dialogHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="deleteConfirmDialog">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+              <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-bold text-gray-900">确认删除任务</h3>
+                  <p class="text-sm text-gray-600 mt-2">
+                    确定要删除任务 <span class="font-medium text-gray-900">"${task.title}"</span> 吗？
+                  </p>
+                  <p class="text-sm text-red-600 mt-2">
+                    <i class="fas fa-info-circle"></i> 对话历史将无法恢复
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+              <button
+                class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                onclick="closeDeleteConfirmDialog()"
+              >
+                取消
+              </button>
+              <button
+                class="px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
+                onclick="confirmDeleteTask('${taskId}')"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    // 关闭删除确认对话框
+    function closeDeleteConfirmDialog() {
+      const dialog = document.getElementById('deleteConfirmDialog');
+      if (dialog) {
+        dialog.remove();
+      }
+    }
+
+    // 确认删除任务
+    function confirmDeleteTask(taskId) {
+      closeDeleteConfirmDialog();
+
+      tasks = tasks.filter(t => t.id !== taskId);
+      saveTasksToStorage();
+      renderTaskList();
+
+      // 如果删除的是当前任务，重置对话面板
+      if (currentTask && currentTask.id === taskId) {
+        currentTask = null;
+        resetChatPanel();
+      }
+    }
+
+    // 重置对话面板
+    function resetChatPanel() {
+      document.getElementById('chatTitle').textContent = 'AI智能助手';
+      document.getElementById('chatSubtitle').textContent = '选择一个任务开始对话';
+
+      // 清空消息（保留欢迎消息）
+      const container = document.getElementById('messageContainer');
+      while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
+      }
+
+      // 隐藏参数卡片
+      const paramsCard = document.getElementById('paramsCard');
+      if (paramsCard) {
+        paramsCard.classList.add('hidden');
+      }
+    }
+
+    // 更新参数卡片
+    function updateParamsCard() {
+      if (!currentTask) return;
+
+      const paramsCard = document.getElementById('paramsCard');
+      const paramsList = document.getElementById('paramsList');
+      const paramsProgress = document.getElementById('paramsProgress');
+      const paramsProgressBar = document.getElementById('paramsProgressBar');
+
+      // 显示卡片
+      paramsCard.classList.remove('hidden');
+
+      // 获取参数完整度
+      const manager = new ConversationManager(currentTask);
+      const completeness = manager.getParamsCompleteness();
+
+      // 更新进度
+      paramsProgress.textContent = `${completeness.percentage}%`;
+      paramsProgressBar.style.width = `${completeness.percentage}%`;
+
+      // 渲染参数列表
+      const params = currentTask.params || {};
+      const paramLabels = {
+        'questionType': '题型',
+        'questionTypeName': '题型名称',
+        'count': '数量',
+        'difficulty': '难度',
+        'difficultyName': '难度名称',
+        'knowledge': '知识点',
+        'paperName': '试卷名称',
+        'totalScore': '总分',
+        'examName': '考试名称',
+        'duration': '时长',
+        'practiceName': '任务名称'
+      };
+
+      paramsList.innerHTML = '';
+
+      Object.entries(params).forEach(([key, value]) => {
+        // 跳过内部字段
+        if (key.endsWith('Name') && params[key.replace('Name', '')]) return;
+
+        const label = paramLabels[key] || key;
+        const displayValue = params[key + 'Name'] || value;
+
+        const paramItem = document.createElement('div');
+        paramItem.className = 'flex items-center justify-between text-sm';
+        paramItem.innerHTML = `
+          <span class="text-gray-600">${label}</span>
+          <span class="font-medium text-gray-900">${displayValue}</span>
+        `;
+        paramsList.appendChild(paramItem);
+      });
+
+      // 如果没有参数，显示提示
+      if (Object.keys(params).length === 0) {
+        paramsList.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">暂无参数</p>';
+      }
+    }
+
+    function renderTaskList() {
+      const taskList = document.getElementById('taskList');
+      const emptyState = document.getElementById('emptyState');
+
+      if (tasks.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // 清空现有任务（保留空状态元素）
+      Array.from(taskList.children).forEach(child => {
+        if (child.id !== 'emptyState') {
+          child.remove();
+        }
+      });
+
+      // 渲染任务卡片
+      tasks.forEach(task => {
+        const card = createTaskCard(task);
+        taskList.appendChild(card);
+      });
+    }
+
+    function createTaskCard(task) {
+      const card = document.createElement('div');
+      card.className = 'task-card p-3 bg-white border border-gray-200 rounded-lg cursor-pointer relative group';
+      card.dataset.taskId = task.id;
+
+      // 高亮当前任务
+      if (currentTask && currentTask.id === task.id) {
+        card.classList.add('border-primary-500', 'bg-primary-50');
+      }
+
+      // const statusIcon = getStatusIcon(task.status); // 不再显示状态图标
+      const typeInfo = getTaskTypeInfo(task.type);
+      const typeIcon = typeInfo ? typeInfo.icon : '💬';
+
+      card.innerHTML = `
+        <div class="flex items-start space-x-2">
+          <span class="text-lg flex-shrink-0">${typeIcon}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-medium text-gray-900 truncate">${task.title}</h4>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">${task.createTime}</p>
+          </div>
+        </div>
+        <!-- 删除按钮（悬停显示）-->
+        <button
+          class="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+          onclick="event.stopPropagation(); deleteTask('${task.id}')"
+          title="删除任务"
+        >
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      `;
+
+      card.addEventListener('click', function() {
+        loadTask(task);
+      });
+
+      return card;
+    }
+
+    // getStatusIcon 和 getStatusColor 已在前面注释（ChatGPT模式下不再使用）
+
+    function loadTask(task) {
+      currentTask = task;
+      document.getElementById('chatTitle').textContent = task.title;
+      document.getElementById('chatSubtitle').textContent = `创建于 ${task.createTime}`;
+
+      // 加载对话历史
+      messages = task.messages || [];
+      renderMessages();
+
+      // 更新参数卡片（ChatGPT模式下不再使用）
+      // updateParamsCard();
+    }
+
+    // filterTasks 函数已移除（ChatGPT模式下不再需要状态筛选）
+
+    // ========== 消息处理 ==========
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const content = input.value.trim();
+
+      if (!content) return;
+
+      // 如果没有当前任务，自动创建一个新对话（跳过欢迎消息）
+      if (!currentTask) {
+        createTask('conversation', true); // 第二个参数为true，跳过欢迎消息
+      }
+
+      // 检查是否为当前任务的第一条用户消息
+      const isFirstMessage = !currentTask.messages || currentTask.messages.filter(m => m.role === 'user').length === 0;
+
+      // 添加用户消息
+      addUserMessage(content);
+      input.value = '';
+      input.style.height = 'auto';
+
+      // 如果是第一条消息，更新任务标题
+      if (isFirstMessage) {
+        const newTitle = generateTaskTitle(content);
+        currentTask.title = newTitle;
+        saveTasksToStorage();
+        renderTaskList();
+
+        // 更新对话区标题
+        document.getElementById('chatTitle').textContent = newTitle;
+      }
+
+      // 立即处理AI响应（不延迟）
+      setTimeout(() => {
+        handleAIResponse(content);
+      }, 500);
+    }
+
+    function addUserMessage(content) {
+      const messageDiv = createMessageElement('user', content);
+      document.getElementById('messageContainer').appendChild(messageDiv);
+      scrollToBottom();
+
+      // 保存到历史
+      messages.push({
+        role: 'user',
+        content: content,
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+
+    function addAIMessage(content) {
+      const messageDiv = createMessageElement('ai', content);
+      document.getElementById('messageContainer').appendChild(messageDiv);
+      scrollToBottom();
+
+      // 保存到历史
+      messages.push({
+        role: 'ai',
+        content: content,
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+
+    function createMessageElement(role, content) {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 message-enter';
+
+      if (role === 'ai') {
+        div.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-info-500 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-robot text-white text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
+              <p class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">${content}</p>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">刚刚</p>
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="flex-1"></div>
+          <div class="max-w-md">
+            <div class="gradient-bg text-white rounded-lg rounded-tr-none p-4">
+              <p class="text-sm leading-relaxed whitespace-pre-wrap">${content}</p>
+            </div>
+            <p class="text-xs text-gray-400 mt-1 text-right">刚刚</p>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user text-white text-sm"></i>
+          </div>
+        `;
+      }
+
+      return div;
+    }
+
+    // 创建选项消息（AI提供多个选项供用户选择）
+    function createOptionsMessage(content, options, onSelect) {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 message-enter';
+
+      const optionsHTML = options.map((option, index) => `
+        <button
+          class="option-btn w-full text-left px-4 py-3 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all"
+          data-index="${index}"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-800">${option.label}</span>
+            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+          </div>
+          ${option.description ? `<p class="text-xs text-gray-500 mt-1">${option.description}</p>` : ''}
+        </button>
+      `).join('');
+
+      div.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-info-500 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
+            <p class="text-gray-800 text-sm leading-relaxed mb-3">${content}</p>
+            <div class="space-y-2">
+              ${optionsHTML}
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">刚刚</p>
+        </div>
+      `;
+
+      // 绑定选项点击事件
+      div.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const index = parseInt(this.dataset.index);
+          onSelect(options[index], index);
+        });
+      });
+
+      return div;
+    }
+
+    // 创建确认消息（AI请求用户确认）
+    function createConfirmMessage(content, onConfirm, onCancel) {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 message-enter';
+
+      div.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-info-500 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
+            <p class="text-gray-800 text-sm leading-relaxed mb-3">${content}</p>
+            <div class="flex space-x-2">
+              <button class="confirm-btn flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium">
+                确认
+              </button>
+              <button class="cancel-btn flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium">
+                取消
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">刚刚</p>
+        </div>
+      `;
+
+      // 绑定按钮事件
+      div.querySelector('.confirm-btn').addEventListener('click', onConfirm);
+      div.querySelector('.cancel-btn').addEventListener('click', onCancel);
+
+      return div;
+    }
+
+    // 创建进度消息（显示任务进度）
+    function createProgressMessage(content, progress) {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 message-enter';
+
+      const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+
+      div.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-info-500 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
+            <p class="text-gray-800 text-sm leading-relaxed mb-3">${content}</p>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs text-gray-600">
+                <span>${progress.label || '进度'}</span>
+                <span class="font-medium">${progress.current}/${progress.total} (${percentage}%)</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-primary-500 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">刚刚</p>
+        </div>
+      `;
+
+      return div;
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messageContainer');
+      // 清空（保留欢迎消息）
+      while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
+      }
+
+      messages.forEach(msg => {
+        const messageDiv = createMessageElement(msg.role, msg.content);
+        container.appendChild(messageDiv);
+      });
+
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('messageContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function handleAIResponse(userMessage) {
+      // 使用对话管理器处理用户输入
+      const manager = new ConversationManager(currentTask);
+      const response = manager.processUserInput(userMessage);
+
+      // 添加AI响应
+      addAIMessage(response);
+
+      // 更新参数卡片（ChatGPT模式下不再使用）
+      // updateParamsCard();
+
+      // 保存对话历史
+      saveTasksToStorage();
+    }
+
+    // ========== 快捷操作 ==========
+    function handleQuickAction(action) {
+      const actions = {
+        'generate': '我想生成题目',
+        'paper': '帮我智能组卷',
+        'exam': '创建一场考试',
+        'practice': '创建刷题任务'
+      };
+
+      const message = actions[action];
+      if (message) {
+        document.getElementById('messageInput').value = message;
+        sendMessage();
+      }
+    }
+
+    // ========== 文件处理 ==========
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    }
+
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const fileName = file.name;
+        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+
+        addUserMessage(`📎 上传文档：${fileName} (${fileSize})`);
+
+        setTimeout(() => {
+          addAIMessage(`✅ 文档 "${fileName}" 上传成功！\n\n正在解析文档内容...`);
+        }, 500);
+      });
+    }
+
+    // ========== 移动端Tab切换 ==========
+    function setupMobileTabs() {
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const panels = document.querySelectorAll('.panel');
+
+      // 检查元素是否存在
+      if (tabButtons.length === 0 || panels.length === 0) {
+        console.warn('移动端Tab元素未找到，可能在桌面端运行');
+        return;
+      }
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const targetPanel = this.dataset.panel;
+          const targetElement = document.getElementById(targetPanel);
+
+          // 检查目标面板是否存在
+          if (!targetElement) {
+            console.error(`面板 ${targetPanel} 未找到`);
+            return;
+          }
+
+          // 移除所有active状态
+          tabButtons.forEach(b => b.classList.remove('active'));
+          panels.forEach(p => p.classList.remove('active'));
+
+          // 激活当前Tab和面板
+          this.classList.add('active');
+          targetElement.classList.add('active');
+        });
+      });
+    }
+  </script>
+</body>
+</html>

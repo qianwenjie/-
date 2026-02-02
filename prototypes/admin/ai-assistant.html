@@ -2467,6 +2467,67 @@
         });
       });
     }
+
+    // ============================================
+    // SmartParamExtractor 测试
+    // ============================================
+    function testSmartParamExtractor() {
+      const extractor = new SmartParamExtractor();
+      const tests = [
+        {
+          input: '生成10道单选题',
+          expected: { type: 'single', count: 10 }
+        },
+        {
+          input: '来点所有题型',
+          expected: { type: 'all', count: 10 }
+        },
+        {
+          input: '5道中等难度的判断题',
+          expected: { type: 'judge', count: 5, difficulty: 2 }
+        },
+        {
+          input: '生成关于数据结构的简单题目',
+          expected: { knowledgePoint: '数据结构', difficulty: 1 }
+        },
+        {
+          input: '来点多选题，多一些',
+          expected: { type: 'multiple', count: 15 }
+        }
+      ];
+
+      console.log('=== SmartParamExtractor 测试开始 ===');
+      let passed = 0;
+      let failed = 0;
+
+      tests.forEach((test, index) => {
+        const result = extractor.extract(test.input);
+        let testPassed = true;
+
+        for (const [key, value] of Object.entries(test.expected)) {
+          if (result.params[key] !== value) {
+            testPassed = false;
+            console.error(`测试 ${index + 1} 失败:`, test.input);
+            console.error(`  期望 ${key}=${value}, 实际 ${key}=${result.params[key]}`);
+          }
+        }
+
+        if (testPassed) {
+          passed++;
+          console.log(`✓ 测试 ${index + 1} 通过:`, test.input);
+        } else {
+          failed++;
+        }
+      });
+
+      console.log(`=== 测试完成: ${passed} 通过, ${failed} 失败 ===`);
+      return { passed, failed };
+    }
+
+    // 自动运行测试（开发模式）
+    if (window.location.search.includes('test=true')) {
+      window.addEventListener('DOMContentLoaded', testSmartParamExtractor);
+    }
   </script>
 </body>
 </html>

@@ -2656,17 +2656,140 @@
           'composite': '复合题'
         };
 
+        // 真实题目内容模板
+        const contentTemplates = {
+          'single': [
+            '在计算机网络中，TCP协议属于哪一层？',
+            '以下哪个不是面向对象编程的特性？',
+            'HTTP协议默认使用的端口号是多少？',
+            '在数据库中，用于查询数据的SQL语句是？',
+            '以下哪个是Python的数据类型？'
+          ],
+          'multiple': [
+            '以下哪些是常见的排序算法？',
+            '关于JavaScript的说法，正确的有哪些？',
+            'HTML5新增的语义化标签包括哪些？',
+            '以下哪些属于关系型数据库？',
+            'CSS中可以设置元素位置的属性有哪些？'
+          ],
+          'judge': [
+            'Java是一种解释型语言',
+            'HTTP是一种无状态协议',
+            '数组的下标从1开始',
+            'CSS可以用来控制网页的布局',
+            'Git是一种集中式版本控制系统'
+          ],
+          'blank': [
+            '在Python中，用于定义函数的关键字是____。',
+            'SQL中用于删除表中数据的命令是____。',
+            'HTML文档的根元素是____标签。',
+            '在面向对象编程中，____是指从已有类创建新类的过程。',
+            'TCP/IP模型共分为____层。'
+          ],
+          'shortAnswer': [
+            '请简述HTTP和HTTPS的区别。',
+            '什么是数据库的三范式？请简要说明。',
+            '请解释什么是闭包，并举例说明其应用场景。',
+            '简述Git中merge和rebase的区别。',
+            '什么是RESTful API？它有哪些特点？'
+          ],
+          'cloze': [
+            '计算机网络是指将地理位置不同的具有独立功能的多台计算机及其外部设备，通过____和____连接起来，在____的管理下，实现____和____的系统。',
+            '数据库管理系统（DBMS）是位于____与____之间的一层数据管理软件，它为用户或应用程序提供访问____的方法。'
+          ],
+          'composite': [
+            '阅读以下代码片段：\n```javascript\nfunction add(a, b) {\n  return a + b;\n}\nconst result = add(5, 3);\nconsole.log(result);\n```',
+            '某公司的员工信息表包含以下字段：员工编号、姓名、部门、工资、入职日期。'
+          ]
+        };
+
+        const optionsTemplates = {
+          'single': [
+            [
+              { label: 'A', text: '应用层' },
+              { label: 'B', text: '传输层' },
+              { label: 'C', text: '网络层' },
+              { label: 'D', text: '数据链路层' }
+            ],
+            [
+              { label: 'A', text: '封装' },
+              { label: 'B', text: '继承' },
+              { label: 'C', text: '多态' },
+              { label: 'D', text: '编译' }
+            ],
+            [
+              { label: 'A', text: '80' },
+              { label: 'B', text: '443' },
+              { label: 'C', text: '8080' },
+              { label: 'D', text: '3306' }
+            ],
+            [
+              { label: 'A', text: 'SELECT' },
+              { label: 'B', text: 'INSERT' },
+              { label: 'C', text: 'UPDATE' },
+              { label: 'D', text: 'DELETE' }
+            ],
+            [
+              { label: 'A', text: 'list' },
+              { label: 'B', text: 'array' },
+              { label: 'C', text: 'vector' },
+              { label: 'D', text: 'collection' }
+            ]
+          ],
+          'multiple': [
+            [
+              { label: 'A', text: '冒泡排序' },
+              { label: 'B', text: '快速排序' },
+              { label: 'C', text: '归并排序' },
+              { label: 'D', text: '线性查找' }
+            ],
+            [
+              { label: 'A', text: '是一种脚本语言' },
+              { label: 'B', text: '可以操作DOM' },
+              { label: 'C', text: '是强类型语言' },
+              { label: 'D', text: '支持异步编程' }
+            ],
+            [
+              { label: 'A', text: 'header' },
+              { label: 'B', text: 'nav' },
+              { label: 'C', text: 'section' },
+              { label: 'D', text: 'div' }
+            ],
+            [
+              { label: 'A', text: 'MySQL' },
+              { label: 'B', text: 'MongoDB' },
+              { label: 'C', text: 'PostgreSQL' },
+              { label: 'D', text: 'Oracle' }
+            ],
+            [
+              { label: 'A', text: 'position' },
+              { label: 'B', text: 'float' },
+              { label: 'C', text: 'display' },
+              { label: 'D', text: 'color' }
+            ]
+          ]
+        };
+
+        const answersTemplates = {
+          'single': ['B', 'D', 'A', 'A', 'A'],
+          'multiple': [['A', 'B', 'C'], ['A', 'B', 'D'], ['A', 'B', 'C'], ['A', 'C', 'D'], ['A', 'B', 'C']],
+          'judge': ['错误', '正确', '错误', '正确', '错误'],
+          'blank': [['def'], ['DELETE'], ['html'], ['继承'], ['四']],
+          'cloze': ['BDCA', 'ACB']
+        };
+
         // 模拟生成指定数量的题目
         for (let i = 0; i < params.count; i++) {
           const questionId = `DOC_${Date.now()}_${i + 1}`;
+          const templateIndex = i % 5; // 循环使用模板
+
           const question = {
             id: questionId,
             type: params.type,
             typeName: typeNames[params.type] || params.typeName,
-            content: `基于文档内容生成的${typeNames[params.type]}题目 ${i + 1}`,
+            content: contentTemplates[params.type] ? contentTemplates[params.type][templateIndex] : `题目内容 ${i + 1}`,
             difficulty: params.difficulty || 2,
             difficultyName: params.difficultyName || '二级',
-            score: 2,
             knowledgePoint: params.knowledgePoint || '文档知识点',
             knowledgePath: params.knowledgePoint || '文档知识点',
             createTime: new Date().toLocaleString('zh-CN'),
@@ -2676,36 +2799,78 @@
 
           // 根据题型添加选项和答案
           if (params.type === 'single') {
-            question.options = [
-              { label: 'A', text: '选项A（基于文档内容）' },
-              { label: 'B', text: '选项B（基于文档内容）' },
-              { label: 'C', text: '选项C（基于文档内容）' },
-              { label: 'D', text: '选项D（基于文档内容）' }
-            ];
-            question.correctAnswers = ['A'];
-            question.explanation = '根据文档内容，选项A正确。';
+            question.options = optionsTemplates.single[templateIndex];
+            question.correctAnswers = [answersTemplates.single[templateIndex]];
+            question.explanation = '根据相关知识点，此选项正确。';
           } else if (params.type === 'multiple') {
-            question.options = [
-              { label: 'A', text: '选项A（基于文档内容）' },
-              { label: 'B', text: '选项B（基于文档内容）' },
-              { label: 'C', text: '选项C（基于文档内容）' },
-              { label: 'D', text: '选项D（基于文档内容）' }
-            ];
-            question.correctAnswers = ['A', 'B'];
-            question.explanation = '根据文档内容，选项A和B正确。';
+            question.options = optionsTemplates.multiple[templateIndex];
+            question.correctAnswers = answersTemplates.multiple[templateIndex];
+            question.explanation = '根据相关知识点，这些选项正确。';
           } else if (params.type === 'judge') {
             question.options = [
               { label: 'A', text: '正确' },
               { label: 'B', text: '错误' }
             ];
-            question.correctAnswers = ['A'];
-            question.explanation = '根据文档内容，此说法正确。';
+            question.correctAnswers = [answersTemplates.judge[templateIndex]];
+            question.explanation = `此说法${answersTemplates.judge[templateIndex]}。`;
           } else if (params.type === 'blank') {
-            question.correctAnswers = ['答案1', '答案2'];
-            question.explanation = '根据文档内容，填空答案为：答案1、答案2。';
+            question.correctAnswers = answersTemplates.blank[templateIndex];
+            question.explanation = '根据相关知识点，填空答案如上。';
           } else if (params.type === 'shortAnswer') {
-            question.correctAnswers = ['参考答案：根据文档内容，这道题的答案是...'];
-            question.explanation = '评分要点：1. 理解文档核心内容；2. 表达清晰准确。';
+            // 简答题没有答案
+            question.explanation = '评分要点：理解核心概念，表达清晰准确。';
+          } else if (params.type === 'cloze') {
+            // 完形填空：按简便录入规则，答案为单个字符串如"BDCA"
+            const clozeIndex = i % 2;
+            question.content = contentTemplates.cloze[clozeIndex];
+            question.correctAnswers = answersTemplates.cloze[clozeIndex]; // 单个字符串
+            question.explanation = '根据上下文，选择最合适的选项。';
+            // 完形填空的选项结构
+            question.blanks = [
+              { options: [
+                { label: 'A', text: '通信线路' },
+                { label: 'B', text: '通信设备' },
+                { label: 'C', text: '网络协议' },
+                { label: 'D', text: '操作系统' }
+              ]},
+              { options: [
+                { label: 'A', text: '软件' },
+                { label: 'B', text: '硬件' },
+                { label: 'C', text: '数据' },
+                { label: 'D', text: '信息' }
+              ]}
+            ];
+          } else if (params.type === 'composite') {
+            // 复合题：按简便录入规则，包含材料和子题
+            const compositeIndex = i % 2;
+            question.content = contentTemplates.composite[compositeIndex];
+            question.subQuestions = [
+              {
+                id: `${questionId}_1`,
+                type: 'single',
+                typeName: '单选题',
+                content: '这段代码的输出结果是什么？',
+                options: [
+                  { label: 'A', text: '5' },
+                  { label: 'B', text: '8' },
+                  { label: 'C', text: '3' },
+                  { label: 'D', text: 'undefined' }
+                ],
+                correctAnswers: ['B']
+              },
+              {
+                id: `${questionId}_2`,
+                type: 'judge',
+                typeName: '判断题',
+                content: '这段代码使用了箭头函数',
+                options: [
+                  { label: 'A', text: '正确' },
+                  { label: 'B', text: '错误' }
+                ],
+                correctAnswers: ['错误']
+              }
+            ];
+            question.explanation = '综合分析材料内容，理解各个知识点。';
           }
 
           questions.push(question);

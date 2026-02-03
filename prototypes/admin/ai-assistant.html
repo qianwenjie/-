@@ -1222,6 +1222,81 @@
         const dayOfWeek = timestamp.getDay();
         return this.isWeekend(dayOfWeek) ? 'weekend' : 'weekday';
       }
+
+      // ========== 偏好查询方法 ==========
+
+      /**
+       * 获取上次使用的参数
+       * @returns {Object|null} 上次使用的参数对象，如果没有历史记录则返回 null
+       */
+      getLastUsedParams() {
+        const lastParams = this.preferences.scenarioPreferences['generate_questions'].lastParams;
+        return lastParams || null;
+      }
+
+      /**
+       * 获取最常用的题型
+       * @returns {string|null} 题型键名（如 'single'），如果没有数据则返回 null
+       */
+      getMostCommonType() {
+        const typeStats = this.preferences.basicPreferences.questionType;
+        let maxCount = 0;
+        let mostCommonType = null;
+
+        for (const [type, stats] of Object.entries(typeStats)) {
+          // 跳过 'all' 类型
+          if (type === 'all') continue;
+
+          if (stats.count > maxCount) {
+            maxCount = stats.count;
+            mostCommonType = type;
+          }
+        }
+
+        return mostCommonType;
+      }
+
+      /**
+       * 获取最常用的难度
+       * @returns {number|null} 难度值（1-5），如果没有数据则返回 null
+       */
+      getMostCommonDifficulty() {
+        const difficultyStats = this.preferences.basicPreferences.difficulty;
+        let maxCount = 0;
+        let mostCommonDifficulty = null;
+
+        for (const [difficulty, stats] of Object.entries(difficultyStats)) {
+          if (stats.count > maxCount) {
+            maxCount = stats.count;
+            mostCommonDifficulty = parseInt(difficulty);
+          }
+        }
+
+        return mostCommonDifficulty;
+      }
+
+      /**
+       * 获取平均题目数量
+       * @returns {number} 平均题目数量，如果没有数据则返回默认值 10
+       */
+      getAverageQuantity() {
+        const average = this.preferences.basicPreferences.quantity.average;
+        return average || 10;
+      }
+
+      /**
+       * 获取最近使用的知识点列表
+       * @returns {Array<string>} 知识点名称数组，如果没有数据则返回空数组
+       */
+      getRecentKnowledgePoints() {
+        const recent = this.preferences.behaviorPatterns.knowledgePointFocus.recent;
+        if (!recent || recent.length === 0) {
+          return [];
+        }
+
+        // 提取知识点名称
+        return recent.map(item => item.knowledgePoint);
+      }
     }
 
     // ========== 对话流程管理器 ==========
@@ -3148,6 +3223,180 @@
         passed++;
       } else {
         console.error('✗ 常用组合更新失败');
+        failed++;
+      }
+
+      // ========== 测试偏好查询方法 ==========
+      console.log('\n========== 测试偏好查询方法 ==========');
+
+      // 测试6: getLastUsedParams() - 获取上次使用的参数
+      console.log('\n--- 测试 getLastUsedParams() ---');
+
+      // 6.1 无历史记录时返回 null
+      manager.preferences.scenarioPreferences['generate_questions'].lastParams = null;
+      let lastParams = manager.getLastUsedParams();
+      if (lastParams === null) {
+        console.log('✓ 无历史记录时返回 null');
+        passed++;
+      } else {
+        console.error(`✗ 期望 null, 实际 ${lastParams}`);
+        failed++;
+      }
+
+      // 6.2 有历史记录时返回参数对象
+      const testParams = { type: 'single', difficulty: 3, count: 15, knowledgePoint: '数据库' };
+      manager.preferences.scenarioPreferences['generate_questions'].lastParams = testParams;
+      lastParams = manager.getLastUsedParams();
+      if (lastParams && lastParams.type === 'single' && lastParams.difficulty === 3) {
+        console.log('✓ 正确返回上次使用的参数');
+        passed++;
+      } else {
+        console.error('✗ 返回参数不正确');
+        failed++;
+      }
+
+      // 测试7: getMostCommonType() - 获取最常用题型
+      console.log('\n--- 测试 getMostCommonType() ---');
+
+      // 7.1 无数据时返回 null
+      manager.preferences.basicPreferences.questionType = {
+        'single': { count: 0, percentage: 0 },
+        'multiple': { count: 0, percentage: 0 },
+        'judge': { count: 0, percentage: 0 },
+        'fill': { count: 0, percentage: 0 },
+        'essay': { count: 0, percentage: 0 },
+        'all': { count: 0, percentage: 0 }
+      };
+      let mostCommonType = manager.getMostCommonType();
+      if (mostCommonType === null) {
+        console.log('✓ 无数据时返回 null');
+        passed++;
+      } else {
+        console.error(`✗ 期望 null, 实际 ${mostCommonType}`);
+        failed++;
+      }
+
+      // 7.2 有数据时返回最常用题型
+      manager.preferences.basicPreferences.questionType = {
+        'single': { count: 15, percentage: 50 },
+        'multiple': { count: 8, percentage: 27 },
+        'judge': { count: 7, percentage: 23 },
+        'fill': { count: 0, percentage: 0 },
+        'essay': { count: 0, percentage: 0 },
+        'all': { count: 30, percentage: 100 }
+      };
+      mostCommonType = manager.getMostCommonType();
+      if (mostCommonType === 'single') {
+        console.log('✓ 正确返回最常用题型: single');
+        passed++;
+      } else {
+        console.error(`✗ 期望 "single", 实际 "${mostCommonType}"`);
+        failed++;
+      }
+
+      // 测试8: getMostCommonDifficulty() - 获取最常用难度
+      console.log('\n--- 测试 getMostCommonDifficulty() ---');
+
+      // 8.1 无数据时返回 null
+      manager.preferences.basicPreferences.difficulty = {
+        '1': { count: 0, percentage: 0 },
+        '2': { count: 0, percentage: 0 },
+        '3': { count: 0, percentage: 0 },
+        '4': { count: 0, percentage: 0 },
+        '5': { count: 0, percentage: 0 }
+      };
+      let mostCommonDifficulty = manager.getMostCommonDifficulty();
+      if (mostCommonDifficulty === null) {
+        console.log('✓ 无数据时返回 null');
+        passed++;
+      } else {
+        console.error(`✗ 期望 null, 实际 ${mostCommonDifficulty}`);
+        failed++;
+      }
+
+      // 8.2 有数据时返回最常用难度
+      manager.preferences.basicPreferences.difficulty = {
+        '1': { count: 5, percentage: 10 },
+        '2': { count: 20, percentage: 40 },
+        '3': { count: 18, percentage: 36 },
+        '4': { count: 7, percentage: 14 },
+        '5': { count: 0, percentage: 0 }
+      };
+      mostCommonDifficulty = manager.getMostCommonDifficulty();
+      if (mostCommonDifficulty === 2) {
+        console.log('✓ 正确返回最常用难度: 2');
+        passed++;
+      } else {
+        console.error(`✗ 期望 2, 实际 ${mostCommonDifficulty}`);
+        failed++;
+      }
+
+      // 测试9: getAverageQuantity() - 获取平均题目数量
+      console.log('\n--- 测试 getAverageQuantity() ---');
+
+      // 9.1 无数据时返回默认值 10
+      manager.preferences.basicPreferences.quantity.average = 0;
+      let avgQuantity = manager.getAverageQuantity();
+      if (avgQuantity === 10) {
+        console.log('✓ 无数据时返回默认值 10');
+        passed++;
+      } else {
+        console.error(`✗ 期望 10, 实际 ${avgQuantity}`);
+        failed++;
+      }
+
+      // 9.2 有数据时返回平均值
+      manager.preferences.basicPreferences.quantity.average = 15.5;
+      avgQuantity = manager.getAverageQuantity();
+      if (avgQuantity === 15.5) {
+        console.log('✓ 正确返回平均数量: 15.5');
+        passed++;
+      } else {
+        console.error(`✗ 期望 15.5, 实际 ${avgQuantity}`);
+        failed++;
+      }
+
+      // 测试10: getRecentKnowledgePoints() - 获取最近使用的知识点
+      console.log('\n--- 测试 getRecentKnowledgePoints() ---');
+
+      // 10.1 无数据时返回空数组
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [];
+      let recentKps = manager.getRecentKnowledgePoints();
+      if (Array.isArray(recentKps) && recentKps.length === 0) {
+        console.log('✓ 无数据时返回空数组');
+        passed++;
+      } else {
+        console.error(`✗ 期望空数组, 实际 ${JSON.stringify(recentKps)}`);
+        failed++;
+      }
+
+      // 10.2 有数据时返回知识点名称数组
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [
+        { knowledgePoint: '数据结构', timestamp: '2026-02-01T10:00:00' },
+        { knowledgePoint: '算法', timestamp: '2026-02-01T11:00:00' },
+        { knowledgePoint: '操作系统', timestamp: '2026-02-01T12:00:00' }
+      ];
+      recentKps = manager.getRecentKnowledgePoints();
+      if (Array.isArray(recentKps) &&
+          recentKps.length === 3 &&
+          recentKps[0] === '数据结构' &&
+          recentKps[1] === '算法' &&
+          recentKps[2] === '操作系统') {
+        console.log('✓ 正确返回知识点名称数组');
+        passed++;
+      } else {
+        console.error(`✗ 返回数组不正确: ${JSON.stringify(recentKps)}`);
+        failed++;
+      }
+
+      // 10.3 测试空值处理
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = null;
+      recentKps = manager.getRecentKnowledgePoints();
+      if (Array.isArray(recentKps) && recentKps.length === 0) {
+        console.log('✓ null 值时返回空数组');
+        passed++;
+      } else {
+        console.error(`✗ null 值处理失败: ${JSON.stringify(recentKps)}`);
         failed++;
       }
 

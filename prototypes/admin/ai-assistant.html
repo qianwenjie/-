@@ -1297,6 +1297,74 @@
         // 提取知识点名称
         return recent.map(item => item.knowledgePoint);
       }
+
+      /**
+       * 获取最常用的参数组合
+       * @returns {Object} 包含最常用参数的对象
+       */
+      getMostCommonParams() {
+        return {
+          type: this.getMostCommonType(),
+          difficulty: this.getMostCommonDifficulty(),
+          count: this.getAverageQuantity(),
+          knowledgePoint: this.getRecentKnowledgePoints()[0] || null
+        };
+      }
+
+      /**
+       * 智能推荐参数 - 核心方法
+       * @param {Object} partial - 部分参数对象，可能包含特殊标志
+       * @returns {Object} 完整的推荐参数对象
+       */
+      getRecommendedParams(partial = {}) {
+        // 1. 处理特殊标志：使用上次参数
+        if (partial._useHistory === true) {
+          const lastParams = this.getLastUsedParams();
+          // 移除特殊标志
+          const { _useHistory, _usePreference, ...cleanParams } = lastParams;
+          return cleanParams;
+        }
+
+        // 2. 处理特殊标志：使用偏好参数
+        if (partial._usePreference === true) {
+          const preferredParams = this.getMostCommonParams();
+          // 移除特殊标志
+          const { _useHistory, _usePreference, ...cleanParams } = preferredParams;
+          return cleanParams;
+        }
+
+        // 3. 智能填充缺失参数
+        const recommended = { ...partial };
+
+        // 移除特殊标志（如果存在）
+        delete recommended._useHistory;
+        delete recommended._usePreference;
+
+        // 如果 type 缺失，使用最常用题型
+        if (!recommended.type) {
+          recommended.type = this.getMostCommonType();
+        }
+
+        // 如果 difficulty 缺失，使用最常用难度
+        if (!recommended.difficulty) {
+          recommended.difficulty = this.getMostCommonDifficulty();
+        }
+
+        // 如果 count 缺失，使用平均数量
+        if (!recommended.count) {
+          recommended.count = this.getAverageQuantity();
+        }
+
+        // 如果 knowledgePoint 缺失，使用最近的知识点
+        if (!recommended.knowledgePoint) {
+          const recentKps = this.getRecentKnowledgePoints();
+          if (recentKps.length > 0) {
+            recommended.knowledgePoint = recentKps[0];
+          }
+        }
+
+        return recommended;
+      }
     }
 
     // ========== 对话流程管理器 ==========
@@ -3397,6 +3465,201 @@
         passed++;
       } else {
         console.error(`✗ null 值处理失败: ${JSON.stringify(recentKps)}`);
+        failed++;
+      }
+
+      // 测试11: getMostCommonParams() - 获取最常用参数组合
+      console.log('\n--- 测试 getMostCommonParams() ---');
+
+      // 11.1 设置测试数据
+      manager.preferences.basicPreferences.type.distribution = {
+        'single': { count: 30, percentage: 60 },
+        'multiple': { count: 20, percentage: 40 }
+      };
+      manager.preferences.basicPreferences.difficulty.distribution = {
+        '1': { count: 10, percentage: 20 },
+        '2': { count: 25, percentage: 50 },
+        '3': { count: 15, percentage: 30 }
+      };
+      manager.preferences.basicPreferences.quantity.average = 12;
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [
+        { knowledgePoint: '数据结构', timestamp: '2026-02-01T10:00:00' },
+        { knowledgePoint: '算法', timestamp: '2026-02-01T11:00:00' }
+      ];
+
+      const mostCommonParams = manager.getMostCommonParams();
+      if (mostCommonParams.type === 'single' &&
+          mostCommonParams.difficulty === 2 &&
+          mostCommonParams.count === 12 &&
+          mostCommonParams.knowledgePoint === '数据结构') {
+        console.log('✓ 正确返回最常用参数组合');
+        passed++;
+      } else {
+        console.error(`✗ 参数组合不正确: ${JSON.stringify(mostCommonParams)}`);
+        failed++;
+      }
+
+      // 11.2 测试无知识点数据时
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [];
+      const paramsNoKp = manager.getMostCommonParams();
+      if (paramsNoKp.knowledgePoint === null) {
+        console.log('✓ 无知识点数据时返回 null');
+        passed++;
+      } else {
+        console.error(`✗ 期望 null, 实际 ${paramsNoKp.knowledgePoint}`);
+        failed++;
+      }
+
+      // 测试12: getRecommendedParams() - 智能推荐参数
+      console.log('\n--- 测试 getRecommendedParams() ---');
+
+      // 12.1 测试 _useHistory 标志
+      manager.preferences.history.lastUsed = {
+        type: 'multiple',
+        difficulty: 3,
+        count: 20,
+        knowledgePoint: '操作系统',
+        timestamp: '2026-02-01T10:00:00'
+      };
+      let recommended = manager.getRecommendedParams({ _useHistory: true });
+      if (recommended.type === 'multiple' &&
+          recommended.difficulty === 3 &&
+          recommended.count === 20 &&
+          recommended.knowledgePoint === '操作系统' &&
+          !recommended._useHistory &&
+          !recommended._usePreference) {
+        console.log('✓ _useHistory 标志正确返回上次参数（无特殊标志）');
+        passed++;
+      } else {
+        console.error(`✗ _useHistory 返回错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.2 测试 _usePreference 标志
+      manager.preferences.basicPreferences.type.distribution = {
+        'single': { count: 50, percentage: 100 }
+      };
+      manager.preferences.basicPreferences.difficulty.distribution = {
+        '2': { count: 50, percentage: 100 }
+      };
+      manager.preferences.basicPreferences.quantity.average = 15;
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [
+        { knowledgePoint: '数据库', timestamp: '2026-02-01T10:00:00' }
+      ];
+      recommended = manager.getRecommendedParams({ _usePreference: true });
+      if (recommended.type === 'single' &&
+          recommended.difficulty === 2 &&
+          recommended.count === 15 &&
+          recommended.knowledgePoint === '数据库' &&
+          !recommended._useHistory &&
+          !recommended._usePreference) {
+        console.log('✓ _usePreference 标志正确返回偏好参数（无特殊标志）');
+        passed++;
+      } else {
+        console.error(`✗ _usePreference 返回错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.3 测试智能填充 - 仅提供 type
+      recommended = manager.getRecommendedParams({ type: 'multiple' });
+      if (recommended.type === 'multiple' &&
+          recommended.difficulty === 2 &&
+          recommended.count === 15 &&
+          recommended.knowledgePoint === '数据库') {
+        console.log('✓ 智能填充缺失参数（保留用户提供的 type）');
+        passed++;
+      } else {
+        console.error(`✗ 智能填充错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.4 测试智能填充 - 仅提供 difficulty
+      recommended = manager.getRecommendedParams({ difficulty: 4 });
+      if (recommended.type === 'single' &&
+          recommended.difficulty === 4 &&
+          recommended.count === 15 &&
+          recommended.knowledgePoint === '数据库') {
+        console.log('✓ 智能填充缺失参数（保留用户提供的 difficulty）');
+        passed++;
+      } else {
+        console.error(`✗ 智能填充错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.5 测试智能填充 - 提供部分参数
+      recommended = manager.getRecommendedParams({
+        type: 'judge',
+        count: 25
+      });
+      if (recommended.type === 'judge' &&
+          recommended.difficulty === 2 &&
+          recommended.count === 25 &&
+          recommended.knowledgePoint === '数据库') {
+        console.log('✓ 智能填充缺失参数（保留用户提供的 type 和 count）');
+        passed++;
+      } else {
+        console.error(`✗ 智能填充错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.6 测试智能填充 - 空对象
+      recommended = manager.getRecommendedParams({});
+      if (recommended.type === 'single' &&
+          recommended.difficulty === 2 &&
+          recommended.count === 15 &&
+          recommended.knowledgePoint === '数据库') {
+        console.log('✓ 空对象时完全使用偏好参数');
+        passed++;
+      } else {
+        console.error(`✗ 空对象处理错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.7 测试智能填充 - 无知识点数据
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [];
+      recommended = manager.getRecommendedParams({ type: 'single' });
+      if (recommended.type === 'single' &&
+          recommended.difficulty === 2 &&
+          recommended.count === 15 &&
+          !recommended.knowledgePoint) {
+        console.log('✓ 无知识点数据时不填充 knowledgePoint');
+        passed++;
+      } else {
+        console.error(`✗ 无知识点处理错误: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.8 测试特殊标志移除 - 混合标志
+      recommended = manager.getRecommendedParams({
+        type: 'single',
+        _useHistory: false,
+        _usePreference: false
+      });
+      if (recommended.type === 'single' &&
+          !recommended._useHistory &&
+          !recommended._usePreference) {
+        console.log('✓ 正确移除特殊标志');
+        passed++;
+      } else {
+        console.error(`✗ 特殊标志未移除: ${JSON.stringify(recommended)}`);
+        failed++;
+      }
+
+      // 12.9 测试完整参数不覆盖
+      recommended = manager.getRecommendedParams({
+        type: 'fill',
+        difficulty: 5,
+        count: 30,
+        knowledgePoint: '网络'
+      });
+      if (recommended.type === 'fill' &&
+          recommended.difficulty === 5 &&
+          recommended.count === 30 &&
+          recommended.knowledgePoint === '网络') {
+        console.log('✓ 完整参数不被覆盖');
+        passed++;
+      } else {
+        console.error(`✗ 参数被错误覆盖: ${JSON.stringify(recommended)}`);
         failed++;
       }
 

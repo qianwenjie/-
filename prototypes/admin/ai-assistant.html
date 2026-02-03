@@ -1842,7 +1842,8 @@
         const hasQuestionType = /(单选|多选|判断|填空|简答|完形填空|复合)/.test(lower);
         const hasQuantity = /\d+\s*[道题个]/.test(lower);
 
-        if (lower.includes('生成题目') || lower.includes('出题') ||
+        if (lower.includes('生成题目') ||
+            /出.*题/.test(lower) ||  // 匹配"出题"、"出一些题"、"出几道题"等
             (lower.includes('生成') && lower.includes('题')) ||
             (lower.includes('根据') && (lower.includes('文档') || lower.includes('文件')) && lower.includes('题')) ||
             (hasQuestionType && hasQuantity)) {

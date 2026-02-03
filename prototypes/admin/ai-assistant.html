@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI智能助手 - 考试系统</title>
+  <title>考试助手 - 考试系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
@@ -211,7 +211,7 @@
         <nav class="hidden md:flex items-center space-x-2 text-sm text-gray-600">
           <a href="dashboard.html" class="hover:text-primary-500">首页</a>
           <i class="fas fa-chevron-right text-xs text-gray-400"></i>
-          <span class="text-gray-900 font-medium">AI智能助手</span>
+          <span class="text-gray-900 font-medium">考试助手</span>
         </nav>
       </div>
       <div class="flex items-center space-x-4">
@@ -273,7 +273,7 @@
             <i class="fas fa-bars"></i>
           </button>
           <div>
-            <h2 id="chatTitle" class="text-lg font-semibold text-gray-900">AI智能助手</h2>
+            <h2 id="chatTitle" class="text-lg font-semibold text-gray-900">考试助手</h2>
             <p id="chatSubtitle" class="text-xs text-gray-500">选择一个任务开始对话</p>
           </div>
         </div>
@@ -296,7 +296,7 @@
           </div>
           <div class="flex-1">
             <div class="bg-gray-100 rounded-lg rounded-tl-none p-4">
-              <p class="text-gray-800 text-sm leading-relaxed">您好！我是AI智能助手 🤖</p>
+              <p class="text-gray-800 text-sm leading-relaxed">您好！我是考试助手 🤖</p>
               <p class="text-gray-800 text-sm leading-relaxed mt-2">我可以帮您：</p>
               <ul class="mt-2 space-y-1 text-sm text-gray-700">
                 <li class="flex items-center">
@@ -2783,7 +2783,7 @@
     });
 
     function initializeApp() {
-      console.log('AI智能助手初始化...');
+      console.log('考试助手初始化...');
 
       // 自动调整textarea高度
       const messageInput = document.getElementById('messageInput');
@@ -3142,7 +3142,7 @@
 
     // 重置对话面板
     function resetChatPanel() {
-      document.getElementById('chatTitle').textContent = 'AI智能助手';
+      document.getElementById('chatTitle').textContent = '考试助手';
       document.getElementById('chatSubtitle').textContent = '选择一个任务开始对话';
 
       // 清空消息（保留欢迎消息）

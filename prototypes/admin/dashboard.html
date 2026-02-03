@@ -289,7 +289,6 @@
       flex-wrap: wrap;
       transition: all 0.3s ease;
       padding-top: 0.5rem;
-      border-top: 1px solid #f3f4f6;
     }
 
     .ai-inline-suggestions.hidden {
@@ -518,8 +517,6 @@
               placeholder="输入指令，让我帮你快速完成出题、组卷、考试等管理任务"
               aria-label="AI 助手输入框"
               onkeypress="handleAIChatKeypress(event)"
-              onfocus="hideInlineSuggestions()"
-              onblur="showInlineSuggestionsIfEmpty()"
             />
 
             <!-- 快捷建议chips（输入框下方） -->

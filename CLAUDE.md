@@ -22,6 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ├── 考试系统功能清单.md         # 主功能清单文档（完整需求）
 ├── progress.md                  # 进度跟踪文档
 ├── CLAUDE.md                    # 项目上下文（本文件）
+├── docs/                        # 文档目录
+│   ├── phase2-completion-report.md  # Phase 2 完成报告
+│   └── user-preference-system-guide.md  # 用户偏好系统指南
 ├── prototypes/                  # 原型文件目录
 │   ├── IMPLEMENTATION_STATUS.md # 实施状态文档（详细功能完成情况）
 │   ├── design-guide.md          # 设计规范
@@ -30,6 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   │   └── images/              # 图片资源
 │   └── admin/                   # 管理端原型
 │       ├── dashboard.html       # 首页 ✅
+│       ├── ai-assistant.html    # AI助手 ✅
 │       └── question-bank/       # 题库模块
 │           ├── list.html        # 题目列表 ✅
 │           ├── add.html         # 添加/编辑题目 ✅
@@ -79,6 +83,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 刷题模块 🟡 10%
 - 仅列表页框架，核心功能未开发
+
+### AI助手模块 ✅ 100%
+
+#### 已完成功能
+- ✅ **自然语言理解**: 解析用户输入，识别意图和参数
+- ✅ **智能对话**: 多轮对话，上下文理解
+- ✅ **题目生成**: 基于参数生成题目（模拟）
+- ✅ **用户偏好管理**: 记录和分析用户行为
+- ✅ **智能推荐**: 基于历史数据的个性化推荐
+- ✅ **行为分析**: 时间模式、知识点关注、常用组合分析
+- ✅ **数据迁移**: 版本检查、数据验证、自动迁移
+
+#### 核心特性
+- **自然语言处理**: 支持多种表达方式
+- **参数识别**: 题型、难度、数量、知识点
+- **智能补全**: 自动补全缺失参数
+- **个性化推荐**: 基于用户历史行为
+- **数据持久化**: LocalStorage 存储
+- **版本管理**: 自动数据迁移
 
 ## 题型支持
 
@@ -200,6 +223,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 }
 ```
 
+### 用户偏好数据结构
+```javascript
+{
+  userId: 'default_user',
+  version: '1.0',
+
+  // 基础偏好统计
+  basicPreferences: {
+    questionType: {
+      'single': { count: 45, percentage: 0.45 },
+      'multiple': { count: 20, percentage: 0.20 },
+      // ... 其他题型
+    },
+    difficulty: {
+      '1': { count: 5, percentage: 0.05 },
+      '2': { count: 15, percentage: 0.15 },
+      '3': { count: 50, percentage: 0.50 },
+      // ... 其他难度
+    },
+    quantity: {
+      total: 1000,
+      average: 10,
+      mostCommon: 10,
+      distribution: { '5': 10, '10': 70, '15': 15, '20': 5 }
+    },
+    knowledgePoints: {
+      '数据结构': { count: 40, percentage: 0.40 },
+      // ... 其他知识点
+    }
+  },
+
+  // 场景偏好
+  scenarioPreferences: {
+    'generate_questions': {
+      lastUsed: '2026-02-03T10:30:00',
+      frequency: 100,
+      lastParams: { type: 'single', count: 10, difficulty: 3 },
+      commonConfig: { type: 'single', difficulty: 3, count: 10 }
+    }
+  },
+
+  // 行为模式
+  behaviorPatterns: {
+    timePatterns: {
+      weekday: { samples: 80, avgDifficulty: 3.2, avgCount: 10, commonType: 'single' },
+      weekend: { samples: 20, avgDifficulty: 2.8, avgCount: 15, commonType: 'multiple' }
+    },
+    knowledgePointFocus: {
+      recent: ['数据结构', '算法', '数据库'],
+      trending: '数据结构'
+    },
+    commonCombinations: [
+      { type: 'single', difficulty: 3, knowledgePoint: '数据结构', frequency: 30 }
+    ]
+  },
+
+  // 对话风格偏好
+  conversationStyle: {
+    verbosity: 'normal',
+    confirmationNeeded: true,
+    preferQuickActions: false
+  },
+
+  // 元数据
+  metadata: {
+    totalActions: 100,
+    firstActionDate: '2026-01-01T00:00:00',
+    lastActionDate: '2026-02-03T10:30:00',
+    totalQuestionsGenerated: 1000
+  }
+}
+```
+
 ## 注意事项
 
 ### 开发规范
@@ -245,6 +341,8 @@ wc -l prototypes/admin/question-bank/*.html
 - **[进度跟踪](./progress.md)** - 开发进度和操作日志
 - **[设计规范](./prototypes/design-guide.md)** - UI/UX 设计指南
 - **[组件文档](./prototypes/components.md)** - 组件使用说明
+- **[Phase 2 完成报告](./docs/phase2-completion-report.md)** - AI助手智能化升级 Phase 2 完成报告
+- **[用户偏好系统指南](./docs/user-preference-system-guide.md)** - 用户偏好管理系统使用指南
 
 ## 快速定位
 
@@ -264,7 +362,46 @@ wc -l prototypes/admin/question-bank/*.html
 - 管理页面: `prototypes/admin/question-bank/categories.html`
 - 树形结构渲染: categories.html 中的 renderKnowledgeTree 函数
 
-## 最近更新（v0.1.6）
+### AI助手相关
+- 主页面: `prototypes/admin/ai-assistant.html`
+- 自然语言处理: NLPProcessor 类（行 ~400-800）
+- 用户偏好管理: UserPreferenceManager 类（行 ~800-1500）
+- 对话管理: ConversationManager 类（行 ~1500-2000）
+- 偏好数据结构: getDefaultPreferences 方法（行 ~810-880）
+- 智能推荐: getSmartRecommendations 方法（行 ~1200-1400）
+
+## 最近更新
+
+### v0.5.0 - AI助手智能化升级 Phase 2 (2026-02-03)
+
+**更新内容**:
+1. ✅ 完成用户偏好管理系统（UserPreferenceManager）
+2. ✅ 实现智能推荐引擎
+3. ✅ 实现行为模式分析（时间模式、知识点关注、常用组合）
+4. ✅ 实现数据验证和版本迁移机制
+5. ✅ 完成综合测试（15+ 测试用例）
+6. ✅ 创建完整技术文档
+
+**新增功能**:
+- 偏好记录: 自动追踪用户操作习惯
+- 行为分析: 识别使用模式和规律
+- 智能推荐: 基于历史数据的个性化建议
+- 数据迁移: 版本检查和自动迁移
+- 数据验证: 完整性和正确性检查
+
+**技术亮点**:
+- 多维度推荐算法（基础偏好 40% + 时间模式 30% + 知识点关注 20% + 常用组合 10%）
+- 置信度评分系统
+- 健壮的错误处理和数据恢复
+- 自动备份损坏数据
+
+**文档**:
+- Phase 2 完成报告: `docs/phase2-completion-report.md`
+- 用户指南: `docs/user-preference-system-guide.md`
+
+**Git 提交**: 待提交
+
+### v0.1.6 (2026-01-22)
 
 **更新日期**: 2026-01-22
 

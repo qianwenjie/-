@@ -882,23 +882,240 @@
       loadPreferences() {
         try {
           const stored = localStorage.getItem(this.storageKey);
-          if (stored) {
-            return JSON.parse(stored);
+          if (!stored) {
+            console.log('未找到偏好数据，使用默认配置');
+            return this.getDefaultPreferences();
           }
+
+          // 解析存储的数据
+          let data;
+          try {
+            data = JSON.parse(stored);
+          } catch (parseError) {
+            console.error('偏好数据解析失败，数据可能已损坏:', parseError);
+            this.backupCorruptedData(stored);
+            return this.getDefaultPreferences();
+          }
+
+          // 验证数据结构
+          if (!this.validatePreferencesData(data)) {
+            console.warn('偏好数据验证失败，使用默认配置');
+            this.backupCorruptedData(stored);
+            return this.getDefaultPreferences();
+          }
+
+          // 检查版本并执行迁移
+          const migratedData = this.migratePreferences(data);
+
+          // 如果数据被迁移，保存新版本
+          if (migratedData !== data) {
+            console.log('偏好数据已迁移到新版本');
+            this.preferences = migratedData;
+            this.savePreferences();
+          }
+
+          return migratedData;
         } catch (error) {
-          console.error('加载偏好数据失败:', error);
+          console.error('加载偏好数据时发生未知错误:', error);
+          return this.getDefaultPreferences();
         }
-        return this.getDefaultPreferences();
+      }
+
+      // 验证偏好数据结构
+      validatePreferencesData(data) {
+        if (!data || typeof data !== 'object') {
+          console.error('验证失败: 数据不是有效对象');
+          return false;
+        }
+
+        // 检查必需的顶级字段
+        const requiredFields = ['userId', 'version', 'basicPreferences', 'metadata'];
+        for (const field of requiredFields) {
+          if (!(field in data)) {
+            console.error(`验证失败: 缺少必需字段 "${field}"`);
+            return false;
+          }
+        }
+
+        // 验证 basicPreferences 结构
+        if (!data.basicPreferences || typeof data.basicPreferences !== 'object') {
+          console.error('验证失败: basicPreferences 无效');
+          return false;
+        }
+
+        const requiredBasicFields = ['questionType', 'difficulty', 'quantity'];
+        for (const field of requiredBasicFields) {
+          if (!(field in data.basicPreferences)) {
+            console.error(`验证失败: basicPreferences 缺少字段 "${field}"`);
+            return false;
+          }
+        }
+
+        // 验证 metadata 结构
+        if (!data.metadata || typeof data.metadata !== 'object') {
+          console.error('验证失败: metadata 无效');
+          return false;
+        }
+
+        const requiredMetadataFields = ['totalActions', 'firstActionDate', 'lastActionDate'];
+        for (const field of requiredMetadataFields) {
+          if (!(field in data.metadata)) {
+            console.error(`验证失败: metadata 缺少字段 "${field}"`);
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      // 数据迁移逻辑
+      migratePreferences(data) {
+        const currentVersion = '1.0';
+        const dataVersion = data.version || '0.0';
+
+        // 如果版本相同，无需迁移
+        if (dataVersion === currentVersion) {
+          return data;
+        }
+
+        console.log(`开始数据迁移: ${dataVersion} -> ${currentVersion}`);
+
+        // 创建迁移后的数据副本
+        let migratedData = JSON.parse(JSON.stringify(data));
+
+        // 版本迁移逻辑
+        if (this.compareVersions(dataVersion, '1.0') < 0) {
+          migratedData = this.migrateToV1_0(migratedData);
+        }
+
+        // 未来版本迁移可以在这里添加
+        // if (this.compareVersions(dataVersion, '1.1') < 0) {
+        //   migratedData = this.migrateToV1_1(migratedData);
+        // }
+
+        // 更新版本号
+        migratedData.version = currentVersion;
+
+        return migratedData;
+      }
+
+      // 迁移到 v1.0
+      migrateToV1_0(data) {
+        console.log('执行 v1.0 迁移');
+
+        // 确保所有必需字段存在
+        const defaultPrefs = this.getDefaultPreferences();
+
+        // 合并默认值（保留现有数据）
+        const merged = {
+          ...defaultPrefs,
+          ...data,
+          basicPreferences: {
+            ...defaultPrefs.basicPreferences,
+            ...data.basicPreferences
+          },
+          scenarioPreferences: {
+            ...defaultPrefs.scenarioPreferences,
+            ...data.scenarioPreferences
+          },
+          behaviorPatterns: {
+            ...defaultPrefs.behaviorPatterns,
+            ...data.behaviorPatterns
+          },
+          conversationStyle: {
+            ...defaultPrefs.conversationStyle,
+            ...data.conversationStyle
+          },
+          metadata: {
+            ...defaultPrefs.metadata,
+            ...data.metadata
+          }
+        };
+
+        return merged;
+      }
+
+      // 版本比较工具
+      compareVersions(v1, v2) {
+        const parts1 = v1.split('.').map(Number);
+        const parts2 = v2.split('.').map(Number);
+
+        for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+          const part1 = parts1[i] || 0;
+          const part2 = parts2[i] || 0;
+
+          if (part1 < part2) return -1;
+          if (part1 > part2) return 1;
+        }
+
+        return 0;
+      }
+
+      // 备份损坏的数据
+      backupCorruptedData(corruptedData) {
+        try {
+          const backupKey = `${this.storageKey}_corrupted_${Date.now()}`;
+          localStorage.setItem(backupKey, corruptedData);
+          console.log(`损坏的数据已备份到: ${backupKey}`);
+        } catch (error) {
+          console.error('备份损坏数据失败:', error);
+        }
       }
 
       // 保存偏好数据
       savePreferences() {
         try {
+          // 验证数据再保存
+          if (!this.validatePreferencesData(this.preferences)) {
+            console.error('保存失败: 数据验证未通过');
+            return false;
+          }
+
           localStorage.setItem(this.storageKey, JSON.stringify(this.preferences));
           return true;
         } catch (error) {
           console.error('保存偏好数据失败:', error);
+
+          // 如果是配额超出错误，尝试清理旧备份
+          if (error.name === 'QuotaExceededError') {
+            console.warn('存储空间不足，尝试清理旧备份...');
+            this.cleanupOldBackups();
+
+            // 重试保存
+            try {
+              localStorage.setItem(this.storageKey, JSON.stringify(this.preferences));
+              return true;
+            } catch (retryError) {
+              console.error('重试保存失败:', retryError);
+            }
+          }
+
           return false;
+        }
+      }
+
+      // 清理旧备份数据
+      cleanupOldBackups() {
+        try {
+          const backupPrefix = `${this.storageKey}_corrupted_`;
+          const keysToRemove = [];
+
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(backupPrefix)) {
+              keysToRemove.push(key);
+            }
+          }
+
+          // 删除旧备份
+          keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            console.log(`已删除旧备份: ${key}`);
+          });
+
+          console.log(`清理完成，删除了 ${keysToRemove.length} 个旧备份`);
+        } catch (error) {
+          console.error('清理旧备份失败:', error);
         }
       }
 

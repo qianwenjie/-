@@ -189,7 +189,7 @@ onMounted(() => {
 .exam-list-page {
   min-height: 100vh;
   background-color: #f7f8fa;
-  padding-bottom: 20px;
+  padding-bottom: 50px;
 }
 
 .exam-card {

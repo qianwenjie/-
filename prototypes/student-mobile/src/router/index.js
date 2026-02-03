@@ -5,6 +5,7 @@ const routes = [
     path: '/',
     redirect: '/exam/list',
   },
+  // 考试模块
   {
     path: '/exam',
     children: [
@@ -63,6 +64,25 @@ const routes = [
         meta: { title: '查看批阅' },
       },
     ],
+  },
+  // 刷题模块
+  {
+    path: '/practice',
+    children: [
+      {
+        path: 'list',
+        name: 'PracticeList',
+        component: () => import('@/views/practice/PracticeList.vue'),
+        meta: { title: '刷题练习' },
+      },
+    ],
+  },
+  // 个人中心
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/profile/Profile.vue'),
+    meta: { title: '我的' },
   },
 ]
 

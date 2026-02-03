@@ -1057,9 +1057,7 @@
         const timestamp = params.timestamp || new Date();
 
         // 1. 更新时间模式（工作日/周末）
-        const dayOfWeek = timestamp.getDay(); // 0=周日, 6=周六
-        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-        const timeKey = isWeekend ? 'weekend' : 'weekday';
+        const timeKey = this.getTimePattern(timestamp);
         const timePattern = patterns.timePatterns[timeKey];
 
         timePattern.samples++;
@@ -1097,52 +1095,11 @@
           }
 
           // 计算趋势（最近使用最多的知识点）
-          const kpCounts = {};
-          recent.forEach(item => {
-            kpCounts[item.knowledgePoint] = (kpCounts[item.knowledgePoint] || 0) + 1;
-          });
-
-          let maxCount = 0;
-          let trendingKp = null;
-          for (const [kp, count] of Object.entries(kpCounts)) {
-            if (count > maxCount) {
-              maxCount = count;
-              trendingKp = kp;
-            }
-          }
-          patterns.knowledgePointFocus.trending = trendingKp;
+          patterns.knowledgePointFocus.trending = this.getTrendingKnowledgePoint();
         }
 
         // 3. 更新常用组合
-        if (params.type && params.difficulty && params.count) {
-          const combination = {
-            type: params.type,
-            difficulty: params.difficulty,
-            count: params.count,
-            frequency: 1
-          };
-
-          // 查找是否已存在相同组合
-          const existingIndex = patterns.commonCombinations.findIndex(c =>
-            c.type === combination.type &&
-            c.difficulty === combination.difficulty &&
-            c.count === combination.count
-          );
-
-          if (existingIndex >= 0) {
-            // 已存在，增加频率
-            patterns.commonCombinations[existingIndex].frequency++;
-          } else {
-            // 不存在，添加新组合
-            patterns.commonCombinations.push(combination);
-          }
-
-          // 按频率排序，保留前5个
-          patterns.commonCombinations.sort((a, b) => b.frequency - a.frequency);
-          if (patterns.commonCombinations.length > 5) {
-            patterns.commonCombinations = patterns.commonCombinations.slice(0, 5);
-          }
-        }
+        this.updateCommonCombinations(params);
       }
 
       /**
@@ -1177,6 +1134,93 @@
             basic.knowledgePoints[key].percentage = Math.round((count / kpTotal) * 100 * 100) / 100;
           }
         }
+      }
+
+      /**
+       * 判断是否为周末
+       * @param {number} dayOfWeek - 星期几 (0=周日, 6=周六)
+       * @returns {boolean} 是否为周末
+       */
+      isWeekend(dayOfWeek) {
+        return dayOfWeek === 0 || dayOfWeek === 6;
+      }
+
+      /**
+       * 更新常用参数组合
+       * @param {Object} params - 参数对象 {type, difficulty, count}
+       */
+      updateCommonCombinations(params) {
+        const patterns = this.preferences.behaviorPatterns;
+
+        if (params.type && params.difficulty && params.count) {
+          const combination = {
+            type: params.type,
+            difficulty: params.difficulty,
+            count: params.count,
+            frequency: 1
+          };
+
+          // 查找是否已存在相同组合
+          const existingIndex = patterns.commonCombinations.findIndex(c =>
+            c.type === combination.type &&
+            c.difficulty === combination.difficulty &&
+            c.count === combination.count
+          );
+
+          if (existingIndex >= 0) {
+            // 已存在，增加频率
+            patterns.commonCombinations[existingIndex].frequency++;
+          } else {
+            // 不存在，添加新组合
+            patterns.commonCombinations.push(combination);
+          }
+
+          // 按频率排序，保留前5个
+          patterns.commonCombinations.sort((a, b) => b.frequency - a.frequency);
+          if (patterns.commonCombinations.length > 5) {
+            patterns.commonCombinations = patterns.commonCombinations.slice(0, 5);
+          }
+        }
+      }
+
+      /**
+       * 获取最近最常用的知识点
+       * @returns {string|null} 知识点名称，如果没有则返回null
+       */
+      getTrendingKnowledgePoint() {
+        const recent = this.preferences.behaviorPatterns.knowledgePointFocus.recent;
+
+        if (recent.length === 0) {
+          return null;
+        }
+
+        // 统计每个知识点的频率
+        const kpCounts = {};
+        recent.forEach(item => {
+          kpCounts[item.knowledgePoint] = (kpCounts[item.knowledgePoint] || 0) + 1;
+        });
+
+        // 找出频率最高的知识点
+        let maxCount = 0;
+        let trendingKp = null;
+        for (const [kp, count] of Object.entries(kpCounts)) {
+          if (count > maxCount) {
+            maxCount = count;
+            trendingKp = kp;
+          }
+        }
+
+        return trendingKp;
+      }
+
+      /**
+       * 获取当前时间模式
+       * @param {Date} timestamp - 时间戳
+       * @returns {string} 'weekday' 或 'weekend'
+       */
+      getTimePattern(timestamp) {
+        const dayOfWeek = timestamp.getDay();
+        return this.isWeekend(dayOfWeek) ? 'weekend' : 'weekday';
       }
     }
 
@@ -2920,9 +2964,203 @@
       return { passed, failed };
     }
 
+    // ============================================
+    // UserPreferenceManager 辅助方法测试
+    // ============================================
+    function testUserPreferenceHelperMethods() {
+      console.log('\n=== UserPreferenceManager 辅助方法测试开始 ===');
+      const manager = new UserPreferenceManager();
+      let passed = 0;
+      let failed = 0;
+
+      // 测试1: isWeekend() - 周末检测
+      console.log('\n--- 测试 isWeekend() ---');
+      const weekendTests = [
+        { day: 0, expected: true, name: '周日' },
+        { day: 1, expected: false, name: '周一' },
+        { day: 5, expected: false, name: '周五' },
+        { day: 6, expected: true, name: '周六' }
+      ];
+
+      weekendTests.forEach(test => {
+        const result = manager.isWeekend(test.day);
+        if (result === test.expected) {
+          console.log(`✓ ${test.name} (${test.day}): ${result}`);
+          passed++;
+        } else {
+          console.error(`✗ ${test.name} (${test.day}): 期望 ${test.expected}, 实际 ${result}`);
+          failed++;
+        }
+      });
+
+      // 测试2: getTimePattern() - 时间模式获取
+      console.log('\n--- 测试 getTimePattern() ---');
+      const timePatternTests = [
+        { date: new Date('2026-02-01'), expected: 'weekend', name: '周六' },
+        { date: new Date('2026-02-02'), expected: 'weekend', name: '周日' },
+        { date: new Date('2026-02-03'), expected: 'weekday', name: '周一' },
+        { date: new Date('2026-02-05'), expected: 'weekday', name: '周三' }
+      ];
+
+      timePatternTests.forEach(test => {
+        const result = manager.getTimePattern(test.date);
+        if (result === test.expected) {
+          console.log(`✓ ${test.name}: ${result}`);
+          passed++;
+        } else {
+          console.error(`✗ ${test.name}: 期望 ${test.expected}, 实际 ${result}`);
+          failed++;
+        }
+      });
+
+      // 测试3: getTrendingKnowledgePoint() - 热门知识点
+      console.log('\n--- 测试 getTrendingKnowledgePoint() ---');
+
+      // 3.1 空数组测试
+      let trending = manager.getTrendingKnowledgePoint();
+      if (trending === null) {
+        console.log('✓ 空数组返回 null');
+        passed++;
+      } else {
+        console.error(`✗ 空数组: 期望 null, 实际 ${trending}`);
+        failed++;
+      }
+
+      // 3.2 添加数据后测试
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [
+        { knowledgePoint: '数据结构', timestamp: '2026-02-01T10:00:00' },
+        { knowledgePoint: '算法', timestamp: '2026-02-01T11:00:00' },
+        { knowledgePoint: '数据结构', timestamp: '2026-02-01T12:00:00' },
+        { knowledgePoint: '数据结构', timestamp: '2026-02-01T13:00:00' },
+        { knowledgePoint: '算法', timestamp: '2026-02-01T14:00:00' }
+      ];
+
+      trending = manager.getTrendingKnowledgePoint();
+      if (trending === '数据结构') {
+        console.log('✓ 正确识别最频繁知识点: 数据结构');
+        passed++;
+      } else {
+        console.error(`✗ 期望 "数据结构", 实际 "${trending}"`);
+        failed++;
+      }
+
+      // 测试4: updateCommonCombinations() - 更新常用组合
+      console.log('\n--- 测试 updateCommonCombinations() ---');
+
+      // 4.1 添加新组合
+      manager.updateCommonCombinations({ type: 'single', difficulty: 2, count: 10 });
+      const combinations = manager.preferences.behaviorPatterns.commonCombinations;
+      if (combinations.length === 1 && combinations[0].frequency === 1) {
+        console.log('✓ 成功添加新组合');
+        passed++;
+      } else {
+        console.error('✗ 添加新组合失败');
+        failed++;
+      }
+
+      // 4.2 增加已存在组合的频率
+      manager.updateCommonCombinations({ type: 'single', difficulty: 2, count: 10 });
+      if (combinations.length === 1 && combinations[0].frequency === 2) {
+        console.log('✓ 成功增加组合频率');
+        passed++;
+      } else {
+        console.error(`✗ 增加频率失败: 期望 frequency=2, 实际 ${combinations[0].frequency}`);
+        failed++;
+      }
+
+      // 4.3 添加多个组合并测试排序
+      manager.updateCommonCombinations({ type: 'multiple', difficulty: 3, count: 5 });
+      manager.updateCommonCombinations({ type: 'judge', difficulty: 1, count: 20 });
+      manager.updateCommonCombinations({ type: 'judge', difficulty: 1, count: 20 });
+      manager.updateCommonCombinations({ type: 'judge', difficulty: 1, count: 20 });
+
+      if (combinations[0].type === 'judge' && combinations[0].frequency === 3) {
+        console.log('✓ 组合按频率正确排序');
+        passed++;
+      } else {
+        console.error('✗ 组合排序失败');
+        failed++;
+      }
+
+      // 4.4 测试最多保留5个组合
+      manager.updateCommonCombinations({ type: 'fill', difficulty: 2, count: 8 });
+      manager.updateCommonCombinations({ type: 'essay', difficulty: 4, count: 3 });
+      manager.updateCommonCombinations({ type: 'cloze', difficulty: 3, count: 12 });
+
+      if (combinations.length <= 5) {
+        console.log(`✓ 正确限制组合数量: ${combinations.length} <= 5`);
+        passed++;
+      } else {
+        console.error(`✗ 组合数量超限: ${combinations.length} > 5`);
+        failed++;
+      }
+
+      // 测试5: updateBehaviorPatterns() 重构验证
+      console.log('\n--- 测试 updateBehaviorPatterns() 重构 ---');
+
+      // 重置数据
+      manager.preferences.behaviorPatterns.knowledgePointFocus.recent = [];
+      manager.preferences.behaviorPatterns.commonCombinations = [];
+
+      // 调用重构后的方法
+      manager.updateBehaviorPatterns({
+        type: 'single',
+        difficulty: 2,
+        count: 10,
+        knowledgePoint: '操作系统',
+        timestamp: new Date('2026-02-03T10:00:00') // 周一
+      });
+
+      const patterns = manager.preferences.behaviorPatterns;
+
+      // 验证时间模式更新
+      if (patterns.timePatterns.weekday.samples === 1) {
+        console.log('✓ 工作日样本数正确更新');
+        passed++;
+      } else {
+        console.error('✗ 工作日样本数更新失败');
+        failed++;
+      }
+
+      // 验证知识点记录
+      if (patterns.knowledgePointFocus.recent.length === 1 &&
+          patterns.knowledgePointFocus.recent[0].knowledgePoint === '操作系统') {
+        console.log('✓ 知识点正确记录');
+        passed++;
+      } else {
+        console.error('✗ 知识点记录失败');
+        failed++;
+      }
+
+      // 验证trending更新
+      if (patterns.knowledgePointFocus.trending === '操作系统') {
+        console.log('✓ trending知识点正确更新');
+        passed++;
+      } else {
+        console.error('✗ trending知识点更新失败');
+        failed++;
+      }
+
+      // 验证组合更新
+      if (patterns.commonCombinations.length === 1 &&
+          patterns.commonCombinations[0].type === 'single') {
+        console.log('✓ 常用组合正确更新');
+        passed++;
+      } else {
+        console.error('✗ 常用组合更新失败');
+        failed++;
+      }
+
+      console.log(`\n=== 测试完成: ${passed} 通过, ${failed} 失败 ===`);
+      return { passed, failed };
+    }
+
     // 自动运行测试（开发模式）
     if (window.location.search.includes('test=true')) {
-      window.addEventListener('DOMContentLoaded', testSmartParamExtractor);
+      window.addEventListener('DOMContentLoaded', () => {
+        testSmartParamExtractor();
+        testUserPreferenceHelperMethods();
+      });
     }
   </script>
 </body>

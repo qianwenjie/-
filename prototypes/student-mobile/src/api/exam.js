@@ -79,6 +79,13 @@ export function submitFaceVerify(examId, data) {
 
 // 保存答案
 export function saveAnswer(examId, questionId, answer) {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true })
+      }, 100)
+    })
+  }
   return request({
     url: `/exams/${examId}/answers/${questionId}`,
     method: 'post',
@@ -88,6 +95,13 @@ export function saveAnswer(examId, questionId, answer) {
 
 // 同步答案（批量）
 export function syncAnswers(examId, data) {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true })
+      }, 100)
+    })
+  }
   return request({
     url: `/exams/${examId}/answers/sync`,
     method: 'post',

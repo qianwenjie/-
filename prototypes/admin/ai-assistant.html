@@ -1843,6 +1843,21 @@
 
       // 生成AI响应
       generateResponse(input) {
+        // 检测是否要重新开始流程
+        const restartKeywords = ['重新生成题目', '重新生成', '重新开始', '再生成', '重来', '重新出题'];
+        const shouldRestart = restartKeywords.some(keyword => input.includes(keyword));
+
+        if (shouldRestart) {
+          // 重置任务参数，清除所有状态
+          this.task.generateParams = {
+            step: 'init'
+          };
+          // 清除生成的题目
+          this.task.generatedQuestions = null;
+
+          return '好的，让我们重新开始。请告诉我您需要生成什么类型的题目？\n\n💡 **提示**：\n• 您可以说"生成10道单选题"\n• 或者"单选10题、多选5题、判断3题"（混合题型）\n• 也可以上传文档，我会根据文档内容生成题目';
+        }
+
         // 如果任务已经在生成题目的流程中，直接继续处理
         if (this.task.generateParams && this.task.generateParams.step && this.task.generateParams.step !== 'init') {
           return this.handleGenerateQuestions(input);

@@ -3682,11 +3682,434 @@
       return { passed, failed };
     }
 
+    // ============================================
+    // Phase 2 综合集成测试
+    // ============================================
+    function testPhase2Integration() {
+      console.log('\n\n========================================');
+      console.log('=== Phase 2 综合集成测试开始 ===');
+      console.log('========================================\n');
+
+      let passed = 0;
+      let failed = 0;
+
+      // 清空 LocalStorage，模拟全新用户
+      localStorage.removeItem('userPreferences');
+
+      // 初始化系统组件
+      const extractor = new SmartParamExtractor();
+      const preferenceManager = new UserPreferenceManager();
+      const conversationManager = new ConversationManager();
+
+      // ========================================
+      // 测试场景 1: 首次使用流程（无历史记录）
+      // ========================================
+      console.log('\n========== 场景 1: 首次使用流程 ==========');
+      console.log('用户输入: "生成10道单选题"');
+
+      // 1.1 提取参数
+      const result1 = extractor.extract('生成10道单选题');
+      if (result1.params.type === 'single' && result1.params.count === 10) {
+        console.log('✓ 参数提取成功: type=single, count=10');
+        passed++;
+      } else {
+        console.error('✗ 参数提取失败:', result1.params);
+        failed++;
+      }
+
+      // 1.2 获取推荐参数（首次使用，应该返回默认值）
+      const recommended1 = preferenceManager.getRecommendedParams(result1.params);
+      if (recommended1.type === 'single' &&
+          recommended1.count === 10 &&
+          recommended1.difficulty === 2) { // 默认难度
+        console.log('✓ 首次使用返回默认参数: difficulty=2');
+        passed++;
+      } else {
+        console.error('✗ 首次使用参数错误:', recommended1);
+        failed++;
+      }
+
+      // 1.3 记录用户行为
+      preferenceManager.recordAction('generate_questions', recommended1);
+      console.log('✓ 记录首次行为');
+      passed++;
+
+      // ========================================
+      // 测试场景 2: "和上次一样"流程
+      // ========================================
+      console.log('\n========== 场景 2: "和上次一样"流程 ==========');
+      console.log('用户输入: "和上次一样"');
+
+      // 2.1 提取参数（应该识别出 _useHistory 标志）
+      const result2 = extractor.extract('和上次一样');
+      if (result2.params._useHistory === true) {
+        console.log('✓ 正确识别"和上次一样"标志');
+        passed++;
+      } else {
+        console.error('✗ 未识别"和上次一样"标志:', result2.params);
+        failed++;
+      }
+
+      // 2.2 获取推荐参数（应该返回上次的参数）
+      const recommended2 = preferenceManager.getRecommendedParams(result2.params);
+      if (recommended2.type === 'single' &&
+          recommended2.count === 10 &&
+          recommended2.difficulty === 2) {
+        console.log('✓ 正确返回上次参数: type=single, count=10, difficulty=2');
+        passed++;
+      } else {
+        console.error('✗ 返回参数不正确:', recommended2);
+        failed++;
+      }
+
+      // 2.3 验证特殊标志已移除
+      if (!recommended2._useHistory) {
+        console.log('✓ 特殊标志已移除');
+        passed++;
+      } else {
+        console.error('✗ 特殊标志未移除:', recommended2);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 3: 多次使用后的"按习惯来"流程
+      // ========================================
+      console.log('\n========== 场景 3: "按习惯来"流程 ==========');
+
+      // 3.1 模拟多次使用，建立偏好
+      console.log('模拟用户多次使用...');
+      const usagePatterns = [
+        { type: 'multiple', difficulty: 3, count: 15, knowledgePoint: '数据结构' },
+        { type: 'multiple', difficulty: 3, count: 15, knowledgePoint: '算法' },
+        { type: 'multiple', difficulty: 3, count: 15, knowledgePoint: '数据结构' },
+        { type: 'multiple', difficulty: 3, count: 20, knowledgePoint: '数据结构' },
+        { type: 'multiple', difficulty: 3, count: 15, knowledgePoint: '操作系统' }
+      ];
+
+      usagePatterns.forEach((params, index) => {
+        preferenceManager.recordAction('generate_questions', params);
+        console.log(`  记录第 ${index + 1} 次使用: ${params.type}, ${params.knowledgePoint}`);
+      });
+      passed++;
+
+      // 3.2 用户说"按习惯来"
+      console.log('\n用户输入: "按习惯来"');
+      const result3 = extractor.extract('按习惯来');
+      if (result3.params._usePreference === true) {
+        console.log('✓ 正确识别"按习惯来"标志');
+        passed++;
+      } else {
+        console.error('✗ 未识别"按习惯来"标志:', result3.params);
+        failed++;
+      }
+
+      // 3.3 获取推荐参数（应该返回最常用的组合）
+      const recommended3 = preferenceManager.getRecommendedParams(result3.params);
+      if (recommended3.type === 'multiple' &&
+          recommended3.difficulty === 3 &&
+          recommended3.knowledgePoint === '数据结构') { // 最频繁的知识点
+        console.log('✓ 正确返回常用参数: type=multiple, difficulty=3, knowledgePoint=数据结构');
+        passed++;
+      } else {
+        console.error('✗ 返回参数不符合预期:', recommended3);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 4: 部分输入流程
+      // ========================================
+      console.log('\n========== 场景 4: 部分输入流程 ==========');
+      console.log('用户输入: "来点简单的"');
+
+      // 4.1 提取参数（只有难度）
+      const result4 = extractor.extract('来点简单的');
+      if (result4.params.difficulty === 1 && !result4.params.type) {
+        console.log('✓ 正确提取部分参数: difficulty=1');
+        passed++;
+      } else {
+        console.error('✗ 参数提取错误:', result4.params);
+        failed++;
+      }
+
+      // 4.2 获取推荐参数（应该补全其他参数）
+      const recommended4 = preferenceManager.getRecommendedParams(result4.params);
+      if (recommended4.difficulty === 1 &&
+          recommended4.type === 'multiple' && // 最常用题型
+          recommended4.count > 0) {
+        console.log(`✓ 正确补全参数: type=${recommended4.type}, count=${recommended4.count}`);
+        passed++;
+      } else {
+        console.error('✗ 参数补全失败:', recommended4);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 5: 完整输入流程
+      // ========================================
+      console.log('\n========== 场景 5: 完整输入流程 ==========');
+      console.log('用户输入: "生成5道困难的判断题，关于网络"');
+
+      // 5.1 提取参数（完整参数）
+      const result5 = extractor.extract('生成5道困难的判断题，关于网络');
+      if (result5.params.type === 'judge' &&
+          result5.params.count === 5 &&
+          result5.params.difficulty === 4 &&
+          result5.params.knowledgePoint === '网络') {
+        console.log('✓ 正确提取完整参数');
+        passed++;
+      } else {
+        console.error('✗ 参数提取错误:', result5.params);
+        failed++;
+      }
+
+      // 5.2 获取推荐参数（不应该覆盖用户输入）
+      const recommended5 = preferenceManager.getRecommendedParams(result5.params);
+      if (recommended5.type === 'judge' &&
+          recommended5.count === 5 &&
+          recommended5.difficulty === 4 &&
+          recommended5.knowledgePoint === '网络') {
+        console.log('✓ 完整参数未被覆盖');
+        passed++;
+      } else {
+        console.error('✗ 参数被错误覆盖:', recommended5);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 6: 学习验证（偏好更新）
+      // ========================================
+      console.log('\n========== 场景 6: 学习验证 ==========');
+
+      // 6.1 检查题型偏好统计
+      const typeStats = preferenceManager.preferences.basicPreferences.questionType;
+      console.log('题型统计:', {
+        single: typeStats.single.count,
+        multiple: typeStats.multiple.count,
+        judge: typeStats.judge.count
+      });
+
+      if (typeStats.multiple.count === 5) { // 5次多选题
+        console.log('✓ 题型统计正确: multiple=5');
+        passed++;
+      } else {
+        console.error(`✗ 题型统计错误: 期望 multiple=5, 实际 ${typeStats.multiple.count}`);
+        failed++;
+      }
+
+      // 6.2 检查难度偏好统计
+      const difficultyStats = preferenceManager.preferences.basicPreferences.difficulty;
+      if (difficultyStats['3'].count === 5) { // 5次难度3
+        console.log('✓ 难度统计正确: difficulty[3]=5');
+        passed++;
+      } else {
+        console.error(`✗ 难度统计错误: 期望 difficulty[3]=5, 实际 ${difficultyStats['3'].count}`);
+        failed++;
+      }
+
+      // 6.3 检查知识点焦点
+      const kpFocus = preferenceManager.preferences.behaviorPatterns.knowledgePointFocus;
+      if (kpFocus.trending === '数据结构') { // 最频繁的知识点
+        console.log('✓ 知识点焦点正确: trending=数据结构');
+        passed++;
+      } else {
+        console.error(`✗ 知识点焦点错误: 期望 trending=数据结构, 实际 ${kpFocus.trending}`);
+        failed++;
+      }
+
+      // 6.4 检查常用组合
+      const combinations = preferenceManager.preferences.behaviorPatterns.commonCombinations;
+      const topCombination = combinations[0];
+      if (topCombination && topCombination.type === 'multiple' && topCombination.difficulty === 3) {
+        console.log(`✓ 常用组合正确: type=multiple, difficulty=3, frequency=${topCombination.frequency}`);
+        passed++;
+      } else {
+        console.error('✗ 常用组合错误:', topCombination);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 7: 持久化验证（LocalStorage）
+      // ========================================
+      console.log('\n========== 场景 7: 持久化验证 ==========');
+
+      // 7.1 保存当前偏好
+      preferenceManager.savePreferences();
+      console.log('✓ 保存偏好到 LocalStorage');
+      passed++;
+
+      // 7.2 创建新实例，验证数据加载
+      const newManager = new UserPreferenceManager();
+      const loadedTypeStats = newManager.preferences.basicPreferences.questionType;
+
+      if (loadedTypeStats.multiple.count === 5) {
+        console.log('✓ 数据持久化成功: 新实例正确加载数据');
+        passed++;
+      } else {
+        console.error(`✗ 数据持久化失败: 期望 multiple=5, 实际 ${loadedTypeStats.multiple.count}`);
+        failed++;
+      }
+
+      // 7.3 验证最后使用的参数
+      const loadedLastParams = newManager.getLastUsedParams();
+      if (loadedLastParams && loadedLastParams.type === 'judge') {
+        console.log('✓ 最后使用的参数正确加载');
+        passed++;
+      } else {
+        console.error('✗ 最后使用的参数加载失败:', loadedLastParams);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 8: ConversationManager 集成
+      // ========================================
+      console.log('\n========== 场景 8: ConversationManager 集成 ==========');
+
+      // 8.1 测试对话流程
+      const userMessage1 = '生成20道多选题';
+      console.log(`用户: ${userMessage1}`);
+
+      // 模拟 ConversationManager 处理
+      const extractResult = extractor.extract(userMessage1);
+      const finalParams = preferenceManager.getRecommendedParams(extractResult.params);
+
+      if (finalParams.type === 'multiple' && finalParams.count === 20) {
+        console.log('✓ ConversationManager 正确处理用户输入');
+        passed++;
+      } else {
+        console.error('✗ ConversationManager 处理失败:', finalParams);
+        failed++;
+      }
+
+      // 8.2 记录行为
+      preferenceManager.recordAction('generate_questions', finalParams);
+      console.log('✓ 行为记录成功');
+      passed++;
+
+      // 8.3 测试"和上次一样"
+      const userMessage2 = '和上次一样';
+      console.log(`\n用户: ${userMessage2}`);
+
+      const extractResult2 = extractor.extract(userMessage2);
+      const finalParams2 = preferenceManager.getRecommendedParams(extractResult2.params);
+
+      if (finalParams2.type === 'multiple' && finalParams2.count === 20) {
+        console.log('✓ "和上次一样"功能正常工作');
+        passed++;
+      } else {
+        console.error('✗ "和上次一样"功能失败:', finalParams2);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 9: 边界情况测试
+      // ========================================
+      console.log('\n========== 场景 9: 边界情况测试 ==========');
+
+      // 9.1 空输入
+      const emptyResult = extractor.extract('');
+      if (Object.keys(emptyResult.params).length === 0) {
+        console.log('✓ 空输入处理正确');
+        passed++;
+      } else {
+        console.error('✗ 空输入处理失败:', emptyResult.params);
+        failed++;
+      }
+
+      // 9.2 无效输入
+      const invalidResult = extractor.extract('今天天气真好');
+      if (Object.keys(invalidResult.params).length === 0) {
+        console.log('✓ 无效输入处理正确');
+        passed++;
+      } else {
+        console.error('✗ 无效输入处理失败:', invalidResult.params);
+        failed++;
+      }
+
+      // 9.3 极端数量
+      const extremeResult = extractor.extract('生成1000道题');
+      if (extremeResult.params.count === 1000) {
+        console.log('✓ 极端数量提取正确');
+        passed++;
+      } else {
+        console.error('✗ 极端数量提取失败:', extremeResult.params);
+        failed++;
+      }
+
+      // 9.4 混合输入
+      const mixedResult = extractor.extract('来点简单的单选题，10道，关于数据库');
+      if (mixedResult.params.type === 'single' &&
+          mixedResult.params.difficulty === 1 &&
+          mixedResult.params.count === 10 &&
+          mixedResult.params.knowledgePoint === '数据库') {
+        console.log('✓ 混合输入提取正确');
+        passed++;
+      } else {
+        console.error('✗ 混合输入提取失败:', mixedResult.params);
+        failed++;
+      }
+
+      // ========================================
+      // 测试场景 10: 时间模式分析
+      // ========================================
+      console.log('\n========== 场景 10: 时间模式分析 ==========');
+
+      // 10.1 模拟工作日使用
+      const weekdayDate = new Date('2026-02-03T10:00:00'); // 周一
+      const weekdayParams = {
+        type: 'single',
+        difficulty: 2,
+        count: 10,
+        timestamp: weekdayDate
+      };
+      preferenceManager.recordAction('generate_questions', weekdayParams);
+
+      const timePatterns = preferenceManager.preferences.behaviorPatterns.timePatterns;
+      if (timePatterns.weekday.samples > 0) {
+        console.log(`✓ 工作日模式记录成功: samples=${timePatterns.weekday.samples}`);
+        passed++;
+      } else {
+        console.error('✗ 工作日模式记录失败');
+        failed++;
+      }
+
+      // 10.2 模拟周末使用
+      const weekendDate = new Date('2026-02-01T14:00:00'); // 周六
+      const weekendParams = {
+        type: 'essay',
+        difficulty: 4,
+        count: 5,
+        timestamp: weekendDate
+      };
+      preferenceManager.recordAction('generate_questions', weekendParams);
+
+      if (timePatterns.weekend.samples > 0) {
+        console.log(`✓ 周末模式记录成功: samples=${timePatterns.weekend.samples}`);
+        passed++;
+      } else {
+        console.error('✗ 周末模式记录失败');
+        failed++;
+      }
+
+      // ========================================
+      // 测试总结
+      // ========================================
+      console.log('\n========================================');
+      console.log(`=== Phase 2 综合集成测试完成 ===`);
+      console.log(`总计: ${passed + failed} 个测试`);
+      console.log(`通过: ${passed} 个 ✓`);
+      console.log(`失败: ${failed} 个 ✗`);
+      console.log(`成功率: ${((passed / (passed + failed)) * 100).toFixed(2)}%`);
+      console.log('========================================\n');
+
+      return { passed, failed };
+    }
+
     // 自动运行测试（开发模式）
     if (window.location.search.includes('test=true')) {
       window.addEventListener('DOMContentLoaded', () => {
         testSmartParamExtractor();
         testUserPreferenceHelperMethods();
+        testPhase2Integration();
       });
     }
   </script>

@@ -77,25 +77,31 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      border-radius: 9999px;
-      font-weight: 600;
-      font-size: 0.9375rem;
-      color: #ffffff;
+      padding: 0.5rem 0.75rem;
       text-decoration: none;
-      overflow: hidden;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-      /* 渐变背景 */
+    .ai-assistant-button:hover {
+      transform: translateY(-2px);
+    }
+
+    /* AI图标样式 */
+    .ai-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
       background: linear-gradient(135deg, #00B96B 0%, #14C9C9 50%, #9333EA 100%);
       background-size: 200% 200%;
       animation: gradientShift 3s ease infinite;
-
-      /* 外发光效果 */
-      box-shadow:
-        0 0 20px rgba(0, 185, 107, 0.4),
-        0 0 40px rgba(20, 201, 201, 0.2),
-        0 4px 12px rgba(0, 0, 0, 0.1);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 185, 107, 0.3);
+      transition: all 0.3s ease;
     }
 
     /* 渐变背景动画 */
@@ -105,42 +111,22 @@
       100% { background-position: 0% 50%; }
     }
 
-    /* 悬停效果 */
-    .ai-assistant-button:hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow:
-        0 0 30px rgba(0, 185, 107, 0.6),
-        0 0 60px rgba(20, 201, 201, 0.3),
-        0 8px 20px rgba(0, 0, 0, 0.15);
+    /* 悬停时图标效果 */
+    .ai-assistant-button:hover .ai-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 6px 20px rgba(0, 185, 107, 0.5);
     }
 
-    /* 点击效果 */
-    .ai-assistant-button:active {
-      transform: translateY(0) scale(1.02);
-    }
-
-    /* 图标样式 */
-    .ai-icon {
-      display: inline-block;
-      font-size: 1.125rem;
-      animation: sparkle 2s ease-in-out infinite;
-    }
-
-    @keyframes sparkle {
-      0%, 100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.2) rotate(180deg);
-        opacity: 0.8;
-      }
-    }
-
-    /* 文字样式 */
+    /* 文字样式 - 渐变色 */
     .ai-text {
-      position: relative;
-      z-index: 1;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      background: linear-gradient(135deg, #00B96B 0%, #14C9C9 50%, #9333EA 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
       letter-spacing: 0.025em;
     }
 
@@ -154,36 +140,6 @@
     @keyframes float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-4px); }
-    }
-
-    /* 内部发光层 */
-    .ai-glow {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 9999px;
-      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-
-    .ai-assistant-button:hover .ai-glow {
-      opacity: 1;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(0.95);
-        opacity: 0.7;
-      }
-      50% {
-        transform: scale(1.05);
-        opacity: 1;
-      }
     }
 
     /* ========== AI对话框样式 ========== */
@@ -417,12 +373,17 @@
     /* 响应式设计 */
     @media (max-width: 768px) {
       .ai-assistant-button {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
+        padding: 0.375rem 0.5rem;
       }
 
       .ai-icon {
-        font-size: 1rem;
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.875rem;
+      }
+
+      .ai-text {
+        font-size: 0.875rem;
       }
 
       .ai-badge {
@@ -465,10 +426,9 @@
       <div class="flex items-center space-x-4">
         <!-- AI考试助手按钮 - 重新设计 -->
         <a href="ai-assistant.html" class="ai-assistant-button group">
-          <span class="ai-icon">✨</span>
-          <span class="ai-text">AI 考试助手</span>
-          <span class="ai-badge">🚀</span>
-          <span class="ai-glow"></span>
+          <span class="ai-icon">AI</span>
+          <span class="ai-text">考试助手</span>
+          <span class="ai-badge">✨</span>
         </a>
         <div class="h-8 w-px bg-gray-200"></div>
         <button class="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">

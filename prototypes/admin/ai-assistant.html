@@ -1833,10 +1833,15 @@
           return 'greeting';
         }
 
-        // 生成题目（包括根据文档出题）
+        // 生成题目（包括根据文档出题、混合题型）
+        // 检测题型关键词：单选、多选、判断、填空、简答
+        const hasQuestionType = /(单选|多选|判断|填空|简答)/.test(lower);
+        const hasQuantity = /\d+\s*[道题个]/.test(lower);
+
         if (lower.includes('生成题目') || lower.includes('出题') ||
             (lower.includes('生成') && lower.includes('题')) ||
-            (lower.includes('根据') && (lower.includes('文档') || lower.includes('文件')) && lower.includes('题'))) {
+            (lower.includes('根据') && (lower.includes('文档') || lower.includes('文件')) && lower.includes('题')) ||
+            (hasQuestionType && hasQuantity)) {
           return 'generate_questions';
         }
 

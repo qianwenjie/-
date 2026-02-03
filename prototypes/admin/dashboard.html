@@ -658,6 +658,224 @@
         font-size: 0.875rem;
       }
     }
+
+    /* ========== 深色主题样式 ========== */
+
+    /* 深色主题根类 */
+    body.dark-theme {
+      color: #e5e7eb;
+    }
+
+    /* 深色主题 - 动态背景 */
+    body.dark-theme .bg-tech-animated {
+      background: #0f172a;
+    }
+
+    body.dark-theme .bg-gradient-base {
+      background: linear-gradient(
+        135deg,
+        #0f172a 0%,
+        rgba(0, 185, 107, 0.08) 50%,
+        rgba(20, 201, 201, 0.08) 100%
+      );
+    }
+
+    /* 深色主题 - 网格线 */
+    body.dark-theme .bg-grid-animated {
+      background-image:
+        linear-gradient(rgba(0, 185, 107, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 185, 107, 0.25) 1px, transparent 1px);
+    }
+
+    /* 深色主题 - 光效圆圈 */
+    body.dark-theme .bg-orb.orb-1 {
+      background: radial-gradient(
+        circle,
+        rgba(0, 185, 107, 0.2) 0%,
+        rgba(0, 185, 107, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    body.dark-theme .bg-orb.orb-2 {
+      background: radial-gradient(
+        circle,
+        rgba(20, 201, 201, 0.2) 0%,
+        rgba(20, 201, 201, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    body.dark-theme .bg-orb.orb-3 {
+      background: radial-gradient(
+        circle,
+        rgba(147, 51, 234, 0.2) 0%,
+        rgba(147, 51, 234, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    /* 深色主题 - 粒子 */
+    body.dark-theme .particle {
+      background: rgba(0, 185, 107, 0.8);
+      box-shadow: 0 0 6px rgba(0, 185, 107, 0.6);
+    }
+
+    /* 深色主题 - 导航栏 */
+    body.dark-theme header {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    /* 深色主题 - 卡片 */
+    body.dark-theme .module-card,
+    body.dark-theme .cockpit-card {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme .module-card:hover,
+    body.dark-theme .cockpit-card:hover {
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 深色主题 - AI对话框 */
+    body.dark-theme .ai-chat-box {
+      background: rgba(30, 41, 59, 0.9);
+      box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme .ai-chat-box:hover {
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(0, 185, 107, 0.3);
+    }
+
+    body.dark-theme .ai-chat-box:focus-within {
+      box-shadow:
+        0 8px 30px rgba(0, 185, 107, 0.2),
+        0 0 0 2px rgba(0, 185, 107, 0.4);
+    }
+
+    body.dark-theme .ai-chat-input {
+      color: #e5e7eb;
+    }
+
+    body.dark-theme .ai-chat-input::placeholder {
+      color: #6b7280;
+    }
+
+    body.dark-theme .ai-chat-input:focus::placeholder {
+      color: #4b5563;
+    }
+
+    /* 深色主题 - 内联建议 */
+    body.dark-theme .inline-chip {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #9ca3af;
+    }
+
+    body.dark-theme .inline-chip:hover {
+      background: rgba(51, 65, 85, 1);
+      border-color: #00B96B;
+      color: #00B96B;
+    }
+
+    /* 深色主题 - 操作按钮 */
+    body.dark-theme .ai-action-btn {
+      background: rgba(51, 65, 85, 0.8);
+      color: #9ca3af;
+    }
+
+    body.dark-theme .ai-action-btn:hover {
+      background: rgba(51, 65, 85, 1);
+      color: #e5e7eb;
+    }
+
+    /* 深色主题 - 文本颜色 */
+    body.dark-theme h1,
+    body.dark-theme h2,
+    body.dark-theme h3,
+    body.dark-theme .text-gray-900 {
+      color: #f3f4f6 !important;
+    }
+
+    body.dark-theme .text-gray-600,
+    body.dark-theme .text-gray-700 {
+      color: #9ca3af !important;
+    }
+
+    body.dark-theme .text-gray-500 {
+      color: #6b7280 !important;
+    }
+
+    /* 深色主题 - 边框 */
+    body.dark-theme .border-gray-200 {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* 主题切换按钮样式 */
+    .theme-toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      background: #f3f4f6;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.dark-theme .theme-toggle-btn {
+      background: rgba(51, 65, 85, 0.8);
+    }
+
+    .theme-toggle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    body.dark-theme .theme-toggle-btn:hover {
+      box-shadow: 0 4px 12px rgba(0, 185, 107, 0.3);
+    }
+
+    .theme-toggle-btn i {
+      font-size: 1.125rem;
+      color: #6b7280;
+      transition: all 0.3s ease;
+    }
+
+    body.dark-theme .theme-toggle-btn i {
+      color: #fbbf24;
+    }
+
+    .theme-toggle-btn:hover i {
+      transform: rotate(180deg);
+    }
+
+    /* 主题切换动画 */
+    body {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .bg-tech-animated,
+    .bg-gradient-base,
+    .bg-grid-animated,
+    .bg-orb,
+    .particle {
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -722,6 +940,11 @@
           <span class="ai-text">考试助手</span>
           <span class="ai-badge">✨</span>
         </a>
+        <div class="h-8 w-px bg-gray-200"></div>
+        <!-- 主题切换按钮 -->
+        <button onclick="toggleTheme()" class="theme-toggle-btn" title="切换主题">
+          <i class="fas fa-moon"></i>
+        </button>
         <div class="h-8 w-px bg-gray-200"></div>
         <button class="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
           <i class="fas fa-bell"></i>
@@ -1013,6 +1236,72 @@
         }
       }, 200);
     }
+
+    // ========== 主题切换功能 ==========
+
+    // 初始化主题
+    function initTheme() {
+      // 从 localStorage 读取用户偏好
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      // 优先使用保存的主题，否则使用系统偏好
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+      if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        updateThemeIcon('dark');
+      } else {
+        document.body.classList.remove('dark-theme');
+        updateThemeIcon('light');
+      }
+    }
+
+    // 切换主题
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark-theme');
+
+      if (isDark) {
+        // 切换到浅色主题
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme', 'light');
+        updateThemeIcon('light');
+      } else {
+        // 切换到深色主题
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme', 'dark');
+        updateThemeIcon('dark');
+      }
+    }
+
+    // 更新主题图标
+    function updateThemeIcon(theme) {
+      const icon = document.querySelector('.theme-toggle-btn i');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'fas fa-sun';
+        } else {
+          icon.className = 'fas fa-moon';
+        }
+      }
+    }
+
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      // 只有在用户没有手动设置主题时才自动切换
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          document.body.classList.add('dark-theme');
+          updateThemeIcon('dark');
+        } else {
+          document.body.classList.remove('dark-theme');
+          updateThemeIcon('light');
+        }
+      }
+    });
+
+    // 页面加载时初始化主题
+    initTheme();
   </script>
 </body>
 </html>

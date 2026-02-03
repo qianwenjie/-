@@ -1373,6 +1373,8 @@
         this.task = task;
         // 新增：智能参数提取器
         this.smartExtractor = new SmartParamExtractor();
+        // 新增：用户偏好管理器
+        this.preferenceManager = new UserPreferenceManager();
       }
 
       // 处理用户输入，生成AI响应
@@ -1455,6 +1457,10 @@
         const extractResult = this.smartExtractor.extract(input, this.getContext());
         const extracted = extractResult.params;
         const confidence = extractResult.confidence;
+
+        // 应用用户偏好推荐（智能填充缺失参数）
+        const recommendedParams = this.preferenceManager.getRecommendedParams(extracted);
+        Object.assign(extracted, recommendedParams);
 
         // 根据当前步骤处理
         switch (currentStep) {
@@ -1669,6 +1675,15 @@
 
           // 显示生成结果
           displayGeneratedQuestions(selectedQuestions, params);
+
+          // 记录用户行为（用于学习偏好）
+          this.preferenceManager.recordAction({
+            type: params.type,
+            count: params.count,
+            difficulty: params.difficulty,
+            knowledgePoint: params.knowledgePoint,
+            timestamp: Date.now()
+          });
 
           // 重置步骤状态，允许用户继续生成
           this.task.generateParams = { step: 'init' };

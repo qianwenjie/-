@@ -271,6 +271,65 @@
       color: #d1d5db;
     }
 
+    /* 输入区域容器 */
+    .ai-input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 内联快捷建议 */
+    .ai-inline-suggestions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      transition: all 0.3s ease;
+    }
+
+    .ai-inline-suggestions.hidden {
+      display: none;
+    }
+
+    /* 内联chip样式 */
+    .inline-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #6b7280;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .inline-chip i {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+
+    .inline-chip:hover {
+      background: #ffffff;
+      border-color: #00B96B;
+      color: #00B96B;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 185, 107, 0.15);
+    }
+
+    .inline-chip:hover i {
+      opacity: 1;
+    }
+
+    .inline-chip:active {
+      transform: translateY(0);
+    }
+
     /* 操作按钮组 */
     .ai-chat-actions {
       display: flex;
@@ -278,8 +337,6 @@
       gap: 0.5rem;
       flex-shrink: 0;
     }
-
-    /* 操作按钮基础样式 */
     .ai-action-btn {
       display: flex;
       align-items: center;
@@ -351,34 +408,6 @@
       color: #9ca3af;
       cursor: not-allowed;
       transform: none;
-    }
-
-    /* 快捷提示 */
-    .ai-chat-suggestions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 1rem;
-      padding: 0 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .suggestion-chip {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #6b7280;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .suggestion-chip:hover {
-      background: #f9fafb;
-      border-color: #00B96B;
-      color: #00B96B;
-      transform: translateY(-1px);
     }
 
     /* 响应式设计 */
@@ -474,15 +503,40 @@
             <i class="fas fa-search"></i>
           </div>
 
-          <!-- 输入框 -->
-          <input
-            type="text"
-            id="aiChatInput"
-            class="ai-chat-input"
-            placeholder="输入指令，让我帮你快速完成出题、组卷、考试等管理任务"
-            aria-label="AI 助手输入框"
-            onkeypress="handleAIChatKeypress(event)"
-          />
+          <!-- 输入区域容器 -->
+          <div class="ai-input-wrapper">
+            <!-- 快捷建议chips（输入框内部） -->
+            <div class="ai-inline-suggestions" id="inlineSuggestions">
+              <button class="inline-chip" onclick="fillAIInput('生成题目')">
+                <i class="fas fa-lightbulb"></i>
+                <span>生成题目</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('智能组卷')">
+                <i class="fas fa-file-alt"></i>
+                <span>智能组卷</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('创建考试')">
+                <i class="fas fa-clipboard-list"></i>
+                <span>创建考试</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('刷题任务')">
+                <i class="fas fa-brain"></i>
+                <span>刷题任务</span>
+              </button>
+            </div>
+
+            <!-- 输入框 -->
+            <input
+              type="text"
+              id="aiChatInput"
+              class="ai-chat-input"
+              placeholder="输入指令，让我帮你快速完成出题、组卷、考试等管理任务"
+              aria-label="AI 助手输入框"
+              onkeypress="handleAIChatKeypress(event)"
+              onfocus="hideInlineSuggestions()"
+              onblur="showInlineSuggestionsIfEmpty()"
+            />
+          </div>
 
           <!-- 操作按钮组 -->
           <div class="ai-chat-actions">
@@ -496,14 +550,6 @@
               <i class="fas fa-paper-plane"></i>
             </button>
           </div>
-        </div>
-
-        <!-- 快捷提示 -->
-        <div class="ai-chat-suggestions">
-          <button class="suggestion-chip" onclick="fillAIInput('生成题目')">生成题目</button>
-          <button class="suggestion-chip" onclick="fillAIInput('智能组卷')">智能组卷</button>
-          <button class="suggestion-chip" onclick="fillAIInput('创建考试')">创建考试</button>
-          <button class="suggestion-chip" onclick="fillAIInput('刷题任务')">刷题任务</button>
         </div>
       </div>
 
@@ -689,6 +735,29 @@
 
       // 自动发送消息并跳转
       sendAIChatMessage();
+    }
+
+    // 隐藏内联建议
+    function hideInlineSuggestions() {
+      const suggestions = document.getElementById('inlineSuggestions');
+      const input = document.getElementById('aiChatInput');
+
+      if (suggestions) {
+        suggestions.classList.add('hidden');
+      }
+    }
+
+    // 如果输入框为空则显示内联建议
+    function showInlineSuggestionsIfEmpty() {
+      const suggestions = document.getElementById('inlineSuggestions');
+      const input = document.getElementById('aiChatInput');
+
+      // 延迟检查，避免点击chip时立即显示
+      setTimeout(() => {
+        if (input.value.trim() === '' && suggestions) {
+          suggestions.classList.remove('hidden');
+        }
+      }, 200);
     }
   </script>
 </body>

@@ -70,6 +70,109 @@
         radial-gradient(circle at 10% 20%, rgba(0, 185, 107, 0.04) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(20, 201, 201, 0.04) 0%, transparent 40%);
     }
+
+    /* AI对话框样式 */
+    .ai-chat-trigger {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    .ai-chat-trigger:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    }
+    .ai-chat-trigger i {
+      color: white;
+      font-size: 14px;
+    }
+
+    /* 对话框模态框 */
+    .ai-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .ai-modal.active {
+      display: flex;
+    }
+    .ai-modal-content {
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 600px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .ai-modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ai-modal-body {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .ai-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+    }
+    .ai-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .ai-input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .ai-send-btn {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .ai-send-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .ai-send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="bg-gray-50 bg-pattern h-screen flex flex-col">
@@ -88,6 +191,12 @@
         </div>
       </div>
       <div class="flex items-center space-x-4">
+        <!-- AI考试助手按钮 -->
+        <a href="ai-assistant.html" class="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-primary-600 rounded-lg transition-colors group">
+          <i class="fas fa-robot text-lg group-hover:scale-110 transition-transform"></i>
+          <span class="text-sm font-medium">考试助手</span>
+        </a>
+        <div class="h-8 w-px bg-gray-200"></div>
         <button class="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
           <i class="fas fa-bell"></i>
           <span class="absolute top-1 right-1 w-2 h-2 bg-error-500 rounded-full"></span>
@@ -119,100 +228,128 @@
       <!-- 功能模块卡片 - 4列网格 -->
       <div class="grid grid-cols-4 gap-5">
         <!-- 题库管理 -->
-        <a href="question-bank/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-4">
-            <div class="module-icon w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-book text-white text-lg"></i>
+        <div class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group relative">
+          <!-- AI对话框触发按钮 -->
+          <div class="ai-chat-trigger" onclick="openAIChat('题库管理'); event.stopPropagation();">
+            <i class="fas fa-robot"></i>
+          </div>
+
+          <a href="question-bank/list.html" class="block">
+            <div class="flex items-center justify-between mb-4">
+              <div class="module-icon w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
+                <i class="fas fa-book text-white text-lg"></i>
+              </div>
+              <span class="arrow-icon text-gray-300 group-hover:text-primary-500 transition-colors">
+                <i class="fas fa-arrow-right"></i>
+              </span>
             </div>
-            <span class="arrow-icon text-gray-300 group-hover:text-primary-500 transition-colors">
-              <i class="fas fa-arrow-right"></i>
-            </span>
-          </div>
-          <h3 class="text-base font-bold text-gray-900 mb-1.5">题库管理</h3>
-          <p class="text-sm text-gray-500 mb-3 line-clamp-1">管理题目和知识点分类</p>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-              12 知识点
-            </span>
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-success-500 rounded-full"></span>
-              1,245 题
-            </span>
-          </div>
-        </a>
+            <h3 class="text-base font-bold text-gray-900 mb-1.5">题库管理</h3>
+            <p class="text-sm text-gray-500 mb-3 line-clamp-1">管理题目和知识点分类</p>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                12 知识点
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-success-500 rounded-full"></span>
+                1,245 题
+              </span>
+            </div>
+          </a>
+        </div>
 
         <!-- 试卷管理 -->
-        <a href="paper/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-4">
-            <div class="module-icon w-12 h-12 bg-gradient-to-br from-info-500 to-info-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-file-alt text-white text-lg"></i>
+        <div class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group relative">
+          <!-- AI对话框触发按钮 -->
+          <div class="ai-chat-trigger" onclick="openAIChat('试卷管理'); event.stopPropagation();">
+            <i class="fas fa-robot"></i>
+          </div>
+
+          <a href="paper/list.html" class="block">
+            <div class="flex items-center justify-between mb-4">
+              <div class="module-icon w-12 h-12 bg-gradient-to-br from-info-500 to-info-600 rounded-xl flex items-center justify-center shadow-md">
+                <i class="fas fa-file-alt text-white text-lg"></i>
+              </div>
+              <span class="arrow-icon text-gray-300 group-hover:text-info-500 transition-colors">
+                <i class="fas fa-arrow-right"></i>
+              </span>
             </div>
-            <span class="arrow-icon text-gray-300 group-hover:text-info-500 transition-colors">
-              <i class="fas fa-arrow-right"></i>
-            </span>
-          </div>
-          <h3 class="text-base font-bold text-gray-900 mb-1.5">试卷管理</h3>
-          <p class="text-sm text-gray-500 mb-3 line-clamp-1">创建和管理考试试卷</p>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-info-500 rounded-full"></span>
-              86 试卷
-            </span>
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-warning-500 rounded-full"></span>
-              5 草稿
-            </span>
-          </div>
-        </a>
+            <h3 class="text-base font-bold text-gray-900 mb-1.5">试卷管理</h3>
+            <p class="text-sm text-gray-500 mb-3 line-clamp-1">创建和管理考试试卷</p>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-info-500 rounded-full"></span>
+                86 试卷
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-warning-500 rounded-full"></span>
+                5 草稿
+              </span>
+            </div>
+          </a>
+        </div>
 
         <!-- 考试管理 -->
-        <a href="exam/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-4">
-            <div class="module-icon w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-clipboard-list text-white text-lg"></i>
+        <div class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group relative">
+          <!-- AI对话框触发按钮 -->
+          <div class="ai-chat-trigger" onclick="openAIChat('考试管理'); event.stopPropagation();">
+            <i class="fas fa-robot"></i>
+          </div>
+
+          <a href="exam/list.html" class="block">
+            <div class="flex items-center justify-between mb-4">
+              <div class="module-icon w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center shadow-md">
+                <i class="fas fa-clipboard-list text-white text-lg"></i>
+              </div>
+              <span class="arrow-icon text-gray-300 group-hover:text-warning-500 transition-colors">
+                <i class="fas fa-arrow-right"></i>
+              </span>
             </div>
-            <span class="arrow-icon text-gray-300 group-hover:text-warning-500 transition-colors">
-              <i class="fas fa-arrow-right"></i>
-            </span>
-          </div>
-          <h3 class="text-base font-bold text-gray-900 mb-1.5">考试管理</h3>
-          <p class="text-sm text-gray-500 mb-3 line-clamp-1">组织考试和查看成绩</p>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-warning-500 rounded-full"></span>
-              23 考试
-            </span>
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-              3 进行中
-            </span>
-          </div>
-        </a>
+            <h3 class="text-base font-bold text-gray-900 mb-1.5">考试管理</h3>
+            <p class="text-sm text-gray-500 mb-3 line-clamp-1">组织考试和查看成绩</p>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-warning-500 rounded-full"></span>
+                23 考试
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                3 进行中
+              </span>
+            </div>
+          </a>
+        </div>
 
         <!-- 刷题管理 -->
-        <a href="practice/list.html" class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group">
-          <div class="flex items-center justify-between mb-4">
-            <div class="module-icon w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-              <i class="fas fa-brain text-white text-lg"></i>
+        <div class="module-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer group relative">
+          <!-- AI对话框触发按钮 -->
+          <div class="ai-chat-trigger" onclick="openAIChat('刷题管理'); event.stopPropagation();">
+            <i class="fas fa-robot"></i>
+          </div>
+
+          <a href="practice/list.html" class="block">
+            <div class="flex items-center justify-between mb-4">
+              <div class="module-icon w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                <i class="fas fa-brain text-white text-lg"></i>
+              </div>
+              <span class="arrow-icon text-gray-300 group-hover:text-purple-500 transition-colors">
+                <i class="fas fa-arrow-right"></i>
+              </span>
             </div>
-            <span class="arrow-icon text-gray-300 group-hover:text-purple-500 transition-colors">
-              <i class="fas fa-arrow-right"></i>
-            </span>
-          </div>
-          <h3 class="text-base font-bold text-gray-900 mb-1.5">刷题管理</h3>
-          <p class="text-sm text-gray-500 mb-3 line-clamp-1">配置刷题任务和进度</p>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-              15 任务
-            </span>
-            <span class="flex items-center gap-1.5 text-gray-500">
-              <span class="w-1.5 h-1.5 bg-info-500 rounded-full"></span>
-              3 进行中
-            </span>
-          </div>
-        </a>
+            <h3 class="text-base font-bold text-gray-900 mb-1.5">刷题管理</h3>
+            <p class="text-sm text-gray-500 mb-3 line-clamp-1">配置刷题任务和进度</p>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                15 任务
+              </span>
+              <span class="flex items-center gap-1.5 text-gray-500">
+                <span class="w-1.5 h-1.5 bg-info-500 rounded-full"></span>
+                3 进行中
+              </span>
+            </div>
+          </a>
+        </div>
       </div>
 
       <!-- 领导驾驶舱入口 -->
@@ -255,6 +392,46 @@
     </div>
   </main>
 
+  <!-- AI对话框模态框 -->
+  <div id="aiModal" class="ai-modal">
+    <div class="ai-modal-content">
+      <div class="ai-modal-header">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">AI考试助手</h3>
+            <p class="text-xs text-gray-500" id="aiModalSubtitle">智能对话助手</p>
+          </div>
+        </div>
+        <button onclick="closeAIChat()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="ai-modal-body">
+        <div class="text-center text-gray-500 text-sm">
+          <i class="fas fa-comments text-4xl text-gray-300 mb-3"></i>
+          <p>请输入您的需求，我会帮您完成任务</p>
+          <p class="text-xs text-gray-400 mt-2">例如：生成10道单选题、创建期末考试试卷</p>
+        </div>
+      </div>
+      <div class="ai-input-area">
+        <input
+          type="text"
+          id="aiInput"
+          class="ai-input"
+          placeholder="输入您的需求..."
+          onkeypress="handleAIInputKeypress(event)"
+        >
+        <button onclick="sendAIMessage()" class="ai-send-btn">
+          <i class="fas fa-paper-plane mr-1"></i>
+          发送
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 底部版权 -->
   <footer class="h-12 flex-shrink-0 flex items-center justify-center text-xs text-gray-400">
     <p>© 2026 考试系统 · 管理控制台</p>
@@ -265,6 +442,58 @@
     const today = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
     document.getElementById('currentDate').textContent = today.toLocaleDateString('zh-CN', options);
+
+    // AI对话框相关功能
+    let currentModule = '';
+
+    // 打开AI对话框
+    function openAIChat(moduleName) {
+      currentModule = moduleName;
+      const modal = document.getElementById('aiModal');
+      const subtitle = document.getElementById('aiModalSubtitle');
+      subtitle.textContent = `${moduleName} - 智能助手`;
+      modal.classList.add('active');
+      document.getElementById('aiInput').focus();
+    }
+
+    // 关闭AI对话框
+    function closeAIChat() {
+      const modal = document.getElementById('aiModal');
+      modal.classList.remove('active');
+      document.getElementById('aiInput').value = '';
+      currentModule = '';
+    }
+
+    // 处理回车键
+    function handleAIInputKeypress(event) {
+      if (event.key === 'Enter') {
+        sendAIMessage();
+      }
+    }
+
+    // 发送消息并跳转到AI助手页面
+    function sendAIMessage() {
+      const input = document.getElementById('aiInput');
+      const message = input.value.trim();
+
+      if (!message) {
+        return;
+      }
+
+      // 将消息和模块信息存储到sessionStorage
+      sessionStorage.setItem('aiInitialMessage', message);
+      sessionStorage.setItem('aiInitialModule', currentModule);
+
+      // 跳转到AI助手页面
+      window.location.href = 'ai-assistant.html';
+    }
+
+    // 点击模态框外部关闭
+    document.getElementById('aiModal').addEventListener('click', function(event) {
+      if (event.target === this) {
+        closeAIChat();
+      }
+    });
   </script>
 </body>
 </html>

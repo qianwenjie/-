@@ -2128,19 +2128,38 @@
         });
 
         message += `\n共 ${mixedTypes.totalCount} 道题目。\n\n`;
-        message += '📄 **参考文档**（可选）\n\n';
-        message += '您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n';
-        message += '请回复：\n';
-        message += '• "有"（然后上传文档或粘贴内容）\n';
-        message += '• "没有"（直接从题库中选择）\n';
-        message += '• "确认"（直接开始生成）';
 
-        // 保存混合题型信息到任务参数
-        this.task.generateParams = {
-          step: 'mixed_document',
-          mixedTypes: mixedTypes,
-          isMixed: true
-        };
+        // 检查是否已经上传了文档
+        if (uploadedDocument && uploadedDocument.status === 'success') {
+          // 已有文档，直接使用
+          message += `📄 **参考文档**：已使用您上传的文档《${uploadedDocument.name}》\n\n`;
+          message += '请回复"确认"开始生成，或回复"取消"重新设置。';
+
+          // 保存混合题型信息到任务参数（包含文档信息）
+          this.task.generateParams = {
+            step: 'mixed_confirm',
+            mixedTypes: mixedTypes,
+            isMixed: true,
+            hasDocument: true,
+            documentName: uploadedDocument.name,
+            documentContent: uploadedDocument.content
+          };
+        } else {
+          // 没有文档，询问是否需要
+          message += '📄 **参考文档**（可选）\n\n';
+          message += '您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n';
+          message += '请回复：\n';
+          message += '• "有"（然后上传文档或粘贴内容）\n';
+          message += '• "没有"（直接从题库中选择）\n';
+          message += '• "确认"（直接开始生成）';
+
+          // 保存混合题型信息到任务参数
+          this.task.generateParams = {
+            step: 'mixed_document',
+            mixedTypes: mixedTypes,
+            isMixed: true
+          };
+        }
 
         return message;
       }

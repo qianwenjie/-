@@ -1890,14 +1890,11 @@
           return this.handleMixedTypeGeneration(extracted._mixedTypes);
         }
 
-        // 应用用户偏好推荐（智能填充缺失参数）
-        const recommendedParams = this.preferenceManager.getRecommendedParams(extracted);
-        Object.assign(extracted, recommendedParams);
-
         // 根据当前步骤处理
         switch (currentStep) {
           case 'init':
-            // 初始阶段，检查用户是否提供了完整信息
+            // 初始阶段，不应用偏好推荐，让用户逐步输入
+            // 只使用用户明确提供的参数
             if (extracted.type) {
               params.type = extracted.type;
               params.typeName = extracted.typeName;

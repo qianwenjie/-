@@ -26,7 +26,7 @@ export const mockExamList = [
       allowLateEntry: false,
       lateMinutes: 0,
       minAnswerTime: 30,
-      maxAttempts: 1, // 允许作答次数
+      maxAttempts: 3, // 允许作答次数
       currentAttempt: 0, // 当前作答次数
     },
     description: '本次考试为期中考试，请认真作答。',
@@ -80,7 +80,7 @@ export const mockExamList = [
       captureCount: 5,
       allowLateEntry: false,
       minAnswerTime: 30,
-      maxAttempts: 1, // 允许作答次数
+      maxAttempts: 2, // 允许作答次数
       currentAttempt: 1, // 当前作答次数
     },
     description: '本次考试涵盖操作系统的核心知识点，包括进程管理、内存管理、文件系统等内容。',

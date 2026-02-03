@@ -863,8 +863,8 @@
         // 匹配模式：数字 + 题型名称
         // 支持："10道单选题"、"5个判断题"、"单选10题"等多种表达
         const patterns = [
-          /(\d+)\s*道?\s*(单选题?|多选题?|判断题?|填空题?|简答题?)/g,
-          /(单选题?|多选题?|判断题?|填空题?|简答题?)\s*(\d+)\s*[道题个]?/g
+          /(\d+)\s*道?\s*(单选题?|多选题?|判断题?|填空题?|简答题?|完形填空题?|复合题?)/g,
+          /(单选题?|多选题?|判断题?|填空题?|简答题?|完形填空题?|复合题?)\s*(\d+)\s*[道题个]?/g
         ];
 
         const allMatches = [];
@@ -908,7 +908,9 @@
             '多选': 'multiple', '多选题': 'multiple',
             '判断': 'judge', '判断题': 'judge',
             '填空': 'fill', '填空题': 'fill',
-            '简答': 'essay', '简答题': 'essay'
+            '简答': 'essay', '简答题': 'essay',
+            '完形填空': 'cloze', '完形填空题': 'cloze',
+            '复合': 'composite', '复合题': 'composite'
           };
 
           const typeNames = {
@@ -916,7 +918,9 @@
             'multiple': '多选题',
             'judge': '判断题',
             'fill': '填空题',
-            'essay': '简答题'
+            'essay': '简答题',
+            'cloze': '完形填空题',
+            'composite': '复合题'
           };
 
           const types = uniqueMatches.map(match => {
@@ -1834,8 +1838,8 @@
         }
 
         // 生成题目（包括根据文档出题、混合题型）
-        // 检测题型关键词：单选、多选、判断、填空、简答
-        const hasQuestionType = /(单选|多选|判断|填空|简答)/.test(lower);
+        // 检测题型关键词：单选、多选、判断、填空、简答、完形填空、复合
+        const hasQuestionType = /(单选|多选|判断|填空|简答|完形填空|复合)/.test(lower);
         const hasQuantity = /\d+\s*[道题个]/.test(lower);
 
         if (lower.includes('生成题目') || lower.includes('出题') ||

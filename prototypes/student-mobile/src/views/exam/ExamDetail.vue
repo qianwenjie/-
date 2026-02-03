@@ -30,7 +30,7 @@
         <van-cell title="题目数量" :value="`${exam.paper.questionCount} 题`" :border="false" />
         <van-cell title="总分" :value="`${exam.totalScore} 分`" :border="false" />
         <van-cell
-          v-if="exam.config.maxAttempts > 1"
+          v-if="exam.config.maxAttempts && exam.config.maxAttempts > 1"
           title="作答次数"
           :value="`${exam.config.currentAttempt}/${exam.config.maxAttempts}`"
           :border="false"

@@ -2794,6 +2794,24 @@
 
       // 拖拽上传
       setupDragAndDrop();
+
+      // 检查是否有来自dashboard的初始消息
+      const initialMessage = sessionStorage.getItem('aiInitialMessage');
+      if (initialMessage) {
+        console.log('检测到来自dashboard的初始消息:', initialMessage);
+
+        // 清除sessionStorage中的消息（避免重复发送）
+        sessionStorage.removeItem('aiInitialMessage');
+
+        // 延迟执行，确保页面完全加载
+        setTimeout(() => {
+          // 填充到输入框
+          messageInput.value = initialMessage;
+
+          // 自动发送消息
+          sendMessage();
+        }, 300);
+      }
     }
 
     // 设置任务面板展开/收起功能

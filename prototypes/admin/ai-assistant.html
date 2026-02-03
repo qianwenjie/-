@@ -195,6 +195,103 @@
     .tab-btn span {
       font-size: 12px;
     }
+
+    /* ========== 文档卡片样式 ========== */
+    .document-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .document-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: #00B96B;
+    }
+
+    .document-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #6b7280;
+    }
+
+    .document-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .document-status.parsing {
+      background: #FFF7E8;
+      color: #FF7D00;
+    }
+
+    .document-status.success {
+      background: #E8FFEA;
+      color: #00B42A;
+    }
+
+    .document-status.error {
+      background: #FFECE8;
+      color: #F53F3F;
+    }
+
+    .document-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    .doc-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .doc-action-btn:hover {
+      background: #ffffff;
+      border-color: #00B96B;
+      color: #00B96B;
+      transform: translateY(-1px);
+    }
+
+    .doc-action-btn i {
+      font-size: 12px;
+    }
+
+    /* 文件上传拖拽区域 */
+    .drag-over {
+      border-color: #00B96B !important;
+      background-color: rgba(0, 185, 107, 0.05) !important;
+    }
+
+    /* 隐藏的文件输入 */
+    #fileInput {
+      display: none;
+    }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -345,6 +442,9 @@
 
       <!-- 输入区域 -->
       <div class="px-6 py-4 border-t border-gray-200">
+        <!-- 隐藏的文件输入 -->
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.md" />
+
         <div class="flex items-center space-x-2 mb-3">
           <button id="uploadBtn" class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="上传文档">
             <i class="fas fa-paperclip"></i>
@@ -457,6 +557,9 @@
     // 题库数据缓存
     let questionsCache = null;
     let knowledgeTreeCache = null;
+
+    // 文档上传相关
+    let uploadedDocument = null; // 当前上传的文档信息
 
     // ========== 常量定义 ==========
 
@@ -1730,8 +1833,10 @@
           return 'greeting';
         }
 
-        // 生成题目
-        if (lower.includes('生成题目') || lower.includes('出题') || lower.includes('生成') && lower.includes('题')) {
+        // 生成题目（包括根据文档出题）
+        if (lower.includes('生成题目') || lower.includes('出题') ||
+            (lower.includes('生成') && lower.includes('题')) ||
+            (lower.includes('根据') && (lower.includes('文档') || lower.includes('文件')) && lower.includes('题'))) {
           return 'generate_questions';
         }
 
@@ -1806,9 +1911,19 @@
               params.step = 'count';
               return `好的，我将为您生成${params.typeName}。\n\n🔢 **第2步：设置数量**\n\n请问需要生成多少道题？`;
             } else if (params.hasDocument === undefined) {
-              // 询问是否有参考文档
-              params.step = 'document';
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）`;
+              // 检查是否已经上传了文档
+              if (uploadedDocument && uploadedDocument.status === 'success') {
+                // 已有文档，直接使用
+                params.hasDocument = true;
+                params.documentName = uploadedDocument.name;
+                params.documentContent = uploadedDocument.content;
+                params.step = 'difficulty';
+                return `好的，我将基于您上传的文档《${uploadedDocument.name}》生成${params.count}道${params.typeName}。\n\n⭐ **第3步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"或"确认"开始生成。`;
+              } else {
+                // 询问是否有参考文档
+                params.step = 'document';
+                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "确认"（跳过此步骤直接生成）`;
+              }
             } else if (!params.hasDocument && params.difficulty === undefined) {
               // 如果没有文档，询问难度
               params.step = 'difficulty';
@@ -2943,6 +3058,242 @@
       });
     }
 
+    // ========== 文档上传处理 ==========
+
+    // 处理文件上传
+    function handleFiles(files) {
+      if (files.length === 0) return;
+
+      const file = files[0]; // 只处理第一个文件
+
+      // 验证文件类型
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'text/markdown'
+      ];
+
+      const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+      if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+        alert('不支持的文件格式！请上传 PDF、Word、TXT 或 Markdown 文件。');
+        return;
+      }
+
+      // 验证文件大小（限制10MB）
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        alert('文件太大！请上传小于 10MB 的文件。');
+        return;
+      }
+
+      // 保存文档信息
+      uploadedDocument = {
+        name: file.name,
+        size: formatFileSize(file.size),
+        type: file.type || 'unknown',
+        extension: fileExtension,
+        file: file,
+        uploadTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        status: 'parsing', // parsing, success, error
+        content: null
+      };
+
+      // 如果没有当前任务，自动创建一个新对话
+      if (!currentTask) {
+        createTask('conversation', true);
+      }
+
+      // 显示文档卡片
+      addDocumentMessage(uploadedDocument);
+
+      // 模拟解析文档
+      setTimeout(() => {
+        parseDocument(uploadedDocument);
+      }, 1500);
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // 添加文档消息到对话框
+    function addDocumentMessage(doc) {
+      const messageDiv = createDocumentMessageElement(doc);
+      document.getElementById('messageContainer').appendChild(messageDiv);
+      scrollToBottom();
+
+      // 保存到历史
+      messages.push({
+        role: 'user',
+        type: 'document',
+        document: doc,
+        time: doc.uploadTime
+      });
+    }
+
+    // 创建文档消息元素
+    function createDocumentMessageElement(doc) {
+      const div = document.createElement('div');
+      div.className = 'flex items-start space-x-3 message-enter';
+      div.id = `doc-${Date.now()}`;
+
+      // 获取文件图标
+      const icon = getFileIcon(doc.extension);
+
+      div.innerHTML = `
+        <div class="flex-1"></div>
+        <div class="max-w-md w-full">
+          <div class="document-card">
+            <div class="flex items-start gap-3">
+              <div class="document-icon">
+                <i class="${icon}"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-medium text-gray-900 truncate">${doc.name}</h4>
+                    <p class="text-xs text-gray-500 mt-1">${doc.size}</p>
+                  </div>
+                  <span class="document-status ${doc.status}">
+                    ${doc.status === 'parsing' ? '<i class="fas fa-spinner fa-spin"></i> 解析中...' : ''}
+                    ${doc.status === 'success' ? '<i class="fas fa-check-circle"></i> 已解析' : ''}
+                    ${doc.status === 'error' ? '<i class="fas fa-exclamation-circle"></i> 解析失败' : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="document-actions" id="doc-actions-${Date.now()}" style="display: none;">
+              <button class="doc-action-btn" onclick="suggestAction('根据文档生成题目')">
+                <i class="fas fa-file-alt"></i>
+                根据文档生成题目
+              </button>
+              <button class="doc-action-btn" onclick="suggestAction('总结文档内容')">
+                <i class="fas fa-list-ul"></i>
+                总结文档内容
+              </button>
+              <button class="doc-action-btn" onclick="suggestAction('提取知识点')">
+                <i class="fas fa-lightbulb"></i>
+                提取知识点
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1 text-right">${doc.uploadTime}</p>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-user text-white text-sm"></i>
+        </div>
+      `;
+
+      return div;
+    }
+
+    // 获取文件图标
+    function getFileIcon(extension) {
+      const icons = {
+        '.pdf': 'fas fa-file-pdf',
+        '.doc': 'fas fa-file-word',
+        '.docx': 'fas fa-file-word',
+        '.txt': 'fas fa-file-alt',
+        '.md': 'fas fa-file-code'
+      };
+      return icons[extension] || 'fas fa-file';
+    }
+
+    // 解析文档（模拟）
+    function parseDocument(doc) {
+      // 模拟文档解析
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        // 简单提取文本内容（实际应用中需要根据文件类型使用不同的解析库）
+        let content = '';
+
+        if (doc.extension === '.txt' || doc.extension === '.md') {
+          content = e.target.result;
+        } else {
+          // 对于 PDF 和 Word 文档，这里只是模拟
+          content = `这是一份${doc.extension}文档的内容摘要...\n\n[实际应用中需要使用专门的库来解析PDF和Word文档]`;
+        }
+
+        // 更新文档状态
+        doc.status = 'success';
+        doc.content = content;
+
+        // 更新UI
+        updateDocumentStatus(doc);
+
+        // 显示快捷操作按钮
+        showDocumentActions();
+
+        // 发送AI提示消息
+        setTimeout(() => {
+          addAIMessage(`我已经解析了您上传的文档《${doc.name}》。\n\n您可以：\n• 让我根据文档内容生成题目\n• 总结文档的主要内容\n• 提取文档中的知识点\n\n请告诉我您想做什么？`);
+        }, 500);
+      };
+
+      reader.onerror = function() {
+        doc.status = 'error';
+        updateDocumentStatus(doc);
+        addAIMessage(`抱歉，文档解析失败。请检查文件格式是否正确。`);
+      };
+
+      // 读取文件
+      if (doc.extension === '.txt' || doc.extension === '.md') {
+        reader.readAsText(doc.file);
+      } else {
+        reader.readAsArrayBuffer(doc.file);
+      }
+    }
+
+    // 更新文档状态
+    function updateDocumentStatus(doc) {
+      const statusElements = document.querySelectorAll('.document-status');
+      statusElements.forEach(el => {
+        if (el.closest('.document-card')) {
+          el.className = `document-status ${doc.status}`;
+          if (doc.status === 'success') {
+            el.innerHTML = '<i class="fas fa-check-circle"></i> 已解析';
+          } else if (doc.status === 'error') {
+            el.innerHTML = '<i class="fas fa-exclamation-circle"></i> 解析失败';
+          }
+        }
+      });
+    }
+
+    // 显示文档快捷操作
+    function showDocumentActions() {
+      const actionsElements = document.querySelectorAll('[id^="doc-actions-"]');
+      actionsElements.forEach(el => {
+        el.style.display = 'flex';
+      });
+    }
+
+    // 快捷操作建议
+    function suggestAction(action) {
+      const input = document.getElementById('messageInput');
+      input.value = action;
+      input.focus();
+    }
+
+    // 处理文件选择（通过按钮上传）
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+      // 清空input，允许重复上传同一文件
+      e.target.value = '';
+    }
+
     // ========== 任务管理 ==========
     function createNewTask() {
       // 直接创建通用对话任务
@@ -3554,27 +3905,6 @@
         document.getElementById('messageInput').value = message;
         sendMessage();
       }
-    }
-
-    // ========== 文件处理 ==========
-    function handleFileSelect(e) {
-      const files = e.target.files;
-      if (files.length > 0) {
-        handleFiles(files);
-      }
-    }
-
-    function handleFiles(files) {
-      Array.from(files).forEach(file => {
-        const fileName = file.name;
-        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
-
-        addUserMessage(`📎 上传文档：${fileName} (${fileSize})`);
-
-        setTimeout(() => {
-          addAIMessage(`✅ 文档 "${fileName}" 上传成功！\n\n正在解析文档内容...`);
-        }, 500);
-      });
     }
 
     // ========== 移动端Tab切换 ==========

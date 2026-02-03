@@ -2249,10 +2249,10 @@
 
           case 'mixed_confirm':
             // 混合题型确认并生成
-            const lower = input.toLowerCase();
+            const inputLowerMixed = input.toLowerCase();
 
             // 优先检查完整短语，避免误判
-            if (lower.includes('重新生成') || lower.includes('开始生成') || lower.includes('继续生成')) {
+            if (inputLowerMixed.includes('重新生成') || inputLowerMixed.includes('开始生成') || inputLowerMixed.includes('继续生成')) {
               // "重新生成"等短语应该被识别为确认生成
               return this.generateMixedTypeQuestions(params);
             }
@@ -2260,9 +2260,9 @@
             const confirmMixed = ['确认', '开始', '生成', '好的', '是的', 'yes', 'ok'];
             const cancelMixed = ['取消', '不要', '不行', '算了'];
 
-            if (confirmMixed.some(keyword => lower.includes(keyword))) {
+            if (confirmMixed.some(keyword => inputLowerMixed.includes(keyword))) {
               return this.generateMixedTypeQuestions(params);
-            } else if (cancelMixed.some(keyword => lower.includes(keyword))) {
+            } else if (cancelMixed.some(keyword => inputLowerMixed.includes(keyword))) {
               this.task.generateParams = { step: 'init' };
               return '好的，已取消。如果您想重新生成题目，请告诉我。';
             } else {
@@ -2271,10 +2271,10 @@
 
           case 'confirm':
             // 确认并生成
-            const lowerInput = input.toLowerCase();
+            const inputLowerConfirm = input.toLowerCase();
 
             // 优先检查完整短语，避免误判
-            if (lowerInput.includes('重新生成') || lowerInput.includes('开始生成') || lowerInput.includes('继续生成')) {
+            if (inputLowerConfirm.includes('重新生成') || inputLowerConfirm.includes('开始生成') || inputLowerConfirm.includes('继续生成')) {
               // "重新生成"等短语应该被识别为确认生成
               return this.generateQuestionsNow(params);
             }
@@ -2282,10 +2282,10 @@
             const confirmKeywords = ['确认', '开始', '生成', '好的', '是的', 'yes', 'ok'];
             const cancelKeywords = ['取消', '不要', '不行', '算了'];
 
-            if (confirmKeywords.some(keyword => lowerInput.includes(keyword))) {
+            if (confirmKeywords.some(keyword => inputLowerConfirm.includes(keyword))) {
               // 开始生成题目
               return this.generateQuestionsNow(params);
-            } else if (cancelKeywords.some(keyword => lowerInput.includes(keyword))) {
+            } else if (cancelKeywords.some(keyword => inputLowerConfirm.includes(keyword))) {
               // 取消或重新开始
               this.task.generateParams = { step: 'init' };
               return '好的，已取消。如果您想重新生成题目，请告诉我。';

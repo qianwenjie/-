@@ -1932,7 +1932,7 @@
               } else {
                 // 询问是否有参考文档
                 params.step = 'document';
-                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "确认"（跳过此步骤直接生成）`;
+                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
               }
             } else if (!params.hasDocument && params.difficulty === undefined) {
               // 如果没有文档，询问难度
@@ -1959,8 +1959,8 @@
             // 收集数量
             if (extracted.count) {
               params.count = extracted.count;
-              params.step = 'document'; // 改为跳转到文档步骤
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）`;
+              params.step = 'document'; // 跳转到文档步骤
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
             } else {
               return '请告诉我需要生成多少道题，例如："5道"、"10个"等。';
             }
@@ -2046,7 +2046,7 @@
               params.step = 'mixed_confirm';
               return this.showMixedTypeConfirmation(params);
             } else {
-              return '请回复"有"、"没有"或"确认"。';
+              return '请回复"有"、"没有"或"跳过"。';
             }
 
           case 'mixed_waiting_document':
@@ -2161,7 +2161,7 @@
           message += '请回复：\n';
           message += '• "有"（然后上传文档或粘贴内容）\n';
           message += '• "没有"（直接从题库中选择）\n';
-          message += '• "确认"（直接开始生成）';
+          message += '• "跳过"（跳过此步骤）';
 
           // 保存混合题型信息到任务参数
           this.task.generateParams = {

@@ -20,6 +20,7 @@ export const mockExamList = [
     },
     config: {
       enableFaceRecognition: true,
+      allowSkipFaceVerify: false,
       enableRandomCapture: true,
       captureCount: 3,
       allowLateEntry: false,
@@ -44,6 +45,7 @@ export const mockExamList = [
     },
     config: {
       enableFaceRecognition: true,
+      allowSkipFaceVerify: true,
       enableRandomCapture: false,
       allowLateEntry: true,
       lateMinutes: 15,
@@ -67,6 +69,7 @@ export const mockExamList = [
     },
     config: {
       enableFaceRecognition: true,
+      allowSkipFaceVerify: false,
       enableRandomCapture: true,
       captureCount: 5,
       allowLateEntry: false,
@@ -96,6 +99,7 @@ export const mockExamDetail = {
   },
   config: {
     enableFaceRecognition: true,
+    allowSkipFaceVerify: true,
     enableRandomCapture: false,
     allowLateEntry: true,
     lateMinutes: 15,

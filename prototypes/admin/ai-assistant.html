@@ -657,8 +657,8 @@
             'single': ['单选', '单选题', '选择题', '单项选择', '单选题目'],
             'multiple': ['多选', '多选题', '多项选择', '多选题目'],
             'judge': ['判断', '判断题', '对错题', '是非题'],
-            'fill': ['填空', '填空题', '填写题'],
-            'essay': ['简答', '简答题', '问答题', '主观题'],
+            'blank': ['填空', '填空题', '填写题'],
+            'shortAnswer': ['简答', '简答题', '问答题', '主观题'],
             'all': ['所有', '全部', '所有题型', '全部题型', '混合', '随机题型', '各种题型', '任意题型']
           },
           quantity: {
@@ -694,8 +694,8 @@
                 'single': '单选题',
                 'multiple': '多选题',
                 'judge': '判断题',
-                'fill': '填空题',
-                'essay': '简答题',
+                'blank': '填空题',
+                'shortAnswer': '简答题',
                 'all': '所有题型'
               };
 
@@ -713,6 +713,16 @@
 
       // 提取数量
       extractCount(input) {
+        // 0. 检测"各X题"模式（表示每个题型各X题）
+        const eachPattern = input.match(/各\s*(\d+)\s*[道个题]/);
+        if (eachPattern) {
+          return {
+            value: parseInt(eachPattern[1]),
+            isEach: true,  // 标记为"每个题型各X题"
+            confidence: 1.0
+          };
+        }
+
         // 1. 精确数字匹配（如"10道"、"5个"、"20题"）
         const exactMatch = input.match(/(\d+)\s*[道个题]/);
         if (exactMatch) {
@@ -757,11 +767,11 @@
       extractDifficulty(input) {
         const lowerInput = input.toLowerCase();
 
-        // 特殊处理：如果包含"中等"，直接返回中等难度
-        if (lowerInput.includes('中等') || lowerInput.includes('中级') || lowerInput.includes('普通')) {
+        // 特殊处理：如果包含"中等"或"二级"，直接返回二级难度
+        if (lowerInput.includes('中等') || lowerInput.includes('中级') || lowerInput.includes('普通') || lowerInput.includes('二级')) {
           return {
             value: 2,
-            name: '中等',
+            name: '二级',
             confidence: 1.0
           };
         }
@@ -777,11 +787,11 @@
           for (const synonym of sortedSynonyms) {
             if (lowerInput.includes(synonym)) {
               const diffNames = {
-                '1': '简单',
-                '2': '中等',
-                '3': '困难',
-                '4': '很难',
-                '5': '极难'
+                '1': '一级',
+                '2': '二级',
+                '3': '三级',
+                '4': '四级',
+                '5': '五级'
               };
 
               return {
@@ -860,6 +870,30 @@
        * @returns {Object|null} 混合题型数据或null
        */
       extractMixedTypes(input) {
+        // 映射题型名称到type key
+        const typeMap = {
+          '单选': 'single', '单选题': 'single',
+          '多选': 'multiple', '多选题': 'multiple',
+          '判断': 'judge', '判断题': 'judge',
+          '填空': 'blank', '填空题': 'blank',
+          '简答': 'shortAnswer', '简答题': 'shortAnswer',
+          '完形填空': 'cloze', '完形填空题': 'cloze',
+          '复合': 'composite', '复合题': 'composite'
+        };
+
+        const typeNames = {
+          'single': '单选题',
+          'multiple': '多选题',
+          'judge': '判断题',
+          'blank': '填空题',
+          'shortAnswer': '简答题',
+          'cloze': '完形填空题',
+          'composite': '复合题'
+        };
+
+        // 所有题型列表
+        const allTypes = ['single', 'multiple', 'judge', 'blank', 'shortAnswer', 'cloze', 'composite'];
+
         // 匹配模式：数字 + 题型名称
         // 支持："10道单选题"、"5个判断题"、"单选10题"等多种表达
         const patterns = [
@@ -900,44 +934,49 @@
           }
         }
 
-        // 如果匹配到2个或以上，认为是混合题型
-        if (uniqueMatches.length >= 2) {
-          // 映射题型名称到type key
-          const typeMap = {
-            '单选': 'single', '单选题': 'single',
-            '多选': 'multiple', '多选题': 'multiple',
-            '判断': 'judge', '判断题': 'judge',
-            '填空': 'fill', '填空题': 'fill',
-            '简答': 'essay', '简答题': 'essay',
-            '完形填空': 'cloze', '完形填空题': 'cloze',
-            '复合': 'composite', '复合题': 'composite'
-          };
+        // 检测"其他的/其余的/剩下的" + 数量模式
+        const othersPattern = /(其他|其余|剩下)的?[各每]\s*(\d+)\s*[道题个]/;
+        const othersMatch = input.match(othersPattern);
 
-          const typeNames = {
-            'single': '单选题',
-            'multiple': '多选题',
-            'judge': '判断题',
-            'fill': '填空题',
-            'essay': '简答题',
-            'cloze': '完形填空题',
-            'composite': '复合题'
-          };
+        // 如果有"其他的"模式，或者匹配到2个或以上显式题型
+        if (othersMatch || uniqueMatches.length >= 2) {
+          const explicitTypes = new Set();
+          const types = [];
 
-          const types = uniqueMatches.map(match => {
+          // 处理显式提到的题型
+          for (const match of uniqueMatches) {
             const typeKey = typeMap[match.typeName];
-            return {
+            explicitTypes.add(typeKey);
+            types.push({
               type: typeKey,
               typeName: typeNames[typeKey],
               count: match.count
-            };
-          });
+            });
+          }
 
-          return {
-            isMixed: true,
-            types: types,
-            totalCount: types.reduce((sum, t) => sum + t.count, 0),
-            confidence: 1.0
-          };
+          // 如果有"其他的"模式，扩展为所有未提到的题型
+          if (othersMatch) {
+            const othersCount = parseInt(othersMatch[2]);
+            const remainingTypes = allTypes.filter(t => !explicitTypes.has(t));
+
+            for (const typeKey of remainingTypes) {
+              types.push({
+                type: typeKey,
+                typeName: typeNames[typeKey],
+                count: othersCount
+              });
+            }
+          }
+
+          // 只有当最终有2个或以上题型时才返回混合题型
+          if (types.length >= 2) {
+            return {
+              isMixed: true,
+              types: types,
+              totalCount: types.reduce((sum, t) => sum + t.count, 0),
+              confidence: 1.0
+            };
+          }
         }
 
         return null;
@@ -1020,8 +1059,8 @@
               'single': { count: 0, percentage: 0 },
               'multiple': { count: 0, percentage: 0 },
               'judge': { count: 0, percentage: 0 },
-              'fill': { count: 0, percentage: 0 },
-              'essay': { count: 0, percentage: 0 },
+              'blank': { count: 0, percentage: 0 },
+              'shortAnswer': { count: 0, percentage: 0 },
               'all': { count: 0, percentage: 0 }
             },
             difficulty: {
@@ -1913,10 +1952,10 @@
             // 开始引导流程
             if (!params.type) {
               params.step = 'type';
-              return '好的，我来帮您生成题目。\n\n📝 **第1步：选择题型**\n\n请问需要生成什么题型？\n• 单选题\n• 多选题\n• 判断题\n• 填空题\n• 简答题\n• 复合题\n• 所有题型（随机混合）\n\n您可以选择一种题型，或者选择"所有题型"。';
+              return '好的，我来帮您生成题目。\n\n📝 **选择题型**\n\n请问需要生成什么题型？\n• 单选题\n• 多选题\n• 判断题\n• 填空题\n• 简答题\n• 复合题\n• 所有题型（随机混合）\n\n您可以选择一种题型，或者选择"所有题型"。';
             } else if (!params.count) {
               params.step = 'count';
-              return `好的，我将为您生成${params.typeName}。\n\n🔢 **第2步：设置数量**\n\n请问需要生成多少道题？`;
+              return `好的，我将为您生成${params.typeName}。\n\n🔢 **设置数量**\n\n请问需要生成多少道题？`;
             } else if (params.hasDocument === undefined) {
               // 检查是否已经上传了文档
               if (uploadedDocument && uploadedDocument.status === 'success') {
@@ -1925,20 +1964,20 @@
                 params.documentName = uploadedDocument.name;
                 params.documentContent = uploadedDocument.content;
                 params.step = 'difficulty';
-                return `好的，我将基于您上传的文档《${uploadedDocument.name}》生成${params.count}道${params.typeName}。\n\n⭐ **第3步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"或"确认"开始生成。`;
+                return `好的，我将基于您上传的文档《${uploadedDocument.name}》生成${params.count}道${params.typeName}。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"或"确认"开始生成。`;
               } else {
                 // 询问是否有参考文档
                 params.step = 'document';
-                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **参考文档**\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
               }
             } else if (!params.hasDocument && params.difficulty === undefined) {
               // 如果没有文档，询问难度
               params.step = 'difficulty';
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               // 如果题型、数量、文档状态都有了，跳到难度步骤
               params.step = 'difficulty';
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **第${params.hasDocument ? '4' : '3'}步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n⭐ **第${params.hasDocument ? '4' : '3'}步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             }
 
           case 'type':
@@ -1947,7 +1986,7 @@
               params.type = extracted.type;
               params.typeName = extracted.typeName;
               params.step = 'count';
-              return `好的，我将为您生成${params.typeName}。\n\n🔢 **第2步：设置数量**\n\n请问需要生成多少道题？`;
+              return `好的，我将为您生成${params.typeName}。\n\n🔢 **设置数量**\n\n请问需要生成多少道题？`;
             } else {
               return '请选择一个题型：单选题、多选题、判断题、填空题、简答题或复合题。';
             }
@@ -1955,11 +1994,43 @@
           case 'count':
             // 收集数量
             if (extracted.count) {
+              // 检查是否为"各X题"模式
+              const countResult = this.smartExtractor.extractCount(input);
+              if (countResult && countResult.isEach) {
+                // "各X题"表示每个题型各X题
+                // 如果之前选择了"所有题型"，直接生成所有题型的混合配置
+                if (params.type === 'all') {
+                  const allTypes = [
+                    { type: 'single', typeName: '单选题', count: extracted.count },
+                    { type: 'multiple', typeName: '多选题', count: extracted.count },
+                    { type: 'judge', typeName: '判断题', count: extracted.count },
+                    { type: 'blank', typeName: '填空题', count: extracted.count },
+                    { type: 'shortAnswer', typeName: '简答题', count: extracted.count },
+                    { type: 'cloze', typeName: '完形填空题', count: extracted.count },
+                    { type: 'composite', typeName: '复合题', count: extracted.count }
+                  ];
+
+                  const mixedTypesData = {
+                    isMixed: true,
+                    types: allTypes,
+                    totalCount: allTypes.length * extracted.count,
+                    confidence: 1.0
+                  };
+
+                  return this.handleMixedTypeGeneration(mixedTypesData);
+                }
+
+                // 如果之前没有选择题型，需要询问用户想要哪些题型
+                params.eachCount = extracted.count;
+                params.step = 'type_selection';
+                return `好的，我理解您想要每个题型各${extracted.count}道题。\n\n📝 **请选择题型**\n\n请告诉我您想要哪些题型？例如：\n• "所有题型"（单选、多选、判断、填空、简答、完形填空、复合）\n• "单选、多选、判断"（指定几种题型）\n• "除了复合题"（排除某些题型）\n\n或者您可以直接说"单选10题、多选5题"这样的具体组合。`;
+              }
+
               params.count = extracted.count;
               params.step = 'document'; // 跳转到文档步骤
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **参考文档**\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
             } else {
-              return '请告诉我需要生成多少道题，例如："5道"、"10个"等。';
+              return '请告诉我需要生成多少道题，例如："5道"、"10个"、"各10题"等。';
             }
 
           case 'document':
@@ -1974,7 +2045,7 @@
             } else if (noDocument) {
               params.hasDocument = false;
               params.step = 'difficulty';
-              return `好的，我将从题库中为您选择题目。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将从题库中为您选择题目。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请回复"有"或"没有"。';
             }
@@ -1985,7 +2056,7 @@
             if (input.length > 50) {
               params.documentContent = input;
               params.step = 'difficulty';
-              return `好的，我已收到您的参考文档（${input.length}字）。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我已收到您的参考文档（${input.length}字）。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '文档内容似乎太短了。请粘贴完整的文档内容，或者回复"跳过"直接从题库生成。';
             }
@@ -2001,14 +2072,101 @@
             } else if (!shouldSkip) {
               // 用户输入了内容但没有识别到难度，提示重新输入
               if (input.trim().length > 0 && !skipKeywords.some(k => input.includes(k))) {
-                return '请选择一个难度：简单、中等、困难、很难或极难。您也可以回复"跳过"来随机选择。';
+                return '请选择一个难度：一级、二级、三级、四级或五级。您也可以回复"跳过"来随机选择。';
               }
             }
 
             // 进入下一步：知识点
             params.step = 'knowledge';
             const difficultyInfo = params.difficultyName ? `难度为${params.difficultyName}的` : '';
-            return `好的，我将为您生成${params.count}道${difficultyInfo}${params.typeName}。\n\n📚 **第5步：选择知识点**（可选）\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+            return `好的，我将为您生成${params.count}道${difficultyInfo}${params.typeName}。\n\n📚 **选择知识点**\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+
+          case 'type_selection':
+            // 处理"各X题"后的题型选择
+            const lower = input.toLowerCase();
+
+            // 检查是否为具体的混合题型组合（如"单选10题、多选5题"）
+            const mixedTypes = this.smartExtractor.extractMixedTypes(input);
+            if (mixedTypes && mixedTypes.isMixed) {
+              return this.handleMixedTypeGeneration(mixedTypes);
+            }
+
+            // 检查是否选择"所有题型"
+            if (lower.includes('所有') || lower.includes('全部')) {
+              // 生成所有题型的混合题型配置
+              const allTypes = [
+                { type: 'single', typeName: '单选题', count: params.eachCount },
+                { type: 'multiple', typeName: '多选题', count: params.eachCount },
+                { type: 'judge', typeName: '判断题', count: params.eachCount },
+                { type: 'blank', typeName: '填空题', count: params.eachCount },
+                { type: 'shortAnswer', typeName: '简答题', count: params.eachCount },
+                { type: 'cloze', typeName: '完形填空题', count: params.eachCount },
+                { type: 'composite', typeName: '复合题', count: params.eachCount }
+              ];
+
+              const mixedTypesData = {
+                isMixed: true,
+                types: allTypes,
+                totalCount: allTypes.length * params.eachCount,
+                confidence: 1.0
+              };
+
+              return this.handleMixedTypeGeneration(mixedTypesData);
+            }
+
+            // 检查是否指定了部分题型
+            const typePatterns = {
+              'single': /(单选)/,
+              'multiple': /(多选)/,
+              'judge': /(判断)/,
+              'blank': /(填空)/,
+              'shortAnswer': /(简答)/,
+              'cloze': /(完形填空)/,
+              'composite': /(复合)/
+            };
+
+            const typeNames = {
+              'single': '单选题',
+              'multiple': '多选题',
+              'judge': '判断题',
+              'blank': '填空题',
+              'shortAnswer': '简答题',
+              'cloze': '完形填空题',
+              'composite': '复合题'
+            };
+
+            const selectedTypes = [];
+            for (const [typeKey, pattern] of Object.entries(typePatterns)) {
+              if (pattern.test(input)) {
+                selectedTypes.push({
+                  type: typeKey,
+                  typeName: typeNames[typeKey],
+                  count: params.eachCount
+                });
+              }
+            }
+
+            if (selectedTypes.length >= 2) {
+              // 用户指定了多个题型
+              const mixedTypesData = {
+                isMixed: true,
+                types: selectedTypes,
+                totalCount: selectedTypes.length * params.eachCount,
+                confidence: 1.0
+              };
+
+              return this.handleMixedTypeGeneration(mixedTypesData);
+            } else if (selectedTypes.length === 1) {
+              // 只选择了一个题型，转为单题型流程
+              params.type = selectedTypes[0].type;
+              params.typeName = selectedTypes[0].typeName;
+              params.count = params.eachCount;
+              delete params.eachCount;
+              params.step = 'document';
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n📄 **第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+            } else {
+              return '请告诉我您想要哪些题型。例如：\n• "所有题型"\n• "单选、多选、判断"\n• "单选10题、多选5题"（具体组合）';
+            }
 
           case 'knowledge':
             // 收集知识点（可选）
@@ -2030,18 +2188,18 @@
             const confirmNow = input.includes('确认') || input.includes('开始') || input.includes('生成');
 
             if (confirmNow) {
-              // 直接确认生成
+              // 直接跳过文档，进入难度选择
               params.hasDocument = false;
-              params.step = 'mixed_confirm';
-              return this.showMixedTypeConfirmation(params);
+              params.step = 'mixed_difficulty';
+              return `好的，我将从题库中为您选择题目。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else if (hasDoc) {
               params.hasDocument = true;
               params.step = 'mixed_waiting_document';
               return '好的，请上传您的参考文档，或者直接粘贴文档内容。\n\n支持的格式：\n• 文本内容（直接粘贴）\n• Word文档（.docx）\n• PDF文档（.pdf）\n• Markdown文档（.md）';
             } else if (noDoc) {
               params.hasDocument = false;
-              params.step = 'mixed_confirm';
-              return this.showMixedTypeConfirmation(params);
+              params.step = 'mixed_difficulty';
+              return `好的，我将从题库中为您选择题目。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请回复"有"、"没有"或"跳过"。';
             }
@@ -2050,11 +2208,44 @@
             // 等待混合题型的文档上传
             if (input.length > 50) {
               params.documentContent = input;
-              params.step = 'mixed_confirm';
-              return this.showMixedTypeConfirmation(params);
+              params.step = 'mixed_difficulty';
+              return `好的，我已收到您的参考文档（${input.length}字）。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请上传文档或粘贴文档内容。如果不需要参考文档，请回复"跳过"。';
             }
+
+          case 'mixed_difficulty':
+            // 混合题型的难度选择步骤
+            const skipDifficultyMixed = ['跳过', '不需要', '随机', '不用', '算了'];
+            const shouldSkipDifficultyMixed = skipDifficultyMixed.some(keyword => input.includes(keyword));
+
+            if (extracted.difficulty) {
+              params.difficulty = extracted.difficulty;
+              params.difficultyName = extracted.difficultyName;
+            } else if (!shouldSkipDifficultyMixed) {
+              // 用户输入了内容但没有识别到难度，提示重新输入
+              if (input.trim().length > 0 && !skipDifficultyMixed.some(k => input.includes(k))) {
+                return '请选择一个难度：一级、二级、三级、四级或五级。您也可以回复"跳过"来随机选择。';
+              }
+            }
+
+            // 进入知识点选择步骤
+            params.step = 'mixed_knowledge';
+            const difficultyInfoMixed = params.difficultyName ? `难度为${params.difficultyName}的` : '';
+            return `好的，我将为您生成${difficultyInfoMixed}题目。\n\n📚 **选择知识点**\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+
+          case 'mixed_knowledge':
+            // 混合题型的知识点选择步骤
+            const skipKnowledgeMixed = ['跳过', '不需要', '随机', '不用', '算了'];
+            const shouldSkipKnowledgeMixed = skipKnowledgeMixed.some(keyword => input.includes(keyword));
+
+            if (extracted.knowledgePoint) {
+              params.knowledgePoint = extracted.knowledgePoint;
+            }
+
+            // 进入确认步骤
+            params.step = 'mixed_confirm';
+            return this.showMixedTypeConfirmation(params);
 
           case 'mixed_confirm':
             // 混合题型确认并生成
@@ -2153,7 +2344,7 @@
           };
         } else {
           // 没有文档，询问是否需要
-          message += '📄 **参考文档**（可选）\n\n';
+          message += '📄 **参考文档**\n\n';
           message += '您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n';
           message += '请回复：\n';
           message += '• "有"（然后上传文档或粘贴内容）\n';
@@ -2187,6 +2378,20 @@
 
         message += `\n📊 **总计**：${params.mixedTypes.totalCount}道题目\n`;
 
+        // 显示难度信息
+        if (params.difficulty && params.difficultyName) {
+          message += `⭐ **难度**：${params.difficultyName}\n`;
+        } else {
+          message += '⭐ **难度**：随机\n';
+        }
+
+        // 显示知识点信息
+        if (params.knowledgePoint) {
+          message += `📚 **知识点**：${params.knowledgePoint}\n`;
+        } else {
+          message += '📚 **知识点**：随机\n';
+        }
+
         // 显示文档信息
         if (params.hasDocument && params.documentContent) {
           message += `📄 **参考文档**：已提供（${params.documentContent.length}字）\n`;
@@ -2206,57 +2411,91 @@
        */
       generateMixedTypeQuestions(params) {
         try {
-          // 从题库中加载所有题目
-          const allQuestions = loadQuestionsData();
-
-          if (!allQuestions || allQuestions.length === 0) {
-            return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
-          }
-
           // 为每种题型生成题目
           const allSelectedQuestions = [];
           const generationResults = [];
 
-          params.mixedTypes.types.forEach(typeInfo => {
-            // 筛选符合该题型的题目
-            const filteredQuestions = allQuestions.filter(q => q.type === typeInfo.type);
+          // 如果用户上传了文档，模拟基于文档生成题目
+          if (params.hasDocument) {
+            params.mixedTypes.types.forEach(typeInfo => {
+              const questions = this.generateQuestionsFromDocument({
+                type: typeInfo.type,
+                typeName: typeInfo.typeName,
+                count: typeInfo.count,
+                difficulty: params.difficulty,
+                difficultyName: params.difficultyName,
+                knowledgePoint: params.knowledgePoint,
+                hasDocument: true
+              });
 
-            if (filteredQuestions.length === 0) {
+              allSelectedQuestions.push(...questions);
+
               generationResults.push({
                 type: typeInfo.typeName,
-                count: 0,
+                count: questions.length,
                 requested: typeInfo.count,
-                success: false,
-                message: `题库中没有${typeInfo.typeName}`
+                success: true,
+                message: `成功生成${questions.length}道${typeInfo.typeName}`
               });
-              return;
+
+              // 记录每种题型的用户行为
+              this.preferenceManager.recordAction({
+                type: typeInfo.type,
+                count: questions.length,
+                difficulty: params.difficulty,
+                knowledgePoint: params.knowledgePoint,
+                timestamp: new Date()
+              });
+            });
+          } else {
+            // 从题库中加载所有题目
+            const allQuestions = loadQuestionsData();
+
+            if (!allQuestions || allQuestions.length === 0) {
+              return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
             }
 
-            // 随机选择题目
-            const selectedCount = Math.min(typeInfo.count, filteredQuestions.length);
-            const selectedQuestions = this.randomSelectQuestions(filteredQuestions, selectedCount);
+            params.mixedTypes.types.forEach(typeInfo => {
+              // 筛选符合该题型的题目
+              const filteredQuestions = allQuestions.filter(q => q.type === typeInfo.type);
 
-            allSelectedQuestions.push(...selectedQuestions);
+              if (filteredQuestions.length === 0) {
+                generationResults.push({
+                  type: typeInfo.typeName,
+                  count: 0,
+                  requested: typeInfo.count,
+                  success: false,
+                  message: `题库中没有${typeInfo.typeName}`
+                });
+                return;
+              }
 
-            generationResults.push({
-              type: typeInfo.typeName,
-              count: selectedCount,
-              requested: typeInfo.count,
-              success: selectedCount === typeInfo.count,
-              message: selectedCount < typeInfo.count ?
-                `题库中只有${selectedCount}道${typeInfo.typeName}` :
-                `成功生成${selectedCount}道${typeInfo.typeName}`
+              // 随机选择题目
+              const selectedCount = Math.min(typeInfo.count, filteredQuestions.length);
+              const selectedQuestions = this.randomSelectQuestions(filteredQuestions, selectedCount);
+
+              allSelectedQuestions.push(...selectedQuestions);
+
+              generationResults.push({
+                type: typeInfo.typeName,
+                count: selectedCount,
+                requested: typeInfo.count,
+                success: selectedCount === typeInfo.count,
+                message: selectedCount < typeInfo.count ?
+                  `题库中只有${selectedCount}道${typeInfo.typeName}` :
+                  `成功生成${selectedCount}道${typeInfo.typeName}`
+              });
+
+              // 记录每种题型的用户行为
+              this.preferenceManager.recordAction({
+                type: typeInfo.type,
+                count: selectedCount,
+                difficulty: params.difficulty,
+                knowledgePoint: params.knowledgePoint,
+                timestamp: new Date()
+              });
             });
-
-            // 记录每种题型的用户行为
-            this.preferenceManager.recordAction({
-              type: typeInfo.type,
-              count: selectedCount,
-              difficulty: params.difficulty,
-              knowledgePoint: params.knowledgePoint,
-              timestamp: new Date()
-            });
-          });
+          }
 
           // 显示生成的题目
           if (allSelectedQuestions.length > 0) {
@@ -2291,7 +2530,7 @@
           message += '\n题目已显示在右侧预览区。\n\n';
           message += '您可以：\n';
           message += '• 继续生成更多题目（直接告诉我需求）\n';
-          message += '• 将这些题目加入试卷（点击"加入试卷"按钮）\n';
+          message += '• 录入至简便录入区再确认（点击"录入至简便录入区再确认"按钮）\n';
           message += '• 导出题目（点击"导出"按钮）';
 
           return message;
@@ -2305,40 +2544,47 @@
       // 立即生成题目
       generateQuestionsNow(params) {
         try {
-          // 从题库中筛选题目
-          const allQuestions = loadQuestionsData();
+          let selectedQuestions;
 
-          if (!allQuestions || allQuestions.length === 0) {
-            return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
+          // 如果用户上传了文档，模拟基于文档生成题目
+          if (params.hasDocument) {
+            selectedQuestions = this.generateQuestionsFromDocument(params);
+          } else {
+            // 从题库中筛选题目
+            const allQuestions = loadQuestionsData();
+
+            if (!allQuestions || allQuestions.length === 0) {
+              return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
+            }
+
+            // 筛选符合条件的题目
+            let filteredQuestions = allQuestions.filter(q => {
+              // 题型匹配（如果选择了"所有题型"，则不筛选题型）
+              if (params.type && params.type !== 'all' && q.type !== params.type) {
+                return false;
+              }
+
+              // 难度匹配（如果指定了难度）
+              if (params.difficulty && q.difficulty !== params.difficulty) {
+                return false;
+              }
+
+              // 知识点匹配（如果指定了知识点）
+              if (params.knowledgePoint && q.knowledgePath &&
+                  !q.knowledgePath.includes(params.knowledgePoint)) {
+                return false;
+              }
+
+              return true;
+            });
+
+            if (filteredQuestions.length === 0) {
+              return `抱歉，题库中没有符合条件的${params.typeName}。\n\n建议：\n• 尝试其他题型\n• 降低筛选条件\n• 在题库管理中添加更多题目`;
+            }
+
+            // 随机选择题目
+            selectedQuestions = this.randomSelectQuestions(filteredQuestions, params.count);
           }
-
-          // 筛选符合条件的题目
-          let filteredQuestions = allQuestions.filter(q => {
-            // 题型匹配（如果选择了"所有题型"，则不筛选题型）
-            if (params.type && params.type !== 'all' && q.type !== params.type) {
-              return false;
-            }
-
-            // 难度匹配（如果指定了难度）
-            if (params.difficulty && q.difficulty !== params.difficulty) {
-              return false;
-            }
-
-            // 知识点匹配（如果指定了知识点）
-            if (params.knowledgePoint && q.knowledgePath &&
-                !q.knowledgePath.includes(params.knowledgePoint)) {
-              return false;
-            }
-
-            return true;
-          });
-
-          if (filteredQuestions.length === 0) {
-            return `抱歉，题库中没有符合条件的${params.typeName}。\n\n建议：\n• 尝试其他题型\n• 降低筛选条件\n• 在题库管理中添加更多题目`;
-          }
-
-          // 随机选择题目
-          const selectedQuestions = this.randomSelectQuestions(filteredQuestions, params.count);
 
           // 显示生成结果
           displayGeneratedQuestions(selectedQuestions, params);
@@ -2360,7 +2606,7 @@
           const knowledgeText = params.knowledgePoint ? `（知识点：${params.knowledgePoint}）` : '';
           const documentText = params.hasDocument ? '（基于参考文档）' : '';
 
-          return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 将这些题目加入试卷（点击"加入试卷"按钮）\n• 导出题目（点击"导出"按钮）`;
+          return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 录入至简便录入区再确认（点击"录入至简便录入区再确认"按钮）\n• 导出题目（点击"导出"按钮）`;
         } catch (error) {
           console.error('生成题目失败:', error);
           return `抱歉，生成题目时出现错误：${error.message}\n\n请稍后重试或联系管理员。`;
@@ -2379,6 +2625,77 @@
 
         // 返回前count个
         return shuffled.slice(0, count);
+      }
+
+      // 基于文档模拟生成题目
+      generateQuestionsFromDocument(params) {
+        const questions = [];
+        const typeNames = {
+          'single': '单选题',
+          'multiple': '多选题',
+          'judge': '判断题',
+          'blank': '填空题',
+          'shortAnswer': '简答题',
+          'cloze': '完形填空题',
+          'composite': '复合题'
+        };
+
+        // 模拟生成指定数量的题目
+        for (let i = 0; i < params.count; i++) {
+          const questionId = `DOC_${Date.now()}_${i + 1}`;
+          const question = {
+            id: questionId,
+            type: params.type,
+            typeName: typeNames[params.type] || params.typeName,
+            content: `基于文档内容生成的${typeNames[params.type]}题目 ${i + 1}`,
+            difficulty: params.difficulty || 2,
+            difficultyName: params.difficultyName || '二级',
+            score: 2,
+            knowledgePoint: params.knowledgePoint || '文档知识点',
+            knowledgePath: params.knowledgePoint || '文档知识点',
+            createTime: new Date().toLocaleString('zh-CN'),
+            author: 'AI助手',
+            useCount: 0
+          };
+
+          // 根据题型添加选项和答案
+          if (params.type === 'single') {
+            question.options = [
+              { label: 'A', text: '选项A（基于文档内容）' },
+              { label: 'B', text: '选项B（基于文档内容）' },
+              { label: 'C', text: '选项C（基于文档内容）' },
+              { label: 'D', text: '选项D（基于文档内容）' }
+            ];
+            question.correctAnswers = ['A'];
+            question.explanation = '根据文档内容，选项A正确。';
+          } else if (params.type === 'multiple') {
+            question.options = [
+              { label: 'A', text: '选项A（基于文档内容）' },
+              { label: 'B', text: '选项B（基于文档内容）' },
+              { label: 'C', text: '选项C（基于文档内容）' },
+              { label: 'D', text: '选项D（基于文档内容）' }
+            ];
+            question.correctAnswers = ['A', 'B'];
+            question.explanation = '根据文档内容，选项A和B正确。';
+          } else if (params.type === 'judge') {
+            question.options = [
+              { label: 'A', text: '正确' },
+              { label: 'B', text: '错误' }
+            ];
+            question.correctAnswers = ['A'];
+            question.explanation = '根据文档内容，此说法正确。';
+          } else if (params.type === 'blank') {
+            question.correctAnswers = ['答案1', '答案2'];
+            question.explanation = '根据文档内容，填空答案为：答案1、答案2。';
+          } else if (params.type === 'shortAnswer') {
+            question.correctAnswers = ['参考答案：根据文档内容，这道题的答案是...'];
+            question.explanation = '评分要点：1. 理解文档核心内容；2. 表达清晰准确。';
+          }
+
+          questions.push(question);
+        }
+
+        return questions;
       }
 
       // 处理创建试卷
@@ -2475,17 +2792,17 @@
 
         // 难度提取
         const difficultyMap = {
-          '简单': { level: 1, name: '简单' },
-          '容易': { level: 1, name: '简单' },
+          '简单': { level: 1, name: '一级' },
+          '容易': { level: 1, name: '一级' },
           '一级': { level: 1, name: '一级' },
-          '中等': { level: 2, name: '中等' },
+          '中等': { level: 2, name: '二级' },
           '二级': { level: 2, name: '二级' },
-          '困难': { level: 3, name: '困难' },
-          '难': { level: 3, name: '困难' },
+          '困难': { level: 3, name: '三级' },
+          '难': { level: 3, name: '三级' },
           '三级': { level: 3, name: '三级' },
-          '很难': { level: 4, name: '很难' },
+          '很难': { level: 4, name: '四级' },
           '四级': { level: 4, name: '四级' },
-          '极难': { level: 5, name: '极难' },
+          '极难': { level: 5, name: '五级' },
           '五级': { level: 5, name: '五级' }
         };
 
@@ -2645,8 +2962,8 @@
             <button onclick="exportGeneratedQuestions()" class="px-3 py-1 bg-white border border-primary-300 text-primary-600 rounded hover:bg-primary-50 text-sm">
               <i class="fas fa-download mr-1"></i>导出
             </button>
-            <button onclick="addToExam()" class="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
-              <i class="fas fa-plus mr-1"></i>加入试卷
+            <button onclick="addToSimpleInput()" class="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
+              <i class="fas fa-edit mr-1"></i>录入至简便录入区再确认
             </button>
           </div>
         </div>
@@ -2776,17 +3093,17 @@
       };
       const color = typeColors[question.type] || 'gray';
 
-      // 难度星级
-      const difficultyStars = '★'.repeat(question.difficulty || 1) + '☆'.repeat(5 - (question.difficulty || 1));
+      // 难度文字
+      const difficultyNames = ['', '一级', '二级', '三级', '四级', '五级'];
+      const difficultyText = difficultyNames[question.difficulty || 1];
 
       card.innerHTML = `
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center space-x-2">
             <span class="px-2 py-1 bg-${color}-100 text-${color}-600 text-xs font-medium rounded">${question.typeName || question.type}</span>
-            <span class="text-xs text-gray-500">${question.id}</span>
           </div>
           <div class="flex items-center space-x-2">
-            <span class="text-xs text-warning-500" title="难度">${difficultyStars}</span>
+            <span class="text-xs text-gray-600" title="难度">${difficultyText}</span>
             <span class="text-xs text-gray-500">${question.score || 2}分</span>
           </div>
         </div>
@@ -2811,14 +3128,11 @@
           </div>
         ` : ''}
 
-        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div class="flex items-center pt-3 border-t border-gray-100">
           <div class="flex items-center space-x-3 text-xs text-gray-500">
             <span><i class="fas fa-check-circle text-success-500 mr-1"></i>答案: ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(', ') : question.correctAnswers}</span>
             ${question.knowledgePath ? `<span><i class="fas fa-folder text-primary-500 mr-1"></i>${question.knowledgePath}</span>` : ''}
           </div>
-          <button class="text-xs text-primary-500 hover:text-primary-600" onclick="alert('查看详情功能待实现')">
-            查看详情 <i class="fas fa-arrow-right ml-1"></i>
-          </button>
         </div>
       `;
 
@@ -2896,8 +3210,8 @@
       addAIMessage(`✅ 已导出${questions.length}道${params.typeName}到Markdown文件`);
     }
 
-    // 将生成的题目加入试卷
-    function addToExam() {
+    // 将生成的题目录入至简便录入区
+    function addToSimpleInput() {
       if (!currentTask || !currentTask.generatedQuestions) {
         alert('没有找到生成的题目数据');
         return;
@@ -2906,12 +3220,12 @@
       const questions = currentTask.generatedQuestions;
       const params = currentTask.generateParams;
 
-      // 模拟加入试卷的操作
-      addAIMessage(`✅ 已将${questions.length}道${params.typeName}加入试卷草稿\n\n您可以：\n• 前往"试卷管理"查看和编辑\n• 继续生成更多题目\n• 调整题目顺序和分值`);
+      // 提示用户功能待实现
+      addAIMessage(`✅ 已准备将${questions.length}道题目录入至简便录入区\n\n📝 **下一步操作**：\n• 题目将以简便录入格式展示\n• 您可以在简便录入区进行最后确认和修改\n• 确认无误后即可正式录入题库\n\n💡 此功能正在开发中，敬请期待！`);
 
-      // 这里可以将题目保存到LocalStorage的试卷草稿中
-      // 实际实现时需要与试卷模块集成
-      console.log('加入试卷的题目:', questions);
+      // 这里可以将题目转换为简便录入格式并跳转到简便录入页面
+      // 实际实现时需要与简便录入模块集成
+      console.log('准备录入至简便录入区的题目:', questions);
     }
 
     // ========== 初始化 ==========
@@ -3257,25 +3571,24 @@
         const conversationManager = new ConversationManager(currentTask);
         const params = currentTask.generateParams;
 
-        if (params && (params.step === 'document' || params.step === 'waiting_document' || params.step === 'mixed_waiting_document')) {
+        if (params && (params.step === 'document' || params.step === 'waiting_document' || params.step === 'mixed_document' || params.step === 'mixed_waiting_document')) {
           // 在引导流程中，自动继续流程
           params.hasDocument = true;
           params.documentName = doc.name;
           params.documentContent = doc.content;
 
           // 根据不同的流程类型继续
-          if (params.step === 'mixed_waiting_document') {
-            // 混合题型流程：进入确认步骤
-            params.step = 'mixed_confirm';
+          if (params.step === 'mixed_document' || params.step === 'mixed_waiting_document') {
+            // 混合题型流程：进入难度选择步骤
+            params.step = 'mixed_difficulty';
             setTimeout(() => {
-              const confirmMessage = conversationManager.showMixedTypeConfirmation(params);
-              addAIMessage(confirmMessage);
+              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成题目。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"。`);
             }, 500);
           } else {
             // 单题型流程：进入难度选择步骤
             params.step = 'difficulty';
             setTimeout(() => {
-              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成${params.count}道${params.typeName}。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"开始生成。`);
+              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成${params.count}道${params.typeName}。\n\n⭐ **选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"开始生成。`);
             }, 500);
           }
         } else {
@@ -4164,8 +4477,8 @@
       }
 
       // 4.4 测试最多保留5个组合
-      manager.updateCommonCombinations({ type: 'fill', difficulty: 2, count: 8 });
-      manager.updateCommonCombinations({ type: 'essay', difficulty: 4, count: 3 });
+      manager.updateCommonCombinations({ type: 'blank', difficulty: 2, count: 8 });
+      manager.updateCommonCombinations({ type: 'shortAnswer', difficulty: 4, count: 3 });
       manager.updateCommonCombinations({ type: 'cloze', difficulty: 3, count: 12 });
 
       if (combinations.length <= 5) {
@@ -4269,8 +4582,8 @@
         'single': { count: 0, percentage: 0 },
         'multiple': { count: 0, percentage: 0 },
         'judge': { count: 0, percentage: 0 },
-        'fill': { count: 0, percentage: 0 },
-        'essay': { count: 0, percentage: 0 },
+        'blank': { count: 0, percentage: 0 },
+        'shortAnswer': { count: 0, percentage: 0 },
         'all': { count: 0, percentage: 0 }
       };
       let mostCommonType = manager.getMostCommonType();
@@ -4287,8 +4600,8 @@
         'single': { count: 15, percentage: 50 },
         'multiple': { count: 8, percentage: 27 },
         'judge': { count: 7, percentage: 23 },
-        'fill': { count: 0, percentage: 0 },
-        'essay': { count: 0, percentage: 0 },
+        'blank': { count: 0, percentage: 0 },
+        'shortAnswer': { count: 0, percentage: 0 },
         'all': { count: 30, percentage: 100 }
       };
       mostCommonType = manager.getMostCommonType();
@@ -4585,12 +4898,12 @@
 
       // 12.9 测试完整参数不覆盖
       recommended = manager.getRecommendedParams({
-        type: 'fill',
+        type: 'blank',
         difficulty: 5,
         count: 30,
         knowledgePoint: '网络'
       });
-      if (recommended.type === 'fill' &&
+      if (recommended.type === 'blank' &&
           recommended.difficulty === 5 &&
           recommended.count === 30 &&
           recommended.knowledgePoint === '网络') {
@@ -4998,7 +5311,7 @@
       // 10.2 模拟周末使用
       const weekendDate = new Date('2026-02-01T14:00:00'); // 周六
       const weekendParams = {
-        type: 'essay',
+        type: 'shortAnswer',
         difficulty: 4,
         count: 5,
         timestamp: weekendDate

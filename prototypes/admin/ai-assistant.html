@@ -3253,13 +3253,40 @@
         // 更新UI
         updateDocumentStatus(doc);
 
-        // 显示快捷操作按钮
-        showDocumentActions();
+        // 检查是否在引导流程中
+        const conversationManager = new ConversationManager(currentTask);
+        const params = currentTask.generateParams;
 
-        // 发送AI提示消息
-        setTimeout(() => {
-          addAIMessage(`我已经解析了您上传的文档《${doc.name}》。\n\n您可以：\n• 让我根据文档内容生成题目\n• 总结文档的主要内容\n\n请告诉我您想做什么？`);
-        }, 500);
+        if (params && (params.step === 'document' || params.step === 'waiting_document' || params.step === 'mixed_waiting_document')) {
+          // 在引导流程中，自动继续流程
+          params.hasDocument = true;
+          params.documentName = doc.name;
+          params.documentContent = doc.content;
+
+          // 根据不同的流程类型继续
+          if (params.step === 'mixed_waiting_document') {
+            // 混合题型流程：进入确认步骤
+            params.step = 'mixed_confirm';
+            setTimeout(() => {
+              const confirmMessage = conversationManager.showMixedTypeConfirmation(params);
+              addAIMessage(confirmMessage);
+            }, 500);
+          } else {
+            // 单题型流程：进入难度选择步骤
+            params.step = 'difficulty';
+            setTimeout(() => {
+              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成${params.count}道${params.typeName}。\n\n⭐ **第4步：选择难度**（可选）\n\n请问需要什么难度的题目？\n• 简单\n• 中等\n• 困难\n• 很难\n• 极难\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"开始生成。`);
+            }, 500);
+          }
+        } else {
+          // 不在引导流程中，显示快捷操作按钮
+          showDocumentActions();
+
+          // 发送AI提示消息
+          setTimeout(() => {
+            addAIMessage(`我已经解析了您上传的文档《${doc.name}》。\n\n您可以：\n• 让我根据文档内容生成题目\n• 总结文档的主要内容\n\n请告诉我您想做什么？`);
+          }, 500);
+        }
       };
 
       reader.onerror = function() {

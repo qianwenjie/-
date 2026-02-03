@@ -750,11 +750,106 @@
         return result;
       }
 
+      /**
+       * 提取混合题型（多个题型+数量组合）
+       * 例如："生成单选10题、多选10题、判断5题、简答2题"
+       * @param {string} input - 用户输入
+       * @returns {Object|null} 混合题型数据或null
+       */
+      extractMixedTypes(input) {
+        // 匹配模式：数字 + 题型名称
+        // 支持："10道单选题"、"5个判断题"、"单选10题"等多种表达
+        const patterns = [
+          /(\d+)\s*道?\s*(单选题?|多选题?|判断题?|填空题?|简答题?)/g,
+          /(单选题?|多选题?|判断题?|填空题?|简答题?)\s*(\d+)\s*[道题个]?/g
+        ];
+
+        const allMatches = [];
+
+        // 尝试所有模式
+        for (const pattern of patterns) {
+          const matches = [...input.matchAll(pattern)];
+          for (const match of matches) {
+            // 根据不同模式提取数量和题型
+            let count, typeName;
+            if (match[1] && /^\d+$/.test(match[1])) {
+              // 模式1: 数字在前
+              count = parseInt(match[1]);
+              typeName = match[2];
+            } else {
+              // 模式2: 题型在前
+              typeName = match[1];
+              count = parseInt(match[2]);
+            }
+
+            allMatches.push({ count, typeName, index: match.index });
+          }
+        }
+
+        // 去重（同一位置可能被多个模式匹配）
+        const uniqueMatches = [];
+        const seenIndices = new Set();
+
+        for (const match of allMatches) {
+          if (!seenIndices.has(match.index)) {
+            seenIndices.add(match.index);
+            uniqueMatches.push(match);
+          }
+        }
+
+        // 如果匹配到2个或以上，认为是混合题型
+        if (uniqueMatches.length >= 2) {
+          // 映射题型名称到type key
+          const typeMap = {
+            '单选': 'single', '单选题': 'single',
+            '多选': 'multiple', '多选题': 'multiple',
+            '判断': 'judge', '判断题': 'judge',
+            '填空': 'fill', '填空题': 'fill',
+            '简答': 'essay', '简答题': 'essay'
+          };
+
+          const typeNames = {
+            'single': '单选题',
+            'multiple': '多选题',
+            'judge': '判断题',
+            'fill': '填空题',
+            'essay': '简答题'
+          };
+
+          const types = uniqueMatches.map(match => {
+            const typeKey = typeMap[match.typeName];
+            return {
+              type: typeKey,
+              typeName: typeNames[typeKey],
+              count: match.count
+            };
+          });
+
+          return {
+            isMixed: true,
+            types: types,
+            totalCount: types.reduce((sum, t) => sum + t.count, 0),
+            confidence: 1.0
+          };
+        }
+
+        return null;
+      }
+
       // 主提取方法
       extract(input, context = {}) {
         const params = {};
         const confidence = {};
         const ambiguous = [];
+
+        // 0. 优先检测混合题型
+        const mixedTypes = this.extractMixedTypes(input);
+        if (mixedTypes && mixedTypes.isMixed) {
+          // 返回混合题型标记
+          params._mixedTypes = mixedTypes;
+          confidence.mixedTypes = mixedTypes.confidence;
+          return { params, confidence, ambiguous };
+        }
 
         // 1. 题型识别
         const typeResult = this.extractType(input);
@@ -1675,6 +1770,11 @@
         const extracted = extractResult.params;
         const confidence = extractResult.confidence;
 
+        // 检查是否为混合题型请求
+        if (extracted._mixedTypes) {
+          return this.handleMixedTypeGeneration(extracted._mixedTypes);
+        }
+
         // 应用用户偏好推荐（智能填充缺失参数）
         const recommendedParams = this.preferenceManager.getRecommendedParams(extracted);
         Object.assign(extracted, recommendedParams);
@@ -1801,6 +1901,53 @@
             params.step = 'confirm';
             return this.showGenerateConfirmation(params);
 
+          case 'mixed_document':
+            // 混合题型的文档询问步骤
+            const hasDoc = input.includes('有') && !input.includes('没有');
+            const noDoc = input.includes('没有') || input.includes('没') || input.includes('跳过');
+            const confirmNow = input.includes('确认') || input.includes('开始') || input.includes('生成');
+
+            if (confirmNow) {
+              // 直接确认生成
+              params.hasDocument = false;
+              params.step = 'mixed_confirm';
+              return this.showMixedTypeConfirmation(params);
+            } else if (hasDoc) {
+              params.hasDocument = true;
+              params.step = 'mixed_waiting_document';
+              return '好的，请上传您的参考文档，或者直接粘贴文档内容。\n\n支持的格式：\n• 文本内容（直接粘贴）\n• Word文档（.docx）\n• PDF文档（.pdf）\n• Markdown文档（.md）';
+            } else if (noDoc) {
+              params.hasDocument = false;
+              params.step = 'mixed_confirm';
+              return this.showMixedTypeConfirmation(params);
+            } else {
+              return '请回复"有"、"没有"或"确认"。';
+            }
+
+          case 'mixed_waiting_document':
+            // 等待混合题型的文档上传
+            if (input.length > 50) {
+              params.documentContent = input;
+              params.step = 'mixed_confirm';
+              return this.showMixedTypeConfirmation(params);
+            } else {
+              return '请上传文档或粘贴文档内容。如果不需要参考文档，请回复"跳过"。';
+            }
+
+          case 'mixed_confirm':
+            // 混合题型确认并生成
+            const confirmMixed = ['确认', '开始', '生成', '好的', '是的', 'yes', 'ok'];
+            const cancelMixed = ['取消', '重新', '修改', '不'];
+
+            if (confirmMixed.some(keyword => input.includes(keyword))) {
+              return this.generateMixedTypeQuestions(params);
+            } else if (cancelMixed.some(keyword => input.includes(keyword))) {
+              this.task.generateParams = { step: 'init' };
+              return '好的，已取消。如果您想重新生成题目，请告诉我。';
+            } else {
+              return '请回复"确认"开始生成，或回复"取消"重新设置。';
+            }
+
           case 'confirm':
             // 确认并生成
             const confirmKeywords = ['确认', '开始', '生成', '好的', '是的', 'yes', 'ok'];
@@ -1850,6 +1997,168 @@
         summary += '\n请确认以上信息，回复"确认"开始生成题目。';
 
         return summary;
+      }
+
+      /**
+       * 处理混合题型生成请求
+       * @param {Object} mixedTypes - 混合题型数据
+       * @returns {string} 回复消息
+       */
+      handleMixedTypeGeneration(mixedTypes) {
+        // 构建确认消息
+        let message = '好的，我将为您生成：\n\n';
+
+        mixedTypes.types.forEach((typeInfo, index) => {
+          message += `${index + 1}. ${typeInfo.typeName} ${typeInfo.count}道\n`;
+        });
+
+        message += `\n共 ${mixedTypes.totalCount} 道题目。\n\n`;
+        message += '📄 **参考文档**（可选）\n\n';
+        message += '您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n';
+        message += '请回复：\n';
+        message += '• "有"（然后上传文档或粘贴内容）\n';
+        message += '• "没有"（直接从题库中选择）\n';
+        message += '• "确认"（直接开始生成）';
+
+        // 保存混合题型信息到任务参数
+        this.task.generateParams = {
+          step: 'mixed_document',
+          mixedTypes: mixedTypes,
+          isMixed: true
+        };
+
+        return message;
+      }
+
+      /**
+       * 显示混合题型确认信息
+       * @param {Object} params - 生成参数
+       * @returns {string} 确认消息
+       */
+      showMixedTypeConfirmation(params) {
+        let message = '✅ **确认生成参数**\n\n';
+
+        // 显示每种题型的信息
+        message += '📝 **题目清单**：\n';
+        params.mixedTypes.types.forEach((typeInfo, index) => {
+          message += `${index + 1}. ${typeInfo.typeName} × ${typeInfo.count}道\n`;
+        });
+
+        message += `\n📊 **总计**：${params.mixedTypes.totalCount}道题目\n`;
+
+        // 显示文档信息
+        if (params.hasDocument && params.documentContent) {
+          message += `📄 **参考文档**：已提供（${params.documentContent.length}字）\n`;
+        } else {
+          message += '📄 **参考文档**：无（从题库随机选择）\n';
+        }
+
+        message += '\n请回复"确认"开始生成，或回复"取消"重新设置。';
+
+        return message;
+      }
+
+      /**
+       * 生成混合题型题目
+       * @param {Object} params - 生成参数
+       * @returns {string} 生成结果消息
+       */
+      generateMixedTypeQuestions(params) {
+        try {
+          // 从题库中加载所有题目
+          const allQuestions = loadQuestionsData();
+
+          if (!allQuestions || allQuestions.length === 0) {
+            return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
+          }
+
+          // 为每种题型生成题目
+          const allSelectedQuestions = [];
+          const generationResults = [];
+
+          params.mixedTypes.types.forEach(typeInfo => {
+            // 筛选符合该题型的题目
+            const filteredQuestions = allQuestions.filter(q => q.type === typeInfo.type);
+
+            if (filteredQuestions.length === 0) {
+              generationResults.push({
+                type: typeInfo.typeName,
+                count: 0,
+                requested: typeInfo.count,
+                success: false,
+                message: `题库中没有${typeInfo.typeName}`
+              });
+              return;
+            }
+
+            // 随机选择题目
+            const selectedCount = Math.min(typeInfo.count, filteredQuestions.length);
+            const selectedQuestions = this.randomSelectQuestions(filteredQuestions, selectedCount);
+
+            allSelectedQuestions.push(...selectedQuestions);
+
+            generationResults.push({
+              type: typeInfo.typeName,
+              count: selectedCount,
+              requested: typeInfo.count,
+              success: selectedCount === typeInfo.count,
+              message: selectedCount < typeInfo.count ?
+                `题库中只有${selectedCount}道${typeInfo.typeName}` :
+                `成功生成${selectedCount}道${typeInfo.typeName}`
+            });
+
+            // 记录每种题型的用户行为
+            this.preferenceManager.recordAction({
+              type: typeInfo.type,
+              count: selectedCount,
+              difficulty: params.difficulty,
+              knowledgePoint: params.knowledgePoint,
+              timestamp: Date.now()
+            });
+          });
+
+          // 显示生成的题目
+          if (allSelectedQuestions.length > 0) {
+            displayGeneratedQuestions(allSelectedQuestions, {
+              ...params,
+              typeName: '混合题型',
+              count: allSelectedQuestions.length
+            });
+          }
+
+          // 重置步骤状态
+          this.task.generateParams = { step: 'init' };
+
+          // 构建结果消息
+          let message = '✅ **生成完成**\n\n';
+          message += '📊 **生成结果**：\n';
+
+          generationResults.forEach((result, index) => {
+            const icon = result.success ? '✓' : '⚠';
+            message += `${index + 1}. ${icon} ${result.message}\n`;
+          });
+
+          const totalGenerated = allSelectedQuestions.length;
+          const totalRequested = params.mixedTypes.totalCount;
+
+          message += `\n📈 **总计**：成功生成${totalGenerated}/${totalRequested}道题目\n`;
+
+          if (params.hasDocument && params.documentContent) {
+            message += '📄 **基于**：您提供的参考文档\n';
+          }
+
+          message += '\n题目已显示在右侧预览区。\n\n';
+          message += '您可以：\n';
+          message += '• 继续生成更多题目（直接告诉我需求）\n';
+          message += '• 将这些题目加入试卷（点击"加入试卷"按钮）\n';
+          message += '• 导出题目（点击"导出"按钮）';
+
+          return message;
+
+        } catch (error) {
+          console.error('生成混合题型题目失败:', error);
+          return `抱歉，生成题目时出现错误：${error.message}\n\n请稍后重试或联系管理员。`;
+        }
       }
 
       // 立即生成题目

@@ -479,7 +479,7 @@
             type="text"
             id="aiChatInput"
             class="ai-chat-input"
-            placeholder="Ask anything..."
+            placeholder="输入指令，让我帮你快速完成出题、组卷、考试等管理任务"
             aria-label="AI 助手输入框"
             onkeypress="handleAIChatKeypress(event)"
           />
@@ -491,11 +491,6 @@
               <i class="fas fa-paperclip"></i>
             </button>
 
-            <!-- 语音按钮 -->
-            <button class="ai-action-btn voice" title="语音输入" aria-label="语音输入">
-              <i class="fas fa-microphone"></i>
-            </button>
-
             <!-- 发送按钮 -->
             <button class="ai-action-btn send" title="发送消息" aria-label="发送消息" onclick="sendAIChatMessage()">
               <i class="fas fa-paper-plane"></i>
@@ -505,9 +500,10 @@
 
         <!-- 快捷提示 -->
         <div class="ai-chat-suggestions">
-          <button class="suggestion-chip" onclick="fillAIInput('生成10道单选题')">生成试卷</button>
-          <button class="suggestion-chip" onclick="fillAIInput('推荐题目')">题目推荐</button>
-          <button class="suggestion-chip" onclick="fillAIInput('数据分析')">数据分析</button>
+          <button class="suggestion-chip" onclick="fillAIInput('生成题目')">生成题目</button>
+          <button class="suggestion-chip" onclick="fillAIInput('智能组卷')">智能组卷</button>
+          <button class="suggestion-chip" onclick="fillAIInput('创建考试')">创建考试</button>
+          <button class="suggestion-chip" onclick="fillAIInput('刷题任务')">刷题任务</button>
         </div>
       </div>
 

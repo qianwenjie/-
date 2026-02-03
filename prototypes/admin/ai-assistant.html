@@ -3180,10 +3180,6 @@
                 <i class="fas fa-list-ul"></i>
                 总结文档内容
               </button>
-              <button class="doc-action-btn" onclick="suggestAction('提取知识点')">
-                <i class="fas fa-lightbulb"></i>
-                提取知识点
-              </button>
             </div>
           </div>
           <p class="text-xs text-gray-400 mt-1 text-right">${doc.uploadTime}</p>
@@ -3236,7 +3232,7 @@
 
         // 发送AI提示消息
         setTimeout(() => {
-          addAIMessage(`我已经解析了您上传的文档《${doc.name}》。\n\n您可以：\n• 让我根据文档内容生成题目\n• 总结文档的主要内容\n• 提取文档中的知识点\n\n请告诉我您想做什么？`);
+          addAIMessage(`我已经解析了您上传的文档《${doc.name}》。\n\n您可以：\n• 让我根据文档内容生成题目\n• 总结文档的主要内容\n\n请告诉我您想做什么？`);
         }, 500);
       };
 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { saveAnswer, syncAnswers } from '@/api/exam'
+import { useExamStore } from './exam'
 
 const STORAGE_KEY_PREFIX = 'exam_answers_'
 
@@ -19,8 +20,6 @@ export const useAnswerStore = defineStore('answer', {
   getters: {
     // 获取题目列表（从 exam store）
     questions() {
-      // 需要在这里导入，避免循环依赖
-      const { useExamStore } = require('./exam')
       const examStore = useExamStore()
       return examStore.currentPaper?.questions || []
     },

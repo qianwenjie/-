@@ -797,6 +797,112 @@
       }
     }
 
+    // ============================================
+    // 用户偏好管理器
+    // ============================================
+    class UserPreferenceManager {
+      constructor() {
+        this.storageKey = 'ai_assistant_user_preferences';
+        this.preferences = this.loadPreferences();
+      }
+
+      // 获取默认偏好数据结构
+      getDefaultPreferences() {
+        return {
+          userId: 'default_user',
+          version: '1.0',
+
+          // 1. 基础偏好统计
+          basicPreferences: {
+            questionType: {
+              'single': { count: 0, percentage: 0 },
+              'multiple': { count: 0, percentage: 0 },
+              'judge': { count: 0, percentage: 0 },
+              'fill': { count: 0, percentage: 0 },
+              'essay': { count: 0, percentage: 0 },
+              'all': { count: 0, percentage: 0 }
+            },
+            difficulty: {
+              '1': { count: 0, percentage: 0 },
+              '2': { count: 0, percentage: 0 },
+              '3': { count: 0, percentage: 0 },
+              '4': { count: 0, percentage: 0 },
+              '5': { count: 0, percentage: 0 }
+            },
+            quantity: {
+              total: 0,
+              average: 10,
+              mostCommon: 10,
+              distribution: {}
+            },
+            knowledgePoints: {}
+          },
+
+          // 2. 场景偏好
+          scenarioPreferences: {
+            'generate_questions': {
+              lastUsed: null,
+              frequency: 0,
+              lastParams: null,
+              commonConfig: null
+            }
+          },
+
+          // 3. 行为模式
+          behaviorPatterns: {
+            timePatterns: {
+              weekday: { samples: 0, avgDifficulty: 0, avgCount: 0, commonType: null },
+              weekend: { samples: 0, avgDifficulty: 0, avgCount: 0, commonType: null }
+            },
+            knowledgePointFocus: {
+              recent: [],
+              trending: null
+            },
+            commonCombinations: []
+          },
+
+          // 4. 对话风格偏好
+          conversationStyle: {
+            verbosity: 'normal',
+            confirmationNeeded: true,
+            preferQuickActions: false
+          },
+
+          // 5. 元数据
+          metadata: {
+            totalActions: 0,
+            firstActionDate: null,
+            lastActionDate: null,
+            totalQuestionsGenerated: 0
+          }
+        };
+      }
+
+      // 加载偏好数据
+      loadPreferences() {
+        try {
+          const stored = localStorage.getItem(this.storageKey);
+          if (stored) {
+            return JSON.parse(stored);
+          }
+        } catch (error) {
+          console.error('加载偏好数据失败:', error);
+        }
+        return this.getDefaultPreferences();
+      }
+
+      // 保存偏好数据
+      savePreferences() {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(this.preferences));
+          return true;
+        } catch (error) {
+          console.error('保存偏好数据失败:', error);
+          return false;
+        }
+      }
+    }
+
     // ========== 对话流程管理器 ==========
     class ConversationManager {
       constructor(task) {

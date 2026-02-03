@@ -17,28 +17,28 @@ export const useAnswerStore = defineStore('answer', {
   }),
 
   getters: {
+    // 获取题目列表（从 exam store）
+    questions() {
+      // 需要在这里导入，避免循环依赖
+      const { useExamStore } = require('./exam')
+      const examStore = useExamStore()
+      return examStore.currentPaper?.questions || []
+    },
+
     // 已答题数
     answeredCount: (state) => {
       return Object.keys(state.answers).length
     },
 
     // 未答题数
-    unansweredCount: (state) => {
-      const totalCount = state.questions?.length || 0
-      return totalCount - state.answeredCount
-    },
-
-    // 获取题目列表（从 exam store）
-    questions() {
-      const examStore = useExamStore()
-      return examStore.currentPaper?.questions || []
+    unansweredCount() {
+      const totalCount = this.questions.length
+      return totalCount - this.answeredCount
     },
 
     // 当前题目
-    currentQuestion: (state) => {
-      const examStore = useExamStore()
-      const questions = examStore.currentPaper?.questions || []
-      return questions[state.currentQuestionIndex]
+    currentQuestion() {
+      return this.questions[this.currentQuestionIndex]
     },
 
     // 格式化剩余时间
@@ -99,8 +99,7 @@ export const useAnswerStore = defineStore('answer', {
 
     // 下一题
     nextQuestion() {
-      const examStore = useExamStore()
-      const totalCount = examStore.currentPaper?.questions?.length || 0
+      const totalCount = this.questions.length
       if (this.currentQuestionIndex < totalCount - 1) {
         this.currentQuestionIndex++
       }
@@ -131,10 +130,10 @@ export const useAnswerStore = defineStore('answer', {
       this.countdownTimer = setInterval(() => {
         if (this.remainingTime > 0) {
           this.remainingTime--
+          this.saveToLocal() // 保存剩余时间
         } else {
           this.stopCountdown()
-          // 时间到，自动提交
-          this.$emit('timeup')
+          // 时间到，触发自动提交（由组件监听）
         }
       }, 1000)
     },

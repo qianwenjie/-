@@ -20,10 +20,8 @@
       <van-cell-group :border="false" class="info-group">
         <van-cell title="考试时间" :border="false">
           <template #value>
-            <div class="time-info">
-              <div>{{ formatDateTime(exam.startTime) }}</div>
-              <div class="text-secondary">至</div>
-              <div>{{ formatDateTime(exam.endTime) }}</div>
+            <div class="time-info-inline">
+              {{ formatDateTime(exam.startTime) }} 至 {{ formatDateTime(exam.endTime) }}
             </div>
           </template>
         </van-cell>
@@ -31,6 +29,12 @@
         <van-cell title="试卷名称" :value="exam.paper.name" :border="false" />
         <van-cell title="题目数量" :value="`${exam.paper.questionCount} 题`" :border="false" />
         <van-cell title="总分" :value="`${exam.totalScore} 分`" :border="false" />
+        <van-cell
+          v-if="exam.config.maxAttempts > 1"
+          title="作答次数"
+          :value="`${exam.config.currentAttempt}/${exam.config.maxAttempts}`"
+          :border="false"
+        />
       </van-cell-group>
 
       <!-- 倒计时（未开始） -->
@@ -39,22 +43,15 @@
         <div class="countdown-time">{{ countdownText }}</div>
       </div>
 
-      <!-- 倒计时（进行中） -->
-      <div v-if="exam.status === 'in_progress'" class="countdown-card in-progress">
-        <div class="countdown-title">距离考试结束</div>
-        <div class="countdown-time">{{ countdownText }}</div>
-      </div>
-
-      <!-- 考试说明 -->
-      <div class="section-title">考试说明</div>
-      <div class="description-card">
-        <div v-if="exam.description" class="description-text">
-          {{ exam.description }}
+      <!-- 考试说明（仅当有说明时显示） -->
+      <template v-if="exam.description">
+        <div class="section-title">考试说明</div>
+        <div class="description-card">
+          <div class="description-text">
+            {{ exam.description }}
+          </div>
         </div>
-        <div v-else class="description-text text-secondary">
-          暂无考试说明
-        </div>
-      </div>
+      </template>
 
       <!-- 考试规则 -->
       <div class="section-title">考试规则</div>
@@ -338,10 +335,11 @@ onUnmounted(() => {
   margin-bottom: 12px;
 }
 
-.time-info {
+.time-info-inline {
   text-align: right;
   font-size: 14px;
   color: #1d2129;
+  white-space: nowrap;
 }
 
 .text-secondary {

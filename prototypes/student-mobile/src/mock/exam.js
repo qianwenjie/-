@@ -26,7 +26,10 @@ export const mockExamList = [
       allowLateEntry: false,
       lateMinutes: 0,
       minAnswerTime: 30,
+      maxAttempts: 1, // 允许作答次数
+      currentAttempt: 0, // 当前作答次数
     },
+    description: '本次考试为期中考试，请认真作答。',
   },
   {
     id: 'exam002',
@@ -50,7 +53,10 @@ export const mockExamList = [
       allowLateEntry: true,
       lateMinutes: 15,
       minAnswerTime: 20,
+      maxAttempts: 2, // 允许作答次数
+      currentAttempt: 0, // 当前作答次数
     },
+    description: '', // 无说明
   },
   {
     id: 'exam003',
@@ -74,7 +80,10 @@ export const mockExamList = [
       captureCount: 5,
       allowLateEntry: false,
       minAnswerTime: 30,
+      maxAttempts: 1, // 允许作答次数
+      currentAttempt: 1, // 当前作答次数
     },
+    description: '本次考试涵盖操作系统的核心知识点，包括进程管理、内存管理、文件系统等内容。',
   },
 ]
 
@@ -106,8 +115,10 @@ export const mockExamDetail = {
     minAnswerTime: 20,
     scorePublishMode: 'after_exam',
     scorePublishContent: 'full',
+    maxAttempts: 2, // 允许作答次数
+    currentAttempt: 0, // 当前作答次数
   },
-  description: '本次考试主要考察数据结构与算法的基础知识，包括线性表、树、图等内容。',
+  description: '', // 无说明
 }
 
 /**

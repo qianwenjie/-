@@ -38,6 +38,10 @@
               <van-icon name="clock" />
               <span>时长 {{ exam.duration }} 分钟</span>
             </div>
+            <div v-if="exam.config.maxAttempts > 1" class="info-item">
+              <van-icon name="replay" />
+              <span>作答 {{ exam.config.currentAttempt }}/{{ exam.config.maxAttempts }} 次</span>
+            </div>
           </div>
 
           <div class="exam-footer">

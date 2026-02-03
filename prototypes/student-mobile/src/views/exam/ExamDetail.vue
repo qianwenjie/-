@@ -203,7 +203,7 @@ const formatDateTime = (time) => {
   const day = String(date.getDate()).padStart(2, '0')
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
-  return `${month}月${day}日 ${hour}:${minute}`
+  return `${month}-${day} ${hour}:${minute}`
 }
 
 // 计算倒计时
@@ -337,9 +337,10 @@ onUnmounted(() => {
 
 .time-info-inline {
   text-align: right;
-  font-size: 14px;
+  font-size: 13px;
   color: #1d2129;
-  white-space: nowrap;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 
 .text-secondary {

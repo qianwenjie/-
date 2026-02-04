@@ -1450,8 +1450,8 @@
           };
           sessionStorage.setItem('aiUploadedFile', JSON.stringify(fileInfo));
 
-          // 获取文件格式
-          const fileExt = file.name.split('.').pop().toUpperCase();
+          // 获取文件格式（用于显示）
+          const fileFormat = file.name.split('.').pop().toUpperCase();
 
           // 显示文档卡片 - 状态1: 上传中
           const container = document.getElementById('documentCardContainer');
@@ -1481,7 +1481,7 @@
               setTimeout(() => {
                 // 状态3: 已完成
                 metaEl.classList.remove('loading');
-                metaEl.textContent = `已完成 · ${fileExt} · ${formatFileSize(file.size)}`;
+                metaEl.textContent = `已完成 · ${fileFormat} · ${formatFileSize(file.size)}`;
               }, parseDelay);
             };
 

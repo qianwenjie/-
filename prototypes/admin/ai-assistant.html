@@ -3824,12 +3824,163 @@
       const questions = currentTask.generatedQuestions;
       const params = currentTask.generateParams;
 
-      // 提示用户功能待实现
-      addAIMessage(`✅ 已准备将${questions.length}道题目录入至简便录入区\n\n📝 **下一步操作**：\n• 题目将以简便录入格式展示\n• 您可以在简便录入区进行最后确认和修改\n• 确认无误后即可正式录入题库\n\n💡 此功能正在开发中，敬请期待！`);
+      // 将题目转换为简便录入格式
+      const simpleInputText = convertQuestionsToSimpleFormat(questions);
 
-      // 这里可以将题目转换为简便录入格式并跳转到简便录入页面
-      // 实际实现时需要与简便录入模块集成
-      console.log('准备录入至简便录入区的题目:', questions);
+      // 保存到 localStorage
+      localStorage.setItem('aiGeneratedQuestions', simpleInputText);
+
+      // 如果有知识点信息，也保存
+      if (params && params.knowledgePoint && params.knowledgePoint !== 'all') {
+        // 这里需要知识点ID，暂时只保存名称
+        localStorage.setItem('aiSelectedKnowledge', JSON.stringify({
+          name: params.knowledgePoint
+        }));
+      }
+
+      // 提示用户并跳转
+      addAIMessage(`✅ 已准备将${questions.length}道题目录入至简便录入区\n\n📝 **正在跳转**：\n• 题目已转换为简便录入格式\n• 即将打开简便录入页面\n• 请在页面中检查并确认录入\n\n💡 页面将在新标签页中打开...`);
+
+      // 延迟跳转，让用户看到提示
+      setTimeout(() => {
+        window.open('../question-bank/add-simple.html', '_blank');
+      }, 500);
+
+      console.log('题目已转换为简便录入格式:', simpleInputText);
+    }
+
+    /**
+     * 将题目数组转换为简便录入格式
+     * @param {Array} questions - 题目数组
+     * @returns {string} 简便录入格式的文本
+     */
+    function convertQuestionsToSimpleFormat(questions) {
+      const lines = [];
+
+      questions.forEach((question, index) => {
+        const questionNumber = index + 1;
+
+        // 根据题型转换格式
+        if (question.type === 'single') {
+          // 单选题格式：题号. 题干\nA. 选项1\nB. 选项2\n答案：A\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.options && question.options.length > 0) {
+            question.options.forEach(opt => {
+              lines.push(`${opt.label}. ${opt.text}`);
+            });
+          }
+          if (question.correctAnswers && question.correctAnswers.length > 0) {
+            lines.push(`答案：${question.correctAnswers[0]}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push(''); // 空行分隔
+
+        } else if (question.type === 'multiple') {
+          // 多选题格式：题号. 题干\nA. 选项1\nB. 选项2\n答案：AB\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.options && question.options.length > 0) {
+            question.options.forEach(opt => {
+              lines.push(`${opt.label}. ${opt.text}`);
+            });
+          }
+          if (question.correctAnswers && question.correctAnswers.length > 0) {
+            lines.push(`答案：${question.correctAnswers.join('')}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+
+        } else if (question.type === 'judge') {
+          // 判断题格式：题号. 题干\n答案：正确/错误\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.correctAnswers && question.correctAnswers.length > 0) {
+            lines.push(`答案：${question.correctAnswers[0]}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+
+        } else if (question.type === 'blank') {
+          // 填空题格式：题号. 题干\n答案：答案1；答案2\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.correctAnswers && question.correctAnswers.length > 0) {
+            lines.push(`答案：${question.correctAnswers.join('；')}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+
+        } else if (question.type === 'shortAnswer') {
+          // 简答题格式：题号. 题干\n答案：参考答案（可选）\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.correctAnswers && question.correctAnswers.length > 0 && question.correctAnswers[0]) {
+            lines.push(`答案：${question.correctAnswers[0]}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+
+        } else if (question.type === 'cloze') {
+          // 完形填空格式：题号. 题干____\n1)A. 选项1  B. 选项2\n答案：ABCD\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.blanks && question.blanks.length > 0) {
+            question.blanks.forEach((blank, blankIndex) => {
+              const blankNumber = blankIndex + 1;
+              const optionsText = blank.options.map(opt => `${opt.label}. ${opt.text}`).join('  ');
+              lines.push(`${blankNumber})${optionsText}`);
+            });
+          }
+          if (question.correctAnswers) {
+            // correctAnswers 应该是单个字符串如 "BDCA"
+            const answer = typeof question.correctAnswers === 'string'
+              ? question.correctAnswers
+              : question.correctAnswers.join('');
+            lines.push(`答案：${answer}`);
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+
+        } else if (question.type === 'composite') {
+          // 复合题格式：题号. 材料\n1）【题型】子题题干\n答案：xxx\n知识点：xxx
+          lines.push(`${questionNumber}. ${question.content}`);
+          if (question.subQuestions && question.subQuestions.length > 0) {
+            question.subQuestions.forEach((subQ, subIndex) => {
+              const subNumber = subIndex + 1;
+              const typeLabel = subQ.typeName || '单选题';
+              lines.push(`${subNumber}）【${typeLabel}】${subQ.content}`);
+
+              // 如果子题有选项，添加选项
+              if (subQ.options && subQ.options.length > 0) {
+                subQ.options.forEach(opt => {
+                  lines.push(`${opt.label}. ${opt.text}`);
+                });
+              }
+
+              // 添加子题答案
+              if (subQ.correctAnswers && subQ.correctAnswers.length > 0) {
+                const answer = Array.isArray(subQ.correctAnswers)
+                  ? subQ.correctAnswers.join('')
+                  : subQ.correctAnswers;
+                lines.push(`答案：${answer}`);
+              }
+            });
+          }
+          if (question.knowledgePoint) {
+            lines.push(`知识点：${question.knowledgePoint}`);
+          }
+          lines.push('');
+        }
+      });
+
+      return lines.join('\n');
     }
 
     // ========== 初始化 ==========

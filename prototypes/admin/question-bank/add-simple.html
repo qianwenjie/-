@@ -4889,8 +4889,13 @@ D. 指缝
     // 加载 AI 出题生成的题目
     function loadAIGeneratedQuestions() {
       try {
+        console.log('开始加载 AI 生成的题目...');
         const aiQuestions = localStorage.getItem('aiGeneratedQuestions');
+        console.log('从 localStorage 读取的数据:', aiQuestions);
+        console.log('数据长度:', aiQuestions ? aiQuestions.length : 0);
+
         if (!aiQuestions) {
+          console.log('没有找到 AI 生成的题目数据');
           return false;
         }
 
@@ -4899,12 +4904,15 @@ D. 指缝
 
         // 将 AI 生成的题目填充到输入区
         const inputDiv = document.getElementById('inputText');
+        console.log('输入区元素:', inputDiv);
+
         if (inputDiv) {
           // 将文本转换为 HTML（保留换行）
           const htmlContent = aiQuestions
             .split('\n')
             .map(line => line || '<br>')
             .join('<br>');
+          console.log('转换后的 HTML 内容长度:', htmlContent.length);
           inputDiv.innerHTML = htmlContent;
 
           // 触发解析

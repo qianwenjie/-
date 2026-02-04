@@ -28,40 +28,240 @@
       overflow: hidden;
     }
 
-    /* 模块卡片悬停效果 */
+    /* 模块卡片基础样式和入场动画 */
     .module-card {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .module-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
-    }
-    .module-card:hover .module-icon {
-      transform: scale(1.08);
-    }
-    .module-card:hover .arrow-icon {
-      transform: translateX(4px);
-    }
-    .module-icon {
-      transition: transform 0.3s ease;
-    }
-    .arrow-icon {
-      transition: transform 0.3s ease;
+      animation: cardSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* 驾驶舱卡片悬停效果 */
+    /* 卡片入场动画 - 错开延迟 */
+    .module-card:nth-child(1) { animation-delay: 0.1s; }
+    .module-card:nth-child(2) { animation-delay: 0.2s; }
+    .module-card:nth-child(3) { animation-delay: 0.3s; }
+    .module-card:nth-child(4) { animation-delay: 0.4s; }
+
+    @keyframes cardSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* 卡片背景渐变动画 */
+    .module-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 185, 107, 0.05),
+        transparent
+      );
+      transition: left 0.6s ease;
+    }
+
+    .module-card:hover::before {
+      left: 100%;
+    }
+
+    /* 悬停效果 */
+    .module-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 图标样式和动画 */
+    .module-icon {
+      transition: all 0.3s ease;
+      position: relative;
+      animation: iconPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      50% {
+        box-shadow: 0 4px 20px rgba(0, 185, 107, 0.4);
+      }
+    }
+
+    .module-card:hover .module-icon {
+      transform: scale(1.15) rotate(5deg);
+      animation: none;
+    }
+
+    /* 箭头动画 */
+    .arrow-icon {
+      transition: all 0.3s ease;
+    }
+
+    .module-card:hover .arrow-icon {
+      transform: translateX(6px);
+      opacity: 1;
+    }
+
+    /* 数据点闪烁动画 */
+    .module-card .w-1\.5 {
+      animation: dotBlink 2s ease-in-out infinite;
+    }
+
+    .module-card:nth-child(1) .w-1\.5:nth-child(1) { animation-delay: 0s; }
+    .module-card:nth-child(1) .w-1\.5:nth-child(2) { animation-delay: 0.3s; }
+    .module-card:nth-child(2) .w-1\.5:nth-child(1) { animation-delay: 0.6s; }
+    .module-card:nth-child(2) .w-1\.5:nth-child(2) { animation-delay: 0.9s; }
+    .module-card:nth-child(3) .w-1\.5:nth-child(1) { animation-delay: 1.2s; }
+    .module-card:nth-child(3) .w-1\.5:nth-child(2) { animation-delay: 1.5s; }
+    .module-card:nth-child(4) .w-1\.5:nth-child(1) { animation-delay: 1.8s; }
+    .module-card:nth-child(4) .w-1\.5:nth-child(2) { animation-delay: 2.1s; }
+
+    @keyframes dotBlink {
+      0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.3);
+      }
+    }
+
+    /* 驾驶舱卡片样式和动画 */
     .cockpit-card {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: cardSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s backwards;
+      position: relative;
+      overflow: hidden;
     }
+
+    /* 驾驶舱背景扫描线动画 */
+    .cockpit-card::before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(6, 182, 212, 0.1),
+        transparent
+      );
+      animation: scanLine 4s ease-in-out infinite;
+    }
+
+    @keyframes scanLine {
+      0% {
+        top: -100%;
+      }
+      50% {
+        top: 100%;
+      }
+      100% {
+        top: 100%;
+      }
+    }
+
+    /* 驾驶舱数据流动效果 */
+    .cockpit-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(147, 51, 234, 0.08),
+        transparent
+      );
+      transition: left 0.8s ease;
+    }
+
+    .cockpit-card:hover::after {
+      left: 100%;
+    }
+
+    /* 悬停效果 */
     .cockpit-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.15);
+      border-color: rgba(6, 182, 212, 0.3);
     }
+
+    /* 驾驶舱图标动画 */
+    .cockpit-icon {
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .cockpit-icon::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 0.75rem;
+      background: linear-gradient(45deg, #06b6d4, #9333ea);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      animation: iconGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes iconGlow {
+      0%, 100% {
+        opacity: 0;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+
     .cockpit-card:hover .cockpit-icon {
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+      transform: scale(1.1);
+      box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
     }
+
+    .cockpit-card:hover .cockpit-icon::before {
+      opacity: 0.5;
+    }
+
+    /* 驾驶舱箭头动画 */
     .cockpit-card:hover .arrow-icon {
-      transform: translateX(4px);
+      transform: translateX(6px);
+    }
+
+    /* 驾驶舱数据点动画 */
+    .cockpit-card .w-1\.5 {
+      animation: dotBlink 2s ease-in-out infinite;
+    }
+
+    .cockpit-card .w-1\.5:nth-child(1) { animation-delay: 0s; }
+    .cockpit-card .w-1\.5:nth-child(2) { animation-delay: 0.4s; }
+    .cockpit-card .w-1\.5:nth-child(3) { animation-delay: 0.8s; }
+
+    /* 驾驶舱徽章脉冲动画 */
+    .cockpit-card .bg-gradient-to-r {
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% {
+        box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+      }
     }
 
     /* 背景装饰 */
@@ -70,9 +270,850 @@
         radial-gradient(circle at 10% 20%, rgba(0, 185, 107, 0.04) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(20, 201, 201, 0.04) 0%, transparent 40%);
     }
+
+    /* ========== 科技风动态背景 ========== */
+
+    /* 背景容器 */
+    .bg-tech-animated {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+      background: #F9FAFB;
+    }
+
+    /* Layer 1: 基础渐变背景 */
+    .bg-gradient-base {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        135deg,
+        #F9FAFB 0%,
+        rgba(0, 185, 107, 0.02) 50%,
+        rgba(20, 201, 201, 0.02) 100%
+      );
+    }
+
+    /* Layer 2: 动态网格线 */
+    .bg-grid-animated {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background-image:
+        linear-gradient(rgba(0, 185, 107, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 185, 107, 0.15) 1px, transparent 1px);
+      background-size: 80px 80px;
+      animation: gridMove 60s linear infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes gridMove {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(-80px, -80px);
+      }
+    }
+
+    /* Layer 3: 光效圆圈容器 */
+    .bg-orbs-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.6;
+      will-change: transform, opacity;
+    }
+
+    /* 绿色光效 */
+    .bg-orb.orb-1 {
+      width: 500px;
+      height: 500px;
+      top: 10%;
+      left: 15%;
+      background: radial-gradient(
+        circle,
+        rgba(0, 185, 107, 0.12) 0%,
+        rgba(0, 185, 107, 0.04) 50%,
+        transparent 100%
+      );
+      animation: orbPulse 10s ease-in-out infinite, orbFloat1 25s ease-in-out infinite;
+    }
+
+    /* 青色光效 */
+    .bg-orb.orb-2 {
+      width: 600px;
+      height: 600px;
+      top: 50%;
+      right: 10%;
+      background: radial-gradient(
+        circle,
+        rgba(20, 201, 201, 0.12) 0%,
+        rgba(20, 201, 201, 0.04) 50%,
+        transparent 100%
+      );
+      animation: orbPulse 12s ease-in-out infinite, orbFloat2 30s ease-in-out infinite;
+      animation-delay: 2s;
+    }
+
+    /* 紫色光效 */
+    .bg-orb.orb-3 {
+      width: 400px;
+      height: 400px;
+      bottom: 15%;
+      left: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(147, 51, 234, 0.12) 0%,
+        rgba(147, 51, 234, 0.04) 50%,
+        transparent 100%
+      );
+      animation: orbPulse 8s ease-in-out infinite, orbFloat3 20s ease-in-out infinite;
+      animation-delay: 4s;
+    }
+
+    /* 光效脉动动画 */
+    @keyframes orbPulse {
+      0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.4;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+      }
+    }
+
+    /* 光效漂移动画 - 圆圈1 */
+    @keyframes orbFloat1 {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      33% {
+        transform: translate(50px, -30px);
+      }
+      66% {
+        transform: translate(-30px, 40px);
+      }
+    }
+
+    /* 光效漂移动画 - 圆圈2 */
+    @keyframes orbFloat2 {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      33% {
+        transform: translate(-40px, 50px);
+      }
+      66% {
+        transform: translate(30px, -40px);
+      }
+    }
+
+    /* 光效漂移动画 - 圆圈3 */
+    @keyframes orbFloat3 {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      33% {
+        transform: translate(40px, 30px);
+      }
+      66% {
+        transform: translate(-50px, -20px);
+      }
+    }
+
+    /* Layer 4: 粒子容器 */
+    .bg-particles-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(0, 185, 107, 0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0, 185, 107, 0.4);
+      animation: particleTwinkle 4s ease-in-out infinite;
+    }
+
+    /* 粒子闪烁动画 */
+    @keyframes particleTwinkle {
+      0%, 100% {
+        opacity: 0.2;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    /* 响应式优化 */
+    @media (max-width: 1024px) {
+      .bg-grid-animated {
+        background-size: 60px 60px;
+      }
+
+      .bg-orb.orb-1 {
+        width: 400px;
+        height: 400px;
+      }
+
+      .bg-orb.orb-2 {
+        width: 450px;
+        height: 450px;
+      }
+
+      .bg-orb.orb-3 {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .bg-grid-animated {
+        background-size: 40px 40px;
+        animation-duration: 40s;
+      }
+
+      .bg-orb.orb-1 {
+        width: 300px;
+        height: 300px;
+      }
+
+      .bg-orb.orb-2 {
+        width: 350px;
+        height: 350px;
+      }
+
+      .particle {
+        display: none;
+      }
+    }
+
+    /* 尊重用户的动画偏好设置 */
+    @media (prefers-reduced-motion: reduce) {
+      .bg-grid-animated,
+      .bg-orb,
+      .particle {
+        animation: none;
+      }
+    }
+
+    /* ========== AI考试助手按钮样式 ========== */
+    .ai-assistant-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-assistant-button:hover {
+      transform: translateY(-2px);
+    }
+
+    /* AI图标样式 */
+    .ai-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
+      background: linear-gradient(135deg, #00B96B 0%, #14C9C9 50%, #9333EA 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 3s ease infinite;
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 185, 107, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    /* 渐变背景动画 */
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* 悬停时图标效果 */
+    .ai-assistant-button:hover .ai-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 6px 20px rgba(0, 185, 107, 0.5);
+    }
+
+    /* 文字样式 - 渐变色 */
+    .ai-text {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      background: linear-gradient(135deg, #00B96B 0%, #14C9C9 50%, #9333EA 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+      letter-spacing: 0.025em;
+    }
+
+    /* 徽章样式 */
+    .ai-badge {
+      display: inline-block;
+      font-size: 1rem;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* ========== AI对话框样式 ========== */
+    .ai-chat-container {
+      width: 100%;
+      margin-bottom: 2rem;
+      animation: slideDown 0.5s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* AI对话框主体 */
+    .ai-chat-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: #ffffff;
+      border-radius: 1.5rem;
+      box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-chat-box:hover {
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(0, 185, 107, 0.2);
+    }
+
+    .ai-chat-box:focus-within {
+      box-shadow:
+        0 8px 30px rgba(0, 185, 107, 0.15),
+        0 0 0 2px rgba(0, 185, 107, 0.3);
+    }
+
+    /* 搜索图标 */
+    .ai-chat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00B96B, #14C9C9);
+      color: #ffffff;
+      font-size: 1.125rem;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    .ai-chat-box:focus-within .ai-chat-icon {
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    /* 输入框 */
+    .ai-chat-input {
+      flex: 1;
+      padding: 0.75rem 0;
+      font-size: 1rem;
+      color: #1f2937;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .ai-chat-input::placeholder {
+      color: #9ca3af;
+      font-weight: 400;
+    }
+
+    .ai-chat-input:focus::placeholder {
+      color: #d1d5db;
+    }
+
+    /* 输入区域容器 */
+    .ai-input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* 内联快捷建议 */
+    .ai-inline-suggestions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      transition: all 0.3s ease;
+      padding-top: 0.5rem;
+    }
+
+    .ai-inline-suggestions.hidden {
+      display: none;
+    }
+
+    /* 内联chip样式 */
+    .inline-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #6b7280;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .inline-chip i {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+
+    .inline-chip:hover {
+      background: #ffffff;
+      border-color: #00B96B;
+      color: #00B96B;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 185, 107, 0.15);
+    }
+
+    .inline-chip:hover i {
+      opacity: 1;
+    }
+
+    .inline-chip:active {
+      transform: translateY(0);
+    }
+
+    /* 操作按钮组 */
+    .ai-chat-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      margin-top: 0.5rem;
+    }
+    .ai-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      border: none;
+      background: #f3f4f6;
+      color: #6b7280;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-action-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(0, 185, 107, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.3s ease, height 0.3s ease;
+    }
+
+    .ai-action-btn:hover::before {
+      width: 100%;
+      height: 100%;
+    }
+
+    .ai-action-btn:hover {
+      background: #e5e7eb;
+      color: #374151;
+      transform: scale(1.1);
+    }
+
+    .ai-action-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 语音按钮 */
+    .ai-action-btn.voice:hover {
+      color: #9333EA;
+    }
+
+    /* 发送按钮 */
+    .ai-action-btn.send {
+      background: linear-gradient(135deg, #00B96B, #00A35C);
+      color: #ffffff;
+    }
+
+    .ai-action-btn.send:hover {
+      background: linear-gradient(135deg, #00A35C, #008F4F);
+      transform: scale(1.1) rotate(15deg);
+    }
+
+    .ai-action-btn.send:disabled {
+      background: #e5e7eb;
+      color: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .ai-assistant-button {
+        padding: 0.375rem 0.5rem;
+      }
+
+      .ai-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.875rem;
+      }
+
+      .ai-text {
+        font-size: 0.875rem;
+      }
+
+      .ai-badge {
+        display: none;
+      }
+
+      .ai-chat-box {
+        padding: 0.75rem 1rem;
+      }
+
+      .ai-chat-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+      }
+
+      .ai-action-btn {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.875rem;
+      }
+    }
+
+    /* ========== 深色主题样式 ========== */
+
+    /* 深色主题根类 */
+    body.dark-theme {
+      color: #e5e7eb;
+    }
+
+    /* 深色主题 - 动态背景 */
+    body.dark-theme .bg-tech-animated {
+      background: #0f172a;
+    }
+
+    body.dark-theme .bg-gradient-base {
+      background: linear-gradient(
+        135deg,
+        #0f172a 0%,
+        rgba(0, 185, 107, 0.08) 50%,
+        rgba(20, 201, 201, 0.08) 100%
+      );
+    }
+
+    /* 深色主题 - 网格线 */
+    body.dark-theme .bg-grid-animated {
+      background-image:
+        linear-gradient(rgba(0, 185, 107, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 185, 107, 0.25) 1px, transparent 1px);
+    }
+
+    /* 深色主题 - 光效圆圈 */
+    body.dark-theme .bg-orb.orb-1 {
+      background: radial-gradient(
+        circle,
+        rgba(0, 185, 107, 0.2) 0%,
+        rgba(0, 185, 107, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    body.dark-theme .bg-orb.orb-2 {
+      background: radial-gradient(
+        circle,
+        rgba(20, 201, 201, 0.2) 0%,
+        rgba(20, 201, 201, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    body.dark-theme .bg-orb.orb-3 {
+      background: radial-gradient(
+        circle,
+        rgba(147, 51, 234, 0.2) 0%,
+        rgba(147, 51, 234, 0.08) 50%,
+        transparent 100%
+      );
+    }
+
+    /* 深色主题 - 粒子 */
+    body.dark-theme .particle {
+      background: rgba(0, 185, 107, 0.8);
+      box-shadow: 0 0 6px rgba(0, 185, 107, 0.6);
+    }
+
+    /* 深色主题 - 导航栏 */
+    body.dark-theme header {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    /* 深色主题 - 卡片 */
+    body.dark-theme .module-card,
+    body.dark-theme .cockpit-card {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme .module-card:hover,
+    body.dark-theme .cockpit-card:hover {
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 深色主题 - AI对话框 */
+    body.dark-theme .ai-chat-box {
+      background: rgba(30, 41, 59, 0.9);
+      box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.dark-theme .ai-chat-box:hover {
+      box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(0, 185, 107, 0.3);
+    }
+
+    body.dark-theme .ai-chat-box:focus-within {
+      box-shadow:
+        0 8px 30px rgba(0, 185, 107, 0.2),
+        0 0 0 2px rgba(0, 185, 107, 0.4);
+    }
+
+    body.dark-theme .ai-chat-input {
+      color: #e5e7eb;
+    }
+
+    body.dark-theme .ai-chat-input::placeholder {
+      color: #6b7280;
+    }
+
+    body.dark-theme .ai-chat-input:focus::placeholder {
+      color: #4b5563;
+    }
+
+    /* 深色主题 - 内联建议 */
+    body.dark-theme .inline-chip {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #9ca3af;
+    }
+
+    body.dark-theme .inline-chip:hover {
+      background: rgba(51, 65, 85, 1);
+      border-color: #00B96B;
+      color: #00B96B;
+    }
+
+    /* 深色主题 - 操作按钮 */
+    body.dark-theme .ai-action-btn {
+      background: rgba(51, 65, 85, 0.8);
+      color: #9ca3af;
+    }
+
+    body.dark-theme .ai-action-btn:hover {
+      background: rgba(51, 65, 85, 1);
+      color: #e5e7eb;
+    }
+
+    /* 深色主题 - 文本颜色 */
+    body.dark-theme h1,
+    body.dark-theme h2,
+    body.dark-theme h3,
+    body.dark-theme .text-gray-900 {
+      color: #f3f4f6 !important;
+    }
+
+    body.dark-theme .text-gray-600,
+    body.dark-theme .text-gray-700 {
+      color: #9ca3af !important;
+    }
+
+    body.dark-theme .text-gray-500 {
+      color: #6b7280 !important;
+    }
+
+    /* 深色主题 - 边框 */
+    body.dark-theme .border-gray-200 {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* 主题切换按钮样式 */
+    .theme-toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      background: #f3f4f6;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.dark-theme .theme-toggle-btn {
+      background: rgba(51, 65, 85, 0.8);
+    }
+
+    .theme-toggle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    body.dark-theme .theme-toggle-btn:hover {
+      box-shadow: 0 4px 12px rgba(0, 185, 107, 0.3);
+    }
+
+    .theme-toggle-btn i {
+      font-size: 1.125rem;
+      color: #6b7280;
+      transition: all 0.3s ease;
+    }
+
+    body.dark-theme .theme-toggle-btn i {
+      color: #fbbf24;
+    }
+
+    .theme-toggle-btn:hover i {
+      transform: rotate(180deg);
+    }
+
+    /* 主题切换动画 */
+    body {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .bg-tech-animated,
+    .bg-gradient-base,
+    .bg-grid-animated,
+    .bg-orb,
+    .particle {
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
-<body class="bg-gray-50 bg-pattern h-screen flex flex-col">
+<body class="h-screen flex flex-col">
+  <!-- 科技风动态背景 -->
+  <div class="bg-tech-animated">
+    <!-- Layer 1: 基础渐变背景 -->
+    <div class="bg-gradient-base"></div>
+
+    <!-- Layer 2: 动态网格线 -->
+    <div class="bg-grid-animated"></div>
+
+    <!-- Layer 3: 光效圆圈 -->
+    <div class="bg-orbs-container">
+      <div class="bg-orb orb-1"></div>
+      <div class="bg-orb orb-2"></div>
+      <div class="bg-orb orb-3"></div>
+    </div>
+
+    <!-- Layer 4: 粒子点 -->
+    <div class="bg-particles-container">
+      <div class="particle" style="top: 10%; left: 15%; animation-delay: 0s;"></div>
+      <div class="particle" style="top: 20%; left: 80%; animation-delay: 0.5s;"></div>
+      <div class="particle" style="top: 30%; left: 45%; animation-delay: 1s;"></div>
+      <div class="particle" style="top: 40%; left: 70%; animation-delay: 1.5s;"></div>
+      <div class="particle" style="top: 50%; left: 25%; animation-delay: 2s;"></div>
+      <div class="particle" style="top: 60%; left: 90%; animation-delay: 2.5s;"></div>
+      <div class="particle" style="top: 70%; left: 55%; animation-delay: 3s;"></div>
+      <div class="particle" style="top: 80%; left: 35%; animation-delay: 3.5s;"></div>
+      <div class="particle" style="top: 15%; left: 60%; animation-delay: 4s;"></div>
+      <div class="particle" style="top: 25%; left: 40%; animation-delay: 4.5s;"></div>
+      <div class="particle" style="top: 35%; left: 85%; animation-delay: 1.2s;"></div>
+      <div class="particle" style="top: 45%; left: 20%; animation-delay: 2.3s;"></div>
+      <div class="particle" style="top: 55%; left: 75%; animation-delay: 3.4s;"></div>
+      <div class="particle" style="top: 65%; left: 50%; animation-delay: 0.8s;"></div>
+      <div class="particle" style="top: 75%; left: 10%; animation-delay: 1.9s;"></div>
+      <div class="particle" style="top: 85%; left: 65%; animation-delay: 2.7s;"></div>
+      <div class="particle" style="top: 12%; left: 30%; animation-delay: 3.6s;"></div>
+      <div class="particle" style="top: 22%; left: 95%; animation-delay: 0.3s;"></div>
+      <div class="particle" style="top: 32%; left: 5%; animation-delay: 1.4s;"></div>
+      <div class="particle" style="top: 42%; left: 48%; animation-delay: 2.8s;"></div>
+    </div>
+  </div>
+
   <!-- 顶部导航栏 -->
   <header class="h-16 bg-white border-b border-gray-200 flex-shrink-0">
     <div class="flex items-center justify-between h-full px-8 max-w-7xl mx-auto">
@@ -88,6 +1129,18 @@
         </div>
       </div>
       <div class="flex items-center space-x-4">
+        <!-- AI考试助手按钮 - 重新设计 -->
+        <a href="ai-assistant.html" class="ai-assistant-button group">
+          <span class="ai-icon">AI</span>
+          <span class="ai-text">考试助手</span>
+          <span class="ai-badge">✨</span>
+        </a>
+        <div class="h-8 w-px bg-gray-200"></div>
+        <!-- 主题切换按钮 -->
+        <button onclick="toggleTheme()" class="theme-toggle-btn" title="切换主题">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="h-8 w-px bg-gray-200"></div>
         <button class="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
           <i class="fas fa-bell"></i>
           <span class="absolute top-1 right-1 w-2 h-2 bg-error-500 rounded-full"></span>
@@ -114,6 +1167,57 @@
       <div class="text-center mb-10">
         <h2 class="text-2xl font-bold text-gray-900 mb-2">欢迎回来 👋</h2>
         <p class="text-gray-500">今天是 <span id="currentDate"></span>，选择一个模块开始工作</p>
+      </div>
+
+      <!-- AI对话框区域 -->
+      <div class="ai-chat-container">
+        <div class="ai-chat-box">
+          <!-- 搜索图标 -->
+          <div class="ai-chat-icon">
+            <i class="fas fa-search"></i>
+          </div>
+
+          <!-- 输入区域容器 -->
+          <div class="ai-input-wrapper">
+            <!-- 输入框 -->
+            <input
+              type="text"
+              id="aiChatInput"
+              class="ai-chat-input"
+              placeholder="输入指令，让我帮你快速完成出题、组卷、考试等管理任务"
+              aria-label="AI 助手输入框"
+              onkeypress="handleAIChatKeypress(event)"
+            />
+
+            <!-- 快捷建议chips（输入框下方） -->
+            <div class="ai-inline-suggestions" id="inlineSuggestions">
+              <button class="inline-chip" onclick="fillAIInput('生成题目')">
+                <i class="fas fa-lightbulb"></i>
+                <span>生成题目</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('智能组卷')">
+                <i class="fas fa-file-alt"></i>
+                <span>智能组卷</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('创建考试')">
+                <i class="fas fa-clipboard-list"></i>
+                <span>创建考试</span>
+              </button>
+              <button class="inline-chip" onclick="fillAIInput('刷题任务')">
+                <i class="fas fa-brain"></i>
+                <span>刷题任务</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 操作按钮组 -->
+          <div class="ai-chat-actions">
+            <!-- 发送按钮 -->
+            <button class="ai-action-btn send" title="发送消息" aria-label="发送消息" onclick="sendAIChatMessage()">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 功能模块卡片 - 4列网格 -->
@@ -265,6 +1369,129 @@
     const today = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
     document.getElementById('currentDate').textContent = today.toLocaleDateString('zh-CN', options);
+
+    // AI对话框功能
+    // 处理回车键
+    function handleAIChatKeypress(event) {
+      if (event.key === 'Enter') {
+        sendAIChatMessage();
+      }
+    }
+
+    // 发送消息并跳转到AI助手页面
+    function sendAIChatMessage() {
+      const input = document.getElementById('aiChatInput');
+      const message = input.value.trim();
+
+      if (!message) {
+        return;
+      }
+
+      // 将消息存储到sessionStorage
+      sessionStorage.setItem('aiInitialMessage', message);
+
+      // 跳转到AI助手页面
+      window.location.href = 'ai-assistant.html';
+    }
+
+    // 填充AI输入框（快捷提示）
+    function fillAIInput(text) {
+      const input = document.getElementById('aiChatInput');
+      input.value = text;
+      input.focus();
+
+      // 自动发送消息并跳转
+      sendAIChatMessage();
+    }
+
+    // 隐藏内联建议
+    function hideInlineSuggestions() {
+      const suggestions = document.getElementById('inlineSuggestions');
+      const input = document.getElementById('aiChatInput');
+
+      if (suggestions) {
+        suggestions.classList.add('hidden');
+      }
+    }
+
+    // 如果输入框为空则显示内联建议
+    function showInlineSuggestionsIfEmpty() {
+      const suggestions = document.getElementById('inlineSuggestions');
+      const input = document.getElementById('aiChatInput');
+
+      // 延迟检查，避免点击chip时立即显示
+      setTimeout(() => {
+        if (input.value.trim() === '' && suggestions) {
+          suggestions.classList.remove('hidden');
+        }
+      }, 200);
+    }
+
+    // ========== 主题切换功能 ==========
+
+    // 初始化主题
+    function initTheme() {
+      // 从 localStorage 读取用户偏好
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      // 优先使用保存的主题，否则使用系统偏好
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+      if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        updateThemeIcon('dark');
+      } else {
+        document.body.classList.remove('dark-theme');
+        updateThemeIcon('light');
+      }
+    }
+
+    // 切换主题
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark-theme');
+
+      if (isDark) {
+        // 切换到浅色主题
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme', 'light');
+        updateThemeIcon('light');
+      } else {
+        // 切换到深色主题
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme', 'dark');
+        updateThemeIcon('dark');
+      }
+    }
+
+    // 更新主题图标
+    function updateThemeIcon(theme) {
+      const icon = document.querySelector('.theme-toggle-btn i');
+      if (icon) {
+        if (theme === 'dark') {
+          icon.className = 'fas fa-sun';
+        } else {
+          icon.className = 'fas fa-moon';
+        }
+      }
+    }
+
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      // 只有在用户没有手动设置主题时才自动切换
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          document.body.classList.add('dark-theme');
+          updateThemeIcon('dark');
+        } else {
+          document.body.classList.remove('dark-theme');
+          updateThemeIcon('light');
+        }
+      }
+    });
+
+    // 页面加载时初始化主题
+    initTheme();
   </script>
 </body>
 </html>

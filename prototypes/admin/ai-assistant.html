@@ -333,19 +333,19 @@
     <aside class="panel w-1/5 bg-white border-r border-gray-200 flex flex-col transition-all duration-300" id="taskPanel" style="margin-left: -20%; opacity: 0;">
       <!-- 任务列表标题 -->
       <div class="p-4 border-b border-gray-200 flex-shrink-0">
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center justify-between">
           <h3 class="text-sm font-semibold text-gray-900">对话列表</h3>
-          <button id="closeTaskPanel" class="p-1 text-gray-400 hover:text-gray-600 transition-colors" title="收起">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button id="batchDeleteBtn" class="flex-1 px-3 py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 transition-colors">
-            <i class="fas fa-trash-alt mr-1"></i>批量删除
-          </button>
-          <button id="cancelBatchBtn" class="hidden flex-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 transition-colors">
-            取消
-          </button>
+          <div class="flex items-center space-x-2">
+            <button id="batchDeleteBtn" class="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="批量删除">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+            <button id="cancelBatchBtn" class="hidden p-1.5 text-gray-500 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors" title="取消批量删除">
+              <i class="fas fa-times"></i>
+            </button>
+            <button id="closeTaskPanel" class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors" title="收起">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -375,7 +375,7 @@
         <div class="flex items-center space-x-3">
           <!-- 展开任务列表按钮 -->
           <button id="toggleTaskPanel" class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="显示对话列表">
-            <i class="fas fa-bars"></i>
+            <i class="fas fa-chevron-right"></i>
           </button>
           <div>
             <h2 id="chatTitle" class="text-lg font-semibold text-gray-900">考试助手</h2>
@@ -424,23 +424,18 @@
 
       <!-- 快捷提示词 -->
       <div id="quickActions" class="px-6 py-3 border-t border-gray-100">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar flex-1">
-            <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
-              <i class="far fa-file-alt mr-1"></i>生成题目
-            </button>
-            <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
-              <i class="far fa-copy mr-1"></i>智能组卷
-            </button>
-            <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
-              <i class="far fa-calendar-check mr-1"></i>创建考试
-            </button>
-            <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
-              <i class="far fa-edit mr-1"></i>刷题任务
-            </button>
-          </div>
-          <button id="promptTemplateBtn" class="ml-3 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm whitespace-nowrap hover:bg-indigo-100 transition-colors flex items-center" title="查看提示词模版">
-            <i class="fas fa-lightbulb mr-1"></i>提示词模版
+        <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar">
+          <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
+            <i class="far fa-file-alt mr-1"></i>生成题目
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
+            <i class="far fa-copy mr-1"></i>智能组卷
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
+            <i class="far fa-calendar-check mr-1"></i>创建考试
+          </button>
+          <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
+            <i class="far fa-edit mr-1"></i>刷题任务
           </button>
         </div>
       </div>
@@ -450,22 +445,23 @@
         <!-- 隐藏的文件输入 -->
         <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.md" />
 
-        <div class="flex items-center space-x-2 mb-3">
-          <button id="uploadBtn" class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="上传文档">
-            <i class="fas fa-paperclip"></i>
-          </button>
-          <button class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="提示词模板">
-            <i class="fas fa-lightbulb"></i>
-          </button>
-        </div>
         <div class="flex items-end space-x-2">
           <div class="flex-1 relative">
             <textarea
               id="messageInput"
               rows="1"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              class="w-full px-4 py-3 pr-24 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="输入您的需求... 支持拖拽文档到此处上传"
             ></textarea>
+            <!-- 输入框内的按钮组 -->
+            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+              <button id="promptTemplateBtn" class="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded transition-colors" title="提示词模版">
+                <i class="fas fa-lightbulb"></i>
+              </button>
+              <button id="uploadBtn" class="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="上传文档">
+                <i class="fas fa-paperclip"></i>
+              </button>
+            </div>
           </div>
           <button id="sendBtn" class="px-6 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2">
             <i class="fas fa-paper-plane"></i>
@@ -3900,11 +3896,13 @@
           taskPanel.style.marginLeft = '0';
           taskPanel.style.opacity = '1';
           toggleBtn.title = '隐藏对话列表';
+          toggleBtn.querySelector('i').className = 'fas fa-chevron-left';
         } else {
           // 隐藏任务面板
           taskPanel.style.marginLeft = '-20%';
           taskPanel.style.opacity = '0';
           toggleBtn.title = '显示对话列表';
+          toggleBtn.querySelector('i').className = 'fas fa-chevron-right';
         }
       }
 
@@ -4438,10 +4436,11 @@
       if (!document.getElementById('confirmBatchDeleteBtn')) {
         const confirmBtn = document.createElement('button');
         confirmBtn.id = 'confirmBatchDeleteBtn';
-        confirmBtn.className = 'hidden flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors';
-        confirmBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i>删除选中';
+        confirmBtn.className = 'hidden p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors';
+        confirmBtn.title = '删除选中';
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i>';
         confirmBtn.addEventListener('click', confirmBatchDelete);
-        document.getElementById('cancelBatchBtn').parentElement.appendChild(confirmBtn);
+        document.getElementById('cancelBatchBtn').parentElement.insertBefore(confirmBtn, document.getElementById('cancelBatchBtn'));
       }
     }
 

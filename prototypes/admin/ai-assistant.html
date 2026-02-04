@@ -2832,8 +2832,8 @@
             content: contentTemplates[params.type] ? contentTemplates[params.type][templateIndex] : `题目内容 ${i + 1}`,
             difficulty: params.difficulty || 2,
             difficultyName: params.difficultyName || '二级',
-            knowledgePoint: params.knowledgePoint || '文档知识点',
-            knowledgePath: params.knowledgePoint || '文档知识点',
+            knowledgePoint: params.knowledgePoint || '',
+            knowledgePath: params.knowledgePoint || '',
             createTime: new Date().toLocaleString('zh-CN'),
             author: 'AI助手',
             useCount: 0
@@ -3312,7 +3312,9 @@
         'multiple': 'purple',
         'judge': 'success',
         'blank': 'warning',
-        'shortAnswer': 'primary'
+        'shortAnswer': 'primary',
+        'cloze': 'amber',
+        'composite': 'indigo'
       };
       const color = typeColors[question.type] || 'gray';
 
@@ -3320,14 +3322,14 @@
       const difficultyNames = ['', '一级', '二级', '三级', '四级', '五级'];
       const difficultyText = difficultyNames[question.difficulty || 1];
 
-      card.innerHTML = `
+      // 构建题目HTML - 参考简便录入格式
+      let contentHTML = `
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center space-x-2">
             <span class="px-2 py-1 bg-${color}-100 text-${color}-600 text-xs font-medium rounded">${question.typeName || question.type}</span>
           </div>
           <div class="flex items-center space-x-2">
             <span class="text-xs text-gray-600" title="难度">${difficultyText}</span>
-            <span class="text-xs text-gray-500">${question.score || 2}分</span>
           </div>
         </div>
 
@@ -3335,30 +3337,108 @@
           <div class="flex items-start">
             <span class="text-sm font-medium text-gray-700 mr-2">${index}.</span>
             <div class="flex-1">
-              <p class="text-sm text-gray-800 leading-relaxed">${question.content}</p>
+              <p class="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">${question.content}</p>
             </div>
-          </div>
-        </div>
-
-        ${question.options && question.options.length > 0 ? `
-          <div class="space-y-1 mb-3">
-            ${question.options.map(opt => `
-              <div class="flex items-start text-xs text-gray-600">
-                <span class="font-medium mr-2">${opt.label}.</span>
-                <span>${opt.text}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        <div class="flex items-center pt-3 border-t border-gray-100">
-          <div class="flex items-center space-x-3 text-xs text-gray-500">
-            <span><i class="fas fa-check-circle text-success-500 mr-1"></i>答案: ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(', ') : question.correctAnswers}</span>
-            ${question.knowledgePath ? `<span><i class="fas fa-folder text-primary-500 mr-1"></i>${question.knowledgePath}</span>` : ''}
           </div>
         </div>
       `;
 
+      // 根据题型显示选项和答案
+      if (question.type === 'single' || question.type === 'multiple' || question.type === 'judge') {
+        // 单选、多选、判断题：显示选项
+        if (question.options && question.options.length > 0) {
+          contentHTML += `<div class="space-y-1 mb-3 ml-6">`;
+          question.options.forEach(opt => {
+            contentHTML += `
+              <div class="flex items-start text-xs text-gray-600">
+                <span class="font-medium mr-2">${opt.label}.</span>
+                <span>${opt.text}</span>
+              </div>
+            `;
+          });
+          contentHTML += `</div>`;
+        }
+        // 显示答案
+        const answerText = Array.isArray(question.correctAnswers) ? question.correctAnswers.join('、') : question.correctAnswers;
+        contentHTML += `
+          <div class="ml-6 mb-2">
+            <span class="text-xs text-gray-700"><strong>答案：</strong>${answerText}</span>
+          </div>
+        `;
+      } else if (question.type === 'blank') {
+        // 填空题：显示答案（多个答案用分号分隔）
+        const answerText = Array.isArray(question.correctAnswers) ? question.correctAnswers.join('；') : question.correctAnswers;
+        contentHTML += `
+          <div class="ml-6 mb-2">
+            <span class="text-xs text-gray-700"><strong>答案：</strong>${answerText}</span>
+          </div>
+        `;
+      } else if (question.type === 'shortAnswer') {
+        // 简答题：不显示答案（或显示"无"）
+        contentHTML += `
+          <div class="ml-6 mb-2">
+            <span class="text-xs text-gray-500"><strong>答案：</strong>（主观题，无标准答案）</span>
+          </div>
+        `;
+      } else if (question.type === 'cloze') {
+        // 完形填空：显示选项和答案
+        if (question.blanks && question.blanks.length > 0) {
+          contentHTML += `<div class="space-y-2 mb-3 ml-6">`;
+          question.blanks.forEach((blank, blankIndex) => {
+            contentHTML += `<div class="text-xs text-gray-600">`;
+            contentHTML += `<div class="font-medium mb-1">${blankIndex + 1})</div>`;
+            if (blank.options && blank.options.length > 0) {
+              blank.options.forEach(opt => {
+                contentHTML += `<span class="mr-3">${opt.label}. ${opt.text}</span>`;
+              });
+            }
+            contentHTML += `</div>`;
+          });
+          contentHTML += `</div>`;
+        }
+        // 显示答案（如"BDCA"）
+        contentHTML += `
+          <div class="ml-6 mb-2">
+            <span class="text-xs text-gray-700"><strong>答案：</strong>${question.correctAnswers || ''}</span>
+          </div>
+        `;
+      } else if (question.type === 'composite') {
+        // 复合题：显示子题
+        if (question.subQuestions && question.subQuestions.length > 0) {
+          contentHTML += `<div class="space-y-3 mb-3 ml-6 border-l-2 border-gray-200 pl-4">`;
+          question.subQuestions.forEach((subQ, subIndex) => {
+            contentHTML += `
+              <div class="text-xs">
+                <div class="font-medium text-gray-700 mb-1">${subIndex + 1}）【${subQ.typeName}】${subQ.content}</div>
+            `;
+            // 子题选项
+            if (subQ.options && subQ.options.length > 0) {
+              subQ.options.forEach(opt => {
+                contentHTML += `<div class="text-gray-600 ml-4">${opt.label}. ${opt.text}</div>`;
+              });
+            }
+            // 子题答案
+            const subAnswerText = Array.isArray(subQ.correctAnswers) ? subQ.correctAnswers.join('、') : subQ.correctAnswers;
+            contentHTML += `<div class="text-gray-700 ml-4 mt-1"><strong>答案：</strong>${subAnswerText}</div>`;
+            contentHTML += `</div>`;
+          });
+          contentHTML += `</div>`;
+        }
+      }
+
+      // 显示知识点（如果有）
+      if (question.knowledgePath) {
+        contentHTML += `
+          <div class="pt-3 border-t border-gray-100">
+            <div class="flex items-center text-xs text-gray-500">
+              <i class="fas fa-folder text-primary-500 mr-1"></i>
+              <span>知识点：${question.knowledgePath}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      card.innerHTML = contentHTML;
       return card;
     }
 

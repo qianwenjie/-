@@ -333,10 +333,18 @@
     <aside class="panel w-1/5 bg-white border-r border-gray-200 flex flex-col transition-all duration-300" id="taskPanel" style="margin-left: -20%; opacity: 0;">
       <!-- 任务列表标题 -->
       <div class="p-4 border-b border-gray-200 flex-shrink-0">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-semibold text-gray-900">对话列表</h3>
           <button id="closeTaskPanel" class="p-1 text-gray-400 hover:text-gray-600 transition-colors" title="收起">
             <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="batchDeleteBtn" class="flex-1 px-3 py-1.5 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 transition-colors">
+            <i class="fas fa-trash-alt mr-1"></i>批量删除
+          </button>
+          <button id="cancelBatchBtn" class="hidden flex-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 transition-colors">
+            取消
           </button>
         </div>
       </div>
@@ -373,14 +381,6 @@
             <h2 id="chatTitle" class="text-lg font-semibold text-gray-900">考试助手</h2>
             <p id="chatSubtitle" class="text-xs text-gray-500">选择一个任务开始对话</p>
           </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="清空对话">
-            <i class="fas fa-trash-alt"></i>
-          </button>
-          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="设置">
-            <i class="fas fa-cog"></i>
-          </button>
         </div>
       </div>
 
@@ -426,16 +426,16 @@
       <div id="quickActions" class="px-6 py-3 border-t border-gray-100">
         <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar">
           <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
-            📝 生成题目
+            <i class="far fa-file-alt mr-1"></i>生成题目
           </button>
           <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
-            📋 智能组卷
+            <i class="far fa-copy mr-1"></i>智能组卷
           </button>
           <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
-            🎯 创建考试
+            <i class="far fa-calendar-check mr-1"></i>创建考试
           </button>
           <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
-            💪 刷题任务
+            <i class="far fa-edit mr-1"></i>刷题任务
           </button>
         </div>
       </div>
@@ -451,9 +451,6 @@
           </button>
           <button class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="提示词模板">
             <i class="fas fa-lightbulb"></i>
-          </button>
-          <button class="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 rounded transition-colors" title="参数设置">
-            <i class="fas fa-sliders-h"></i>
           </button>
         </div>
         <div class="flex items-end space-x-2">
@@ -479,12 +476,12 @@
       <!-- 预览区标题栏 -->
       <div class="h-14 px-6 bg-white border-b border-gray-200 flex items-center justify-between">
         <h3 id="previewTitle" class="text-lg font-semibold text-gray-900">预览区</h3>
-        <div class="flex items-center space-x-2">
-          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="刷新">
-            <i class="fas fa-sync-alt"></i>
+        <div id="previewActions" class="hidden flex items-center space-x-2">
+          <button onclick="exportGeneratedQuestions()" class="px-3 py-1.5 bg-white border border-primary-300 text-primary-600 rounded hover:bg-primary-50 text-sm">
+            <i class="fas fa-download mr-1"></i>导出
           </button>
-          <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="全屏">
-            <i class="fas fa-expand"></i>
+          <button onclick="addToSimpleInput()" class="px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
+            <i class="fas fa-edit mr-1"></i>录入至简便录入区再确认
           </button>
         </div>
       </div>
@@ -3152,16 +3149,27 @@
       const previewContainer = document.getElementById('previewContainer');
       const previewEmpty = document.getElementById('previewEmpty');
       const previewTitle = document.getElementById('previewTitle');
+      const previewActions = document.getElementById('previewActions');
 
       // 隐藏空状态
       if (previewEmpty) {
         previewEmpty.classList.add('hidden');
       }
 
-      // 更新标题
+      // 更新标题和显示操作按钮
       if (previewTitle) {
         const difficultyText = params.difficultyName ? ` - ${params.difficultyName}` : '';
-        previewTitle.textContent = `生成的${params.typeName}${difficultyText}`;
+        previewTitle.innerHTML = `
+          <div>
+            <div class="text-lg font-semibold text-gray-900">生成的${params.typeName}${difficultyText}</div>
+            <div class="text-xs text-gray-500 mt-0.5">已生成 ${questions.length} 道题目</div>
+          </div>
+        `;
+      }
+
+      // 显示操作按钮
+      if (previewActions) {
+        previewActions.classList.remove('hidden');
       }
 
       // 清除旧内容（保留参数卡片）
@@ -3171,27 +3179,6 @@
       // 创建题目容器
       const container = document.createElement('div');
       container.className = 'generated-questions-container space-y-4';
-
-      // 添加统计信息
-      const statsDiv = document.createElement('div');
-      statsDiv.className = 'bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4';
-      statsDiv.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-check-circle text-primary-500"></i>
-            <span class="text-sm font-medium text-gray-900">已生成 ${questions.length} 道题目</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="exportGeneratedQuestions()" class="px-3 py-1 bg-white border border-primary-300 text-primary-600 rounded hover:bg-primary-50 text-sm">
-              <i class="fas fa-download mr-1"></i>导出
-            </button>
-            <button onclick="addToSimpleInput()" class="px-3 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
-              <i class="fas fa-edit mr-1"></i>录入至简便录入区再确认
-            </button>
-          </div>
-        </div>
-      `;
-      container.appendChild(statsDiv);
 
       // 渲染每道题目
       questions.forEach((question, index) => {
@@ -3623,6 +3610,16 @@
       const newTaskBtn = document.getElementById('newTaskBtn');
       if (newTaskBtn) {
         newTaskBtn.addEventListener('click', createNewTask);
+      }
+
+      // 批量删除
+      const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+      const cancelBatchBtn = document.getElementById('cancelBatchBtn');
+      if (batchDeleteBtn) {
+        batchDeleteBtn.addEventListener('click', enterBatchDeleteMode);
+      }
+      if (cancelBatchBtn) {
+        cancelBatchBtn.addEventListener('click', exitBatchDeleteMode);
       }
 
       // 发送消息
@@ -4086,6 +4083,156 @@
     // 删除任务
     function deleteTask(taskId) {
       showDeleteConfirmDialog(taskId);
+    }
+
+    // 批量删除模式
+    let batchDeleteMode = false;
+    let selectedTaskIds = new Set();
+
+    function enterBatchDeleteMode() {
+      batchDeleteMode = true;
+      selectedTaskIds.clear();
+
+      // 切换按钮显示
+      document.getElementById('batchDeleteBtn').classList.add('hidden');
+      document.getElementById('cancelBatchBtn').classList.remove('hidden');
+
+      // 为所有任务卡片添加复选框
+      document.querySelectorAll('.task-card').forEach(card => {
+        const taskId = card.dataset.taskId;
+        if (!card.querySelector('.task-checkbox')) {
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'task-checkbox mr-2';
+          checkbox.addEventListener('change', function() {
+            if (this.checked) {
+              selectedTaskIds.add(taskId);
+            } else {
+              selectedTaskIds.delete(taskId);
+            }
+            updateBatchDeleteButton();
+          });
+          card.querySelector('.flex.items-start').insertBefore(checkbox, card.querySelector('.flex.items-start').firstChild);
+        }
+      });
+
+      // 添加确认删除按钮
+      if (!document.getElementById('confirmBatchDeleteBtn')) {
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'confirmBatchDeleteBtn';
+        confirmBtn.className = 'hidden flex-1 px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors';
+        confirmBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i>删除选中';
+        confirmBtn.addEventListener('click', confirmBatchDelete);
+        document.getElementById('cancelBatchBtn').parentElement.appendChild(confirmBtn);
+      }
+    }
+
+    function exitBatchDeleteMode() {
+      batchDeleteMode = false;
+      selectedTaskIds.clear();
+
+      // 切换按钮显示
+      document.getElementById('batchDeleteBtn').classList.remove('hidden');
+      document.getElementById('cancelBatchBtn').classList.add('hidden');
+      const confirmBtn = document.getElementById('confirmBatchDeleteBtn');
+      if (confirmBtn) {
+        confirmBtn.classList.add('hidden');
+      }
+
+      // 移除所有复选框
+      document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+        checkbox.remove();
+      });
+    }
+
+    function updateBatchDeleteButton() {
+      const confirmBtn = document.getElementById('confirmBatchDeleteBtn');
+      if (confirmBtn) {
+        if (selectedTaskIds.size > 0) {
+          confirmBtn.classList.remove('hidden');
+          confirmBtn.innerHTML = `<i class="fas fa-trash-alt mr-1"></i>删除选中 (${selectedTaskIds.size})`;
+        } else {
+          confirmBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    function confirmBatchDelete() {
+      if (selectedTaskIds.size === 0) return;
+
+      const dialogHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="batchDeleteConfirmDialog">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+              <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-bold text-gray-900">确认批量删除</h3>
+                  <p class="text-sm text-gray-600 mt-2">
+                    确定要删除选中的 <span class="font-medium text-red-600">${selectedTaskIds.size}</span> 个任务吗？
+                  </p>
+                  <p class="text-sm text-red-600 mt-2">
+                    <i class="fas fa-info-circle"></i> 所有对话历史将无法恢复
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end space-x-3">
+              <button
+                class="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                onclick="closeBatchDeleteConfirmDialog()"
+              >
+                取消
+              </button>
+              <button
+                class="px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
+                onclick="executeBatchDelete()"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', dialogHTML);
+    }
+
+    function closeBatchDeleteConfirmDialog() {
+      const dialog = document.getElementById('batchDeleteConfirmDialog');
+      if (dialog) {
+        dialog.remove();
+      }
+    }
+
+    function executeBatchDelete() {
+      // 删除选中的任务
+      selectedTaskIds.forEach(taskId => {
+        const index = tasks.findIndex(t => t.id === taskId);
+        if (index !== -1) {
+          tasks.splice(index, 1);
+        }
+      });
+
+      // 保存到存储
+      saveTasksToStorage();
+
+      // 如果删除的是当前任务，清空当前任务
+      if (currentTask && selectedTaskIds.has(currentTask.id)) {
+        currentTask = null;
+        clearChatMessages();
+      }
+
+      // 重新渲染任务列表
+      renderTaskList();
+
+      // 关闭对话框
+      closeBatchDeleteConfirmDialog();
+
+      // 退出批量删除模式
+      exitBatchDeleteMode();
     }
 
     // 显示删除确认对话框

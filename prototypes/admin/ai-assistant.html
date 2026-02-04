@@ -4051,16 +4051,27 @@
 
             // 生成答案字符串
             if (question.correctAnswers) {
-              // 如果题目已有correctAnswers，使用它
+              // 如果题目已有correctAnswers，检查长度是否匹配
               let answer = '';
               if (typeof question.correctAnswers === 'string') {
                 answer = question.correctAnswers.replace(/[\s,;、]/g, '');
               } else if (Array.isArray(question.correctAnswers)) {
                 answer = question.correctAnswers.join('');
               }
-              lines.push(`答案：${answer}`);
+
+              // 检查答案长度是否与空位数量匹配
+              if (answer.length === answerLetters.length) {
+                // 长度匹配，使用原答案
+                lines.push(`答案：${answer}`);
+              } else {
+                // 长度不匹配，使用生成的答案字母
+                console.warn(`完形填空题目 ${questionNumber}: 原答案长度(${answer.length})与空位数量(${answerLetters.length})不匹配，使用生成的答案`);
+                lines.push(`答案：${answerLetters.join('')}`);
+              }
             } else {
               // 否则使用生成的答案字母
+              lines.push(`答案：${answerLetters.join('')}`);
+            }
               lines.push(`答案：${answerLetters.join('')}`);
             }
           }

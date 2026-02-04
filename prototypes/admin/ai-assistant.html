@@ -3989,10 +3989,28 @@
           lines.push('完形填空');
           lines.push(`${questionNumber}. ${question.content}`);
 
+          // 检测题干中的下划线数量
+          const blankCount = (question.content.match(/____/g) || []).length;
+          console.log(`完形填空题目 ${questionNumber}: 题干中有 ${blankCount} 个空位，blanks数组长度为 ${question.blanks ? question.blanks.length : 0}`);
+
           // 处理空位选项
           if (question.blanks && question.blanks.length > 0) {
             const answerLetters = [];
-            question.blanks.forEach((blank, blankIndex) => {
+            let blanksToProcess = [...question.blanks];
+
+            // 如果blanks数组长度小于题干中的下划线数量，自动补充
+            if (blanksToProcess.length < blankCount) {
+              console.warn(`完形填空题目 ${questionNumber}: blanks数组长度(${blanksToProcess.length})小于下划线数量(${blankCount})，自动补充缺失的空位`);
+              for (let i = blanksToProcess.length; i < blankCount; i++) {
+                blanksToProcess.push({
+                  index: i + 1,
+                  answer: '选项' + String.fromCharCode(65 + i), // 默认答案：选项A, 选项B, ...
+                  score: 2
+                });
+              }
+            }
+
+            blanksToProcess.forEach((blank, blankIndex) => {
               const blankNumber = blankIndex + 1;
 
               // 检查是否有options字段（选择题形式）

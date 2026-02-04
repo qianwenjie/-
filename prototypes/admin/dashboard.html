@@ -1386,13 +1386,13 @@
 
     // ========== 文件上传功能 ==========
     // 触发文件选择
-    function triggerFileUpload() {
+    window.triggerFileUpload = function() {
       const fileInput = document.getElementById('dashboardFileInput');
       fileInput.click();
     }
 
     // 移除文档
-    function removeDocument() {
+    window.removeDocument = function() {
       const container = document.getElementById('documentCardContainer');
       container.classList.remove('show');
 
@@ -1408,7 +1408,7 @@
     }
 
     // 格式化文件大小
-    function formatFileSize(bytes) {
+    window.formatFileSize = function(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';

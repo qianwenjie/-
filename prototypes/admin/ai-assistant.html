@@ -3854,6 +3854,51 @@
     }
 
     /**
+     * 生成干扰项（用于完形填空）
+     * @param {string} correctAnswer - 正确答案
+     * @param {number} count - 需要生成的干扰项数量
+     * @returns {Array<string>} 干扰项数组
+     */
+    function generateDistractors(correctAnswer, count) {
+      const distractors = [];
+      const commonDistractors = {
+        // 常见的干扰项映射
+        '封装': ['继承', '多态', '抽象'],
+        '继承': ['封装', '多态', '接口'],
+        '多态': ['封装', '继承', '重载'],
+        'SELECT': ['INSERT', 'UPDATE', 'DELETE'],
+        'INSERT': ['SELECT', 'UPDATE', 'DELETE'],
+        'UPDATE': ['SELECT', 'INSERT', 'DELETE'],
+        '就绪': ['运行', '阻塞', '挂起'],
+        '运行': ['就绪', '阻塞', '终止'],
+        '阻塞': ['就绪', '运行', '挂起'],
+        '数据链路': ['物理', '网络', '传输'],
+        '传输': ['网络', '会话', '应用'],
+        'int': ['float', 'str', 'bool'],
+        'float': ['int', 'str', 'double'],
+        'str': ['int', 'float', 'list'],
+        '冒泡': ['选择', '插入', '希尔'],
+        '选择': ['冒泡', '插入', '堆'],
+        'DDoS': ['XSS', 'CSRF', 'SQL注入'],
+        'XSS': ['DDoS', 'CSRF', 'SQL注入'],
+        '实体': ['参照', '域', '用户定义'],
+        '参照': ['实体', '域', '用户定义']
+      };
+
+      // 如果有预定义的干扰项，使用它们
+      if (commonDistractors[correctAnswer]) {
+        return commonDistractors[correctAnswer].slice(0, count);
+      }
+
+      // 否则生成通用干扰项
+      for (let i = 0; i < count; i++) {
+        distractors.push(`选项${String.fromCharCode(66 + i)}`); // B, C, D...
+      }
+
+      return distractors;
+    }
+
+    /**
      * 将题目数组转换为简便录入格式
      * @param {Array} questions - 题目数组
      * @returns {string} 简便录入格式的文本
@@ -3943,25 +3988,65 @@
           // 完形填空格式：完形填空\n题号. 题干____\n1)A. 选项1  B. 选项2\n答案：BDCA（连续字母，无空格）\n知识点：xxx
           lines.push('完形填空');
           lines.push(`${questionNumber}. ${question.content}`);
+
+          // 处理空位选项
           if (question.blanks && question.blanks.length > 0) {
+            const answerLetters = [];
             question.blanks.forEach((blank, blankIndex) => {
               const blankNumber = blankIndex + 1;
-              const optionsText = blank.options.map(opt => `${opt.label}. ${opt.text}`).join('  ');
-              lines.push(`${blankNumber})${optionsText}`);
+
+              // 检查是否有options字段（选择题形式）
+              if (blank.options && blank.options.length > 0) {
+                // 有选项：按选择题形式输出
+                const optionsText = blank.options.map(opt => `${opt.label}. ${opt.text}`).join('  ');
+                lines.push(`${blankNumber})${optionsText}`);
+
+                // 找出正确答案对应的字母
+                const correctOption = blank.options.find(opt => opt.text === blank.answer);
+                if (correctOption) {
+                  answerLetters.push(correctOption.label);
+                } else {
+                  answerLetters.push('A'); // 默认A
+                }
+              } else {
+                // 没有选项：生成模拟选项（正确答案 + 3个干扰项）
+                const correctAnswer = blank.answer || '答案';
+                const distractors = generateDistractors(correctAnswer, 3);
+
+                // 随机打乱选项顺序
+                const allOptions = [correctAnswer, ...distractors];
+                const shuffled = allOptions.sort(() => Math.random() - 0.5);
+
+                // 找出正确答案的位置
+                const correctIndex = shuffled.indexOf(correctAnswer);
+                const correctLetter = String.fromCharCode(65 + correctIndex); // A=65
+                answerLetters.push(correctLetter);
+
+                // 生成选项文本
+                const optionsText = shuffled.map((opt, idx) => {
+                  const label = String.fromCharCode(65 + idx);
+                  return `${label}. ${opt}`;
+                }).join('  ');
+                lines.push(`${blankNumber})${optionsText}`);
+              }
             });
-          }
-          if (question.correctAnswers) {
-            // correctAnswers 必须是连续的字母字符串，如 "BDCA"，不能有空格或其他分隔符
-            let answer = '';
-            if (typeof question.correctAnswers === 'string') {
-              // 如果是字符串，移除所有空格和分隔符
-              answer = question.correctAnswers.replace(/[\s,;、]/g, '');
-            } else if (Array.isArray(question.correctAnswers)) {
-              // 如果是数组，直接连接，不加分隔符
-              answer = question.correctAnswers.join('');
+
+            // 生成答案字符串
+            if (question.correctAnswers) {
+              // 如果题目已有correctAnswers，使用它
+              let answer = '';
+              if (typeof question.correctAnswers === 'string') {
+                answer = question.correctAnswers.replace(/[\s,;、]/g, '');
+              } else if (Array.isArray(question.correctAnswers)) {
+                answer = question.correctAnswers.join('');
+              }
+              lines.push(`答案：${answer}`);
+            } else {
+              // 否则使用生成的答案字母
+              lines.push(`答案：${answerLetters.join('')}`);
             }
-            lines.push(`答案：${answer}`);
           }
+
           if (question.knowledgePoint) {
             lines.push(`知识点：${question.knowledgePoint}`);
           }

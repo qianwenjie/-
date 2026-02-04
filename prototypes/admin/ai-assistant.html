@@ -424,18 +424,23 @@
 
       <!-- 快捷提示词 -->
       <div id="quickActions" class="px-6 py-3 border-t border-gray-100">
-        <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar">
-          <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
-            <i class="far fa-file-alt mr-1"></i>生成题目
-          </button>
-          <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
-            <i class="far fa-copy mr-1"></i>智能组卷
-          </button>
-          <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
-            <i class="far fa-calendar-check mr-1"></i>创建考试
-          </button>
-          <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
-            <i class="far fa-edit mr-1"></i>刷题任务
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar flex-1">
+            <button class="quick-action px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full text-sm whitespace-nowrap hover:bg-primary-100 transition-colors" data-action="generate">
+              <i class="far fa-file-alt mr-1"></i>生成题目
+            </button>
+            <button class="quick-action px-3 py-1.5 bg-info-50 text-info-600 rounded-full text-sm whitespace-nowrap hover:bg-info-100 transition-colors" data-action="paper">
+              <i class="far fa-copy mr-1"></i>智能组卷
+            </button>
+            <button class="quick-action px-3 py-1.5 bg-warning-50 text-warning-600 rounded-full text-sm whitespace-nowrap hover:bg-warning-100 transition-colors" data-action="exam">
+              <i class="far fa-calendar-check mr-1"></i>创建考试
+            </button>
+            <button class="quick-action px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full text-sm whitespace-nowrap hover:bg-purple-100 transition-colors" data-action="practice">
+              <i class="far fa-edit mr-1"></i>刷题任务
+            </button>
+          </div>
+          <button id="promptTemplateBtn" class="ml-3 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm whitespace-nowrap hover:bg-indigo-100 transition-colors flex items-center" title="查看提示词模版">
+            <i class="fas fa-lightbulb mr-1"></i>提示词模版
           </button>
         </div>
       </div>
@@ -6111,6 +6116,211 @@
         testPhase2Integration();
       });
     }
+  </script>
+
+  <!-- 提示词模版模态框 -->
+  <div id="promptTemplateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col m-4">
+      <!-- 模态框头部 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">提示词模版</h3>
+        <button id="closePromptTemplateModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+
+      <!-- 模态框内容 -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- 生成题目模版 -->
+        <div class="mb-6">
+          <h4 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="far fa-file-alt text-primary-500 mr-2"></i>
+            生成题目
+          </h4>
+          <div class="space-y-3">
+            <!-- 基础生成 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成10道单选题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">基础生成</p>
+                  <p class="text-xs text-gray-600 mb-2">生成指定数量和题型的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成10道单选题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 指定难度 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成15道中等难度的多选题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">指定难度</p>
+                  <p class="text-xs text-gray-600 mb-2">生成特定难度的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成15道中等难度的多选题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 指定知识点 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成20道关于数据结构的判断题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">指定知识点</p>
+                  <p class="text-xs text-gray-600 mb-2">生成特定知识点的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成20道关于数据结构的判断题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 混合题型 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成单选10题、多选10题、判断5题、简答2题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">混合题型</p>
+                  <p class="text-xs text-gray-600 mb-2">一次生成多种题型</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成单选10题、多选10题、判断5题、简答2题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 所有题型 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成所有题型题目，各10题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">所有题型</p>
+                  <p class="text-xs text-gray-600 mb-2">生成题库中所有题型的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成所有题型题目，各10题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 所有难度 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成20道所有难度的单选题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">所有难度</p>
+                  <p class="text-xs text-gray-600 mb-2">生成覆盖所有难度级别的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成20道所有难度的单选题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 所有知识点 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成30道所有知识点的多选题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">所有知识点</p>
+                  <p class="text-xs text-gray-600 mb-2">生成覆盖所有知识点的题目</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成30道所有知识点的多选题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 综合条件 -->
+            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer prompt-template" data-prompt="生成25道困难的算法相关填空题">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 mb-1">综合条件</p>
+                  <p class="text-xs text-gray-600 mb-2">同时指定难度和知识点</p>
+                  <code class="text-xs bg-white px-2 py-1 rounded text-primary-600 block">生成25道困难的算法相关填空题</code>
+                </div>
+                <button class="ml-3 text-primary-500 hover:text-primary-600 transition-colors" title="使用此模版">
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h5 class="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+            <i class="fas fa-info-circle mr-2"></i>
+            使用说明
+          </h5>
+          <ul class="text-xs text-blue-800 space-y-1">
+            <li>• 点击任意模版卡片即可将提示词填入输入框</li>
+            <li>• 支持的题型：单选题、多选题、判断题、填空题、简答题、完形填空题、复合题</li>
+            <li>• 支持的难度：一级（简单）、二级、三级（中等）、四级、五级（困难）</li>
+            <li>• 可以使用"所有难度"或"所有知识点"来生成多样化的题目</li>
+            <li>• 混合题型格式：题型1 + 数量 + 题、题型2 + 数量 + 题（用顿号或逗号分隔）</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 模态框底部 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <button id="closePromptTemplateModalBtn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 提示词模版功能
+    const promptTemplateModal = document.getElementById('promptTemplateModal');
+    const promptTemplateBtn = document.getElementById('promptTemplateBtn');
+    const closePromptTemplateModal = document.getElementById('closePromptTemplateModal');
+    const closePromptTemplateModalBtn = document.getElementById('closePromptTemplateModalBtn');
+    const userInput = document.getElementById('userInput');
+
+    // 打开模态框
+    promptTemplateBtn.addEventListener('click', () => {
+      promptTemplateModal.style.display = 'flex';
+    });
+
+    // 关闭模态框
+    const closeModal = () => {
+      promptTemplateModal.style.display = 'none';
+    };
+
+    closePromptTemplateModal.addEventListener('click', closeModal);
+    closePromptTemplateModalBtn.addEventListener('click', closeModal);
+
+    // 点击模态框背景关闭
+    promptTemplateModal.addEventListener('click', (e) => {
+      if (e.target === promptTemplateModal) {
+        closeModal();
+      }
+    });
+
+    // ESC键关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && promptTemplateModal.style.display === 'flex') {
+        closeModal();
+      }
+    });
+
+    // 点击模版卡片使用提示词
+    document.querySelectorAll('.prompt-template').forEach(template => {
+      template.addEventListener('click', () => {
+        const prompt = template.getAttribute('data-prompt');
+        userInput.value = prompt;
+        closeModal();
+        userInput.focus();
+      });
+    });
   </script>
 </body>
 </html>

@@ -1944,6 +1944,26 @@
           return this.handleMixedTypeGeneration(extracted._mixedTypes);
         }
 
+        // 特殊处理：如果用户说"所有题型"，转换为混合题型
+        if (extracted.type === 'all' && extracted.count) {
+          // 创建所有题型的混合配置，每种题型都是指定的数量
+          const allTypesMixed = {
+            isMixed: true,
+            types: [
+              { type: 'single', typeName: '单选题', count: extracted.count },
+              { type: 'multiple', typeName: '多选题', count: extracted.count },
+              { type: 'judge', typeName: '判断题', count: extracted.count },
+              { type: 'blank', typeName: '填空题', count: extracted.count },
+              { type: 'shortAnswer', typeName: '简答题', count: extracted.count },
+              { type: 'cloze', typeName: '完形填空题', count: extracted.count },
+              { type: 'composite', typeName: '复合题', count: extracted.count }
+            ],
+            totalCount: extracted.count * 7,
+            confidence: 1.0
+          };
+          return this.handleMixedTypeGeneration(allTypesMixed);
+        }
+
         // 根据当前步骤处理
         switch (currentStep) {
           case 'init':

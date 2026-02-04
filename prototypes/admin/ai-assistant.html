@@ -764,6 +764,18 @@
       extractDifficulty(input) {
         const lowerInput = input.toLowerCase();
 
+        // 检测"所有难度"/"全部难度"关键词
+        const allDifficultyKeywords = ['所有难度', '全部难度', '各种难度', '所有级别', '全部级别'];
+        for (const keyword of allDifficultyKeywords) {
+          if (lowerInput.includes(keyword)) {
+            return {
+              value: 'all',
+              name: '所有难度',
+              confidence: 1.0
+            };
+          }
+        }
+
         // 特殊处理：如果包含"中等"或"二级"，直接返回二级难度
         if (lowerInput.includes('中等') || lowerInput.includes('中级') || lowerInput.includes('普通') || lowerInput.includes('二级')) {
           return {
@@ -805,6 +817,17 @@
 
       // 提取知识点
       extractKnowledgePoint(input) {
+        // 检测"所有知识点"/"全部知识点"关键词
+        const allKnowledgeKeywords = ['所有知识点', '全部知识点', '各种知识点', '所有知识', '全部知识'];
+        for (const keyword of allKnowledgeKeywords) {
+          if (input.includes(keyword)) {
+            return {
+              value: 'all',
+              confidence: 1.0
+            };
+          }
+        }
+
         // 匹配"关于XX的"、"XX相关"、"XX知识点"等模式
         const patterns = [
           /关于["\""]?([^"\""\\s，。！？]{2,10})["\""]?的/,
@@ -2434,14 +2457,18 @@
         message += `\n📊 **总计**：${params.mixedTypes.totalCount}道题目\n`;
 
         // 显示难度信息
-        if (params.difficulty && params.difficultyName) {
+        if (params.difficulty === 'all') {
+          message += '⭐ **难度**：覆盖所有难度（一级至五级）\n';
+        } else if (params.difficulty && params.difficultyName) {
           message += `⭐ **难度**：${params.difficultyName}\n`;
         } else {
           message += '⭐ **难度**：随机\n';
         }
 
         // 显示知识点信息
-        if (params.knowledgePoint) {
+        if (params.knowledgePoint === 'all') {
+          message += '📚 **知识点**：覆盖所有知识点\n';
+        } else if (params.knowledgePoint) {
           message += `📚 **知识点**：${params.knowledgePoint}\n`;
         } else {
           message += '📚 **知识点**：随机\n';
@@ -2511,44 +2538,184 @@
             }
 
             params.mixedTypes.types.forEach(typeInfo => {
-              // 筛选符合该题型的题目
-              const filteredQuestions = allQuestions.filter(q => q.type === typeInfo.type);
+              // 处理"所有难度"的情况
+              if (params.difficulty === 'all') {
+                // 按难度分组
+                const questionsByDifficulty = {
+                  1: [], 2: [], 3: [], 4: [], 5: []
+                };
 
-              if (filteredQuestions.length === 0) {
+                allQuestions.forEach(q => {
+                  if (q.type !== typeInfo.type) return;
+
+                  // 知识点匹配（如果指定了知识点）
+                  if (params.knowledgePoint && params.knowledgePoint !== 'all' &&
+                      q.knowledgePath && !q.knowledgePath.includes(params.knowledgePoint)) {
+                    return;
+                  }
+
+                  if (q.difficulty >= 1 && q.difficulty <= 5) {
+                    questionsByDifficulty[q.difficulty].push(q);
+                  }
+                });
+
+                // 从每个难度级别随机选择题目
+                const selectedQuestions = [];
+                const questionsPerDifficulty = Math.ceil(typeInfo.count / 5);
+
+                for (let diff = 1; diff <= 5; diff++) {
+                  const diffQuestions = questionsByDifficulty[diff];
+                  if (diffQuestions.length > 0) {
+                    const selected = this.randomSelectQuestions(diffQuestions, questionsPerDifficulty);
+                    selectedQuestions.push(...selected);
+                  }
+                }
+
+                // 如果总数超过要求，随机删除多余的
+                let finalQuestions = selectedQuestions;
+                if (selectedQuestions.length > typeInfo.count) {
+                  finalQuestions = this.randomSelectQuestions(selectedQuestions, typeInfo.count);
+                }
+
+                allSelectedQuestions.push(...finalQuestions);
+
                 generationResults.push({
                   type: typeInfo.typeName,
-                  count: 0,
+                  count: finalQuestions.length,
                   requested: typeInfo.count,
-                  success: false,
-                  message: `题库中没有${typeInfo.typeName}`
+                  success: finalQuestions.length === typeInfo.count,
+                  message: finalQuestions.length < typeInfo.count ?
+                    `题库中只有${finalQuestions.length}道${typeInfo.typeName}` :
+                    `成功生成${finalQuestions.length}道${typeInfo.typeName}`
                 });
-                return;
+
+                // 记录每种题型的用户行为
+                this.preferenceManager.recordAction({
+                  type: typeInfo.type,
+                  count: finalQuestions.length,
+                  difficulty: params.difficulty,
+                  knowledgePoint: params.knowledgePoint,
+                  timestamp: new Date()
+                });
               }
+              // 处理"所有知识点"的情况
+              else if (params.knowledgePoint === 'all') {
+                // 筛选符合题型和难度的题目
+                let filteredQuestions = allQuestions.filter(q => {
+                  if (q.type !== typeInfo.type) return false;
 
-              // 随机选择题目
-              const selectedCount = Math.min(typeInfo.count, filteredQuestions.length);
-              const selectedQuestions = this.randomSelectQuestions(filteredQuestions, selectedCount);
+                  // 难度匹配（如果指定了难度）
+                  if (params.difficulty && q.difficulty !== params.difficulty) {
+                    return false;
+                  }
 
-              allSelectedQuestions.push(...selectedQuestions);
+                  return true;
+                });
 
-              generationResults.push({
-                type: typeInfo.typeName,
-                count: selectedCount,
-                requested: typeInfo.count,
-                success: selectedCount === typeInfo.count,
-                message: selectedCount < typeInfo.count ?
-                  `题库中只有${selectedCount}道${typeInfo.typeName}` :
-                  `成功生成${selectedCount}道${typeInfo.typeName}`
-              });
+                // 按知识点分组
+                const questionsByKnowledge = {};
+                filteredQuestions.forEach(q => {
+                  const kp = q.knowledgePath || '未分类';
+                  if (!questionsByKnowledge[kp]) {
+                    questionsByKnowledge[kp] = [];
+                  }
+                  questionsByKnowledge[kp].push(q);
+                });
 
-              // 记录每种题型的用户行为
-              this.preferenceManager.recordAction({
-                type: typeInfo.type,
-                count: selectedCount,
-                difficulty: params.difficulty,
-                knowledgePoint: params.knowledgePoint,
-                timestamp: new Date()
-              });
+                // 从每个知识点随机选择题目
+                const selectedQuestions = [];
+                const knowledgePoints = Object.keys(questionsByKnowledge);
+                const questionsPerKnowledge = Math.ceil(typeInfo.count / knowledgePoints.length);
+
+                knowledgePoints.forEach(kp => {
+                  const kpQuestions = questionsByKnowledge[kp];
+                  const selected = this.randomSelectQuestions(kpQuestions, questionsPerKnowledge);
+                  selectedQuestions.push(...selected);
+                });
+
+                // 如果总数超过要求，随机删除多余的
+                let finalQuestions = selectedQuestions;
+                if (selectedQuestions.length > typeInfo.count) {
+                  finalQuestions = this.randomSelectQuestions(selectedQuestions, typeInfo.count);
+                }
+
+                allSelectedQuestions.push(...finalQuestions);
+
+                generationResults.push({
+                  type: typeInfo.typeName,
+                  count: finalQuestions.length,
+                  requested: typeInfo.count,
+                  success: finalQuestions.length === typeInfo.count,
+                  message: finalQuestions.length < typeInfo.count ?
+                    `题库中只有${finalQuestions.length}道${typeInfo.typeName}` :
+                    `成功生成${finalQuestions.length}道${typeInfo.typeName}`
+                });
+
+                // 记录每种题型的用户行为
+                this.preferenceManager.recordAction({
+                  type: typeInfo.type,
+                  count: finalQuestions.length,
+                  difficulty: params.difficulty,
+                  knowledgePoint: params.knowledgePoint,
+                  timestamp: new Date()
+                });
+              }
+              // 普通情况：按条件筛选
+              else {
+                // 筛选符合该题型的题目
+                let filteredQuestions = allQuestions.filter(q => {
+                  if (q.type !== typeInfo.type) return false;
+
+                  // 难度匹配（如果指定了难度）
+                  if (params.difficulty && q.difficulty !== params.difficulty) {
+                    return false;
+                  }
+
+                  // 知识点匹配（如果指定了知识点）
+                  if (params.knowledgePoint && q.knowledgePath &&
+                      !q.knowledgePath.includes(params.knowledgePoint)) {
+                    return false;
+                  }
+
+                  return true;
+                });
+
+                if (filteredQuestions.length === 0) {
+                  generationResults.push({
+                    type: typeInfo.typeName,
+                    count: 0,
+                    requested: typeInfo.count,
+                    success: false,
+                    message: `题库中没有${typeInfo.typeName}`
+                  });
+                  return;
+                }
+
+                // 随机选择题目
+                const selectedCount = Math.min(typeInfo.count, filteredQuestions.length);
+                const selectedQuestions = this.randomSelectQuestions(filteredQuestions, selectedCount);
+
+                allSelectedQuestions.push(...selectedQuestions);
+
+                generationResults.push({
+                  type: typeInfo.typeName,
+                  count: selectedCount,
+                  requested: typeInfo.count,
+                  success: selectedCount === typeInfo.count,
+                  message: selectedCount < typeInfo.count ?
+                    `题库中只有${selectedCount}道${typeInfo.typeName}` :
+                    `成功生成${selectedCount}道${typeInfo.typeName}`
+                });
+
+                // 记录每种题型的用户行为
+                this.preferenceManager.recordAction({
+                  type: typeInfo.type,
+                  count: selectedCount,
+                  difficulty: params.difficulty,
+                  knowledgePoint: params.knowledgePoint,
+                  timestamp: new Date()
+                });
+              }
             });
           }
 
@@ -2612,33 +2779,160 @@
               return '抱歉，题库中暂无题目。请先在题库管理中添加题目。';
             }
 
-            // 筛选符合条件的题目
-            let filteredQuestions = allQuestions.filter(q => {
-              // 题型匹配（如果选择了"所有题型"，则不筛选题型）
-              if (params.type && params.type !== 'all' && q.type !== params.type) {
-                return false;
+            // 处理"所有难度"的情况
+            if (params.difficulty === 'all') {
+              // 将题目按难度分组
+              const questionsByDifficulty = {
+                1: [], 2: [], 3: [], 4: [], 5: []
+              };
+
+              allQuestions.forEach(q => {
+                // 题型匹配
+                if (params.type && params.type !== 'all' && q.type !== params.type) {
+                  return;
+                }
+
+                // 知识点匹配（如果指定了知识点）
+                if (params.knowledgePoint && params.knowledgePoint !== 'all' &&
+                    q.knowledgePath && !q.knowledgePath.includes(params.knowledgePoint)) {
+                  return;
+                }
+
+                // 按难度分组
+                if (q.difficulty >= 1 && q.difficulty <= 5) {
+                  questionsByDifficulty[q.difficulty].push(q);
+                }
+              });
+
+              // 从每个难度级别随机选择题目
+              selectedQuestions = [];
+              const questionsPerDifficulty = Math.ceil(params.count / 5);
+
+              for (let diff = 1; diff <= 5; diff++) {
+                const diffQuestions = questionsByDifficulty[diff];
+                if (diffQuestions.length > 0) {
+                  const selected = this.randomSelectQuestions(diffQuestions, questionsPerDifficulty);
+                  selectedQuestions.push(...selected);
+                }
               }
 
-              // 难度匹配（如果指定了难度）
-              if (params.difficulty && q.difficulty !== params.difficulty) {
-                return false;
+              // 如果总数超过要求，随机删除多余的
+              if (selectedQuestions.length > params.count) {
+                selectedQuestions = this.randomSelectQuestions(selectedQuestions, params.count);
               }
-
-              // 知识点匹配（如果指定了知识点）
-              if (params.knowledgePoint && q.knowledgePath &&
-                  !q.knowledgePath.includes(params.knowledgePoint)) {
-                return false;
-              }
-
-              return true;
-            });
-
-            if (filteredQuestions.length === 0) {
-              return `抱歉，题库中没有符合条件的${params.typeName}。\n\n建议：\n• 尝试其他题型\n• 降低筛选条件\n• 在题库管理中添加更多题目`;
             }
+            // 处理"所有知识点"的情况
+            else if (params.knowledgePoint === 'all') {
+              // 筛选符合题型和难度的题目
+              let filteredQuestions = allQuestions.filter(q => {
+                // 题型匹配
+                if (params.type && params.type !== 'all' && q.type !== params.type) {
+                  return false;
+                }
 
-            // 随机选择题目
-            selectedQuestions = this.randomSelectQuestions(filteredQuestions, params.count);
+                // 难度匹配（如果指定了难度）
+                if (params.difficulty && q.difficulty !== params.difficulty) {
+                  return false;
+                }
+
+                return true;
+              });
+
+              // 按知识点分组
+              const questionsByKnowledge = {};
+              filteredQuestions.forEach(q => {
+                const kp = q.knowledgePath || '未分类';
+                if (!questionsByKnowledge[kp]) {
+                  questionsByKnowledge[kp] = [];
+                }
+                questionsByKnowledge[kp].push(q);
+              });
+
+              // 从每个知识点随机选择题目
+              selectedQuestions = [];
+              const knowledgePoints = Object.keys(questionsByKnowledge);
+              const questionsPerKnowledge = Math.ceil(params.count / knowledgePoints.length);
+
+              knowledgePoints.forEach(kp => {
+                const kpQuestions = questionsByKnowledge[kp];
+                const selected = this.randomSelectQuestions(kpQuestions, questionsPerKnowledge);
+                selectedQuestions.push(...selected);
+              });
+
+              // 如果总数超过要求，随机删除多余的
+              if (selectedQuestions.length > params.count) {
+                selectedQuestions = this.randomSelectQuestions(selectedQuestions, params.count);
+              }
+            }
+            // 处理同时指定"所有难度"和"所有知识点"的情况
+            else if (params.difficulty === 'all' && params.knowledgePoint === 'all') {
+              // 筛选符合题型的题目
+              let filteredQuestions = allQuestions.filter(q => {
+                if (params.type && params.type !== 'all' && q.type !== params.type) {
+                  return false;
+                }
+                return true;
+              });
+
+              // 按难度和知识点双重分组
+              const questionsByDiffAndKnowledge = {};
+              filteredQuestions.forEach(q => {
+                const diff = q.difficulty || 3;
+                const kp = q.knowledgePath || '未分类';
+                const key = `${diff}-${kp}`;
+
+                if (!questionsByDiffAndKnowledge[key]) {
+                  questionsByDiffAndKnowledge[key] = [];
+                }
+                questionsByDiffAndKnowledge[key].push(q);
+              });
+
+              // 从每个组合中随机选择题目
+              selectedQuestions = [];
+              const groups = Object.keys(questionsByDiffAndKnowledge);
+              const questionsPerGroup = Math.ceil(params.count / groups.length);
+
+              groups.forEach(key => {
+                const groupQuestions = questionsByDiffAndKnowledge[key];
+                const selected = this.randomSelectQuestions(groupQuestions, questionsPerGroup);
+                selectedQuestions.push(...selected);
+              });
+
+              // 如果总数超过要求，随机删除多余的
+              if (selectedQuestions.length > params.count) {
+                selectedQuestions = this.randomSelectQuestions(selectedQuestions, params.count);
+              }
+            }
+            // 普通情况：按条件筛选
+            else {
+              // 筛选符合条件的题目
+              let filteredQuestions = allQuestions.filter(q => {
+                // 题型匹配（如果选择了"所有题型"，则不筛选题型）
+                if (params.type && params.type !== 'all' && q.type !== params.type) {
+                  return false;
+                }
+
+                // 难度匹配（如果指定了难度）
+                if (params.difficulty && q.difficulty !== params.difficulty) {
+                  return false;
+                }
+
+                // 知识点匹配（如果指定了知识点）
+                if (params.knowledgePoint && q.knowledgePath &&
+                    !q.knowledgePath.includes(params.knowledgePoint)) {
+                  return false;
+                }
+
+                return true;
+              });
+
+              if (filteredQuestions.length === 0) {
+                return `抱歉，题库中没有符合条件的${params.typeName}。\n\n建议：\n• 尝试其他题型\n• 降低筛选条件\n• 在题库管理中添加更多题目`;
+              }
+
+              // 随机选择题目
+              selectedQuestions = this.randomSelectQuestions(filteredQuestions, params.count);
+            }
           }
 
           // 显示生成结果
@@ -2658,7 +2952,8 @@
 
           // 返回成功消息
           const difficultyText = params.difficultyName ? `（难度：${params.difficultyName}）` : '';
-          const knowledgeText = params.knowledgePoint ? `（知识点：${params.knowledgePoint}）` : '';
+          const knowledgeText = params.knowledgePoint && params.knowledgePoint !== 'all' ? `（知识点：${params.knowledgePoint}）` :
+                                params.knowledgePoint === 'all' ? '（知识点：覆盖所有知识点）' : '';
           const documentText = params.hasDocument ? '（基于参考文档）' : '';
 
           return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 录入至简便录入区再确认（点击"录入至简便录入区再确认"按钮）\n• 导出题目（点击"导出"按钮）`;
@@ -2822,15 +3117,33 @@
           const questionId = `DOC_${Date.now()}_${i + 1}`;
           const templateIndex = i % 5; // 循环使用模板
 
+          // 处理"所有难度"的情况：为每道题目随机分配难度
+          let questionDifficulty = params.difficulty;
+          let questionDifficultyName = params.difficultyName;
+          if (params.difficulty === 'all') {
+            // 循环使用1-5的难度
+            questionDifficulty = (i % 5) + 1;
+            const diffNames = { 1: '一级', 2: '二级', 3: '三级', 4: '四级', 5: '五级' };
+            questionDifficultyName = diffNames[questionDifficulty];
+          }
+
+          // 处理"所有知识点"的情况：为每道题目分配不同的知识点
+          let questionKnowledgePoint = params.knowledgePoint;
+          if (params.knowledgePoint === 'all') {
+            // 模拟多个知识点
+            const knowledgePoints = ['数据结构', '算法', '数据库', '网络协议', '操作系统', '编程语言', 'Web开发', '软件工程'];
+            questionKnowledgePoint = knowledgePoints[i % knowledgePoints.length];
+          }
+
           const question = {
             id: questionId,
             type: params.type,
             typeName: typeNames[params.type] || params.typeName,
             content: contentTemplates[params.type] ? contentTemplates[params.type][templateIndex] : `题目内容 ${i + 1}`,
-            difficulty: params.difficulty || 2,
-            difficultyName: params.difficultyName || '二级',
-            knowledgePoint: params.knowledgePoint || '',
-            knowledgePath: params.knowledgePoint || '',
+            difficulty: questionDifficulty || 2,
+            difficultyName: questionDifficultyName || '二级',
+            knowledgePoint: questionKnowledgePoint || '',
+            knowledgePath: questionKnowledgePoint || '',
             createTime: new Date().toLocaleString('zh-CN'),
             author: 'AI助手',
             useCount: 0

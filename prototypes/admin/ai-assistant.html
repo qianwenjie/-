@@ -473,7 +473,7 @@
             <i class="fas fa-download mr-1"></i>导出
           </button>
           <button onclick="addToSimpleInput()" class="px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600 text-sm">
-            <i class="fas fa-edit mr-1"></i>录入至简便录入区再确认
+            <i class="fas fa-edit mr-1"></i>提交至简便录入区
           </button>
         </div>
       </div>
@@ -2752,7 +2752,7 @@
           message += '\n题目已显示在右侧预览区。\n\n';
           message += '您可以：\n';
           message += '• 继续生成更多题目（直接告诉我需求）\n';
-          message += '• 录入至简便录入区再确认（点击"录入至简便录入区再确认"按钮）\n';
+          message += '• 提交至简便录入区（点击"提交至简便录入区"按钮）\n';
           message += '• 导出题目（点击"导出"按钮）';
 
           return message;
@@ -2956,7 +2956,7 @@
                                 params.knowledgePoint === 'all' ? '（知识点：覆盖所有知识点）' : '';
           const documentText = params.hasDocument ? '（基于参考文档）' : '';
 
-          return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 录入至简便录入区再确认（点击"录入至简便录入区再确认"按钮）\n• 导出题目（点击"导出"按钮）`;
+          return `✅ 已成功生成${selectedQuestions.length}道${params.typeName}${difficultyText}${knowledgeText}${documentText}\n\n题目已显示在右侧预览区。\n\n您可以：\n• 继续生成更多题目（直接告诉我需求）\n• 提交至简便录入区（点击"提交至简便录入区"按钮）\n• 导出题目（点击"导出"按钮）`;
         } catch (error) {
           console.error('生成题目失败:', error);
           return `抱歉，生成题目时出现错误：${error.message}\n\n请稍后重试或联系管理员。`;
@@ -3843,7 +3843,7 @@
       }
 
       // 提示用户并跳转
-      addAIMessage(`✅ 已准备将${questions.length}道题目录入至简便录入区\n\n📝 **正在跳转**：\n• 题目已转换为简便录入格式\n• 即将打开简便录入页面\n• 请在页面中检查并确认录入\n\n💡 页面将在新标签页中打开...`);
+      addAIMessage(`✅ 已准备将${questions.length}道题目提交至简便录入区\n\n📝 **正在跳转**：\n• 题目已转换为简便录入格式\n• 即将打开简便录入页面\n• 请在页面中检查并确认录入\n\n💡 页面将在新标签页中打开...`);
 
       // 延迟跳转，让用户看到提示
       setTimeout(() => {

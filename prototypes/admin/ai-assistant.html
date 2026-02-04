@@ -1999,10 +1999,10 @@
             // 开始引导流程
             if (!params.type) {
               params.step = 'type';
-              return '好的，我来帮您生成题目。\n\n**选择题型**\n\n请问需要生成什么题型？\n• 单选题\n• 多选题\n• 判断题\n• 填空题\n• 简答题\n• 复合题\n\n您可以选择一种题型，或者直接说"所有题型"生成全部题型。';
+              return '好的，我来帮您生成题目。\n\n请问需要生成什么题型？\n• 单选题\n• 多选题\n• 判断题\n• 填空题\n• 简答题\n• 复合题\n\n您可以选择一种题型，或者直接说"所有题型"生成全部题型。';
             } else if (!params.count) {
               params.step = 'count';
-              return `好的，我将为您生成${params.typeName}。\n\n**设置数量**\n\n请问需要生成多少道题？`;
+              return `好的，我将为您生成${params.typeName}。\n\n请问需要生成多少道题？`;
             } else if (params.hasDocument === undefined) {
               // 检查是否已经上传了文档
               if (uploadedDocument && uploadedDocument.status === 'success') {
@@ -2011,16 +2011,16 @@
                 params.documentName = uploadedDocument.name;
                 params.documentContent = uploadedDocument.content;
                 params.step = 'difficulty';
-                return `好的，我将基于您上传的文档《${uploadedDocument.name}》生成${params.count}道${params.typeName}。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"或"确认"开始生成。`;
+                return `好的，我将基于您上传的文档《${uploadedDocument.name}》生成${params.count}道${params.typeName}。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"或"确认"开始生成。`;
               } else {
                 // 询问是否有参考文档
                 params.step = 'document';
-                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n**参考文档**\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+                return `好的，我将为您生成${params.count}道${params.typeName}。\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
               }
             } else if (!params.hasDocument && params.difficulty === undefined) {
               // 如果没有文档，询问难度
               params.step = 'difficulty';
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               // 如果题型、数量、文档状态都有了，跳到难度步骤
               params.step = 'difficulty';
@@ -2035,13 +2035,13 @@
                 params.type = extracted.type;
                 params.typeName = extracted.typeName;
                 params.step = 'count';
-                return `好的，我将为您生成所有题型的题目（单选、多选、判断、填空、简答、完形填空、复合）。\n\n**设置数量**\n\n请问每种题型需要生成多少道题？\n例如：\n• "各10题"（每种题型各10题）\n• "10题"（每种题型各10题）`;
+                return `好的，我将为您生成所有题型的题目（单选、多选、判断、填空、简答、完形填空、复合）。\n\n请问每种题型需要生成多少道题？\n例如：\n• "各10题"（每种题型各10题）\n• "10题"（每种题型各10题）`;
               }
 
               params.type = extracted.type;
               params.typeName = extracted.typeName;
               params.step = 'count';
-              return `好的，我将为您生成${params.typeName}。\n\n**设置数量**\n\n请问需要生成多少道题？`;
+              return `好的，我将为您生成${params.typeName}。\n\n请问需要生成多少道题？`;
             } else {
               return '请选择一个题型：单选题、多选题、判断题、填空题、简答题或复合题。';
             }
@@ -2078,12 +2078,12 @@
                 // 如果之前没有选择题型，需要询问用户想要哪些题型
                 params.eachCount = extracted.count;
                 params.step = 'type_selection';
-                return `好的，我理解您想要每个题型各${extracted.count}道题。\n\n**请选择题型**\n\n请告诉我您想要哪些题型？例如：\n• "所有题型"（单选、多选、判断、填空、简答、完形填空、复合）\n• "单选、多选、判断"（指定几种题型）\n• "除了复合题"（排除某些题型）\n\n或者您可以直接说"单选10题、多选5题"这样的具体组合。`;
+                return `好的，我理解您想要每个题型各${extracted.count}道题。\n\n请告诉我您想要哪些题型？例如：\n• "所有题型"（单选、多选、判断、填空、简答、完形填空、复合）\n• "单选、多选、判断"（指定几种题型）\n• "除了复合题"（排除某些题型）\n\n或者您可以直接说"单选10题、多选5题"这样的具体组合。`;
               }
 
               params.count = extracted.count;
               params.step = 'document'; // 跳转到文档步骤
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n**参考文档**\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
             } else {
               return '请告诉我需要生成多少道题，例如："5道"、"10个"、"各10题"等。';
             }
@@ -2100,7 +2100,7 @@
             } else if (noDocument) {
               params.hasDocument = false;
               params.step = 'difficulty';
-              return `好的，我将从题库中为您选择题目。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将从题库中为您选择题目。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请回复"有"或"没有"。';
             }
@@ -2111,7 +2111,7 @@
             if (input.length > 50) {
               params.documentContent = input;
               params.step = 'difficulty';
-              return `好的，我已收到您的参考文档（${input.length}字）。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我已收到您的参考文档（${input.length}字）。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '文档内容似乎太短了。请粘贴完整的文档内容，或者回复"跳过"直接从题库生成。';
             }
@@ -2134,7 +2134,7 @@
             // 进入下一步：知识点
             params.step = 'knowledge';
             const difficultyInfo = params.difficultyName ? `难度为${params.difficultyName}的` : '';
-            return `好的，我将为您生成${params.count}道${difficultyInfo}${params.typeName}。\n\n**选择知识点**\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+            return `好的，我将为您生成${params.count}道${difficultyInfo}${params.typeName}。\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
 
           case 'type_selection':
             // 处理"各X题"后的题型选择
@@ -2218,7 +2218,7 @@
               params.count = params.eachCount;
               delete params.eachCount;
               params.step = 'document';
-              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n**第3步：参考文档**（可选）\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
+              return `好的，我将为您生成${params.count}道${params.typeName}。\n\n您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n请回复：\n• "有"（然后上传文档或粘贴内容）\n• "没有"（直接从题库中选择）\n• "跳过"（跳过此步骤）`;
             } else {
               return '请告诉我您想要哪些题型。例如：\n• "所有题型"\n• "单选、多选、判断"\n• "单选10题、多选5题"（具体组合）';
             }
@@ -2246,7 +2246,7 @@
               // 直接跳过文档，进入难度选择
               params.hasDocument = false;
               params.step = 'mixed_difficulty';
-              return `好的，我将从题库中为您选择题目。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将从题库中为您选择题目。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else if (hasDoc) {
               params.hasDocument = true;
               params.step = 'mixed_waiting_document';
@@ -2254,7 +2254,7 @@
             } else if (noDoc) {
               params.hasDocument = false;
               params.step = 'mixed_difficulty';
-              return `好的，我将从题库中为您选择题目。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我将从题库中为您选择题目。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请回复"有"、"没有"或"跳过"。';
             }
@@ -2264,7 +2264,7 @@
             if (input.length > 50) {
               params.documentContent = input;
               params.step = 'mixed_difficulty';
-              return `好的，我已收到您的参考文档（${input.length}字）。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
+              return `好的，我已收到您的参考文档（${input.length}字）。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将随机选择各种难度的题目。您也可以直接回复"跳过"。`;
             } else {
               return '请上传文档或粘贴文档内容。如果不需要参考文档，请回复"跳过"。';
             }
@@ -2287,7 +2287,7 @@
             // 进入知识点选择步骤
             params.step = 'mixed_knowledge';
             const difficultyInfoMixed = params.difficultyName ? `难度为${params.difficultyName}的` : '';
-            return `好的，我将为您生成${difficultyInfoMixed}题目。\n\n**选择知识点**\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
+            return `好的，我将为您生成${difficultyInfoMixed}题目。\n\n请问需要哪个知识点的题目？例如：\n• 数据结构\n• 算法\n• 操作系统\n• 计算机网络\n\n如果不指定知识点，我将从所有知识点中随机选择。您也可以直接回复"跳过"。`;
 
           case 'mixed_knowledge':
             // 混合题型的知识点选择步骤
@@ -2401,8 +2401,8 @@
         // 检查是否已经上传了文档
         if (uploadedDocument && uploadedDocument.status === 'success') {
           // 已有文档，询问难度
-          message += `**参考文档**：已使用您上传的文档《${uploadedDocument.name}》\n\n`;
-          message += '**选择难度**\n\n';
+          message += `已使用您上传的文档《${uploadedDocument.name}》\n\n`;
+          message += '';
           message += '请问需要什么难度的题目？\n';
           message += '• 一级（简单）\n';
           message += '• 二级（中等）\n';
@@ -2422,7 +2422,7 @@
           };
         } else {
           // 没有文档，询问是否需要
-          message += '**参考文档**\n\n';
+          message += '';
           message += '您有参考文档或教材吗？如果有，我可以基于文档内容生成更贴合的题目。\n\n';
           message += '请回复：\n';
           message += '• "有"（然后上传文档或粘贴内容）\n';
@@ -2449,36 +2449,36 @@
         let message = '✅ **确认生成参数**\n\n';
 
         // 显示每种题型的信息
-        message += '**题目清单**：\n';
+        message += '\n';
         params.mixedTypes.types.forEach((typeInfo, index) => {
           message += `${index + 1}. ${typeInfo.typeName} × ${typeInfo.count}道\n`;
         });
 
-        message += `\n**总计**：${params.mixedTypes.totalCount}道题目\n`;
+        message += `\n总计：${params.mixedTypes.totalCount}道题目\n`;
 
         // 显示难度信息
         if (params.difficulty === 'all') {
-          message += '**难度**：覆盖所有难度（一级至五级）\n';
+          message += '难度：覆盖所有难度（一级至五级）\n';
         } else if (params.difficulty && params.difficultyName) {
-          message += `**难度**：${params.difficultyName}\n`;
+          message += `难度：${params.difficultyName}\n`;
         } else {
-          message += '**难度**：随机\n';
+          message += '难度：随机\n';
         }
 
         // 显示知识点信息
         if (params.knowledgePoint === 'all') {
-          message += '**知识点**：覆盖所有知识点\n';
+          message += '知识点：覆盖所有知识点\n';
         } else if (params.knowledgePoint) {
-          message += `**知识点**：${params.knowledgePoint}\n`;
+          message += `知识点：${params.knowledgePoint}\n`;
         } else {
-          message += '**知识点**：随机\n';
+          message += '知识点：随机\n';
         }
 
         // 显示文档信息
         if (params.hasDocument && params.documentContent) {
-          message += `**参考文档**：已提供（${params.documentContent.length}字）\n`;
+          message += `参考文档：已提供（${params.documentContent.length}字）\n`;
         } else {
-          message += '**参考文档**：无（从题库随机选择）\n';
+          message += '参考文档：无（从题库随机选择）\n';
         }
 
         message += '\n请回复"确认"开始生成，或回复"取消"重新设置。';
@@ -2732,8 +2732,8 @@
           this.task.generateParams = { step: 'init' };
 
           // 构建结果消息
-          let message = '✅ **生成完成**\n\n';
-          message += '**生成结果**：\n';
+          let message = '✅ 生成完成\n\n';
+          message += '\n';
 
           generationResults.forEach((result, index) => {
             const icon = result.success ? '✓' : '⚠';
@@ -2743,10 +2743,10 @@
           const totalGenerated = allSelectedQuestions.length;
           const totalRequested = params.mixedTypes.totalCount;
 
-          message += `\n📈 **总计**：成功生成${totalGenerated}/${totalRequested}道题目\n`;
+          message += `\n总计：成功生成${totalGenerated}/${totalRequested}道题目\n`;
 
           if (params.hasDocument && params.documentContent) {
-            message += '**基于**：您提供的参考文档\n';
+            message += '基于：您提供的参考文档\n';
           }
 
           message += '\n题目已显示在右侧预览区。\n\n';
@@ -3843,7 +3843,7 @@
       }
 
       // 提示用户并跳转
-      addAIMessage(`✅ 已准备将${questions.length}道题目提交至简便录入区\n\n**正在跳转**：\n• 题目已转换为简便录入格式\n• 即将打开简便录入页面\n• 请在页面中检查并确认录入\n\n💡 页面将在新标签页中打开...`);
+      addAIMessage(`✅ 已准备将${questions.length}道题目提交至简便录入区\n\n• 题目已转换为简便录入格式\n• 即将打开简便录入页面\n• 请在页面中检查并确认录入\n\n💡 页面将在新标签页中打开...`);
 
       // 延迟跳转，让用户看到提示
       setTimeout(() => {
@@ -4483,13 +4483,13 @@
             // 混合题型流程：进入难度选择步骤
             params.step = 'mixed_difficulty';
             setTimeout(() => {
-              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成题目。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"。`);
+              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成题目。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"。`);
             }, 500);
           } else {
             // 单题型流程：进入难度选择步骤
             params.step = 'difficulty';
             setTimeout(() => {
-              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成${params.count}道${params.typeName}。\n\n**选择难度**\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"开始生成。`);
+              addAIMessage(`好的，我将基于您上传的文档《${doc.name}》生成${params.count}道${params.typeName}。\n\n请问需要什么难度的题目？\n• 一级（简单）\n• 二级（中等）\n• 三级（困难）\n• 四级（很难）\n• 五级（极难）\n\n如果不指定难度，我将根据文档内容自动调整难度。您也可以直接回复"跳过"开始生成。`);
             }, 500);
           }
         } else {

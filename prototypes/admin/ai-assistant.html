@@ -3924,11 +3924,15 @@
           lines.push('');
 
         } else if (question.type === 'shortAnswer') {
-          // 简答题格式：简答题\n题号. 题干\n答案：参考答案（可选）\n知识点：xxx
+          // 简答题格式：简答题\n题号. 题干\n答案：参考答案\n知识点：xxx
           lines.push('简答题');
           lines.push(`${questionNumber}. ${question.content}`);
+          // 简答题必须有答案，如果没有则提供默认答案
           if (question.correctAnswers && question.correctAnswers.length > 0 && question.correctAnswers[0]) {
             lines.push(`答案：${question.correctAnswers[0]}`);
+          } else {
+            // 提供默认参考答案
+            lines.push(`答案：请根据题目要求作答。`);
           }
           if (question.knowledgePoint) {
             lines.push(`知识点：${question.knowledgePoint}`);
@@ -3936,7 +3940,7 @@
           lines.push('');
 
         } else if (question.type === 'cloze') {
-          // 完形填空格式：完形填空\n题号. 题干____\n1)A. 选项1  B. 选项2\n答案：ABCD\n知识点：xxx
+          // 完形填空格式：完形填空\n题号. 题干____\n1)A. 选项1  B. 选项2\n答案：BDCA（连续字母，无空格）\n知识点：xxx
           lines.push('完形填空');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.blanks && question.blanks.length > 0) {
@@ -3947,10 +3951,15 @@
             });
           }
           if (question.correctAnswers) {
-            // correctAnswers 应该是单个字符串如 "BDCA"
-            const answer = typeof question.correctAnswers === 'string'
-              ? question.correctAnswers
-              : question.correctAnswers.join('');
+            // correctAnswers 必须是连续的字母字符串，如 "BDCA"，不能有空格或其他分隔符
+            let answer = '';
+            if (typeof question.correctAnswers === 'string') {
+              // 如果是字符串，移除所有空格和分隔符
+              answer = question.correctAnswers.replace(/[\s,;、]/g, '');
+            } else if (Array.isArray(question.correctAnswers)) {
+              // 如果是数组，直接连接，不加分隔符
+              answer = question.correctAnswers.join('');
+            }
             lines.push(`答案：${answer}`);
           }
           if (question.knowledgePoint) {
@@ -3959,14 +3968,16 @@
           lines.push('');
 
         } else if (question.type === 'composite') {
-          // 复合题格式：复合题\n题号. 材料\n1）【题型】子题题干\n答案：xxx\n知识点：xxx
+          // 复合题格式：复合题\n题号. 材料\n[题型]子题题干（使用英文方括号）\n答案：xxx\n知识点：xxx
           lines.push('复合题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.subQuestions && question.subQuestions.length > 0) {
             question.subQuestions.forEach((subQ, subIndex) => {
               const subNumber = subIndex + 1;
               const typeLabel = subQ.typeName || '单选题';
-              lines.push(`${subNumber}）【${typeLabel}】${subQ.content}`);
+              // 使用英文方括号 [] 而不是中文方括号【】
+              lines.push(`[${typeLabel}]`);
+              lines.push(`${subQ.content}`);
 
               // 如果子题有选项，添加选项
               if (subQ.options && subQ.options.length > 0) {

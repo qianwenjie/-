@@ -3830,6 +3830,11 @@
       // 保存到 localStorage
       localStorage.setItem('aiGeneratedQuestions', simpleInputText);
 
+      // 调试：验证数据是否保存成功
+      const savedData = localStorage.getItem('aiGeneratedQuestions');
+      console.log('保存到 localStorage 的数据:', savedData);
+      console.log('数据长度:', savedData ? savedData.length : 0);
+
       // 如果有知识点信息，也保存
       if (params && params.knowledgePoint && params.knowledgePoint !== 'all') {
         // 这里需要知识点ID，暂时只保存名称

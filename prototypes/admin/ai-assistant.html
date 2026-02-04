@@ -3867,7 +3867,8 @@
 
         // 根据题型转换格式
         if (question.type === 'single') {
-          // 单选题格式：题号. 题干\nA. 选项1\nB. 选项2\n答案：A\n知识点：xxx
+          // 单选题格式：单选题\n题号. 题干\nA. 选项1\nB. 选项2\n答案：A\n知识点：xxx
+          lines.push('单选题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.options && question.options.length > 0) {
             question.options.forEach(opt => {
@@ -3883,7 +3884,8 @@
           lines.push(''); // 空行分隔
 
         } else if (question.type === 'multiple') {
-          // 多选题格式：题号. 题干\nA. 选项1\nB. 选项2\n答案：AB\n知识点：xxx
+          // 多选题格式：多选题\n题号. 题干\nA. 选项1\nB. 选项2\n答案：AB\n知识点：xxx
+          lines.push('多选题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.options && question.options.length > 0) {
             question.options.forEach(opt => {
@@ -3899,7 +3901,8 @@
           lines.push('');
 
         } else if (question.type === 'judge') {
-          // 判断题格式：题号. 题干\n答案：正确/错误\n知识点：xxx
+          // 判断题格式：判断题\n题号. 题干\n答案：正确/错误\n知识点：xxx
+          lines.push('判断题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.correctAnswers && question.correctAnswers.length > 0) {
             lines.push(`答案：${question.correctAnswers[0]}`);
@@ -3910,7 +3913,8 @@
           lines.push('');
 
         } else if (question.type === 'blank') {
-          // 填空题格式：题号. 题干\n答案：答案1；答案2\n知识点：xxx
+          // 填空题格式：填空题\n题号. 题干\n答案：答案1；答案2\n知识点：xxx
+          lines.push('填空题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.correctAnswers && question.correctAnswers.length > 0) {
             lines.push(`答案：${question.correctAnswers.join('；')}`);
@@ -3921,7 +3925,8 @@
           lines.push('');
 
         } else if (question.type === 'shortAnswer') {
-          // 简答题格式：题号. 题干\n答案：参考答案（可选）\n知识点：xxx
+          // 简答题格式：简答题\n题号. 题干\n答案：参考答案（可选）\n知识点：xxx
+          lines.push('简答题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.correctAnswers && question.correctAnswers.length > 0 && question.correctAnswers[0]) {
             lines.push(`答案：${question.correctAnswers[0]}`);
@@ -3932,7 +3937,8 @@
           lines.push('');
 
         } else if (question.type === 'cloze') {
-          // 完形填空格式：题号. 题干____\n1)A. 选项1  B. 选项2\n答案：ABCD\n知识点：xxx
+          // 完形填空格式：完形填空\n题号. 题干____\n1)A. 选项1  B. 选项2\n答案：ABCD\n知识点：xxx
+          lines.push('完形填空');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.blanks && question.blanks.length > 0) {
             question.blanks.forEach((blank, blankIndex) => {
@@ -3954,7 +3960,8 @@
           lines.push('');
 
         } else if (question.type === 'composite') {
-          // 复合题格式：题号. 材料\n1）【题型】子题题干\n答案：xxx\n知识点：xxx
+          // 复合题格式：复合题\n题号. 材料\n1）【题型】子题题干\n答案：xxx\n知识点：xxx
+          lines.push('复合题');
           lines.push(`${questionNumber}. ${question.content}`);
           if (question.subQuestions && question.subQuestions.length > 0) {
             question.subQuestions.forEach((subQ, subIndex) => {

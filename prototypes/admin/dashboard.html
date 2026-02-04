@@ -489,107 +489,6 @@
       gap: 0.75rem;
     }
 
-    /* 文档卡片容器 */
-    .document-card-container {
-      display: none;
-      margin-bottom: 0.75rem;
-    }
-
-    .document-card-container.show {
-      display: block;
-    }
-
-    /* 文档卡片 */
-    .document-card {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-    }
-
-    .document-card:hover {
-      background: #f3f4f6;
-    }
-
-    .document-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      background: #6366f1;
-      border-radius: 0.375rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .document-icon i {
-      color: white;
-      font-size: 1.25rem;
-    }
-
-    .document-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .document-name {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #1f2937;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 0.25rem;
-    }
-
-    .document-meta {
-      font-size: 0.75rem;
-      color: #6b7280;
-    }
-
-    .document-remove {
-      width: 1.5rem;
-      height: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #9ca3af;
-      cursor: pointer;
-      border-radius: 0.25rem;
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-
-    .document-remove:hover {
-      background: #e5e7eb;
-      color: #ef4444;
-    }
-
-    /* 文档状态加载动画 */
-    .document-meta.loading {
-      position: relative;
-    }
-
-    .document-meta.loading::after {
-      content: '';
-      display: inline-block;
-      width: 0.5rem;
-      height: 0.5rem;
-      margin-left: 0.5rem;
-      border: 2px solid #6b7280;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     /* 内联快捷建议 */
     .ai-inline-suggestions {
       display: flex;
@@ -693,11 +592,6 @@
 
     .ai-action-btn:active {
       transform: scale(0.95);
-    }
-
-    /* 附件按钮 */
-    .ai-action-btn.attachment:hover {
-      color: #FF7D00;
     }
 
     /* 语音按钮 */
@@ -874,33 +768,6 @@
 
     body.dark-theme .ai-chat-input:focus::placeholder {
       color: #4b5563;
-    }
-
-    /* 深色主题 - 文档卡片 */
-    body.dark-theme .document-card {
-      background: rgba(51, 65, 85, 0.8);
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    body.dark-theme .document-card:hover {
-      background: rgba(51, 65, 85, 1);
-    }
-
-    body.dark-theme .document-name {
-      color: #e5e7eb;
-    }
-
-    body.dark-theme .document-meta {
-      color: #9ca3af;
-    }
-
-    body.dark-theme .document-remove {
-      color: #6b7280;
-    }
-
-    body.dark-theme .document-remove:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ef4444;
     }
 
     /* 深色主题 - 内联建议 */
@@ -1112,22 +979,6 @@
 
           <!-- 输入区域容器 -->
           <div class="ai-input-wrapper">
-            <!-- 文档卡片（上传后显示） -->
-            <div class="document-card-container" id="documentCardContainer">
-              <div class="document-card">
-                <div class="document-icon">
-                  <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="document-info">
-                  <div class="document-name" id="documentName">文档名称.pdf</div>
-                  <div class="document-meta" id="documentMeta">解析中... 289KB</div>
-                </div>
-                <div class="document-remove" onclick="removeDocument()" title="移除文档">
-                  <i class="fas fa-times"></i>
-                </div>
-              </div>
-            </div>
-
             <!-- 输入框 -->
             <input
               type="text"
@@ -1161,14 +1012,6 @@
 
           <!-- 操作按钮组 -->
           <div class="ai-chat-actions">
-            <!-- 隐藏的文件输入 -->
-            <input type="file" id="dashboardFileInput" accept=".pdf,.doc,.docx,.txt,.md" style="display: none;" />
-
-            <!-- 附件按钮 -->
-            <button class="ai-action-btn attachment" title="上传附件" aria-label="上传附件" onclick="triggerFileUpload()">
-              <i class="fas fa-paperclip"></i>
-            </button>
-
             <!-- 发送按钮 -->
             <button class="ai-action-btn send" title="发送消息" aria-label="发送消息" onclick="sendAIChatMessage()">
               <i class="fas fa-paper-plane"></i>
@@ -1383,120 +1226,6 @@
         }
       }, 200);
     }
-
-    // ========== 文件上传功能 ==========
-    // 触发文件选择
-    window.triggerFileUpload = function() {
-      const fileInput = document.getElementById('dashboardFileInput');
-      fileInput.click();
-    }
-
-    // 移除文档
-    window.removeDocument = function() {
-      const container = document.getElementById('documentCardContainer');
-      container.classList.remove('show');
-
-      // 清除sessionStorage中的文件信息
-      sessionStorage.removeItem('aiUploadedFile');
-      sessionStorage.removeItem('aiUploadedFileContent');
-
-      // 重置文件输入
-      const fileInput = document.getElementById('dashboardFileInput');
-      if (fileInput) {
-        fileInput.value = '';
-      }
-    }
-
-    // 格式化文件大小
-    window.formatFileSize = function(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    }
-
-    // 处理文件选择
-    document.addEventListener('DOMContentLoaded', function() {
-      const fileInput = document.getElementById('dashboardFileInput');
-
-      if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (!file) return;
-
-          // 验证文件类型
-          const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.md'];
-          const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-
-          if (!allowedTypes.includes(fileExt)) {
-            alert('不支持的文件格式！请上传 PDF、Word、TXT 或 Markdown 文件。');
-            fileInput.value = '';
-            return;
-          }
-
-          // 验证文件大小（限制10MB）
-          const maxSize = 10 * 1024 * 1024;
-          if (file.size > maxSize) {
-            alert('文件大小超过限制！请上传小于 10MB 的文件。');
-            fileInput.value = '';
-            return;
-          }
-
-          // 存储文件信息到sessionStorage
-          const fileInfo = {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: file.lastModified
-          };
-          sessionStorage.setItem('aiUploadedFile', JSON.stringify(fileInfo));
-
-          // 获取文件格式（用于显示）
-          const fileFormat = file.name.split('.').pop().toUpperCase();
-
-          // 显示文档卡片 - 状态1: 上传中
-          const container = document.getElementById('documentCardContainer');
-          const nameEl = document.getElementById('documentName');
-          const metaEl = document.getElementById('documentMeta');
-
-          nameEl.textContent = file.name;
-          metaEl.textContent = `上传中`;
-          metaEl.classList.add('loading');
-          container.classList.add('show');
-
-          // 模拟上传过程（根据文件大小计算延迟）
-          const uploadDelay = Math.min(500 + file.size / 10000, 2000); // 最少500ms，最多2000ms
-
-          setTimeout(() => {
-            // 状态2: 解析中
-            metaEl.textContent = `解析中`;
-
-            // 读取文件内容
-            const reader = new FileReader();
-            reader.onload = function(event) {
-              sessionStorage.setItem('aiUploadedFileContent', event.target.result);
-
-              // 模拟解析过程（根据文件大小计算延迟）
-              const parseDelay = Math.min(300 + file.size / 20000, 1500); // 最少300ms，最多1500ms
-
-              setTimeout(() => {
-                // 状态3: 已完成
-                metaEl.classList.remove('loading');
-                metaEl.textContent = `已完成 · ${fileFormat} · ${formatFileSize(file.size)}`;
-              }, parseDelay);
-            };
-
-            reader.onerror = function() {
-              metaEl.classList.remove('loading');
-              alert('文件读取失败，请重试！');
-              fileInput.value = '';
-              container.classList.remove('show');
-            };
-
-            reader.readAsText(file);
-          }, uploadDelay);
-        });
-      }
-    });
 
     // ========== 主题切换功能 ==========
 

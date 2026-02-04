@@ -2030,6 +2030,14 @@
           case 'type':
             // 收集题型
             if (extracted.type) {
+              // 特殊处理：如果用户选择"所有题型"，询问每种题型的数量
+              if (extracted.type === 'all') {
+                params.type = extracted.type;
+                params.typeName = extracted.typeName;
+                params.step = 'count';
+                return `好的，我将为您生成所有题型的题目（单选、多选、判断、填空、简答、完形填空、复合）。\n\n🔢 **设置数量**\n\n请问每种题型需要生成多少道题？\n例如：\n• "各10题"（每种题型各10题）\n• "10题"（每种题型各10题）`;
+              }
+
               params.type = extracted.type;
               params.typeName = extracted.typeName;
               params.step = 'count';
@@ -2041,32 +2049,32 @@
           case 'count':
             // 收集数量
             if (extracted.count) {
+              // 特殊处理：如果之前选择了"所有题型"，无论是否说"各"，都理解为每种题型各X题
+              if (params.type === 'all') {
+                const allTypes = [
+                  { type: 'single', typeName: '单选题', count: extracted.count },
+                  { type: 'multiple', typeName: '多选题', count: extracted.count },
+                  { type: 'judge', typeName: '判断题', count: extracted.count },
+                  { type: 'blank', typeName: '填空题', count: extracted.count },
+                  { type: 'shortAnswer', typeName: '简答题', count: extracted.count },
+                  { type: 'cloze', typeName: '完形填空题', count: extracted.count },
+                  { type: 'composite', typeName: '复合题', count: extracted.count }
+                ];
+
+                const mixedTypesData = {
+                  isMixed: true,
+                  types: allTypes,
+                  totalCount: allTypes.length * extracted.count,
+                  confidence: 1.0
+                };
+
+                return this.handleMixedTypeGeneration(mixedTypesData);
+              }
+
               // 检查是否为"各X题"模式
               const countResult = this.smartExtractor.extractCount(input);
               if (countResult && countResult.isEach) {
                 // "各X题"表示每个题型各X题
-                // 如果之前选择了"所有题型"，直接生成所有题型的混合配置
-                if (params.type === 'all') {
-                  const allTypes = [
-                    { type: 'single', typeName: '单选题', count: extracted.count },
-                    { type: 'multiple', typeName: '多选题', count: extracted.count },
-                    { type: 'judge', typeName: '判断题', count: extracted.count },
-                    { type: 'blank', typeName: '填空题', count: extracted.count },
-                    { type: 'shortAnswer', typeName: '简答题', count: extracted.count },
-                    { type: 'cloze', typeName: '完形填空题', count: extracted.count },
-                    { type: 'composite', typeName: '复合题', count: extracted.count }
-                  ];
-
-                  const mixedTypesData = {
-                    isMixed: true,
-                    types: allTypes,
-                    totalCount: allTypes.length * extracted.count,
-                    confidence: 1.0
-                  };
-
-                  return this.handleMixedTypeGeneration(mixedTypesData);
-                }
-
                 // 如果之前没有选择题型，需要询问用户想要哪些题型
                 params.eachCount = extracted.count;
                 params.step = 'type_selection';

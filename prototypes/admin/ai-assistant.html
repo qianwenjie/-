@@ -4141,6 +4141,36 @@
 
       // 检查是否有来自dashboard的初始消息
       const initialMessage = sessionStorage.getItem('aiInitialMessage');
+
+      // 检查是否有上传的文件
+      const uploadedFileInfo = sessionStorage.getItem('aiUploadedFile');
+      const uploadedFileContent = sessionStorage.getItem('aiUploadedFileContent');
+
+      if (uploadedFileInfo && uploadedFileContent) {
+        console.log('检测到来自dashboard的上传文件');
+
+        try {
+          const fileInfo = JSON.parse(uploadedFileInfo);
+
+          // 设置上传文档状态
+          uploadedDocument = {
+            name: fileInfo.name,
+            size: fileInfo.size,
+            type: fileInfo.type,
+            content: uploadedFileContent,
+            status: 'success'
+          };
+
+          console.log('文档已加载:', uploadedDocument);
+
+          // 清除sessionStorage中的文件信息
+          sessionStorage.removeItem('aiUploadedFile');
+          sessionStorage.removeItem('aiUploadedFileContent');
+        } catch (error) {
+          console.error('解析上传文件信息失败:', error);
+        }
+      }
+
       if (initialMessage) {
         console.log('检测到来自dashboard的初始消息:', initialMessage);
 

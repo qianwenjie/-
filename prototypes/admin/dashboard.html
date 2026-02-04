@@ -1017,8 +1017,11 @@
 
           <!-- 操作按钮组 -->
           <div class="ai-chat-actions">
+            <!-- 隐藏的文件输入 -->
+            <input type="file" id="dashboardFileInput" accept=".pdf,.doc,.docx,.txt,.md" style="display: none;" />
+
             <!-- 附件按钮 -->
-            <button class="ai-action-btn attachment" title="上传附件" aria-label="上传附件">
+            <button class="ai-action-btn attachment" title="上传附件" aria-label="上传附件" onclick="triggerFileUpload()">
               <i class="fas fa-paperclip"></i>
             </button>
 
@@ -1236,6 +1239,78 @@
         }
       }, 200);
     }
+
+    // ========== 文件上传功能 ==========
+    // 触发文件选择
+    function triggerFileUpload() {
+      const fileInput = document.getElementById('dashboardFileInput');
+      fileInput.click();
+    }
+
+    // 处理文件选择
+    document.addEventListener('DOMContentLoaded', function() {
+      const fileInput = document.getElementById('dashboardFileInput');
+
+      if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // 验证文件类型
+          const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+          const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+          if (!allowedTypes.includes(fileExt)) {
+            alert('不支持的文件格式！请上传 PDF、Word、TXT 或 Markdown 文件。');
+            fileInput.value = '';
+            return;
+          }
+
+          // 验证文件大小（限制10MB）
+          const maxSize = 10 * 1024 * 1024;
+          if (file.size > maxSize) {
+            alert('文件大小超过限制！请上传小于 10MB 的文件。');
+            fileInput.value = '';
+            return;
+          }
+
+          // 存储文件信息到sessionStorage
+          const fileInfo = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified
+          };
+          sessionStorage.setItem('aiUploadedFile', JSON.stringify(fileInfo));
+
+          // 读取文件内容
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            sessionStorage.setItem('aiUploadedFileContent', event.target.result);
+
+            // 在输入框中显示文件已上传
+            const input = document.getElementById('aiChatInput');
+            const currentValue = input.value.trim();
+            const filePrompt = `[已上传文档: ${file.name}] `;
+
+            if (currentValue) {
+              input.value = filePrompt + currentValue;
+            } else {
+              input.value = filePrompt + '请根据这份文档生成题目';
+            }
+
+            input.focus();
+          };
+
+          reader.onerror = function() {
+            alert('文件读取失败，请重试！');
+            fileInput.value = '';
+          };
+
+          reader.readAsText(file);
+        });
+      }
+    });
 
     // ========== 主题切换功能 ==========
 

@@ -489,6 +489,86 @@
       gap: 0.75rem;
     }
 
+    /* 文档卡片容器 */
+    .document-card-container {
+      display: none;
+      margin-bottom: 0.75rem;
+    }
+
+    .document-card-container.show {
+      display: block;
+    }
+
+    /* 文档卡片 */
+    .document-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .document-card:hover {
+      background: #f3f4f6;
+    }
+
+    .document-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #6366f1;
+      border-radius: 0.375rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .document-icon i {
+      color: white;
+      font-size: 1.25rem;
+    }
+
+    .document-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .document-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #1f2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.25rem;
+    }
+
+    .document-meta {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .document-remove {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      cursor: pointer;
+      border-radius: 0.25rem;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .document-remove:hover {
+      background: #e5e7eb;
+      color: #ef4444;
+    }
+
     /* 内联快捷建议 */
     .ai-inline-suggestions {
       display: flex;
@@ -775,6 +855,33 @@
       color: #4b5563;
     }
 
+    /* 深色主题 - 文档卡片 */
+    body.dark-theme .document-card {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-theme .document-card:hover {
+      background: rgba(51, 65, 85, 1);
+    }
+
+    body.dark-theme .document-name {
+      color: #e5e7eb;
+    }
+
+    body.dark-theme .document-meta {
+      color: #9ca3af;
+    }
+
+    body.dark-theme .document-remove {
+      color: #6b7280;
+    }
+
+    body.dark-theme .document-remove:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ef4444;
+    }
+
     /* 深色主题 - 内联建议 */
     body.dark-theme .inline-chip {
       background: rgba(51, 65, 85, 0.8);
@@ -984,6 +1091,22 @@
 
           <!-- 输入区域容器 -->
           <div class="ai-input-wrapper">
+            <!-- 文档卡片（上传后显示） -->
+            <div class="document-card-container" id="documentCardContainer">
+              <div class="document-card">
+                <div class="document-icon">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="document-info">
+                  <div class="document-name" id="documentName">文档名称.pdf</div>
+                  <div class="document-meta" id="documentMeta">解析中... 289KB</div>
+                </div>
+                <div class="document-remove" onclick="removeDocument()" title="移除文档">
+                  <i class="fas fa-times"></i>
+                </div>
+              </div>
+            </div>
+
             <!-- 输入框 -->
             <input
               type="text"
@@ -1247,6 +1370,29 @@
       fileInput.click();
     }
 
+    // 移除文档
+    function removeDocument() {
+      const container = document.getElementById('documentCardContainer');
+      container.classList.remove('show');
+
+      // 清除sessionStorage中的文件信息
+      sessionStorage.removeItem('aiUploadedFile');
+      sessionStorage.removeItem('aiUploadedFileContent');
+
+      // 重置文件输入
+      const fileInput = document.getElementById('dashboardFileInput');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
     // 处理文件选择
     document.addEventListener('DOMContentLoaded', function() {
       const fileInput = document.getElementById('dashboardFileInput');
@@ -1283,28 +1429,28 @@
           };
           sessionStorage.setItem('aiUploadedFile', JSON.stringify(fileInfo));
 
+          // 显示文档卡片
+          const container = document.getElementById('documentCardContainer');
+          const nameEl = document.getElementById('documentName');
+          const metaEl = document.getElementById('documentMeta');
+
+          nameEl.textContent = file.name;
+          metaEl.textContent = `解析中... ${formatFileSize(file.size)}`;
+          container.classList.add('show');
+
           // 读取文件内容
           const reader = new FileReader();
           reader.onload = function(event) {
             sessionStorage.setItem('aiUploadedFileContent', event.target.result);
 
-            // 在输入框中显示文件已上传
-            const input = document.getElementById('aiChatInput');
-            const currentValue = input.value.trim();
-            const filePrompt = `[已上传文档: ${file.name}] `;
-
-            if (currentValue) {
-              input.value = filePrompt + currentValue;
-            } else {
-              input.value = filePrompt + '请根据这份文档生成题目';
-            }
-
-            input.focus();
+            // 更新状态为已完成
+            metaEl.textContent = `已解析 · ${formatFileSize(file.size)}`;
           };
 
           reader.onerror = function() {
             alert('文件读取失败，请重试！');
             fileInput.value = '';
+            container.classList.remove('show');
           };
 
           reader.readAsText(file);

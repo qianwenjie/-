@@ -243,9 +243,10 @@
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">工号</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">手机号</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">阅卷时间</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已阅数量</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">添加时间</th>
-              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">操作</th>
+              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-40">操作</th>
             </tr>
           </thead>
           <tbody id="gradersTableBody" class="divide-y divide-gray-200">
@@ -523,6 +524,20 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">手机号</label>
           <input type="text" id="graderPhone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="请输入手机号（选填）">
         </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">阅卷时间</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">开始时间</label>
+              <input type="datetime-local" id="graderGradingStartTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">结束时间</label>
+              <input type="datetime-local" id="graderGradingEndTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle mr-1"></i>不填写则默认使用考试时间</p>
+        </div>
       </div>
       <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
         <button onclick="closeGraderModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
@@ -559,6 +574,46 @@
   </div>
 
   <!-- 批量导入弹窗 -->
+
+  <!-- 修改阅卷时间弹窗 -->
+  <div id="gradingTimeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">修改阅卷时间</h3>
+        <button onclick="closeGradingTimeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div class="bg-gray-50 rounded-lg p-3 mb-2">
+          <p class="text-sm text-gray-600">阅卷人员：<span class="font-medium text-gray-900" id="gradingTimeGraderName">-</span></p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">阅卷时间</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">开始时间</label>
+              <input type="datetime-local" id="editGradingStartTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">结束时间</label>
+              <input type="datetime-local" id="editGradingEndTime" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-2"><i class="fas fa-info-circle mr-1"></i>清空时间则恢复使用考试时间</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button onclick="closeGradingTimeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="saveGradingTime()" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg">
+          确定
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -588,9 +643,10 @@
             <div class="flex-1 text-sm text-info-700">
               <p class="font-medium mb-1">导入说明：</p>
               <ul class="list-disc list-inside space-y-1 text-xs">
-                <li>Excel 表格需包含：<strong>姓名</strong>（必填）、<strong>工号</strong>（必填）、手机号（选填）</li>
+                <li>Excel 表格需包含：<strong>姓名</strong>（必填）、<strong>工号</strong>（必填）、手机号（选填）、阅卷开始时间（选填）、阅卷结束时间（选填）</li>
                 <li>第一行为表头，从第二行开始为数据</li>
                 <li>手机号格式：1 开头的 11 位数字（填写时会验证格式）</li>
+                <li>阅卷时间格式：yyyy-MM-dd HH:mm（如 2026-02-05 09:00），不填则使用考试时间</li>
                 <li>工号重复的数据将被跳过</li>
               </ul>
               <button onclick="downloadTemplate()" class="mt-2 text-info-600 hover:text-info-700 font-medium flex items-center gap-1">
@@ -623,17 +679,20 @@
               共 <span id="previewTotal" class="font-semibold text-primary-600">0</span> 条，
               有效 <span id="previewValid" class="font-semibold text-success-600">0</span> 条，
               无效 <span id="previewInvalid" class="font-semibold text-error-600">0</span> 条
+              <span class="text-gray-400 ml-2">| 阅卷时间不填则使用考试时间</span>
             </span>
           </div>
-          <div class="border border-gray-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+          <div class="border border-gray-200 rounded-lg overflow-hidden max-h-80 overflow-y-auto">
             <table class="w-full text-sm">
               <thead class="bg-gray-50 sticky top-0">
                 <tr>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">行号</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">姓名</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">工号</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">手机号</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">状态</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 w-12">行号</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 w-20">姓名</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 w-24">工号</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 w-28">手机号</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">阅卷开始时间</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">阅卷结束时间</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 w-20">状态</th>
                 </tr>
               </thead>
               <tbody id="previewTableBody" class="divide-y divide-gray-200">
@@ -905,7 +964,7 @@
     function loadGradersData() {
       const storageKey = `exam_${examId}_graders`;
       const versionKey = `exam_${examId}_graders_version`;
-      const currentVersion = '2.0'; // 版本号，修改此值强制更新数据
+      const currentVersion = '3.0'; // 版本号，修改此值强制更新数据（3.0: 增加阅卷时间字段）
 
       const storedData = localStorage.getItem(storageKey);
       const storedVersion = localStorage.getItem(versionKey);
@@ -940,12 +999,27 @@
       const mockGraders = [];
 
       for (let i = 0; i < 25; i++) {
+        // 部分阅卷人员设置自定义阅卷时间，部分使用默认考试时间
+        const hasCustomTime = i % 3 === 0; // 每3个人中有1个设置自定义时间
+        let gradingStartTime = '';
+        let gradingEndTime = '';
+
+        if (hasCustomTime) {
+          // 设置自定义阅卷时间（考试结束后1-3天内）
+          const startDay = 28 + Math.floor(Math.random() * 3);
+          const endDay = startDay + 1 + Math.floor(Math.random() * 2);
+          gradingStartTime = `2026-01-${String(startDay).padStart(2, '0')}T09:00`;
+          gradingEndTime = `2026-01-${String(endDay).padStart(2, '0')}T18:00`;
+        }
+
         mockGraders.push({
           id: `GR${String(i + 1).padStart(3, '0')}`,
           name: names[i],
           jobNum: `T202600${String(i + 1).padStart(2, '0')}`,
           phone: `138${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
           gradedCount: Math.floor(Math.random() * 20),
+          gradingStartTime: gradingStartTime,
+          gradingEndTime: gradingEndTime,
           addTime: `2026-01-${String(20 + Math.floor(Math.random() * 9)).padStart(2, '0')} ${String(8 + Math.floor(Math.random() * 12)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
         });
       }
@@ -1300,7 +1374,11 @@
 
       console.log('渲染阅卷人员表格，当前页:', graderCurrentPage, '数据量:', pageData.length);
 
-      tbody.innerHTML = pageData.map(grader => `
+      tbody.innerHTML = pageData.map(grader => {
+        // 格式化阅卷时间显示
+        const gradingTimeDisplay = formatGradingTimeDisplay(grader);
+
+        return `
         <tr class="hover:bg-gray-50">
           <td class="px-4 py-3">
             <input type="checkbox" class="grader-checkbox w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
@@ -1309,17 +1387,25 @@
           <td class="px-4 py-3 text-sm text-gray-900">${grader.name}</td>
           <td class="px-4 py-3 text-sm text-gray-600">${grader.jobNum}</td>
           <td class="px-4 py-3 text-sm text-gray-600">${grader.phone || '-'}</td>
+          <td class="px-4 py-3 text-sm text-gray-600">
+            ${gradingTimeDisplay}
+          </td>
           <td class="px-4 py-3 text-sm">
             <span class="text-primary-600 font-semibold">${grader.gradedCount}</span> 份
           </td>
           <td class="px-4 py-3 text-sm text-gray-600">${grader.addTime}</td>
           <td class="px-4 py-3 text-center">
-            <button onclick="deleteGrader('${grader.id}')" class="text-error-600 hover:text-error-700">
-              <i class="fas fa-trash"></i>
-            </button>
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="openGradingTimeModal('${grader.id}')" class="text-primary-600 hover:text-primary-700" title="修改阅卷时间">
+                <i class="fas fa-clock"></i>
+              </button>
+              <button onclick="deleteGrader('${grader.id}')" class="text-error-600 hover:text-error-700" title="删除">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
 
       updateGraderPagination();
       updateSelectAllGradersCheckbox();
@@ -1545,6 +1631,8 @@
       document.getElementById('graderName').value = '';
       document.getElementById('graderJobNum').value = '';
       document.getElementById('graderPhone').value = '';
+      document.getElementById('graderGradingStartTime').value = '';
+      document.getElementById('graderGradingEndTime').value = '';
       document.getElementById('graderModal').classList.remove('hidden');
     }
 
@@ -1557,6 +1645,9 @@
         document.getElementById('graderName').value = grader.name;
         document.getElementById('graderJobNum').value = grader.jobNum;
         document.getElementById('graderPhone').value = grader.phone;
+        // 设置阅卷时间
+        document.getElementById('graderGradingStartTime').value = grader.gradingStartTime || '';
+        document.getElementById('graderGradingEndTime').value = grader.gradingEndTime || '';
         document.getElementById('graderModal').classList.remove('hidden');
       }
     }
@@ -1566,6 +1657,8 @@
       const name = document.getElementById('graderName').value.trim();
       const jobNum = document.getElementById('graderJobNum').value.trim();
       const phone = document.getElementById('graderPhone').value.trim();
+      const gradingStartTime = document.getElementById('graderGradingStartTime').value;
+      const gradingEndTime = document.getElementById('graderGradingEndTime').value;
 
       if (!name || !jobNum) {
         showMessage('请填写完整信息（姓名和工号为必填项）', 'warning');
@@ -1578,6 +1671,18 @@
         return;
       }
 
+      // 验证阅卷时间：如果填写了结束时间，开始时间也必须填写
+      if (gradingEndTime && !gradingStartTime) {
+        showMessage('请填写阅卷开始时间', 'warning');
+        return;
+      }
+
+      // 验证阅卷时间：结束时间必须大于开始时间
+      if (gradingStartTime && gradingEndTime && new Date(gradingEndTime) <= new Date(gradingStartTime)) {
+        showMessage('阅卷结束时间必须大于开始时间', 'error');
+        return;
+      }
+
       if (currentGraderId) {
         // 编辑
         const grader = graders.find(g => g.id === currentGraderId);
@@ -1585,6 +1690,8 @@
           grader.name = name;
           grader.jobNum = jobNum;
           grader.phone = phone || '';
+          grader.gradingStartTime = gradingStartTime || '';
+          grader.gradingEndTime = gradingEndTime || '';
         }
         showMessage('阅卷人员信息已更新', 'success');
       } else {
@@ -1596,6 +1703,8 @@
           jobNum,
           phone: phone || '',
           gradedCount: 0,
+          gradingStartTime: gradingStartTime || '',
+          gradingEndTime: gradingEndTime || '',
           addTime: new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
         };
         graders.push(newGrader);
@@ -1653,6 +1762,105 @@
     // 关闭弹窗
     function closeGraderModal() {
       document.getElementById('graderModal').classList.add('hidden');
+    }
+
+    // ========== 阅卷时间相关函数 ==========
+
+    // 格式化阅卷时间显示
+    function formatGradingTimeDisplay(grader) {
+      if (grader.gradingStartTime || grader.gradingEndTime) {
+        const startTime = grader.gradingStartTime ? formatDateTime(grader.gradingStartTime) : '-';
+        const endTime = grader.gradingEndTime ? formatDateTime(grader.gradingEndTime) : '-';
+        return `<div class="text-xs">
+          <div class="text-gray-700">${startTime}</div>
+          <div class="text-gray-400">至</div>
+          <div class="text-gray-700">${endTime}</div>
+        </div>`;
+      } else {
+        // 使用考试时间
+        if (currentExam) {
+          return `<div class="text-xs">
+            <div class="text-gray-500 italic">同考试时间</div>
+            <div class="text-gray-400">${currentExam.openStartTime || '-'}</div>
+            <div class="text-gray-400">至 ${currentExam.openEndTime || '-'}</div>
+          </div>`;
+        }
+        return '<span class="text-gray-400 text-xs italic">同考试时间</span>';
+      }
+    }
+
+    // 格式化日期时间
+    function formatDateTime(dateTimeStr) {
+      if (!dateTimeStr) return '-';
+      try {
+        const date = new Date(dateTimeStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      } catch (e) {
+        return dateTimeStr;
+      }
+    }
+
+    // 当前编辑阅卷时间的阅卷人员ID
+    let currentGradingTimeGraderId = null;
+
+    // 打开修改阅卷时间弹窗
+    function openGradingTimeModal(graderId) {
+      const grader = graders.find(g => g.id === graderId);
+      if (!grader) {
+        showMessage('未找到阅卷人员信息', 'error');
+        return;
+      }
+
+      currentGradingTimeGraderId = graderId;
+      document.getElementById('gradingTimeGraderName').textContent = grader.name;
+      document.getElementById('editGradingStartTime').value = grader.gradingStartTime || '';
+      document.getElementById('editGradingEndTime').value = grader.gradingEndTime || '';
+      document.getElementById('gradingTimeModal').classList.remove('hidden');
+    }
+
+    // 关闭修改阅卷时间弹窗
+    function closeGradingTimeModal() {
+      document.getElementById('gradingTimeModal').classList.add('hidden');
+      currentGradingTimeGraderId = null;
+    }
+
+    // 保存阅卷时间
+    function saveGradingTime() {
+      if (!currentGradingTimeGraderId) {
+        showMessage('未选择阅卷人员', 'error');
+        return;
+      }
+
+      const gradingStartTime = document.getElementById('editGradingStartTime').value;
+      const gradingEndTime = document.getElementById('editGradingEndTime').value;
+
+      // 验证阅卷时间：如果填写了结束时间，开始时间也必须填写
+      if (gradingEndTime && !gradingStartTime) {
+        showMessage('请填写阅卷开始时间', 'warning');
+        return;
+      }
+
+      // 验证阅卷时间：结束时间必须大于开始时间
+      if (gradingStartTime && gradingEndTime && new Date(gradingEndTime) <= new Date(gradingStartTime)) {
+        showMessage('阅卷结束时间必须大于开始时间', 'error');
+        return;
+      }
+
+      const grader = graders.find(g => g.id === currentGradingTimeGraderId);
+      if (grader) {
+        grader.gradingStartTime = gradingStartTime || '';
+        grader.gradingEndTime = gradingEndTime || '';
+
+        saveGradersData();
+        renderGraders();
+        closeGradingTimeModal();
+        showMessage('阅卷时间已更新', 'success');
+      }
     }
 
     function closeDeleteModal() {
@@ -2425,13 +2633,13 @@
       setTimeout(() => {
         // 生成模拟数据（实际项目中使用 SheetJS 等库解析）
         const mockData = [
-          { row: 2, name: '王老师', jobNum: 'T2026100', phone: '13800138000', valid: true, error: '' },
-          { row: 3, name: '李老师', jobNum: 'T2026101', phone: '13800138001', valid: true, error: '' },
-          { row: 4, name: '张老师', jobNum: 'T2026102', phone: '', valid: true, error: '' },
-          { row: 5, name: '', jobNum: 'T2026103', phone: '13800138003', valid: false, error: '姓名不能为空' },
-          { row: 6, name: '刘老师', jobNum: '', phone: '13800138004', valid: false, error: '工号不能为空' },
-          { row: 7, name: '陈老师', jobNum: 'T2026104', phone: '1380013800', valid: false, error: '手机号格式不正确' },
-          { row: 8, name: '杨老师', jobNum: 'T2026105', phone: '13800138005', valid: true, error: '' }
+          { row: 2, name: '王老师', jobNum: 'T2026100', phone: '13800138000', gradingStartTime: '2026-02-05T09:00', gradingEndTime: '2026-02-10T18:00', valid: true, error: '' },
+          { row: 3, name: '李老师', jobNum: 'T2026101', phone: '13800138001', gradingStartTime: '2026-02-05T09:00', gradingEndTime: '2026-02-10T18:00', valid: true, error: '' },
+          { row: 4, name: '张老师', jobNum: 'T2026102', phone: '', gradingStartTime: '', gradingEndTime: '', valid: true, error: '' },
+          { row: 5, name: '', jobNum: 'T2026103', phone: '13800138003', gradingStartTime: '', gradingEndTime: '', valid: false, error: '姓名不能为空' },
+          { row: 6, name: '刘老师', jobNum: '', phone: '13800138004', gradingStartTime: '', gradingEndTime: '', valid: false, error: '工号不能为空' },
+          { row: 7, name: '陈老师', jobNum: 'T2026104', phone: '1380013800', gradingStartTime: '', gradingEndTime: '', valid: false, error: '手机号格式不正确' },
+          { row: 8, name: '杨老师', jobNum: 'T2026105', phone: '13800138005', gradingStartTime: '2026-02-06T10:00', gradingEndTime: '2026-02-12T17:00', valid: true, error: '' }
         ];
 
         importData = mockData;
@@ -2454,18 +2662,35 @@
       document.getElementById('previewValid').textContent = validCount;
       document.getElementById('previewInvalid').textContent = invalidCount;
 
-      tbody.innerHTML = importData.map(item => {
+      tbody.innerHTML = importData.map((item, index) => {
         const statusClass = item.valid ? 'text-success-600' : 'text-error-600';
         const statusText = item.valid ? '有效' : item.error;
         const rowClass = item.valid ? '' : 'bg-error-50';
+        const disabled = item.valid ? '' : 'disabled';
+        const startTimeValue = item.gradingStartTime || '';
+        const endTimeValue = item.gradingEndTime || '';
 
         return `
-          <tr class="${rowClass}">
-            <td class="px-4 py-2 text-gray-600">${item.row}</td>
-            <td class="px-4 py-2 text-gray-900">${item.name || '-'}</td>
-            <td class="px-4 py-2 text-gray-900">${item.jobNum || '-'}</td>
-            <td class="px-4 py-2 text-gray-600">${item.phone || '-'}</td>
-            <td class="px-4 py-2 ${statusClass} text-xs">${statusText}</td>
+          <tr class="${rowClass}" data-row-index="${index}">
+            <td class="px-3 py-2 text-gray-600">${item.row}</td>
+            <td class="px-3 py-2 text-gray-900">${item.name || '-'}</td>
+            <td class="px-3 py-2 text-gray-900">${item.jobNum || '-'}</td>
+            <td class="px-3 py-2 text-gray-600">${item.phone || '-'}</td>
+            <td class="px-3 py-1">
+              <input type="datetime-local"
+                     id="importStartTime_${index}"
+                     value="${startTimeValue}"
+                     class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}"
+                     ${disabled}>
+            </td>
+            <td class="px-3 py-1">
+              <input type="datetime-local"
+                     id="importEndTime_${index}"
+                     value="${endTimeValue}"
+                     class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}"
+                     ${disabled}>
+            </td>
+            <td class="px-3 py-2 ${statusClass} text-xs">${statusText}</td>
           </tr>
         `;
       }).join('');
@@ -2497,8 +2722,44 @@
         return;
       }
 
+      // 验证每行的阅卷时间
+      let hasTimeError = false;
+      for (let i = 0; i < importData.length; i++) {
+        const item = importData[i];
+        if (!item.valid) continue;
+        if (existingJobNums.has(item.jobNum)) continue;
+
+        const startTime = document.getElementById(`importStartTime_${i}`).value;
+        const endTime = document.getElementById(`importEndTime_${i}`).value;
+
+        // 如果填写了结束时间，开始时间也必须填写
+        if (endTime && !startTime) {
+          showMessage(`第 ${item.row} 行：请填写阅卷开始时间`, 'warning');
+          hasTimeError = true;
+          break;
+        }
+
+        // 结束时间必须大于开始时间
+        if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
+          showMessage(`第 ${item.row} 行：阅卷结束时间必须大于开始时间`, 'error');
+          hasTimeError = true;
+          break;
+        }
+      }
+
+      if (hasTimeError) return;
+
       const now = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
-      toImport.forEach(item => {
+
+      // 导入数据，从每行读取阅卷时间
+      for (let i = 0; i < importData.length; i++) {
+        const item = importData[i];
+        if (!item.valid) continue;
+        if (existingJobNums.has(item.jobNum)) continue;
+
+        const startTime = document.getElementById(`importStartTime_${i}`).value;
+        const endTime = document.getElementById(`importEndTime_${i}`).value;
+
         const newId = `GR${String(graders.length + 1).padStart(3, '0')}`;
         graders.push({
           id: newId,
@@ -2506,9 +2767,11 @@
           jobNum: item.jobNum,
           phone: item.phone || '',
           gradedCount: 0,
+          gradingStartTime: startTime || '',
+          gradingEndTime: endTime || '',
           addTime: now
         });
-      });
+      }
 
       saveGradersData();
       renderGraders();
@@ -2520,10 +2783,10 @@
     function downloadTemplate() {
       // 创建模板数据
       const template = [
-        ['姓名', '工号', '手机号'],
-        ['王老师', 'T2026100', '13800138000'],
-        ['李老师', 'T2026101', '13800138001'],
-        ['张老师', 'T2026102', '']
+        ['姓名', '工号', '手机号', '阅卷开始时间', '阅卷结束时间'],
+        ['王老师', 'T2026100', '13800138000', '2026-02-05 09:00', '2026-02-10 18:00'],
+        ['李老师', 'T2026101', '13800138001', '2026-02-05 09:00', '2026-02-10 18:00'],
+        ['张老师', 'T2026102', '', '', '']
       ];
 
       // 创建CSV内容

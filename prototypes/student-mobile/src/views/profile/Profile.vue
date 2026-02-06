@@ -1,22 +1,28 @@
 <template>
   <div class="profile-page">
-    <!-- 顶部导航 -->
-    <van-nav-bar title="我的" fixed placeholder />
+    <!-- 顶部标题 -->
+    <div class="header-section">
+      <div class="page-title">我的</div>
+    </div>
 
     <!-- 用户信息卡片 -->
     <div class="user-card">
       <div class="user-avatar">
         <van-image
           round
-          width="60"
-          height="60"
-          src="https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg"
+          width="64"
+          height="64"
+          :src="userStore.userInfo?.avatar || 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'"
         />
       </div>
       <div class="user-info">
-        <div class="user-name">学生姓名</div>
-        <div class="user-id">学号: 2024001</div>
+        <div class="user-name">{{ userStore.userInfo?.name || '未登录' }}</div>
+        <div class="user-meta">
+          <span class="user-id">学号: {{ userStore.userInfo?.studentId || '-' }}</span>
+          <span class="user-class">{{ userStore.userInfo?.className || '' }}</span>
+        </div>
       </div>
+      <van-icon name="arrow" class="arrow-icon" />
     </div>
 
     <!-- 功能列表 -->
@@ -55,7 +61,7 @@ const handleLogout = () => {
     .then(() => {
       userStore.logout()
       showToast('已退出登录')
-      // 实际项目中可能需要跳转到登录页
+      router.replace('/login')
     })
     .catch(() => {
       // 取消
@@ -66,13 +72,25 @@ const handleLogout = () => {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
-  padding-bottom: 50px;
+  background-color: #F5F6F7;
+  padding-bottom: 60px;
+}
+
+/* 顶部区域 */
+.header-section {
+  background: #FFFFFF;
+  padding: 16px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1D2129;
 }
 
 .user-card {
   margin: 12px;
-  padding: 24px;
+  padding: 20px;
   background: linear-gradient(135deg, #00B96B 0%, #00D68F 100%);
   border-radius: 12px;
   display: flex;
@@ -81,32 +99,67 @@ const handleLogout = () => {
 }
 
 .user-avatar {
-  margin-right: 16px;
+  margin-right: 14px;
+  flex-shrink: 0;
+}
+
+.user-avatar :deep(.van-image) {
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-info {
   flex: 1;
   color: white;
+  min-width: 0;
 }
 
 .user-name {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .user-id {
-  font-size: 14px;
+  font-size: 13px;
   opacity: 0.9;
+}
+
+.user-class {
+  font-size: 12px;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow-icon {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
 }
 
 .menu-group {
   margin: 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .menu-group + .menu-group {
   margin-top: 12px;
+}
+
+.menu-group :deep(.van-cell) {
+  padding: 14px 16px;
+}
+
+.menu-group :deep(.van-cell__left-icon) {
+  color: #4E5969;
+  font-size: 18px;
+  margin-right: 10px;
 }
 </style>

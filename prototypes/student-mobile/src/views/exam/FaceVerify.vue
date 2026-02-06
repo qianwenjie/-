@@ -8,105 +8,94 @@
 
     <!-- 主内容 -->
     <div v-else class="content">
-      <!-- 识别状态提示 -->
-      <div v-if="verifyStatus === 'success'" class="status-card success">
-        <van-icon name="checked" size="60" color="#00B96B" />
+      <!-- 识别成功状态 -->
+      <div v-if="verifyStatus === 'success'" class="status-view success">
+        <div class="status-icon-wrapper success">
+          <van-icon name="checked" size="48" />
+        </div>
         <div class="status-title">验证成功</div>
         <div class="status-desc">正在进入考试...</div>
       </div>
 
-      <div v-else-if="verifyStatus === 'failed'" class="status-card failed">
-        <van-icon name="close" size="60" color="#F53F3F" />
+      <!-- 识别失败状态 -->
+      <div v-else-if="verifyStatus === 'failed'" class="status-view failed">
+        <div class="status-icon-wrapper failed">
+          <van-icon name="close" size="48" />
+        </div>
         <div class="status-title">验证失败</div>
         <div class="status-desc">{{ errorMessage }}</div>
+        <van-button type="primary" round class="retry-btn" @click="resetStatus">
+          重新识别
+        </van-button>
       </div>
 
       <!-- 摄像头预览区域 -->
-      <div v-else class="camera-container">
-        <!-- 说明文字 -->
-        <div class="instruction-card">
-          <div class="instruction-title">
-            <van-icon name="info-o" />
-            <span>人脸识别说明</span>
-          </div>
-          <div class="instruction-list">
-            <div class="instruction-item">
-              <van-icon name="success" color="#00B96B" />
-              <span>请保持面部清晰可见</span>
-            </div>
-            <div class="instruction-item">
-              <van-icon name="success" color="#00B96B" />
-              <span>确保光线充足</span>
-            </div>
-            <div class="instruction-item">
-              <van-icon name="success" color="#00B96B" />
-              <span>摘下眼镜和帽子</span>
-            </div>
-            <div class="instruction-item">
-              <van-icon name="success" color="#00B96B" />
-              <span>保持正面面对摄像头</span>
-            </div>
-          </div>
-        </div>
-
+      <template v-else>
         <!-- 摄像头预览框 -->
-        <div class="camera-preview">
-          <div class="preview-frame">
-            <div class="frame-corner tl"></div>
-            <div class="frame-corner tr"></div>
-            <div class="frame-corner bl"></div>
-            <div class="frame-corner br"></div>
-            <div class="preview-placeholder">
-              <van-icon name="user-circle-o" size="80" color="#C9CDD4" />
-              <div class="placeholder-text">请将面部置于框内</div>
+        <div class="camera-section">
+          <div class="camera-frame" :class="{ recognizing: recognizing }">
+            <!-- 扫描动画 -->
+            <div v-if="recognizing" class="scan-line"></div>
+            <!-- 人脸占位 -->
+            <div class="face-placeholder">
+              <van-icon name="user-circle-o" size="64" color="#C9CDD4" />
             </div>
+            <!-- 四角装饰 -->
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+          </div>
+          <div class="camera-hint">{{ recognizing ? '正在识别，请保持不动...' : '请将面部置于框内' }}</div>
+        </div>
+
+        <!-- 说明提示 -->
+        <div class="tips-section">
+          <div class="tip-item">
+            <van-icon name="bulb-o" />
+            <span>光线充足</span>
+          </div>
+          <div class="tip-item">
+            <van-icon name="eye-o" />
+            <span>正面面对</span>
+          </div>
+          <div class="tip-item">
+            <van-icon name="smile-o" />
+            <span>面部清晰</span>
           </div>
         </div>
 
-        <!-- 识别进度 -->
-        <div v-if="recognizing" class="recognizing-overlay">
-          <van-loading type="spinner" size="40" color="#00B96B">
-            <span class="recognizing-text">识别中...</span>
-          </van-loading>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="action-buttons">
+        <!-- 底部按钮 -->
+        <div class="bottom-section">
           <van-button
             type="primary"
             size="large"
+            round
             block
             :loading="recognizing"
+            loading-text="识别中..."
             @click="handleCapture"
           >
-            {{ recognizing ? '识别中...' : '开始识别' }}
+            开始识别
           </van-button>
-
-          <!-- 跳过按钮（如果允许） -->
           <van-button
             v-if="canSkip"
             type="default"
-            size="large"
-            block
-            class="skip-button"
+            size="small"
+            round
+            class="skip-btn"
             @click="handleSkip"
           >
             跳过验证
           </van-button>
         </div>
-
-        <!-- 提示信息 -->
-        <div class="tips-card">
-          <van-icon name="warning-o" color="#FF7D00" />
-          <span>为保证考试公平性,请确保本人参加考试</span>
-        </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useExamStore } from '@/stores'
 import { showToast, showConfirmDialog } from 'vant'
@@ -140,13 +129,6 @@ const loadExamInfo = async () => {
       router.replace(`/exam/answer/${examId}`)
       return
     }
-
-    // 检查考试状态
-    if (data.status !== 'in_progress') {
-      showToast('考试未开始或已结束')
-      router.back()
-      return
-    }
   } catch (error) {
     showToast('加载失败')
     router.back()
@@ -155,12 +137,18 @@ const loadExamInfo = async () => {
   }
 }
 
+// 重置状态
+const resetStatus = () => {
+  verifyStatus.value = ''
+  errorMessage.value = ''
+}
+
 // 开始识别
 const handleCapture = async () => {
   recognizing.value = true
 
   try {
-    // 模拟人脸识别过程（实际项目中需要调用真实的人脸识别API）
+    // 模拟人脸识别过程
     await new Promise(resolve => setTimeout(resolve, 2000))
 
     // 模拟识别结果（90%成功率）
@@ -168,7 +156,7 @@ const handleCapture = async () => {
 
     if (success) {
       verifyStatus.value = 'success'
-      showToast('验证成功')
+      recognizing.value = false
 
       // 延迟跳转到答题页面
       setTimeout(() => {
@@ -178,22 +166,11 @@ const handleCapture = async () => {
       verifyStatus.value = 'failed'
       errorMessage.value = '未能识别到人脸，请重试'
       recognizing.value = false
-
-      // 3秒后重置状态
-      setTimeout(() => {
-        verifyStatus.value = ''
-        errorMessage.value = ''
-      }, 3000)
     }
   } catch (error) {
     verifyStatus.value = 'failed'
     errorMessage.value = '识别失败，请重试'
     recognizing.value = false
-
-    setTimeout(() => {
-      verifyStatus.value = ''
-      errorMessage.value = ''
-    }, 3000)
   }
 }
 
@@ -232,213 +209,216 @@ onMounted(() => {
 
 <style scoped>
 .face-verify-page {
-  min-height: 100vh;
+  height: 100vh;
   background-color: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .loading-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  flex: 1;
 }
 
 .content {
-  padding: 12px;
-  padding-bottom: 80px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
 }
 
-/* 状态卡片 */
-.status-card {
-  background: white;
-  border-radius: 12px;
-  padding: 60px 20px;
-  text-align: center;
-  margin-bottom: 20px;
+/* 状态视图 */
+.status-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
-.status-card .van-icon {
-  margin-bottom: 20px;
+.status-icon-wrapper {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon-wrapper.success {
+  background: linear-gradient(135deg, #00B96B 0%, #52C41A 100%);
+  color: white;
+}
+
+.status-icon-wrapper.failed {
+  background: linear-gradient(135deg, #FF4D4F 0%, #F53F3F 100%);
+  color: white;
 }
 
 .status-title {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.status-card.success .status-title {
-  color: #00B96B;
-}
-
-.status-card.failed .status-title {
-  color: #F53F3F;
+  color: #1D2129;
 }
 
 .status-desc {
   font-size: 14px;
-  color: #86909c;
+  color: #86909C;
 }
 
-/* 摄像头容器 */
-.camera-container {
+.retry-btn {
+  margin-top: 24px;
+  width: 140px;
+}
+
+/* 摄像头区域 */
+.camera-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-/* 说明卡片 */
-.instruction-card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.instruction-title {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d2129;
-  margin-bottom: 12px;
-}
-
-.instruction-title .van-icon {
-  color: #165DFF;
-}
-
-.instruction-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.instruction-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #4e5969;
-}
-
-/* 摄像头预览 */
-.camera-preview {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 400px;
-  position: relative;
+  min-height: 0;
 }
 
-.preview-frame {
-  width: 280px;
-  height: 350px;
+.camera-frame {
+  width: 220px;
+  height: 280px;
   position: relative;
+  border: 2px solid #E5E6EB;
+  border-radius: 16px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  border: 2px dashed #C9CDD4;
-  border-radius: 12px;
+  justify-content: center;
+  background: white;
+  overflow: hidden;
+  transition: border-color 0.3s;
 }
 
-/* 边角装饰 */
-.frame-corner {
+.camera-frame.recognizing {
+  border-color: #00B96B;
+}
+
+/* 扫描线动画 */
+.scan-line {
   position: absolute;
-  width: 30px;
-  height: 30px;
-  border: 3px solid #00B96B;
-}
-
-.frame-corner.tl {
-  top: -2px;
-  left: -2px;
-  border-right: none;
-  border-bottom: none;
-  border-radius: 12px 0 0 0;
-}
-
-.frame-corner.tr {
-  top: -2px;
-  right: -2px;
-  border-left: none;
-  border-bottom: none;
-  border-radius: 0 12px 0 0;
-}
-
-.frame-corner.bl {
-  bottom: -2px;
-  left: -2px;
-  border-right: none;
-  border-top: none;
-  border-radius: 0 0 0 12px;
-}
-
-.frame-corner.br {
-  bottom: -2px;
-  right: -2px;
-  border-left: none;
-  border-top: none;
-  border-radius: 0 0 12px 0;
-}
-
-.preview-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.placeholder-text {
-  font-size: 14px;
-  color: #86909c;
-}
-
-/* 识别中遮罩 */
-.recognizing-overlay {
-  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00B96B, transparent);
+  animation: scan 1.5s ease-in-out infinite;
 }
 
-.recognizing-text {
-  margin-left: 12px;
-  color: white;
-  font-size: 16px;
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  50% {
+    top: calc(100% - 3px);
+  }
+  100% {
+    top: 0;
+  }
 }
 
-/* 操作按钮 */
-.action-buttons {
+.face-placeholder {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.skip-button {
-  margin-top: 0;
-}
-
-/* 提示卡片 */
-.tips-card {
-  background: #FFF7E8;
-  border: 1px solid #FFCF8B;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #86909c;
+}
+
+/* 四角装饰 */
+.corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #00B96B;
+}
+
+.corner.tl {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 16px 0 0 0;
+}
+
+.corner.tr {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+  border-radius: 0 16px 0 0;
+}
+
+.corner.bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+  border-radius: 0 0 0 16px;
+}
+
+.corner.br {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+  border-radius: 0 0 16px 0;
+}
+
+.camera-hint {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #86909C;
+}
+
+/* 提示区域 */
+.tips-section {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px 0;
+  flex-shrink: 0;
+}
+
+.tip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4E5969;
+}
+
+.tip-item .van-icon {
+  font-size: 24px;
+  color: #00B96B;
+}
+
+/* 底部按钮 */
+.bottom-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+  flex-shrink: 0;
+}
+
+.bottom-section :deep(.van-button--primary) {
+  background: #00B96B;
+  border-color: #00B96B;
+}
+
+.skip-btn {
+  color: #86909C;
 }
 </style>

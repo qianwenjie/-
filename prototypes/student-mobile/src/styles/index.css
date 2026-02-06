@@ -12,6 +12,15 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f7f8fa;
+  /* 防止 iOS 双击缩放 */
+  touch-action: manipulation;
+  /* 防止 iOS 键盘弹出时页面缩放 */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 防止 iOS 输入框聚焦时页面缩放 */
+input, textarea, select {
+  font-size: 16px !important;
 }
 
 #app {
@@ -76,3 +85,56 @@ html, body {
 .type-essay { color: #722ED1; }
 .type-cloze { color: #F7BA1E; }
 .type-composite { color: #722ED1; }
+
+/* 统一弹窗样式 */
+.van-dialog {
+  width: 280px !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
+.van-dialog__header {
+  padding: 24px 24px 12px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #1D2129 !important;
+}
+
+.van-dialog__message {
+  padding: 8px 24px 24px !important;
+  font-size: 14px !important;
+  color: #4E5969 !important;
+  line-height: 1.6 !important;
+}
+
+.van-dialog__footer {
+  padding: 0 16px 16px !important;
+}
+
+.van-dialog__confirm,
+.van-dialog__cancel {
+  height: 44px !important;
+  border-radius: 22px !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+.van-dialog__confirm {
+  background: var(--primary-color) !important;
+  color: white !important;
+}
+
+.van-dialog__cancel {
+  background: #F5F6F7 !important;
+  color: #4E5969 !important;
+  margin-right: 12px !important;
+}
+
+/* 单按钮弹窗 */
+.van-dialog--confirm .van-dialog__footer {
+  padding: 0 24px 20px !important;
+}
+
+.van-dialog--confirm .van-dialog__confirm {
+  flex: 1;
+}

@@ -1,19 +1,22 @@
 <template>
   <div class="multiple-choice">
-    <van-checkbox-group :model-value="value" @update:model-value="handleChange">
-      <div
-        v-for="option in question.options"
-        :key="option.label"
-        class="option-item"
-      >
-        <van-checkbox :name="option.label" icon-size="20px" shape="square">
-          <div class="option-content">
-            <span class="option-label">{{ option.label }}.</span>
-            <span class="option-text">{{ option.text }}</span>
-          </div>
-        </van-checkbox>
+    <div class="hint-bar">
+      <van-icon name="info-o" />
+      <span>本题为多选题，可选择多个答案</span>
+    </div>
+    <div
+      v-for="option in question.options"
+      :key="option.label"
+      class="option-row"
+      :class="{ 'option-selected': isSelected(option.label) }"
+      @click="toggleOption(option.label)"
+    >
+      <div class="checkbox" :class="{ 'checkbox-checked': isSelected(option.label) }">
+        <van-icon v-if="isSelected(option.label)" name="success" />
       </div>
-    </van-checkbox-group>
+      <div class="option-label">{{ option.label }}</div>
+      <div class="option-text">{{ option.text }}</div>
+    </div>
   </div>
 </template>
 
@@ -31,8 +34,17 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value'])
 
-const handleChange = (value) => {
-  emit('update:value', value)
+const isSelected = (label) => props.value.includes(label)
+
+const toggleOption = (label) => {
+  const newValue = [...props.value]
+  const index = newValue.indexOf(label)
+  if (index > -1) {
+    newValue.splice(index, 1)
+  } else {
+    newValue.push(label)
+  }
+  emit('update:value', newValue)
 }
 </script>
 
@@ -40,37 +52,79 @@ const handleChange = (value) => {
 .multiple-choice {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.option-item {
-  padding: 16px;
-  background: #f7f8fa;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: all 0.3s;
-}
-
-.option-item:has(.van-checkbox--checked) {
-  background: #E8F9F0;
-  border-color: #00B96B;
-}
-
-.option-content {
+.hint-bar {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #FFF7E6;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #D46B08;
+  margin-bottom: 4px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 10px;
+}
+
+.option-row:active {
+  transform: scale(0.98);
+  background: #F0F1F3;
+}
+
+.option-selected {
+  background: #F0E6FF;
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #C9CDD4;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.checkbox-checked {
+  background: #722ED1;
+  border-color: #722ED1;
+}
+
+.checkbox .van-icon {
+  color: #FFFFFF;
+  font-size: 12px;
 }
 
 .option-label {
-  font-weight: 600;
-  color: #1d2129;
   flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4E5969;
+  min-width: 16px;
+}
+
+.option-selected .option-label {
+  color: #722ED1;
 }
 
 .option-text {
   flex: 1;
-  color: #4e5969;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1D2129;
 }
 </style>

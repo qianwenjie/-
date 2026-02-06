@@ -1,103 +1,221 @@
 <template>
   <div class="exam-list-page">
-    <!-- 顶部导航 -->
-    <van-nav-bar title="我的考试" fixed placeholder />
+    <!-- 顶部搜索区域 -->
+    <div class="header-section">
+      <div class="page-title">我的考试</div>
+      <van-search
+        v-model="searchText"
+        placeholder="搜索考试名称"
+        shape="round"
+        background="transparent"
+        @search="onSearch"
+      />
+    </div>
 
-    <!-- 筛选标签 -->
-    <van-tabs v-model:active="activeTab" @change="handleTabChange" sticky>
-      <van-tab title="全部" name="all" />
-      <van-tab title="未开始" name="not_started" />
-      <van-tab title="进行中" name="in_progress" />
-      <van-tab title="已结束" name="ended" />
-    </van-tabs>
+    <!-- 筛选排序栏 -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <div
+          v-for="tab in tabs"
+          :key="tab.value"
+          class="tab-item"
+          :class="{ active: activeTab === tab.value }"
+          @click="handleTabChange(tab.value)"
+        >
+          {{ tab.label }}
+        </div>
+      </div>
+      <div class="sort-btn" @click="toggleSort">
+        <van-icon :name="sortDesc ? 'descending' : 'ascending'" size="14" />
+        <span>{{ sortDesc ? '最新' : '最早' }}</span>
+      </div>
+    </div>
 
     <!-- 考试列表 -->
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-      <van-list
-        v-model:loading="loading"
-        :finished="finished"
-        finished-text="没有更多了"
-        @load="onLoad"
-      >
-        <div v-for="exam in examList" :key="exam.id" class="exam-card" @click="goToDetail(exam.id)">
-          <div class="exam-header">
-            <div class="exam-title">{{ exam.name }}</div>
-            <van-tag :type="getStatusType(exam.status)">{{ getStatusText(exam.status) }}</van-tag>
+    <div class="list-section">
+      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+        <van-list
+          v-model:loading="loading"
+          :finished="finished"
+          finished-text=""
+          @load="onLoad"
+        >
+          <div
+            v-for="exam in filteredExamList"
+            :key="exam.id"
+            class="exam-card"
+            @click="goToDetail(exam.id)"
+          >
+            <!-- 左侧状态指示条 -->
+            <div class="status-bar" :class="exam.status"></div>
+
+            <!-- 卡片主体 -->
+            <div class="card-body">
+              <!-- 头部：标题和状态 -->
+              <div class="card-header">
+                <h3 class="exam-name">{{ exam.name }}</h3>
+                <van-tag :type="getStatusType(exam.status)" size="medium">
+                  {{ getStatusText(exam.status) }}
+                </van-tag>
+              </div>
+
+              <!-- 考试信息 -->
+              <div class="exam-info">
+                <div class="info-row">
+                  <van-icon name="clock-o" />
+                  <span>{{ formatDateTime(exam.startTime) }} ~ {{ formatEndTime(exam.startTime, exam.endTime) }}</span>
+                </div>
+                <div class="info-row">
+                  <van-icon name="description" />
+                  <span>{{ exam.paper.name }}</span>
+                </div>
+                <div class="info-tags">
+                  <span class="tag">{{ exam.duration }}分钟</span>
+                  <span class="tag">{{ exam.paper.questionCount }}题</span>
+                  <span class="tag">{{ exam.totalScore }}分</span>
+                  <span v-if="exam.config.maxAttempts > 1" class="tag attempt">
+                    {{ exam.config.currentAttempt }}/{{ exam.config.maxAttempts }}次
+                  </span>
+                </div>
+              </div>
+
+              <!-- 底部：成绩或操作 -->
+              <div class="card-footer">
+                <!-- 已提交显示成绩 -->
+                <div v-if="exam.myStatus === 'submitted' && exam.score !== null" class="score-section">
+                  <div class="score-badge" :class="getScoreLevel(exam.score, exam.totalScore)">
+                    <span class="score-num">{{ exam.score }}</span>
+                    <span class="score-unit">分</span>
+                  </div>
+                  <span class="score-text">已完成</span>
+                </div>
+                <div v-else class="score-section empty"></div>
+
+                <!-- 操作按钮 -->
+                <div class="action-section">
+                  <!-- 进行中的考试 -->
+                  <van-button
+                    v-if="exam.status === 'in_progress' && exam.myStatus !== 'submitted'"
+                    type="primary"
+                    size="small"
+                    round
+                    @click.stop="enterExam(exam)"
+                  >
+                    {{ exam.myStatus === 'in_progress' ? '继续答题' : '进入考试' }}
+                  </van-button>
+                  <!-- 已提交 -->
+                  <van-button
+                    v-else-if="exam.myStatus === 'submitted'"
+                    plain
+                    type="primary"
+                    size="small"
+                    round
+                    @click.stop="viewResult(exam.id)"
+                  >
+                    查看详情
+                  </van-button>
+                  <!-- 未开始且允许提前进入 -->
+                  <div v-else-if="exam.status === 'not_started' && exam.config.allowEarlyEntry" class="early-entry-row">
+                    <div class="early-entry-left">
+                      <div class="countdown-text" v-html="getCountdown(exam)"></div>
+                      <div class="early-hint">允许提前{{ exam.config.earlyMinutes }}分钟</div>
+                    </div>
+                    <van-button
+                      type="success"
+                      size="small"
+                      round
+                      :disabled="!canEnter(exam)"
+                      @click.stop="enterExam(exam)"
+                    >
+                      提前进入
+                    </van-button>
+                  </div>
+                  <!-- 未开始且不允许提前进入 -->
+                  <div v-else-if="exam.status === 'not_started'" class="countdown-text" v-html="getCountdown(exam)">
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="exam-info">
-            <div class="info-item">
-              <van-icon name="clock-o" />
-              <span>{{ formatTime(exam.startTime) }} - {{ formatTime(exam.endTime) }}</span>
-            </div>
-            <div class="info-item">
-              <van-icon name="notes-o" />
-              <span>{{ exam.paper.name }}</span>
-            </div>
-            <div class="info-item">
-              <van-icon name="clock" />
-              <span>时长 {{ exam.duration }} 分钟</span>
-            </div>
-            <div v-if="exam.config.maxAttempts && exam.config.maxAttempts > 1" class="info-item">
-              <van-icon name="replay" />
-              <span>作答 {{ exam.config.currentAttempt }}/{{ exam.config.maxAttempts }} 次</span>
-            </div>
-          </div>
-
-          <div class="exam-footer">
-            <div class="score-info">
-              <span v-if="exam.myStatus === 'submitted' && exam.score !== null">
-                得分：<span class="score">{{ exam.score }}</span> / {{ exam.totalScore }}
-              </span>
-              <span v-else>
-                总分：{{ exam.totalScore }}
-              </span>
-            </div>
-            <van-button
-              v-if="canEnter(exam)"
-              type="primary"
-              size="small"
-              @click.stop="enterExam(exam.id)"
-            >
-              {{ exam.myStatus === 'in_progress' ? '继续答题' : '进入考试' }}
-            </van-button>
-            <van-button
-              v-else-if="exam.myStatus === 'submitted'"
-              type="default"
-              size="small"
-              @click.stop="viewResult(exam.id)"
-            >
-              查看成绩
-            </van-button>
-          </div>
-        </div>
-
-        <!-- 空状态 -->
-        <van-empty v-if="!loading && examList.length === 0" description="暂无考试" />
-      </van-list>
-    </van-pull-refresh>
+          <!-- 空状态 -->
+          <van-empty
+            v-if="!loading && filteredExamList.length === 0"
+            image="search"
+            :description="emptyText"
+          />
+        </van-list>
+      </van-pull-refresh>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useExamStore } from '@/stores'
+import { useExamStore, useUserStore } from '@/stores'
 import { showToast } from 'vant'
 
 const router = useRouter()
 const examStore = useExamStore()
+const userStore = useUserStore()
 
 // 状态
 const activeTab = ref('all')
+const searchText = ref('')
 const refreshing = ref(false)
 const loading = ref(false)
 const finished = ref(false)
 const page = ref(1)
 const pageSize = 20
+const sortDesc = ref(true)
+const countdownTimer = ref(null)
+const currentTime = ref(Date.now())
+
+// 标签配置
+const tabs = [
+  { label: '全部', value: 'all' },
+  { label: '进行中', value: 'in_progress' },
+  { label: '未开始', value: 'not_started' },
+  { label: '已结束', value: 'ended' },
+]
 
 // 考试列表
 const examList = computed(() => examStore.examList)
+
+// 筛选后的列表
+const filteredExamList = computed(() => {
+  let list = [...examList.value]
+
+  // 状态筛选
+  if (activeTab.value !== 'all') {
+    list = list.filter(e => e.status === activeTab.value)
+  }
+
+  // 搜索筛选
+  if (searchText.value) {
+    const keyword = searchText.value.toLowerCase()
+    list = list.filter(e => e.name.toLowerCase().includes(keyword))
+  }
+
+  // 排序
+  list.sort((a, b) => {
+    const timeA = new Date(a.startTime).getTime()
+    const timeB = new Date(b.startTime).getTime()
+    return sortDesc.value ? timeB - timeA : timeA - timeB
+  })
+
+  return list
+})
+
+// 空状态文本
+const emptyText = computed(() => {
+  if (searchText.value) {
+    return '未找到相关考试'
+  }
+  const tabText = tabs.find(t => t.value === activeTab.value)?.label || ''
+  return `暂无${tabText === '全部' ? '' : tabText}考试`
+})
 
 // 加载数据
 const onLoad = async () => {
@@ -130,16 +248,26 @@ const onRefresh = () => {
 }
 
 // 切换标签
-const handleTabChange = () => {
-  onRefresh()
+const handleTabChange = (value) => {
+  activeTab.value = value
+}
+
+// 切换排序
+const toggleSort = () => {
+  sortDesc.value = !sortDesc.value
+}
+
+// 搜索
+const onSearch = () => {
+  // 搜索由 computed 自动处理
 }
 
 // 获取状态类型
 const getStatusType = (status) => {
   const typeMap = {
-    not_started: 'default',
-    in_progress: 'success',
-    ended: 'danger',
+    not_started: 'primary',
+    in_progress: 'warning',
+    ended: 'default',
   }
   return typeMap[status] || 'default'
 }
@@ -154,19 +282,101 @@ const getStatusText = (status) => {
   return textMap[status] || '未知'
 }
 
-// 格式化时间
-const formatTime = (time) => {
+// 格式化日期时间
+const formatDateTime = (time) => {
   const date = new Date(time)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const month = date.getMonth() + 1
+  const day = date.getDate()
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
-  return `${month}-${day} ${hour}:${minute}`
+  return `${month}月${day}日 ${hour}:${minute}`
 }
 
-// 是否可以进入考试
+// 格式化结束时间（处理跨天情况）
+const formatEndTime = (startTime, endTime) => {
+  const startDate = new Date(startTime)
+  const endDate = new Date(endTime)
+  const endHour = String(endDate.getHours()).padStart(2, '0')
+  const endMinute = String(endDate.getMinutes()).padStart(2, '0')
+
+  // 判断是否跨天
+  const isSameDay = startDate.getFullYear() === endDate.getFullYear() &&
+                    startDate.getMonth() === endDate.getMonth() &&
+                    startDate.getDate() === endDate.getDate()
+
+  if (isSameDay) {
+    return `${endHour}:${endMinute}`
+  } else {
+    // 跨天显示日期
+    const endMonth = endDate.getMonth() + 1
+    const endDay = endDate.getDate()
+    return `${endMonth}月${endDay}日 ${endHour}:${endMinute}`
+  }
+}
+
+// 获取倒计时文本（实时更新）
+const getCountdown = (exam) => {
+  const start = new Date(exam.startTime).getTime()
+  const diff = start - currentTime.value
+
+  if (diff <= 0) return '<span class="countdown-num">即将开始</span>'
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+  // 统一使用数字字体包裹
+  if (days > 0) {
+    return `<span class="countdown-num">${days}</span>天<span class="countdown-num">${hours}</span>小时后`
+  }
+  // 小于24小时按时:分:秒显示
+  const h = String(hours).padStart(2, '0')
+  const m = String(minutes).padStart(2, '0')
+  const s = String(seconds).padStart(2, '0')
+  return `<span class="countdown-num">${h}</span>:<span class="countdown-num">${m}</span>:<span class="countdown-num">${s}</span>`
+}
+
+// 启动倒计时定时器
+const startCountdownTimer = () => {
+  countdownTimer.value = setInterval(() => {
+    currentTime.value = Date.now()
+  }, 1000)
+}
+
+// 停止倒计时定时器
+const stopCountdownTimer = () => {
+  if (countdownTimer.value) {
+    clearInterval(countdownTimer.value)
+    countdownTimer.value = null
+  }
+}
+
+// 获取成绩等级
+const getScoreLevel = (score, total) => {
+  const percent = (score / total) * 100
+  if (percent >= 90) return 'excellent'
+  if (percent >= 80) return 'good'
+  if (percent >= 60) return 'pass'
+  return 'fail'
+}
+
+// 是否可以进入考试（包括提前进入）
 const canEnter = (exam) => {
-  return exam.status === 'in_progress' && exam.myStatus !== 'submitted'
+  // 已提交的不能再进入
+  if (exam.myStatus === 'submitted') return false
+
+  // 进行中的考试可以进入
+  if (exam.status === 'in_progress') return true
+
+  // 未开始的考试，检查是否允许提前进入
+  if (exam.status === 'not_started' && exam.config.allowEarlyEntry) {
+    const startTime = new Date(exam.startTime).getTime()
+    const earlyTime = startTime - exam.config.earlyMinutes * 60 * 1000
+    return currentTime.value >= earlyTime
+  }
+
+  return false
 }
 
 // 进入考试详情
@@ -175,8 +385,12 @@ const goToDetail = (examId) => {
 }
 
 // 进入考试
-const enterExam = (examId) => {
-  router.push(`/exam/face-verify/${examId}`)
+const enterExam = (exam) => {
+  if (exam.config.enableFaceRecognition) {
+    router.push(`/exam/face-verify/${exam.id}`)
+  } else {
+    router.push(`/exam/answer/${exam.id}`)
+  }
 }
 
 // 查看成绩
@@ -185,73 +399,328 @@ const viewResult = (examId) => {
 }
 
 onMounted(() => {
+  // 检查登录状态
+  userStore.loadFromLocal()
+  if (!userStore.isLoggedIn) {
+    router.replace('/login')
+    return
+  }
   onLoad()
+  // 启动倒计时
+  startCountdownTimer()
+})
+
+onUnmounted(() => {
+  // 清理倒计时
+  stopCountdownTimer()
 })
 </script>
 
 <style scoped>
 .exam-list-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
-  padding-bottom: 50px;
+  background-color: #F5F6F7;
+  padding-bottom: 60px;
 }
 
-.exam-card {
-  margin: 12px;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+/* 顶部区域 */
+.header-section {
+  background: #FFFFFF;
+  padding: 12px 16px 16px;
 }
 
-.exam-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1D2129;
   margin-bottom: 12px;
 }
 
-.exam-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1d2129;
-  flex: 1;
-  margin-right: 8px;
+.header-section :deep(.van-search) {
+  padding: 0;
 }
 
+.header-section :deep(.van-search__content) {
+  background: #F5F6F7;
+}
+
+/* 筛选栏 */
+.filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  margin-top: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab-item {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #4E5969;
+  background: #F5F6F7;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+.tab-item.active {
+  background: #00B96B;
+  color: white;
+  font-weight: 500;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #86909C;
+  padding: 6px 10px;
+  background: #F5F6F7;
+  border-radius: 14px;
+}
+
+/* 列表区域 */
+.list-section {
+  padding: 12px 16px;
+}
+
+/* 考试卡片 */
+.exam-card {
+  display: flex;
+  background: #FFFFFF;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* 状态指示条 */
+.status-bar {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.status-bar.in_progress {
+  background: linear-gradient(180deg, #FA8C16 0%, #FFC53D 100%);
+}
+
+.status-bar.not_started {
+  background: linear-gradient(180deg, #1890FF 0%, #69C0FF 100%);
+}
+
+.status-bar.ended {
+  background: linear-gradient(180deg, #8C8C8C 0%, #BFBFBF 100%);
+}
+
+/* 卡片主体 */
+.card-body {
+  flex: 1;
+  padding: 14px 14px 14px 12px;
+  min-width: 0;
+}
+
+/* 卡片头部 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.exam-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1D2129;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 考试信息 */
 .exam-info {
   margin-bottom: 12px;
 }
 
-.info-item {
+.info-row {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 6px;
+  font-size: 13px;
+  color: #86909C;
+  margin-bottom: 6px;
+}
+
+.info-row .van-icon {
   font-size: 14px;
-  color: #4e5969;
+  color: #C9CDD4;
 }
 
-.info-item .van-icon {
-  margin-right: 6px;
-  color: #86909c;
+.info-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.exam-footer {
+.info-tags .tag {
+  font-size: 12px;
+  color: #4E5969;
+  background: #F5F6F7;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.info-tags .tag.attempt {
+  color: #FA8C16;
+  background: #FFF7E6;
+}
+
+/* 卡片底部 */
+.card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid #e5e6eb;
+  border-top: 1px solid #F0F1F2;
 }
 
-.score-info {
+/* 成绩区域 */
+.score-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-section.empty {
+  min-height: 28px;
+}
+
+.score-badge {
+  display: flex;
+  align-items: baseline;
+  padding: 2px 10px;
+  border-radius: 14px;
+  background: #F5F6F7;
+}
+
+.score-badge.excellent {
+  background: #F6FFED;
+  color: #52C41A;
+}
+
+.score-badge.good {
+  background: #E6F7FF;
+  color: #1890FF;
+}
+
+.score-badge.pass {
+  background: #FFF7E6;
+  color: #FA8C16;
+}
+
+.score-badge.fail {
+  background: #FFF1F0;
+  color: #FF4D4F;
+}
+
+.score-num {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.score-unit {
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+.score-text {
+  font-size: 12px;
+  color: #86909C;
+}
+
+/* 操作区域 */
+.action-section {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.action-section :deep(.van-button--primary) {
+  background: #00B96B;
+  border-color: #00B96B;
+}
+
+.action-section :deep(.van-button--primary.van-button--plain) {
+  color: #00B96B;
+  background: transparent;
+}
+
+.action-section :deep(.van-button--success) {
+  background: #52C41A;
+  border-color: #52C41A;
+}
+
+.action-section :deep(.van-button--success.van-button--disabled) {
+  background: #C9CDD4;
+  border-color: #C9CDD4;
+  color: #fff;
+  opacity: 1;
+}
+
+/* 提前进入行 */
+.early-entry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.early-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.early-hint {
+  font-size: 11px;
+  color: #52C41A;
+}
+
+.countdown-text {
+  font-size: 13px;
+  color: #1890FF;
+  padding: 4px 12px;
+  background: #E6F7FF;
+  border-radius: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.early-hint {
+  font-size: 11px;
+  color: #52C41A;
+  white-space: nowrap;
+}
+
+/* 倒计时中的数字样式 - 统一字体 */
+.countdown-text :deep(.countdown-num) {
+  font-family: 'DIN Alternate', 'SF Mono', 'Menlo', monospace;
+  font-weight: 700;
   font-size: 14px;
-  color: #4e5969;
-}
-
-.score {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--primary-color);
+  letter-spacing: 0.5px;
 }
 </style>

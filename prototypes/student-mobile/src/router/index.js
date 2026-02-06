@@ -5,6 +5,13 @@ const routes = [
     path: '/',
     redirect: '/exam/list',
   },
+  // 登录页面
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/auth/Login.vue'),
+    meta: { title: '登录', public: true },
+  },
   // 考试模块
   {
     path: '/exam',
@@ -84,6 +91,13 @@ const routes = [
     component: () => import('@/views/profile/Profile.vue'),
     meta: { title: '我的' },
   },
+  // 消息中心
+  {
+    path: '/message',
+    name: 'Message',
+    component: () => import('@/views/message/Message.vue'),
+    meta: { title: '消息' },
+  },
 ]
 
 const router = createRouter({
@@ -97,7 +111,20 @@ router.beforeEach((to, from, next) => {
   if (to.meta.title) {
     document.title = to.meta.title
   }
-  next()
+
+  // 检查登录状态
+  const token = localStorage.getItem('token')
+  const isPublicRoute = to.meta.public === true
+
+  if (!token && !isPublicRoute) {
+    // 未登录且不是公开页面，跳转到登录页
+    next('/login')
+  } else if (token && to.path === '/login') {
+    // 已登录但访问登录页，跳转到首页
+    next('/exam/list')
+  } else {
+    next()
+  }
 })
 
 export default router

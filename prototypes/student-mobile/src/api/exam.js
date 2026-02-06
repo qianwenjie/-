@@ -37,7 +37,14 @@ export function getExamDetail(examId) {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(mockExamDetail)
+        // 根据 examId 从列表中查找对应的考试
+        const exam = mockExamList.find(e => e.id === examId)
+        if (exam) {
+          resolve(exam)
+        } else {
+          // 如果找不到，返回默认的 mockExamDetail
+          resolve(mockExamDetail)
+        }
       }, 300)
     })
   }

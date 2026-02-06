@@ -3,13 +3,7 @@
     <!-- 顶部导航栏 -->
     <van-nav-bar fixed placeholder>
       <template #title>
-        <div class="nav-title">
-          <div class="exam-name">{{ exam?.name }}</div>
-          <div class="countdown" :class="{ warning: remainingTime < 600 }">
-            <van-icon name="clock-o" />
-            <span>{{ formattedTime }}</span>
-          </div>
-        </div>
+        <span class="nav-title">{{ exam?.name }}</span>
       </template>
       <template #right>
         <van-button type="primary" size="small" @click="showAnswerSheet = true">
@@ -18,33 +12,36 @@
       </template>
     </van-nav-bar>
 
+    <!-- 题目信息栏（与导航栏融合） -->
+    <div v-if="!loading && currentQuestion" class="question-bar">
+      <div class="bar-left">
+        <span class="question-index">{{ currentQuestionIndex + 1 }}</span>
+        <span class="question-total">/{{ questions.length }}</span>
+        <van-tag :type="getQuestionTypeColor(currentQuestion.type)" size="medium" class="type-tag">
+          {{ currentQuestion.typeName }}
+        </van-tag>
+      </div>
+      <div class="bar-right">
+        <div class="countdown" :class="{ warning: remainingTime < 600 }">
+          <van-icon name="clock-o" />
+          <span>{{ formattedTime }}</span>
+        </div>
+        <span class="score">{{ currentQuestion.score }}分</span>
+      </div>
+    </div>
+
     <!-- 加载状态 -->
     <van-loading v-if="loading" class="loading-wrapper" vertical>加载中...</van-loading>
 
     <!-- 主内容区 -->
-    <div v-else class="content">
-      <!-- 题目信息栏 -->
-      <div class="question-info">
-        <div class="question-number">
-          <span class="current">{{ currentQuestionIndex + 1 }}</span>
-          <span class="separator">/</span>
-          <span class="total">{{ questions.length }}</span>
-        </div>
-        <div class="question-type">
-          <van-tag :type="getQuestionTypeColor(currentQuestion.type)">
-            {{ currentQuestion.typeName }}
-          </van-tag>
-          <span class="score">{{ currentQuestion.score }}分</span>
-        </div>
-      </div>
-
-      <!-- 题目内容 -->
-      <div class="question-content">
-        <div class="question-text" v-html="formatQuestionContent(currentQuestion.content)"></div>
+    <div v-else class="content" :class="{ 'content-fixed': currentQuestion.type === 'cloze' || currentQuestion.type === 'composite' }">
+      <!-- 题目内容（完形填空和复合题也显示题目内容） -->
+      <div class="question-content" :class="{ 'fixed-content': currentQuestion.type === 'cloze' || currentQuestion.type === 'composite' }">
+        <div class="question-text" v-html="formatQuestionContent(currentQuestion.type === 'composite' ? currentQuestion.material : currentQuestion.content)"></div>
       </div>
 
       <!-- 答题区域（根据题型动态渲染） -->
-      <div class="answer-area">
+      <div class="answer-area" :class="{ 'floating-answer': currentQuestion.type === 'cloze' || currentQuestion.type === 'composite' }">
         <!-- 单选题 -->
         <SingleChoice
           v-if="currentQuestion.type === 'single'"
@@ -84,18 +81,24 @@
           :value="currentAnswer"
           @update:value="handleAnswerChange"
         />
-      </div>
 
-      <!-- 标记按钮 -->
-      <div class="mark-section">
-        <van-button
-          :type="isMarked ? 'warning' : 'default'"
-          :icon="isMarked ? 'star' : 'star-o'"
-          block
-          @click="handleToggleMark"
-        >
-          {{ isMarked ? '已标记' : '标记本题' }}
-        </van-button>
+        <!-- 完形填空 -->
+        <ClozeQuestion
+          v-else-if="currentQuestion.type === 'cloze'"
+          :question="currentQuestion"
+          :value="currentAnswer"
+          @update:value="handleAnswerChange"
+          @complete="handleQuestionComplete"
+        />
+
+        <!-- 复合题 -->
+        <CompositeQuestion
+          v-else-if="currentQuestion.type === 'composite'"
+          :question="currentQuestion"
+          :value="currentAnswer"
+          @update:value="handleAnswerChange"
+          @complete="handleQuestionComplete"
+        />
       </div>
 
       <!-- 底部导航按钮 -->
@@ -131,26 +134,28 @@
     <van-popup
       v-model:show="showAnswerSheet"
       position="right"
-      :style="{ width: '85%', height: '100%' }"
+      :style="{ width: '80%', height: '100vh' }"
+      :lock-scroll="true"
+      :close-on-click-overlay="true"
     >
       <div class="answer-sheet">
         <div class="sheet-header">
           <div class="sheet-title">答题卡</div>
-          <van-icon name="cross" @click="showAnswerSheet = false" />
+          <van-icon name="cross" class="close-icon" @click="showAnswerSheet = false" />
         </div>
 
         <div class="sheet-stats">
           <div class="stat-item">
-            <div class="stat-value">{{ answeredCount }}</div>
+            <div class="stat-value answered">{{ answeredCount }}</div>
             <div class="stat-label">已答</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">{{ unansweredCount }}</div>
+            <div class="stat-value unanswered">{{ unansweredCount }}</div>
             <div class="stat-label">未答</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">{{ markedCount }}</div>
-            <div class="stat-label">标记</div>
+            <div class="stat-value total">{{ questions.length }}</div>
+            <div class="stat-label">总题数</div>
           </div>
         </div>
 
@@ -162,12 +167,10 @@
             :class="{
               active: index === currentQuestionIndex,
               answered: answers[question.id],
-              marked: marked.includes(question.id),
             }"
             @click="handleJumpToQuestion(index)"
           >
             <div class="item-number">{{ index + 1 }}</div>
-            <van-icon v-if="marked.includes(question.id)" name="star" class="mark-icon" />
           </div>
         </div>
 
@@ -194,6 +197,8 @@ import MultipleChoice from './components/MultipleChoice.vue'
 import JudgeQuestion from './components/JudgeQuestion.vue'
 import BlankQuestion from './components/BlankQuestion.vue'
 import EssayQuestion from './components/EssayQuestion.vue'
+import ClozeQuestion from './components/ClozeQuestion.vue'
+import CompositeQuestion from './components/CompositeQuestion.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -209,21 +214,14 @@ const questions = computed(() => answerStore.questions)
 const currentQuestionIndex = computed(() => answerStore.currentQuestionIndex)
 const currentQuestion = computed(() => answerStore.currentQuestion)
 const answers = computed(() => answerStore.answers)
-const marked = computed(() => answerStore.marked)
 const remainingTime = computed(() => answerStore.remainingTime)
 const formattedTime = computed(() => answerStore.formattedTime)
 const answeredCount = computed(() => answerStore.answeredCount)
 const unansweredCount = computed(() => answerStore.unansweredCount)
-const markedCount = computed(() => marked.value.length)
 
 // 当前题目的答案
 const currentAnswer = computed(() => {
   return answers.value[currentQuestion.value?.id] || getDefaultAnswer(currentQuestion.value?.type)
-})
-
-// 当前题目是否被标记
-const isMarked = computed(() => {
-  return marked.value.includes(currentQuestion.value?.id)
 })
 
 // 获取默认答案
@@ -235,9 +233,11 @@ const getDefaultAnswer = (type) => {
     case 'multiple':
       return []
     case 'blank':
+    case 'cloze':
+    case 'composite':
       return {}
     case 'essay':
-      return ''
+      return { text: '', attachments: [] }
     default:
       return null
   }
@@ -251,12 +251,15 @@ const getQuestionTypeColor = (type) => {
     judge: 'warning',
     blank: 'danger',
     essay: 'default',
+    cloze: 'primary',
+    composite: 'success',
   }
   return colorMap[type] || 'default'
 }
 
 // 格式化题目内容（处理换行等）
 const formatQuestionContent = (content) => {
+  if (!content) return ''
   return content.replace(/\n/g, '<br>')
 }
 
@@ -288,11 +291,6 @@ const handleAnswerChange = (value) => {
   answerStore.saveAnswer(currentQuestion.value.id, value)
 }
 
-// 标记/取消标记
-const handleToggleMark = () => {
-  answerStore.toggleMark(currentQuestion.value.id)
-}
-
 // 上一题
 const handlePrevQuestion = () => {
   answerStore.prevQuestion()
@@ -307,6 +305,17 @@ const handleNextQuestion = () => {
 const handleJumpToQuestion = (index) => {
   answerStore.setCurrentQuestion(index)
   showAnswerSheet.value = false
+}
+
+// 完形填空/复合题完成处理
+const handleQuestionComplete = () => {
+  // 如果还有下一题，跳转到下一题
+  if (currentQuestionIndex.value < questions.value.length - 1) {
+    answerStore.nextQuestion()
+  } else {
+    // 如果是最后一题，提交试卷
+    handleSubmit()
+  }
 }
 
 // 提交试卷
@@ -378,29 +387,72 @@ onUnmounted(() => {
 
 /* 导航栏 */
 .nav-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+/* 题目信息栏（与导航栏融合） */
+.question-bar {
+  position: fixed;
+  top: 46px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 99;
+  border-bottom: 1px solid #e5e6eb;
+}
+
+.bar-left {
+  display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.exam-name {
+.question-index {
+  font-size: 20px;
+  font-weight: 700;
+  color: #00B96B;
+}
+
+.question-total {
   font-size: 14px;
-  font-weight: 600;
-  color: #1d2129;
+  color: #86909c;
+  margin-right: 8px;
+}
+
+.type-tag {
+  margin-left: 4px;
+}
+
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .countdown {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: #00B96B;
   font-weight: 600;
 }
 
 .countdown.warning {
   color: #F53F3F;
+}
+
+.score {
+  font-size: 14px;
+  color: #F77234;
+  font-weight: 600;
 }
 
 .loading-wrapper {
@@ -412,57 +464,38 @@ onUnmounted(() => {
 
 /* 主内容 */
 .content {
-  padding: 12px;
+  padding-top: 40px;
+  min-height: 100vh;
+  padding-bottom: 80px; /* 为底部导航留出空间 */
 }
 
-/* 题目信息栏 */
-.question-info {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.question-number {
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.question-number .current {
-  color: #00B96B;
-}
-
-.question-number .separator {
-  color: #C9CDD4;
-  margin: 0 4px;
-}
-
-.question-number .total {
-  color: #86909c;
-  font-size: 18px;
-}
-
-.question-type {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.score {
-  font-size: 14px;
-  color: #F77234;
-  font-weight: 600;
+/* 完形填空和复合题时，固定布局 */
+.content.content-fixed {
+  overflow: hidden;
+  height: 100vh;
 }
 
 /* 题目内容 */
 .question-content {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 12px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 12px 16px;
+  margin: 8px 12px 0 12px;
+}
+
+/* 完形填空和复合题的题目内容固定定位 */
+.question-content.fixed-content {
+  position: fixed;
+  top: 94px; /* 导航栏46px + 题目信息栏40px + 间距8px */
+  left: 12px;
+  right: 12px;
+  bottom: calc(35vh + 64px); /* 答题面板最小高度35vh + 底部导航64px，与面板间距为0 */
+  margin: 0;
+  border-radius: 12px;
+  overflow-y: auto; /* 内容在卡片内滚动 */
+  z-index: 1;
 }
 
 .question-text {
@@ -475,14 +508,18 @@ onUnmounted(() => {
 .answer-area {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 12px;
-  min-height: 200px;
+  padding: 16px;
+  margin: 0 12px 12px 12px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
-/* 标记区域 */
-.mark-section {
-  margin-bottom: 12px;
+/* 完形填空和复合题的答题区域不显示背景 */
+.answer-area.floating-answer {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
 }
 
 /* 底部导航 */
@@ -505,19 +542,21 @@ onUnmounted(() => {
 
 /* 答题卡 */
 .answer-sheet {
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f7f8fa;
+  overflow: hidden;
 }
 
 .sheet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 16px 20px;
   background: white;
   border-bottom: 1px solid #e5e6eb;
+  flex-shrink: 0;
 }
 
 .sheet-title {
@@ -526,16 +565,23 @@ onUnmounted(() => {
   color: #1d2129;
 }
 
-.sheet-header .van-icon {
-  font-size: 20px;
+.close-icon {
+  font-size: 22px;
   color: #86909c;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.close-icon:active {
+  transform: scale(0.9);
 }
 
 .sheet-stats {
   display: flex;
-  padding: 16px;
+  padding: 20px 16px;
   background: white;
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .stat-item {
@@ -544,21 +590,33 @@ onUnmounted(() => {
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+
+.stat-value.answered {
   color: #00B96B;
-  margin-bottom: 4px;
+}
+
+.stat-value.unanswered {
+  color: #F77234;
+}
+
+.stat-value.total {
+  color: #165DFF;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #86909c;
 }
 
 .sheet-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 16px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
@@ -574,30 +632,31 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
-  border: 2px solid transparent;
+  border: 2px solid #e5e6eb;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sheet-item:active {
+  transform: scale(0.95);
 }
 
 .sheet-item.active {
   border-color: #00B96B;
-  background: #E8F9F0;
+  background: #E6F7F0;
+  box-shadow: 0 0 0 3px rgba(0, 185, 107, 0.1);
 }
 
 .sheet-item.answered {
   background: #00B96B;
+  border-color: #00B96B;
   color: white;
 }
 
-.sheet-item.marked::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 20px 20px 0;
-  border-color: transparent #FF7D00 transparent transparent;
+.sheet-item.answered.active {
+  background: #00B96B;
+  border-color: #009456;
+  box-shadow: 0 0 0 3px rgba(0, 185, 107, 0.2);
 }
 
 .item-number {
@@ -605,17 +664,10 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.mark-icon {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  font-size: 12px;
-  color: #FF7D00;
-}
-
 .sheet-footer {
-  padding: 12px;
+  padding: 16px;
   background: white;
   border-top: 1px solid #e5e6eb;
+  flex-shrink: 0;
 }
 </style>

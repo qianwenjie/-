@@ -1,19 +1,18 @@
 <template>
   <div class="single-choice">
-    <van-radio-group :model-value="value" @update:model-value="handleChange">
-      <div
-        v-for="option in question.options"
-        :key="option.label"
-        class="option-item"
-      >
-        <van-radio :name="option.label" icon-size="20px">
-          <div class="option-content">
-            <span class="option-label">{{ option.label }}.</span>
-            <span class="option-text">{{ option.text }}</span>
-          </div>
-        </van-radio>
+    <div
+      v-for="option in question.options"
+      :key="option.label"
+      class="option-row"
+      :class="{ 'option-selected': isSelected(option.label) }"
+      @click="selectOption(option.label)"
+    >
+      <div class="option-label" :class="{ 'label-selected': isSelected(option.label) }">
+        {{ option.label }}
       </div>
-    </van-radio-group>
+      <div class="option-text">{{ option.text }}</div>
+      <van-icon v-if="isSelected(option.label)" name="success" class="check-icon" />
+    </div>
   </div>
 </template>
 
@@ -31,8 +30,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value'])
 
-const handleChange = (value) => {
-  emit('update:value', value)
+const isSelected = (label) => props.value === label
+
+const selectOption = (label) => {
+  emit('update:value', label)
 }
 </script>
 
@@ -40,37 +41,59 @@ const handleChange = (value) => {
 .single-choice {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   gap: 12px;
 }
 
-.option-item {
-  padding: 16px;
-  background: #f7f8fa;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: all 0.3s;
+.option-row:active {
+  transform: scale(0.98);
+  background: #F0F1F3;
 }
 
-.option-item:has(.van-radio--checked) {
-  background: #E8F9F0;
-  border-color: #00B96B;
-}
-
-.option-content {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
+.option-selected {
+  background: #E8F8F0;
 }
 
 .option-label {
-  font-weight: 600;
-  color: #1d2129;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #E5E6EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4E5969;
+  transition: all 0.2s ease;
+}
+
+.label-selected {
+  background: #00B96B;
+  color: #FFFFFF;
 }
 
 .option-text {
   flex: 1;
-  color: #4e5969;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1D2129;
+}
+
+.check-icon {
+  flex-shrink: 0;
+  color: #00B96B;
+  font-size: 18px;
 }
 </style>

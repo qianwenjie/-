@@ -15,6 +15,9 @@
       <van-tabbar-item to="/practice/list" icon="edit">
         刷题
       </van-tabbar-item>
+      <van-tabbar-item to="/message" icon="bell-o" :badge="unreadCount > 0 ? unreadCount : ''">
+        消息
+      </van-tabbar-item>
       <van-tabbar-item to="/profile" icon="user-o">
         我的
       </van-tabbar-item>
@@ -32,8 +35,12 @@ const userStore = useUserStore()
 
 const active = ref(0)
 
+// 未读消息数量（模拟数据）
+const unreadCount = ref(3)
+
 // 需要隐藏 TabBar 的页面
 const hideTabbarPages = [
+  '/login',
   '/exam/detail',
   '/exam/face-verify',
   '/exam/answer',
@@ -63,8 +70,10 @@ watch(() => route.path, (newPath) => {
     active.value = 0
   } else if (newPath.startsWith('/practice')) {
     active.value = 1
-  } else if (newPath.startsWith('/profile')) {
+  } else if (newPath.startsWith('/message')) {
     active.value = 2
+  } else if (newPath.startsWith('/profile')) {
+    active.value = 3
   }
 }, { immediate: true })
 </script>
@@ -73,5 +82,14 @@ watch(() => route.path, (newPath) => {
 /* App 全局样式已在 styles/index.css 中定义 */
 #app {
   height: 100%;
+}
+
+/* 底部导航栏样式 */
+.van-tabbar {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.van-tabbar-item--active {
+  color: #00B96B;
 }
 </style>

@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批阅试卷 - 教师端</title>
+    <script src="assets/js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Liu+Jian+Mao+Cao&display=swap">
+    <style>
+        body { background: #f5f7fa; }
+        /* 头像颜色池 */
+        .avatar-color-0 { background: #22c55e; }
+        .avatar-color-1 { background: #3b82f6; }
+        .avatar-color-2 { background: #a855f7; }
+        .avatar-color-3 { background: #f59e0b; }
+        .avatar-color-4 { background: #ef4444; }
+        .avatar-color-5 { background: #06b6d4; }
+        .avatar-color-6 { background: #ec4899; }
+        .avatar-color-7 { background: #8b5cf6; }
+        /* 题目导航卡片 */
+        .q-card { position: relative; width: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                  padding: 3px 2px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+                  background: #f3f4f6; border: 1.5px solid #e5e7eb; gap: 1px; }
+        .q-card:hover { background: #e5e7eb; transform: scale(1.05); }
+        .q-card .q-num { font-size: 12px; font-weight: 600; color: #374151; line-height: 1; }
+        .q-card .q-score { font-size: 9px; font-weight: 700; line-height: 1; }
+        .q-card .q-score.s-full { color: #16a34a; }
+        .q-card .q-score.s-zero { color: #dc2626; }
+        .q-card .q-score.s-partial { color: #d97706; }
+        .q-card .q-score.s-pending { color: #94a3b8; }
+        /* 导航筛选 */
+        .nav-filter-btn { transition: all 0.15s; }
+        .nav-filter-btn.active { background: #3b82f6; color: #fff; }
+        /* 题目区域 */
+        .question-item { scroll-margin-top: 20px; }
+        .question-item.highlight { animation: highlight 0.8s ease; }
+        @keyframes highlight { 0%,100% { background: transparent; } 50% { background: #fef9c3; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        /* 得分条 */
+        .score-strip { font-family: 'Liu Jian Mao Cao', cursive; font-weight: 400; font-size: 40px; color: #dc2626; }
+        .score-strip.ungraded { font-family: inherit; font-size: 12px; background: #e0e7ff; color: #4f46e5; padding: 4px 10px; border-radius: 6px; }
+        /* 内联批阅面板 */
+        .grading-inline { border: 2px solid #93c5fd; border-radius: 8px; background: #eff6ff; }
+        .grading-inline .gi-header { background: #dbeafe; border-radius: 6px 6px 0 0; }
+        /* AI按钮科技感 */
+        .ai-btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none;
+                   padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+                   cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+                   display: inline-flex; align-items: center; gap: 5px; }
+        .ai-btn:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 4px 14px rgba(99,102,241,0.45); transform: translateY(-1px); }
+        .ai-btn:active { transform: translateY(0); }
+        .ai-btn i { font-size: 11px; }
+        /* 附件预览模态框 */
+        .attach-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+        .attach-modal-mask.show { opacity: 1; pointer-events: auto; }
+        .attach-modal { background: #fff; border-radius: 12px; max-width: 720px; width: 92%; max-height: 85vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(0.92); transition: transform 0.25s; }
+        .attach-modal-mask.show .attach-modal { transform: scale(1); }
+        .attach-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
+        .attach-modal-body { padding: 20px; overflow-y: auto; max-height: calc(85vh - 60px); }
+        .attach-modal-body img { max-width: 100%; border-radius: 8px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    <!-- 顶部信息栏 -->
+    <header class="bg-white border-b border-gray-200 px-5 py-3 shrink-0">
+        <div class="flex items-center justify-between">
+            <!-- 左：返回 + 考试名称 + 基础信息 -->
+            <div class="flex items-center space-x-3 min-w-0">
+                <button onclick="history.back()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg shrink-0 transition">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-semibold text-gray-900 text-base truncate" id="examTitle">大学英语期末考试</h1>
+                        <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700" id="examStatus">进行中</span>
+                        <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-100 text-blue-700">AI批阅</span>
+                        <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700">AI评语</span>
+                    </div>
+                    <div class="flex items-center text-xs text-gray-500 mt-1 space-x-3">
+                        <span id="examPaperNo"><i class="far fa-file-alt mr-1"></i>No. EX-2026012001</span>
+                        <span class="text-gray-300">|</span>
+                        <span id="examPaper"><i class="far fa-copy mr-1"></i>大学英语期末试卷A<span class="text-gray-300 mx-1">|</span><span class="text-gray-400">抽题</span></span>
+                        <span class="text-gray-300">|</span>
+                        <span id="examTime"><i class="far fa-clock mr-1"></i>2026-01-20 09:00 ~ 2026-01-20 11:00</span>
+                        <span class="text-gray-300">|</span>
+                        <span id="examDeadline"><i class="far fa-calendar-check mr-1"></i>批阅截止: 2026-02-04 18:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 学生信息条（固定在顶部） -->
+    <div class="shrink-0 bg-white border-b border-gray-200 px-5 py-2" id="studentInfoBar"></div>
+
+    <div class="flex-1 flex overflow-hidden">
+        <!-- 左侧：题卡导航 -->
+        <div class="w-60 border-r border-gray-200 p-2.5 overflow-y-auto shrink-0 bg-white flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-gray-500">题目导航</span>
+                <span class="text-xs text-gray-400">总分 <span class="font-bold text-red-600" id="navTotalScore">--</span></span>
+            </div>
+            <!-- 导航筛选 -->
+            <div class="flex items-center gap-1 mb-2.5" id="navFilterBar">
+                <button onclick="filterNav('all')" class="nav-filter-btn active text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-500" data-nf="all">全部</button>
+                <button onclick="filterNav('pending')" class="nav-filter-btn text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-500" data-nf="pending">未批</button>
+            </div>
+            <div id="questionNav" class="flex-1 overflow-y-auto"></div>
+        </div>
+        <!-- 中间：试卷内容 -->
+        <div class="flex-1 overflow-y-auto p-6 bg-gray-50" id="paperScroll">
+            <!-- 题目列表 -->
+            <div class="max-w-6xl mx-auto" id="questionList"></div>
+        </div>
+        <!-- 右侧：成绩分析面板（仅 completed 状态显示） -->
+        <div class="w-80 border-l border-gray-200 overflow-y-auto shrink-0 bg-white hidden" id="analysisSidebar"></div>
+    </div>
+
+    <script>
+    // 状态
+    let navFilter = 'all';
+    let currentStudentId = null;
+    let currentStudent = null;
+    let questions = [];
+    let gradingData = {};
+    let gradingQueue = [];
+    let gradingQueueIndex = 0;
+    let gradingStats = { total: 0, graded: 0, remaining: 0 };
+
+    // 从URL获取参数
+    const urlParams = new URLSearchParams(window.location.search);
+    currentStudentId = urlParams.get('studentId') || 's1';
+    const examStatus = urlParams.get('examStatus') || 'in_progress';
+    const studentStatus = urlParams.get('studentStatus') || '';
+
+    // 题型配置
+    const typeConfig = {
+        single: { name: '单选题', icon: 'fa-circle-dot', color: 'cyan' },
+        multiple: { name: '多选题', icon: 'fa-check-double', color: 'purple' },
+        judge: { name: '判断题', icon: 'fa-scale-balanced', color: 'indigo' },
+        fill: { name: '填空题', icon: 'fa-pen-line', color: 'orange' },
+        cloze: { name: '完形填空', icon: 'fa-puzzle-piece', color: 'amber' },
+        essay: { name: '简答题', icon: 'fa-align-left', color: 'green' },
+        composite: { name: '复合题', icon: 'fa-layer-group', color: 'blue' }
+    };
+
+    // 快捷评语
+    const quickPhrases = [
+        '回答完整，逻辑清晰',
+        '理解正确，表达准确',
+        '思路清晰，但细节需完善',
+        '基本正确，但有小错误',
+        '理解有偏差，需加强学习',
+        '答案不完整',
+        '未回答要点'
+    ];
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMockData();
+        // completed 状态：所有 essay 题赋分、隐藏未批筛选、显示分析面板
+        if (examStatus === 'completed') {
+            assignAllEssayScores();
+            document.getElementById('navFilterBar').innerHTML =
+                '<button class="nav-filter-btn active text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-500" data-nf="all">全部</button>';
+            document.getElementById('analysisSidebar').classList.remove('hidden');
+        } else if (studentStatus === 'graded') {
+            assignAllEssayScores();
+        }
+        renderStudentInfoBar();
+        renderQuestionNav();
+        renderPaper();
+        updateStats();
+        if (examStatus === 'completed') renderAnalysisSidebar();
+    });
+
+    // 加载模拟数据
+    function loadMockData() {
+        // 当前考生数据（根据studentId匹配，这里用mock）
+        const allStudents = {
+            's1':  { id: 's1',  name: '张三',   username: 'zhangsan',   phone: '138****1001', studentId: '20260001', status: 'pending', score: 0,  examCount: 1, startTime: '2026-01-20 09:02', endTime: '2026-01-20 10:35', duration: '93分钟', leaveCount: 0 },
+            's2':  { id: 's2',  name: '李四',   username: 'lisi',       phone: '139****2002', studentId: '20260002', status: 'graded',  score: 85, examCount: 2, startTime: '2026-01-20 09:00', endTime: '2026-01-20 10:48', duration: '108分钟', leaveCount: 1 },
+            's3':  { id: 's3',  name: '王五',   username: 'wangwu',     phone: '137****3003', studentId: '20260003', status: 'pending', score: 0,  examCount: 1, startTime: '2026-01-20 09:05', endTime: '2026-01-20 10:52', duration: '107分钟', leaveCount: 0 },
+            's4':  { id: 's4',  name: '赵六',   username: 'zhaoliu',    phone: '136****4004', studentId: '20260004', status: 'grading', score: 0,  examCount: 1, startTime: '2026-01-20 09:01', endTime: '2026-01-20 10:40', duration: '99分钟', leaveCount: 2 },
+            'stu_1': { id: 'stu_1', name: '张三', username: 'user_20260001', phone: '13800001000', studentId: '20260001', status: 'pending', score: 0, examCount: 1, startTime: '2026-01-15 08:00', endTime: '2026-01-15 09:12', duration: '72分钟', leaveCount: 1 },
+            'stu_2': { id: 'stu_2', name: '李四', username: 'user_20260002', phone: '13800001037', studentId: '20260002', status: 'pending', score: 0, examCount: 1, startTime: '2026-01-15 08:04', endTime: '2026-01-15 09:30', duration: '86分钟', leaveCount: 0 },
+        };
+        currentStudent = allStudents[currentStudentId] || allStudents['s1'];
+        currentStudentId = currentStudent.id;
+
+        // 考生队列（根据考试状态区分）
+        if (examStatus === 'completed') {
+            // 已完成：所有考生均可浏览
+            gradingQueue = Object.values(allStudents).map(s => ({
+                id: s.id, name: s.name, status: 'graded'
+            }));
+            gradingStats = { total: 24, graded: 24, remaining: 0 };
+        } else {
+            // 批阅中：仅待批阅考生
+            gradingQueue = [
+                { id: 's1', name: '张三', status: 'pending' },
+                { id: 's3', name: '王五', status: 'pending' },
+                { id: 's4', name: '赵六', status: 'pending' },
+                { id: 'stu_1', name: '张三', status: 'pending' },
+                { id: 'stu_2', name: '李四', status: 'pending' },
+            ];
+            gradingStats = { total: 24, graded: 8, remaining: 16 };
+        }
+        // 标记当前考生在队列中的位置
+        gradingQueueIndex = Math.max(0, gradingQueue.findIndex(s => s.id === currentStudentId));
+
+        // 试卷题目数据 —— 大学英语期末考试（满分105分）
+        questions = [
+            // ===== 一、单选题（每题2分，共40分）=====
+            { id: 'q1', type: 'single', num: 1, content: 'The teacher suggested that each student ______ a plan for the summer vacation.', score: 2,
+              options: [{l:'A',t:'make'},{l:'B',t:'makes'},{l:'C',t:'made'},{l:'D',t:'making'}],
+              correct: 'A', answer: 'A', gotScore: 2, explanation: 'suggest引导的宾语从句用虚拟语气，should + 动词原形，should可省略' },
+            { id: 'q2', type: 'single', num: 2, content: 'It was not until midnight ______ the noise of the street stopped.', score: 2,
+              options: [{l:'A',t:'that'},{l:'B',t:'which'},{l:'C',t:'when'},{l:'D',t:'as'}],
+              correct: 'A', answer: 'C', gotScore: 0, explanation: '强调句型 It was not until...that...，此处that不可替换为when' },
+            { id: 'q3', type: 'single', num: 3, content: 'Neither the students nor the teacher ______ satisfied with the result.', score: 2,
+              options: [{l:'A',t:'is'},{l:'B',t:'are'},{l:'C',t:'were'},{l:'D',t:'was'}],
+              correct: 'D', answer: 'D', gotScore: 2, explanation: 'neither...nor...就近原则，the teacher为单数，且过去时态用was' },
+            { id: 'q4', type: 'single', num: 4, content: 'The number of people who ______ cars ______ increasing.', score: 2,
+              options: [{l:'A',t:'owns; are'},{l:'B',t:'owns; is'},{l:'C',t:'own; is'},{l:'D',t:'own; are'}],
+              correct: 'C', answer: 'C', gotScore: 2, explanation: 'who指代people用复数own；the number of作主语谓语用单数is' },
+            { id: 'q5', type: 'single', num: 5, content: 'She has a great deal of trouble ______ the work on time.', score: 2,
+              options: [{l:'A',t:'to finish'},{l:'B',t:'finishing'},{l:'C',t:'finished'},{l:'D',t:'finish'}],
+              correct: 'B', answer: 'A', gotScore: 0, explanation: 'have trouble (in) doing sth. 是固定搭配，用动名词' },
+            { id: 'q6', type: 'single', num: 6, content: '______ from the top of the tower, the city looks magnificent.', score: 2,
+              options: [{l:'A',t:'Seeing'},{l:'B',t:'Having seen'},{l:'C',t:'Seen'},{l:'D',t:'To see'}],
+              correct: 'C', answer: 'C', gotScore: 2, explanation: 'the city与see是被动关系，用过去分词Seen作状语' },
+            { id: 'q7', type: 'single', num: 7, content: 'I would rather you ______ tomorrow than today.', score: 2,
+              options: [{l:'A',t:'come'},{l:'B',t:'came'},{l:'C',t:'will come'},{l:'D',t:'had come'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'would rather后接从句用虚拟语气，表将来用一般过去时' },
+            { id: 'q8', type: 'single', num: 8, content: 'The manager, as well as his colleagues, ______ to attend the conference.', score: 2,
+              options: [{l:'A',t:'are going'},{l:'B',t:'is going'},{l:'C',t:'were going'},{l:'D',t:'have been going'}],
+              correct: 'B', answer: 'A', gotScore: 0, explanation: 'as well as连接主语时，谓语与前面的主语the manager一致，用单数' },
+            { id: 'q9', type: 'single', num: 9, content: 'By the time you arrive, I ______ for two hours.', score: 2,
+              options: [{l:'A',t:'will study'},{l:'B',t:'will have been studying'},{l:'C',t:'studied'},{l:'D',t:'am studying'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'by the time引导的时间状语从句，主句用将来完成进行时表持续' },
+            { id: 'q10', type: 'single', num: 10, content: 'There is no point ______ with him about this matter.', score: 2,
+              options: [{l:'A',t:'to argue'},{l:'B',t:'arguing'},{l:'C',t:'of arguing'},{l:'D',t:'to arguing'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'There is no point (in) doing sth. 做某事没有意义' },
+            { id: 'q11', type: 'single', num: 11, content: 'Only when he returned ______ the truth.', score: 2,
+              options: [{l:'A',t:'he knew'},{l:'B',t:'did he know'},{l:'C',t:'he did know'},{l:'D',t:'knew he'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'Only + 状语从句置于句首，主句用部分倒装' },
+            { id: 'q12', type: 'single', num: 12, content: 'He insisted that the meeting ______ put off.', score: 2,
+              options: [{l:'A',t:'be'},{l:'B',t:'was'},{l:'C',t:'is'},{l:'D',t:'would be'}],
+              correct: 'A', answer: 'B', gotScore: 0, explanation: 'insist表"坚持要求"时，从句用虚拟语气(should) + 动词原形' },
+            { id: 'q13', type: 'single', num: 13, content: 'The book ______ on the table belongs to my sister.', score: 2,
+              options: [{l:'A',t:'lying'},{l:'B',t:'lain'},{l:'C',t:'laying'},{l:'D',t:'laid'}],
+              correct: 'A', answer: 'A', gotScore: 2, explanation: 'lie(躺)的现在分词lying作后置定语修饰book' },
+            { id: 'q14', type: 'single', num: 14, content: 'Not only ______ the book, but also he remembered what he had read.', score: 2,
+              options: [{l:'A',t:'he read'},{l:'B',t:'did he read'},{l:'C',t:'he did read'},{l:'D',t:'had he read'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'Not only置于句首，前半句用部分倒装' },
+            { id: 'q15', type: 'single', num: 15, content: 'It is high time that we ______ action to protect the environment.', score: 2,
+              options: [{l:'A',t:'take'},{l:'B',t:'took'},{l:'C',t:'have taken'},{l:'D',t:'will take'}],
+              correct: 'B', answer: 'A', gotScore: 0, explanation: 'It is high time that... 后用一般过去时表虚拟' },
+            { id: 'q16', type: 'single', num: 16, content: '______ had I reached the station ______ the train left.', score: 2,
+              options: [{l:'A',t:'Hardly; when'},{l:'B',t:'Hardly; than'},{l:'C',t:'No sooner; when'},{l:'D',t:'Scarcely; than'}],
+              correct: 'A', answer: 'C', gotScore: 0, explanation: 'Hardly/Scarcely...when... 或 No sooner...than...，注意搭配' },
+            { id: 'q17', type: 'single', num: 17, content: 'The reason ______ he was absent was ______ he was ill.', score: 2,
+              options: [{l:'A',t:'why; that'},{l:'B',t:'that; because'},{l:'C',t:'why; because'},{l:'D',t:'that; that'}],
+              correct: 'A', answer: 'A', gotScore: 2, explanation: 'the reason why... was that... 是固定句型' },
+            { id: 'q18', type: 'single', num: 18, content: 'She pretended ______ me when I passed by.', score: 2,
+              options: [{l:'A',t:'not to see'},{l:'B',t:'not seeing'},{l:'C',t:'to not see'},{l:'D',t:'having not seen'}],
+              correct: 'A', answer: 'A', gotScore: 2, explanation: 'pretend后接不定式，否定形式为not to do' },
+            { id: 'q19', type: 'single', num: 19, content: 'The house ______ roof was damaged has now been repaired.', score: 2,
+              options: [{l:'A',t:'which'},{l:'B',t:'whose'},{l:'C',t:'that'},{l:'D',t:'of which'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'whose引导定语从句，表示所属关系' },
+            { id: 'q20', type: 'single', num: 20, content: 'So absorbed ______ in her work that she forgot to eat lunch.', score: 2,
+              options: [{l:'A',t:'she was'},{l:'B',t:'was she'},{l:'C',t:'she had been'},{l:'D',t:'had she been'}],
+              correct: 'B', answer: 'B', gotScore: 2, explanation: 'So + adj. 置于句首，主句用部分倒装' },
+            // ===== 二、多选题（每题3分，共45分）=====
+            { id: 'q21', type: 'multiple', num: 21, content: 'Which of the following sentences use the subjunctive mood correctly?', score: 3,
+              options: [{l:'A',t:'If I were you, I would accept the offer.'},{l:'B',t:'I wish I can fly.'},{l:'C',t:'It is essential that he be present.'},{l:'D',t:'I suggest that she goes home.'}],
+              correct: ['A','C'], answer: ['A','C'], gotScore: 3, explanation: 'A用were表虚拟；C用be表虚拟。B应为could；D应为go' },
+            { id: 'q22', type: 'multiple', num: 22, content: 'Which of the following words can function as both a noun and a verb?', score: 3,
+              options: [{l:'A',t:'record'},{l:'B',t:'beautiful'},{l:'C',t:'increase'},{l:'D',t:'export'}],
+              correct: ['A','C','D'], answer: ['A','C'], gotScore: 0, explanation: 'record/increase/export均可作名词和动词；beautiful只能作形容词' },
+            { id: 'q23', type: 'multiple', num: 23, content: 'Which of the following are correct passive voice sentences?', score: 3,
+              options: [{l:'A',t:'The book was written by Mark Twain.'},{l:'B',t:'The window has been broken.'},{l:'C',t:'He was happened to be there.'},{l:'D',t:'The letter is being typed now.'}],
+              correct: ['A','B','D'], answer: ['A','B','D'], gotScore: 3, explanation: 'happen为不及物动词，不能用被动语态，C错误' },
+            { id: 'q24', type: 'multiple', num: 24, content: 'Which of the following sentences contain a defining relative clause?', score: 3,
+              options: [{l:'A',t:'The man who called you is my uncle.'},{l:'B',t:'My sister, who lives in London, is a doctor.'},{l:'C',t:'This is the book that I mentioned.'},{l:'D',t:'Tom, whom you met yesterday, is leaving.'}],
+              correct: ['A','C'], answer: ['A','B','C'], gotScore: 0, explanation: 'B和D有逗号隔开，是非限制性定语从句；A和C是限制性定语从句' },
+            { id: 'q25', type: 'multiple', num: 25, content: 'Which of the following phrasal verbs mean "to continue"?', score: 3,
+              options: [{l:'A',t:'carry on'},{l:'B',t:'go on'},{l:'C',t:'put off'},{l:'D',t:'keep on'}],
+              correct: ['A','B','D'], answer: ['A','B','D'], gotScore: 3, explanation: 'carry on/go on/keep on都有"继续"之意；put off意为"推迟"' },
+            { id: 'q26', type: 'multiple', num: 26, content: 'Which of the following are linking verbs?', score: 3,
+              options: [{l:'A',t:'seem'},{l:'B',t:'become'},{l:'C',t:'destroy'},{l:'D',t:'remain'}],
+              correct: ['A','B','D'], answer: ['A','B','D'], gotScore: 3, explanation: 'seem/become/remain都是系动词；destroy是实义动词' },
+            { id: 'q27', type: 'multiple', num: 27, content: 'Which sentences correctly use the present perfect tense?', score: 3,
+              options: [{l:'A',t:'I have lived here since 2010.'},{l:'B',t:'She has went to Paris.'},{l:'C',t:'They have already finished.'},{l:'D',t:'He has been working all day.'}],
+              correct: ['A','C','D'], answer: ['A','C'], gotScore: 0, explanation: 'B应为has gone；D是现在完成进行时也属于完成时态范畴' },
+            { id: 'q28', type: 'multiple', num: 28, content: 'Which of the following contain a gerund?', score: 3,
+              options: [{l:'A',t:'Swimming is good exercise.'},{l:'B',t:'The running water is cold.'},{l:'C',t:'I enjoy reading books.'},{l:'D',t:'He is sleeping now.'}],
+              correct: ['A','C'], answer: ['A','C'], gotScore: 3, explanation: 'A中Swimming作主语是动名词；C中reading作宾语是动名词；B是现在分词作定语；D是现在进行时' },
+            { id: 'q29', type: 'multiple', num: 29, content: 'Which of the following adverbs can modify adjectives?', score: 3,
+              options: [{l:'A',t:'very'},{l:'B',t:'quite'},{l:'C',t:'fast'},{l:'D',t:'extremely'}],
+              correct: ['A','B','D'], answer: ['A','B','D'], gotScore: 3, explanation: 'very/quite/extremely可修饰形容词；fast通常修饰动词' },
+            { id: 'q30', type: 'multiple', num: 30, content: 'Which of the following sentences use correct word order?', score: 3,
+              options: [{l:'A',t:'She always arrives on time.'},{l:'B',t:'Always she arrives on time.'},{l:'C',t:'He has never been abroad.'},{l:'D',t:'Never has he been abroad.'}],
+              correct: ['A','C','D'], answer: ['A','C','D'], gotScore: 3, explanation: 'B语序错误，频率副词应在主语后；D是倒装句，语法正确' },
+            { id: 'q31', type: 'multiple', num: 31, content: 'Which of the following are uncountable nouns?', score: 3,
+              options: [{l:'A',t:'information'},{l:'B',t:'furniture'},{l:'C',t:'book'},{l:'D',t:'advice'}],
+              correct: ['A','B','D'], answer: ['A','D'], gotScore: 0, explanation: 'information/furniture/advice都是不可数名词；book是可数名词' },
+            { id: 'q32', type: 'multiple', num: 32, content: 'Which sentences use the correct preposition?', score: 3,
+              options: [{l:'A',t:'She is good at math.'},{l:'B',t:'He depends in his parents.'},{l:'C',t:'I am interested in music.'},{l:'D',t:'They arrived at the airport.'}],
+              correct: ['A','C','D'], answer: ['A','C','D'], gotScore: 3, explanation: 'B应为depends on；其余搭配正确' },
+            { id: 'q33', type: 'multiple', num: 33, content: 'Which of the following can introduce a noun clause?', score: 3,
+              options: [{l:'A',t:'that'},{l:'B',t:'whether'},{l:'C',t:'although'},{l:'D',t:'what'}],
+              correct: ['A','B','D'], answer: ['A','B','C','D'], gotScore: 0, explanation: 'although引导让步状语从句，不引导名词性从句' },
+            { id: 'q34', type: 'multiple', num: 34, content: 'Which of the following verbs are irregular?', score: 3,
+              options: [{l:'A',t:'begin'},{l:'B',t:'play'},{l:'C',t:'swim'},{l:'D',t:'write'}],
+              correct: ['A','C','D'], answer: ['A','C','D'], gotScore: 3, explanation: 'begin-began-begun, swim-swam-swum, write-wrote-written; play是规则动词played' },
+            { id: 'q35', type: 'multiple', num: 35, content: 'Which of the following express future actions?', score: 3,
+              options: [{l:'A',t:'I am going to study abroad.'},{l:'B',t:'The train leaves at 8 am.'},{l:'C',t:'I studied yesterday.'},{l:'D',t:'She will call you later.'}],
+              correct: ['A','B','D'], answer: ['A','D'], gotScore: 0, explanation: 'B用一般现在时表示按时刻表的将来事件，也表将来' },
+            // ===== 三、判断题（每题2分，共30分）=====
+            { id: 'q36', type: 'judge', num: 36, content: 'In English, the present perfect tense is formed with "have/has + past participle".', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: '现在完成时的构成确实是have/has + 过去分词' },
+            { id: 'q37', type: 'judge', num: 37, content: '"Fewer" is used with uncountable nouns, while "less" is used with countable nouns.', score: 2,
+              correct: false, answer: false, gotScore: 2, explanation: '恰好相反：fewer用于可数名词，less用于不可数名词' },
+            { id: 'q38', type: 'judge', num: 38, content: 'The word "advice" is a countable noun in English.', score: 2,
+              correct: false, answer: true, gotScore: 0, explanation: 'advice是不可数名词，不能说an advice或advices' },
+            { id: 'q39', type: 'judge', num: 39, content: 'A gerund functions as a noun in a sentence.', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: '动名词在句中充当名词的角色，可作主语、宾语等' },
+            { id: 'q40', type: 'judge', num: 40, content: '"Who" and "whom" can always be used interchangeably in modern English.', score: 2,
+              correct: false, answer: true, gotScore: 0, explanation: 'who作主格，whom作宾格，在正式语体中不可互换' },
+            { id: 'q41', type: 'judge', num: 41, content: 'The passive voice can be formed with any verb in English.', score: 2,
+              correct: false, answer: false, gotScore: 2, explanation: '不及物动词（如happen, arrive）不能用被动语态' },
+            { id: 'q42', type: 'judge', num: 42, content: 'An infinitive can function as the subject of a sentence.', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: '不定式可作主语，如 To learn English is important.' },
+            { id: 'q43', type: 'judge', num: 43, content: '"Must" and "have to" have exactly the same meaning in all contexts.', score: 2,
+              correct: false, answer: true, gotScore: 0, explanation: 'must强调主观必要性，have to强调客观必要性；否定形式含义也不同' },
+            { id: 'q44', type: 'judge', num: 44, content: 'In reported speech, the present tense always changes to the past tense.', score: 2,
+              correct: false, answer: false, gotScore: 2, explanation: '如果转述的是普遍真理或仍然成立的事实，时态可以不变' },
+            { id: 'q45', type: 'judge', num: 45, content: 'A compound sentence contains at least two independent clauses.', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: '并列句由两个或以上独立分句通过连词连接而成' },
+            { id: 'q46', type: 'judge', num: 46, content: 'The word "sheep" has the same form in both singular and plural.', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: 'sheep是单复数同形的名词' },
+            { id: 'q47', type: 'judge', num: 47, content: 'Adjectives in English always come before the noun they modify.', score: 2,
+              correct: false, answer: true, gotScore: 0, explanation: '形容词也可后置，如something important，或作表语' },
+            { id: 'q48', type: 'judge', num: 48, content: '"Used to" describes a past habit or state that no longer exists.', score: 2,
+              correct: true, answer: true, gotScore: 2, explanation: 'used to表示过去的习惯或状态，暗示现在已不再如此' },
+            { id: 'q49', type: 'judge', num: 49, content: 'The third conditional is used to talk about real possibilities in the future.', score: 2,
+              correct: false, answer: false, gotScore: 2, explanation: '第三条件句用于谈论过去不可能发生的假设，不是将来的真实可能' },
+            { id: 'q50', type: 'judge', num: 50, content: 'In English, double negatives always create a positive meaning.', score: 2,
+              correct: false, answer: true, gotScore: 0, explanation: '在非标准英语中双重否定可表否定；标准英语中应避免双重否定' },
+            // ===== 四、填空题（每题2分，共20分）=====
+            { id: 'q51', type: 'fill', num: 51, content: 'The past tense of "go" is __(1)__, and the past participle is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'went', answer: 'went' },
+                { num: 2, correct: 'gone', answer: 'gone' }
+              ], gotScore: 2, explanation: 'go的过去式是不规则变化：go-went-gone' },
+            { id: 'q52', type: 'fill', num: 52, content: 'The opposite of "generous" is __(1)__, and the opposite of "brave" is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'stingy', answer: 'mean' },
+                { num: 2, correct: 'cowardly', answer: 'cowardly' }
+              ], gotScore: 1, explanation: '第1空标准答案为stingy（吝啬的），mean也可表示吝啬，给0.5分；第2空正确' },
+            { id: 'q53', type: 'fill', num: 53, content: '"She sings beautifully." In this sentence, "beautifully" is a(n) ______.', score: 2,
+              blanks: [
+                { num: 1, correct: 'adverb', answer: 'adverb' }
+              ], gotScore: 2, explanation: 'beautifully修饰动词sings，是副词' },
+            { id: 'q54', type: 'fill', num: 54, content: 'The comparative form of "good" is __(1)__, and the superlative form is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'better', answer: 'better' },
+                { num: 2, correct: 'best', answer: 'most good' }
+              ], gotScore: 1, explanation: 'good的变化是不规则的：good-better-best，不能用most good' },
+            { id: 'q55', type: 'fill', num: 55, content: 'Complete: "Actions speak louder than __(1)__." and "The early bird catches the __(2)__."', score: 2,
+              blanks: [
+                { num: 1, correct: 'words', answer: 'word' },
+                { num: 2, correct: 'worm', answer: 'worm' }
+              ], gotScore: 1, explanation: '第1空注意复数形式words；第2空正确' },
+            { id: 'q56', type: 'fill', num: 56, content: 'The plural of "child" is __(1)__, and the plural of "mouse" is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'children', answer: 'children' },
+                { num: 2, correct: 'mice', answer: 'mouses' }
+              ], gotScore: 1, explanation: 'child-children, mouse-mice，都是不规则变化' },
+            { id: 'q57', type: 'fill', num: 57, content: 'The past tense of "teach" is __(1)__, and the past tense of "catch" is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'taught', answer: 'taught' },
+                { num: 2, correct: 'caught', answer: 'caught' }
+              ], gotScore: 2, explanation: 'teach-taught, catch-caught，都是不规则变化' },
+            { id: 'q58', type: 'fill', num: 58, content: '"He runs __(1)__." (quick的副词形式) "She speaks English __(2)__." (fluent的副词形式)', score: 2,
+              blanks: [
+                { num: 1, correct: 'quickly', answer: 'quickly' },
+                { num: 2, correct: 'fluently', answer: 'fluent' }
+              ], gotScore: 1, explanation: '形容词变副词通常加-ly：quick→quickly, fluent→fluently' },
+            { id: 'q59', type: 'fill', num: 59, content: 'The noun form of "decide" is __(1)__, and the noun form of "explain" is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'decision', answer: 'decision' },
+                { num: 2, correct: 'explanation', answer: 'explanation' }
+              ], gotScore: 2, explanation: 'decide→decision, explain→explanation' },
+            { id: 'q60', type: 'fill', num: 60, content: 'The adjective form of "danger" is __(1)__, and the adjective form of "beauty" is __(2)__.', score: 2,
+              blanks: [
+                { num: 1, correct: 'dangerous', answer: 'dangerous' },
+                { num: 2, correct: 'beautiful', answer: 'beautiful' }
+              ], gotScore: 2, explanation: 'danger→dangerous, beauty→beautiful' },
+            // 完形填空（1题20空，每空1.5分，共30分）
+            { id: 'q61', type: 'cloze', num: 61, score: 30, gotScore: 22.5,
+              content: 'Read the following passage and fill in each blank with the most appropriate word.\n\nLearning a foreign language is not easy, but most people can learn a second language __1__ they are willing to put in the necessary time. Some people learn best in a classroom __2__, while others prefer to study on their own. Regardless of the __3__ you choose, there are some things you can do to __4__ your chances of success.\n\nFirst, it is important to set __5__ goals. Do not try to learn everything at once. Instead, __6__ on mastering one skill at a time. For example, you might spend one week __7__ on pronunciation and the next week on grammar.\n\nSecond, practice is __8__ to language learning. Try to use the new language every day, __9__ it is only for a few minutes. You can practice by __10__ to music, watching movies, or talking with native __11__.\n\nThird, do not be __12__ of making mistakes. Mistakes are a natural part of the learning __13__. In fact, you can often learn more from your mistakes __14__ from your successes.\n\nFinally, be __15__. Learning a language takes time, and there will be moments when you feel __16__ you are not making progress. During these times, it is important to __17__ yourself of how far you have come and to __18__ practicing.\n\nIn conclusion, learning a foreign language __19__ dedication and hard work, but the rewards are well __20__ the effort.',
+              blanks: [
+                { num: 1, options: [{l:'A',t:'if'},{l:'B',t:'unless'},{l:'C',t:'though'},{l:'D',t:'before'}], correct: 'A', answer: 'A', gotScore: 1.5 },
+                { num: 2, options: [{l:'A',t:'setting'},{l:'B',t:'background'},{l:'C',t:'environment'},{l:'D',t:'condition'}], correct: 'C', answer: 'C', gotScore: 1.5 },
+                { num: 3, options: [{l:'A',t:'way'},{l:'B',t:'method'},{l:'C',t:'road'},{l:'D',t:'direction'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 4, options: [{l:'A',t:'improve'},{l:'B',t:'reduce'},{l:'C',t:'create'},{l:'D',t:'destroy'}], correct: 'A', answer: 'A', gotScore: 1.5 },
+                { num: 5, options: [{l:'A',t:'impossible'},{l:'B',t:'realistic'},{l:'C',t:'vague'},{l:'D',t:'distant'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 6, options: [{l:'A',t:'depend'},{l:'B',t:'rely'},{l:'C',t:'focus'},{l:'D',t:'count'}], correct: 'C', answer: 'C', gotScore: 1.5 },
+                { num: 7, options: [{l:'A',t:'working'},{l:'B',t:'turning'},{l:'C',t:'looking'},{l:'D',t:'putting'}], correct: 'A', answer: 'A', gotScore: 1.5 },
+                { num: 8, options: [{l:'A',t:'harmful'},{l:'B',t:'essential'},{l:'C',t:'strange'},{l:'D',t:'opposite'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 9, options: [{l:'A',t:'as if'},{l:'B',t:'so that'},{l:'C',t:'even if'},{l:'D',t:'now that'}], correct: 'C', answer: 'C', gotScore: 1.5 },
+                { num: 10, options: [{l:'A',t:'listening'},{l:'B',t:'listen'},{l:'C',t:'listened'},{l:'D',t:'listens'}], correct: 'A', answer: 'A', gotScore: 1.5 },
+                { num: 11, options: [{l:'A',t:'writers'},{l:'B',t:'speakers'},{l:'C',t:'readers'},{l:'D',t:'players'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 12, options: [{l:'A',t:'proud'},{l:'B',t:'sure'},{l:'C',t:'afraid'},{l:'D',t:'tired'}], correct: 'C', answer: 'C', gotScore: 1.5 },
+                { num: 13, options: [{l:'A',t:'process'},{l:'B',t:'progress'},{l:'C',t:'project'},{l:'D',t:'program'}], correct: 'A', answer: 'B', gotScore: 0 },
+                { num: 14, options: [{l:'A',t:'as'},{l:'B',t:'than'},{l:'C',t:'like'},{l:'D',t:'for'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 15, options: [{l:'A',t:'nervous'},{l:'B',t:'curious'},{l:'C',t:'patient'},{l:'D',t:'generous'}], correct: 'C', answer: 'C', gotScore: 1.5 },
+                { num: 16, options: [{l:'A',t:'even if'},{l:'B',t:'as though'},{l:'C',t:'in case'},{l:'D',t:'so that'}], correct: 'B', answer: 'A', gotScore: 0 },
+                { num: 17, options: [{l:'A',t:'inform'},{l:'B',t:'remind'},{l:'C',t:'warn'},{l:'D',t:'convince'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 18, options: [{l:'A',t:'stop'},{l:'B',t:'keep'},{l:'C',t:'avoid'},{l:'D',t:'mind'}], correct: 'B', answer: 'B', gotScore: 1.5 },
+                { num: 19, options: [{l:'A',t:'requires'},{l:'B',t:'reduces'},{l:'C',t:'replaces'},{l:'D',t:'removes'}], correct: 'A', answer: 'A', gotScore: 1.5 },
+                { num: 20, options: [{l:'A',t:'behind'},{l:'B',t:'over'},{l:'C',t:'worth'},{l:'D',t:'above'}], correct: 'C', answer: 'D', gotScore: 0 }
+              ],
+              explanation: '本文讲述了学习外语的方法和建议，包括设定目标、坚持练习、不怕犯错和保持耐心。' },
+            // ===== 六、简答题（5题，共25分）=====
+            { id: 'q62', type: 'essay', num: 62, content: 'Explain the difference between "affect" and "effect" in English. Provide at least two example sentences to illustrate your answer.', score: 5,
+              correct: '"Affect" is usually a verb meaning to influence or have an impact on something (e.g., "The weather affects my mood."). "Effect" is usually a noun meaning the result or outcome of something (e.g., "The effect of the medicine was immediate."). Note: "effect" can also be used as a verb meaning to bring about (e.g., "to effect change"), and "affect" can be a noun in psychology.',
+              answer: 'Affect is a verb and effect is a noun. For example, "The rain affected the game" and "The effect of rain was bad." They sound similar but have different meanings in sentences.',
+              gotScore: null, explanation: '学生基本理解了affect作动词、effect作名词的区别，但未提及两者的特殊用法（effect作动词、affect作名词），扣2分' },
+            { id: 'q63', type: 'essay', num: 63, content: 'Describe the main differences between British English and American English. Give at least three examples in spelling, vocabulary, or grammar.', score: 5,
+              correct: 'Key differences include: 1) Spelling: colour vs color, centre vs center, realise vs realize; 2) Vocabulary: lift vs elevator, boot vs trunk, flat vs apartment; 3) Grammar: "Have you got?" (BrE) vs "Do you have?" (AmE); collective nouns with plural verbs in BrE.',
+              answer: 'British English and American English differ in spelling like colour and color, favourite and favorite. They also use different words like lorry and truck, biscuit and cookie. In grammar, British people say "at the weekend" while Americans say "on the weekend".',
+              attachments: [
+                { name: 'BrE_vs_AmE_comparison.pdf', size: '245KB', type: 'pdf' },
+                { name: 'dialect_examples.docx', size: '128KB', type: 'doc' }
+              ],
+              gotScore: null, explanation: '回答较完整，举例恰当，但缺少语法差异的深入分析' },
+            { id: 'q64', type: 'essay', num: 64, content: 'Write a short paragraph (80-100 words) about the importance of learning English in the modern world.', score: 5,
+              correct: 'English is the most widely spoken language in the world and serves as the global lingua franca for business, science, technology, and diplomacy. Learning English opens doors to international opportunities, enables access to vast amounts of information online, and facilitates cross-cultural communication. In today\'s interconnected world, English proficiency is increasingly essential for career advancement and personal growth.',
+              answer: 'Learning English is very important today. English is used in many countries for business and communication. Many websites and books are in English. If you know English, you can travel more easily and get better jobs. Students who learn English can study at universities around the world. English also helps people understand different cultures. In conclusion, English is a necessary skill in the modern world.',
+              attachments: [
+                { name: 'my_essay_draft.jpg', size: '1.2MB', type: 'image' }
+              ],
+              gotScore: null, explanation: '开放性写作题，需要教师评分' },
+            { id: 'q65', type: 'essay', num: 65, content: 'Explain the concept of "conditional sentences" in English. Describe the three main types and provide an example for each.', score: 5,
+              correct: 'Conditional sentences express hypothetical situations and their consequences. Type 1 (real/possible): "If it rains, I will stay home." Type 2 (unreal present): "If I were rich, I would travel the world." Type 3 (unreal past): "If I had studied harder, I would have passed the exam."',
+              answer: 'Conditional sentences have if-clauses. First conditional uses present tense and will: "If it rains, I will stay home." Second conditional uses past tense and would: "If I had money, I would buy a car." Third conditional uses past perfect and would have: "If I had known, I would have come."',
+              gotScore: null, explanation: '开放性题目，需要教师评分' },
+            { id: 'q66', type: 'essay', num: 66, content: 'Analyze the following sentence and identify all grammatical errors. Rewrite the corrected version.\n\n"Me and my friend goes to the store yesterday for buying some foods and we seen a very interested movie poster."', score: 5,
+              correct: 'Errors: 1) "Me and my friend" → "My friend and I" (subject pronoun, politeness order); 2) "goes" → "went" (past tense); 3) "for buying" → "to buy" (purpose infinitive); 4) "foods" → "food" (uncountable); 5) "seen" → "saw" (simple past, not past participle); 6) "interested" → "interesting" (-ing for things, -ed for feelings). Corrected: "My friend and I went to the store yesterday to buy some food, and we saw a very interesting movie poster."',
+              answer: 'The errors are: "Me and my friend" should be "My friend and I". "goes" should be "went" because it is past tense. "for buying" should be "to buy". "seen" should be "saw". "interested" should be "interesting". Corrected sentence: "My friend and I went to the store yesterday to buy some food and we saw a very interesting movie poster."',
+              attachments: [
+                { name: 'grammar_analysis_notes.pdf', size: '89KB', type: 'pdf' }
+              ],
+              gotScore: null, explanation: '学生找出了大部分错误并正确改正，但遗漏了foods→food的不可数名词问题' },
+            // 复合题1（原有，含5个子题，共20分）
+            { id: 'q67', type: 'composite', num: 67, score: 20, gotScore: null,
+              content: 'Read the passage below and answer the questions that follow.\n\n"The Internet has revolutionized the way we communicate, learn, and do business. In the early 1990s, only a small number of people had access to the World Wide Web. Today, billions of people around the world use the Internet daily for everything from sending emails to shopping online.\n\nHowever, the rapid growth of the Internet has also brought challenges. Cybersecurity threats, privacy concerns, and the spread of misinformation are just a few of the issues that society must address. Many experts believe that digital literacy — the ability to use technology effectively and critically evaluate online information — is now as important as traditional literacy.\n\nDespite these challenges, the benefits of the Internet far outweigh the drawbacks. It has democratized access to information, connected people across borders, and created entirely new industries. As we move further into the digital age, it is crucial that we find ways to maximize the benefits while minimizing the risks."',
+              subQuestions: [
+                { id: 'q67_1', type: 'single', num: 1, content: 'According to the passage, when did the Internet begin to gain widespread use?', score: 3,
+                  options: [{l:'A',t:'In the 1970s'},{l:'B',t:'In the early 1990s'},{l:'C',t:'In the 2000s'},{l:'D',t:'In the 2010s'}],
+                  correct: 'B', answer: 'B', gotScore: 3, explanation: '文中明确提到"In the early 1990s"' },
+                { id: 'q67_2', type: 'multiple', num: 2, content: 'Which of the following are mentioned as challenges of the Internet? (Select all that apply)', score: 4,
+                  options: [{l:'A',t:'Cybersecurity threats'},{l:'B',t:'Privacy concerns'},{l:'C',t:'High costs'},{l:'D',t:'Spread of misinformation'}],
+                  correct: ['A','B','D'], answer: ['A','B'], gotScore: 2, explanation: '文中提到三个挑战：Cybersecurity threats, privacy concerns, misinformation' },
+                { id: 'q67_3', type: 'judge', num: 3, content: 'The author believes that the drawbacks of the Internet outweigh its benefits.', score: 3,
+                  correct: false, answer: false, gotScore: 3, explanation: '文中说"the benefits far outweigh the drawbacks"，作者认为利大于弊' },
+                { id: 'q67_4', type: 'fill', num: 4, content: 'According to the passage, digital literacy is the ability to use technology effectively and critically evaluate ______.', score: 3,
+                  correct: 'online information', answer: 'online info', gotScore: 2, explanation: '原文为"critically evaluate online information"' },
+                { id: 'q67_5', type: 'essay', num: 5, content: 'In your own words, explain why the author considers digital literacy to be as important as traditional literacy. Provide at least two reasons with examples.', score: 7,
+                  correct: 'Digital literacy is crucial because: 1) It helps people identify misinformation online; 2) It enables effective use of technology for learning and work; 3) It protects users from cybersecurity threats.',
+                  answer: 'The author thinks digital literacy is important because people need to know how to use technology properly and avoid fake news online. For example, students need to evaluate sources when doing research.',
+                  gotScore: null, explanation: '开放性题目，需要教师评分' }
+              ] },
+
+            // 复合题2（新增，含4个子题，共15分）
+            { id: 'q68', type: 'composite', num: 68, score: 15, gotScore: null,
+              content: 'Read the following passage and answer the questions.\n\n"Climate change is one of the most pressing issues facing humanity today. The Earth\'s average temperature has risen by approximately 1.1°C since the pre-industrial era, primarily due to the burning of fossil fuels. This warming has led to melting ice caps, rising sea levels, and more frequent extreme weather events.\n\nScientists warn that if global temperatures rise by more than 1.5°C, the consequences could be catastrophic. Many countries have pledged to reduce their carbon emissions through the Paris Agreement, but progress has been slow. Some experts argue that individual actions, such as reducing energy consumption and eating less meat, can also make a significant difference.\n\nThe transition to renewable energy sources like solar and wind power is essential for combating climate change. While the initial costs may be high, the long-term benefits for both the environment and the economy are substantial."',
+              subQuestions: [
+                { id: 'q68_1', type: 'single', num: 1, content: 'By how much has the Earth\'s average temperature risen since the pre-industrial era?', score: 3,
+                  options: [{l:'A',t:'0.5°C'},{l:'B',t:'1.1°C'},{l:'C',t:'1.5°C'},{l:'D',t:'2.0°C'}],
+                  correct: 'B', answer: 'B', gotScore: 3, explanation: '文中明确提到"risen by approximately 1.1°C"' },
+                { id: 'q68_2', type: 'multiple', num: 2, content: 'Which individual actions are mentioned as ways to combat climate change?', score: 3,
+                  options: [{l:'A',t:'Reducing energy consumption'},{l:'B',t:'Planting trees'},{l:'C',t:'Eating less meat'},{l:'D',t:'Using public transport'}],
+                  correct: ['A','C'], answer: ['A','C'], gotScore: 3, explanation: '文中提到reducing energy consumption和eating less meat' },
+                { id: 'q68_3', type: 'judge', num: 3, content: 'According to the passage, the transition to renewable energy has low initial costs.', score: 3,
+                  correct: false, answer: true, gotScore: 0, explanation: '文中说"the initial costs may be high"' },
+                { id: 'q68_4', type: 'essay', num: 4, content: 'Summarize the main argument of the passage in 2-3 sentences and explain whether you agree or disagree with the author\'s viewpoint.', score: 6,
+                  correct: 'The passage argues that climate change is a critical issue caused by fossil fuels, requiring both governmental action through agreements like the Paris Agreement and individual lifestyle changes. The transition to renewable energy is presented as essential despite high initial costs.',
+                  answer: 'The passage talks about climate change and how it is caused by burning fossil fuels. The author thinks we need to use renewable energy and change our habits. I agree because we can already see the effects of climate change in extreme weather.',
+                  gotScore: null, explanation: '开放性题目，需要教师评分' }
+              ] },
+          ];
+
+        // 初始化批阅数据
+        questions.forEach(q => {
+            if (q.type === 'essay') {
+                gradingData[q.id] = { score: q.gotScore, comment: '', aiScore: null, aiComment: '' };
+            } else if (q.type === 'composite') {
+                q.subQuestions.forEach(sq => {
+                    if (sq.type === 'essay') {
+                        gradingData[sq.id] = { score: sq.gotScore, comment: '', aiScore: null, aiComment: '' };
+                    }
+                });
+            }
+        });
+    }
+
+    // completed 状态下，给所有未评分的 essay 题赋模拟分数
+    function assignAllEssayScores() {
+        const mockScores = { q62: 3, q63: 4, q64: 4, q65: 3, q66: 4, q67_5: 5, q68_4: 4 };
+        const mockComments = {
+            q62: '基本理解了核心区别，但特殊用法未提及',
+            q63: '举例恰当，缺少语法差异深入分析',
+            q64: '表达流畅，内容完整，逻辑清晰',
+            q65: '三种条件句描述准确，例句正确',
+            q66: '找出大部分错误，遗漏不可数名词问题',
+            q67_5: '论述充分，有理有据',
+            q68_4: '观点明确，论证合理'
+        };
+        questions.forEach(q => {
+            if (q.type === 'essay' && q.gotScore === null) {
+                q.gotScore = mockScores[q.id] || Math.round(q.score * 0.7);
+                gradingData[q.id] = { score: q.gotScore, comment: mockComments[q.id] || '回答基本正确', aiScore: null, aiComment: '' };
+            } else if (q.type === 'composite') {
+                q.subQuestions.forEach(sq => {
+                    if (sq.type === 'essay' && sq.gotScore === null) {
+                        sq.gotScore = mockScores[sq.id] || Math.round(sq.score * 0.7);
+                        gradingData[sq.id] = { score: sq.gotScore, comment: mockComments[sq.id] || '回答基本正确', aiScore: null, aiComment: '' };
+                    }
+                });
+                // 更新复合题总分
+                let total = 0;
+                q.subQuestions.forEach(sq => { total += (sq.gotScore || 0); });
+                q.gotScore = round(total);
+            }
+        });
+    }
+
+    // 获取头像颜色索引
+    function getAvatarColorIndex(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash) % 8;
+    }
+
+    // 提交后继续打开下一份
+    let autoNextEnabled = false;
+
+    // 渲染学生信息条
+    function renderStudentInfoBar() {
+        const s = currentStudent;
+        const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
+        const gotScore = calcGotScore();
+        const colorIdx = getAvatarColorIndex(s.name);
+        const displayName = s.name.length <= 2 ? s.name : s.name.slice(-2);
+
+        document.getElementById('studentInfoBar').innerHTML = `
+            <div class="flex items-center justify-between">
+                <!-- 左：学生信息 -->
+                <div class="flex items-center gap-5 text-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 avatar-color-${colorIdx}">${displayName}</div>
+                        <span class="font-semibold text-gray-900">${s.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-gray-700">
+                        <i class="fas fa-user text-gray-400 text-xs"></i>
+                        <span class="font-medium">${s.username}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-gray-700">
+                        <i class="fas fa-phone text-gray-400 text-xs"></i>
+                        <span>${s.phone}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-gray-700">
+                        <i class="fas fa-pen-to-square text-gray-400 text-xs"></i>
+                        <span>已考 <span class="font-semibold text-gray-900">${s.examCount || 1}</span> 次</span>
+                    </div>
+                    <div class="w-px h-4 bg-gray-200"></div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-gray-500">批阅得分</span>
+                        <span class="font-bold text-red-600 text-base">${gotScore}</span>
+                        <span class="text-gray-400">/</span>
+                        <span class="font-semibold text-gray-700">${totalScore}</span>
+                    </div>
+                </div>
+                <!-- 右：操作区 -->
+                <div class="flex items-center gap-3">
+                    ${examStatus === 'completed' ? `
+                    <button onclick="navigateStudent('prev')" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition flex items-center gap-1.5">
+                        <i class="fas fa-chevron-left text-xs"></i>上一位
+                    </button>
+                    <span class="text-xs text-gray-400">${gradingQueueIndex + 1} / ${gradingQueue.length}</span>
+                    <button onclick="navigateStudent('next')" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition flex items-center gap-1.5">
+                        下一位<i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                    ` : `
+                    <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                        <i class="fas fa-chart-pie text-gray-400"></i>
+                        <span>已批 <span class="font-semibold text-green-600">${gradingStats.graded}</span></span>
+                        <span class="text-gray-300">/</span>
+                        <span>剩余 <span class="font-semibold text-amber-600">${gradingStats.remaining}</span></span>
+                    </div>
+                    <div class="w-px h-4 bg-gray-200"></div>
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                        <input type="checkbox" id="autoNextCheckbox" ${autoNextEnabled ? 'checked' : ''} onchange="autoNextEnabled=this.checked"
+                            class="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                        提交后继续下一份
+                    </label>
+                    <button onclick="submitGrading()" class="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition flex items-center gap-1.5">
+                        <i class="fas fa-check"></i>
+                        提交批阅
+                    </button>
+                    `}
+                </div>
+            </div>`;
+    }
+
+    // 浮点精度修正（保留1位小数）
+    function round(n) { return Math.round(n * 10) / 10; }
+
+    // 计算已批阅总得分
+    function calcGotScore() {
+        let total = 0;
+        questions.forEach(q => {
+            if (q.gotScore !== null && q.gotScore !== undefined) {
+                total += q.gotScore;
+            }
+        });
+        return round(total);
+    }
+
+    // 将批阅结果保存到 sessionStorage
+    function saveGradingResult(studentId, score) {
+        const key = 'gradingResults';
+        const results = JSON.parse(sessionStorage.getItem(key) || '{}');
+        results[studentId] = { score: score, status: 'graded', time: new Date().toISOString() };
+        sessionStorage.setItem(key, JSON.stringify(results));
+    }
+
+    // 检查是否所有简答题已评分
+    function getUngradedEssays() {
+        const ungraded = [];
+        questions.forEach(q => {
+            if (q.type === 'essay' && (q.gotScore === null || q.gotScore === undefined)) {
+                ungraded.push(`第${q.num}题`);
+            } else if (q.type === 'composite') {
+                q.subQuestions.forEach(sq => {
+                    if (sq.type === 'essay' && (sq.gotScore === null || sq.gotScore === undefined)) {
+                        ungraded.push(`第${q.num}题-第${sq.num}小题`);
+                    }
+                });
+            }
+        });
+        return ungraded;
+    }
+
+    // 提交批阅
+    function submitGrading() {
+        // 检查未评分的简答题
+        const ungraded = getUngradedEssays();
+        if (ungraded.length > 0) {
+            alert(`还有 ${ungraded.length} 道主观题未评分，请完成后再提交：\n\n${ungraded.join('、')}`);
+            // 滚动到第一道未评分题目
+            const firstId = questions.find(q => q.type === 'essay' && q.gotScore === null)?.id
+                || (() => { for (const q of questions) { if (q.type === 'composite') { const sq = q.subQuestions.find(s => s.type === 'essay' && s.gotScore === null); if (sq) return sq.id; } } return null; })();
+            if (firstId) {
+                const el = document.getElementById('question-' + firstId);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+
+        const gotScore = calcGotScore();
+        const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
+
+        // 更新统计
+        gradingStats.graded++;
+        gradingStats.remaining = Math.max(0, gradingStats.remaining - 1);
+
+        // 将批阅结果写入 sessionStorage，供考生列表页读取
+        saveGradingResult(currentStudentId, gotScore);
+
+        if (autoNextEnabled) {
+            // 尝试加载下一份
+            gradingQueueIndex++;
+            if (gradingQueueIndex < gradingQueue.length) {
+                const next = gradingQueue[gradingQueueIndex];
+                showSubmitToast(gotScore, totalScore, next.name);
+                // 模拟加载下一考生（延迟后刷新页面数据）
+                setTimeout(() => {
+                    currentStudentId = next.id;
+                    loadMockData();
+                    renderStudentInfoBar();
+                    renderQuestionNav();
+                    renderPaper();
+                    updateStats();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 800);
+            } else {
+                alert(`批阅已提交！得分：${gotScore}/${totalScore}\n\n所有考生已批阅完毕！`);
+                history.back();
+            }
+        } else {
+            alert(`批阅已提交！得分：${gotScore}/${totalScore}`);
+            history.back();
+        }
+    }
+
+    // 提交成功 toast 提示
+    function showSubmitToast(gotScore, totalScore, nextName) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-16 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-[10000] flex items-center gap-3 text-sm';
+        toast.innerHTML = `<i class="fas fa-check-circle text-lg"></i><div><span class="font-semibold">提交成功！</span> 得分 ${gotScore}/${totalScore}，正在加载 <span class="font-semibold">${nextName}</span> 的答卷...</div>`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400); }, 2000);
+    }
+
+    // 切换上/下一位学生（原型模拟）
+    function navigateStudent(direction) {
+        if (direction === 'prev') {
+            if (gradingQueueIndex <= 0) { alert('已是第一位考生'); return; }
+            gradingQueueIndex--;
+        } else {
+            if (gradingQueueIndex >= gradingQueue.length - 1) { alert('已是最后一位考生'); return; }
+            gradingQueueIndex++;
+        }
+        const target = gradingQueue[gradingQueueIndex];
+        currentStudentId = target.id;
+        loadMockData();
+        if (examStatus === 'completed') assignAllEssayScores();
+        renderStudentInfoBar();
+        renderQuestionNav();
+        renderPaper();
+        updateStats();
+        if (examStatus === 'completed') renderAnalysisSidebar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 更新统计（统计栏已移除，保留函数签名供调用链兼容）
+    function updateStats() {}
+
+    // 导航筛选
+    function filterNav(filter) {
+        navFilter = filter;
+        document.querySelectorAll('.nav-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.nf === filter) btn.classList.add('active');
+        });
+        renderQuestionNav();
+    }
+
+    // 渲染题目导航（按题型分组 + 显示得分）
+    function renderQuestionNav() {
+        const nav = document.getElementById('questionNav');
+        // 更新总分
+        const totalPaperScore = questions.reduce((s, q) => s + q.score, 0);
+        document.getElementById('navTotalScore').textContent = totalPaperScore;
+        // 按题型分组，每道题作为整体归入自身题型（复合题不拆子题）
+        const grouped = {};
+        questions.forEach(q => {
+            const t = q.type;
+            if (!grouped[t]) grouped[t] = [];
+            grouped[t].push(q);
+        });
+
+        // 复合题得分：汇总子题得分
+        function getCompositeScore(q) {
+            let got = 0, hasNull = false;
+            q.subQuestions.forEach(sq => { if (sq.gotScore !== null) got += sq.gotScore; else hasNull = true; });
+            return hasNull ? null : round(got);
+        }
+
+        // 筛选未批阅
+        if (navFilter === 'pending') {
+            Object.keys(grouped).forEach(t => {
+                grouped[t] = grouped[t].filter(q => {
+                    if (q.type === 'composite') return getCompositeScore(q) === null;
+                    return q.gotScore === null;
+                });
+                if (grouped[t].length === 0) delete grouped[t];
+            });
+        }
+
+        if (Object.keys(grouped).length === 0) {
+            nav.innerHTML = `<div class="text-xs text-gray-400 text-center py-4">无未批阅题目</div>`;
+            return;
+        }
+
+        // 按 typeConfig 中的顺序渲染
+        const typeOrder = ['single','multiple','judge','fill','cloze','essay','composite'];
+        let html = '';
+        typeOrder.forEach(type => {
+            if (!grouped[type]) return;
+            const cfg = typeConfig[type];
+            html += `<div class="mb-3">
+                <div class="text-xs text-gray-400 mb-1.5">${cfg.name}</div>
+                <div class="flex flex-wrap gap-1.5">`;
+
+            grouped[type].forEach(q => {
+                let got, total;
+                if (q.type === 'composite') {
+                    got = getCompositeScore(q);
+                    total = q.score;
+                } else {
+                    got = q.gotScore;
+                    total = q.score;
+                }
+                const scoreText = got === null ? '—' : (got === 0 ? '+0' : '+' + got);
+                const scoreCls = got === null ? 's-pending' : (got === total ? 's-full' : (got === 0 ? 's-zero' : 's-partial'));
+                html += `<div class="q-card" onclick="scrollToQuestion('${q.id}')" title="第${q.num}题 ${got !== null ? got + '/' + total + '分' : '待批阅'}">
+                    <span class="q-num">${q.num}</span>
+                    <span class="q-score ${scoreCls}">${scoreText}</span>
+                </div>`;
+            });
+
+            html += `</div></div>`;
+        });
+
+        nav.innerHTML = html;
+    }
+
+    // 获取题目状态
+    function getQuestionStatus(q) {
+        if (q.type === 'essay') {
+            return q.gotScore === null ? 'pending' : (q.gotScore >= q.score * 0.6 ? 'correct' : 'partial');
+        }
+        if (q.gotScore === null) return 'pending';
+        if (q.gotScore === q.score) return 'correct';
+        if (q.gotScore === 0) return 'wrong';
+        return 'partial';
+    }
+
+    // 滚动到题目
+    function scrollToQuestion(id) {
+        const el = document.getElementById('question-' + id);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.classList.add('highlight');
+            setTimeout(() => el.classList.remove('highlight'), 800);
+        }
+    }
+
+    // 渲染试卷（按题型分组）
+    function renderPaper() {
+        const container = document.getElementById('questionList');
+        // 按题型分组，保持原始顺序
+        const groups = [];
+        const typeOrder = [];
+        questions.forEach(q => {
+            if (typeOrder.length === 0 || typeOrder[typeOrder.length - 1] !== q.type) {
+                typeOrder.push(q.type);
+                groups.push({ type: q.type, questions: [q] });
+            } else {
+                groups[groups.length - 1].questions.push(q);
+            }
+        });
+
+        const sectionLabels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+
+        container.innerHTML = groups.map((group, gi) => {
+            const cfg = typeConfig[group.type];
+            const totalScore = group.questions.reduce((s, q) => s + q.score, 0);
+            const count = group.questions.length;
+            // 计算该组得分
+            let gotTotal = 0, hasNull = false;
+            group.questions.forEach(q => {
+                if (q.type === 'composite') {
+                    let sub = 0, subNull = false;
+                    q.subQuestions.forEach(sq => { if (sq.gotScore !== null) sub += sq.gotScore; else subNull = true; });
+                    if (subNull) hasNull = true; else gotTotal += sub;
+                } else {
+                    if (q.gotScore !== null) gotTotal += q.gotScore; else hasNull = true;
+                }
+            });
+            const gotText = hasNull ? '--' : round(gotTotal);
+            const gotCls = hasNull ? 'text-gray-400' : (gotTotal === totalScore ? 'text-green-600' : (gotTotal === 0 ? 'text-red-500' : 'text-amber-600'));
+
+            const label = sectionLabels[gi] || (gi + 1);
+            const perScore = count > 1 ? `每题${group.questions[0].score}分，` : '';
+
+            return `<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-5">
+                <!-- 题型分组标题 -->
+                <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base font-bold text-gray-800">${label}、${cfg.name}</span>
+                        <span class="text-xs text-gray-400">（共${count}题，${perScore}共${totalScore}分）</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-sm">
+                        <span class="text-gray-400">得分</span>
+                        <span class="font-bold text-red-600">${gotText}</span>
+                        <span class="text-gray-300">/</span>
+                        <span class="text-gray-500">${totalScore}</span>
+                    </div>
+                </div>
+                <!-- 题目列表 -->
+                <div class="divide-y divide-gray-100">
+                    ${group.questions.map(q => renderQuestion(q)).join('')}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // 渲染单个题目（组内，不再有外层卡片）
+    function renderQuestion(q) {
+        const isComposite = q.type === 'composite';
+
+        let html = `<div id="question-${q.id}" class="question-item p-5 relative">
+            <div class="mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-bold text-gray-800">${q.num}.</span>
+                    <span class="text-xs text-gray-400">（${q.score}分）</span>
+                </div>
+                <div class="absolute right-5 top-3">
+                    ${!isComposite ? renderScoreStrip(q) : renderCompositeScoreStrip(q)}
+                </div>
+            </div>
+            <div class="text-sm text-gray-700 mb-4 whitespace-pre-wrap leading-relaxed">${q.content}</div>`;
+
+        if (q.type === 'single' || q.type === 'multiple') html += renderChoiceQuestion(q);
+        else if (q.type === 'judge') html += renderJudgeQuestion(q);
+        else if (q.type === 'fill') html += renderFillQuestion(q);
+        else if (q.type === 'cloze') html += renderClozeQuestion(q);
+        else if (q.type === 'essay') html += renderEssayQuestion(q);
+        else if (q.type === 'composite') html += renderCompositeQuestion(q);
+
+        html += `</div>`;
+        return html;
+    }
+
+    // 得分条：显示 +得分
+    function renderScoreStrip(q) {
+        if (q.gotScore === null) {
+            return `<div class="score-strip ungraded"><i class="fas fa-pen text-xs mr-1"></i>待批</div>`;
+        }
+        const got = round(q.gotScore);
+        return `<div class="score-strip">+${got}</div>`;
+    }
+
+    // 复合题总分条
+    function renderCompositeScoreStrip(q) {
+        let total = 0, got = 0, hasNull = false;
+        q.subQuestions.forEach(sq => { total += sq.score; if (sq.gotScore !== null) got += sq.gotScore; else hasNull = true; });
+        if (hasNull) return `<div class="score-strip ungraded"><i class="fas fa-pen text-xs mr-1"></i>批阅中</div>`;
+        got = round(got);
+        return `<div class="score-strip">+${got}</div>`;
+    }
+
+    // 选择题渲染
+    function renderChoiceQuestion(q) {
+        const isMulti = q.type === 'multiple';
+        const correctArr = isMulti ? q.correct : [q.correct];
+        const answerArr = isMulti ? q.answer : [q.answer];
+
+        const allCorrect = correctArr.length === answerArr.length && correctArr.every(c => answerArr.includes(c));
+
+        let html = '<div class="space-y-2 mb-3">';
+        q.options.forEach(opt => {
+            const isSelected = answerArr.includes(opt.l);
+            let bg = 'bg-white border-gray-200';
+            let circleCls = 'border-gray-300';
+
+            if (isSelected) {
+                if (isMulti) {
+                    // 多选：全对才绿，有错全红
+                    if (allCorrect) {
+                        bg = 'bg-green-50 border-green-300';
+                        circleCls = 'bg-green-600 text-white border-green-600';
+                    } else {
+                        bg = 'bg-red-50 border-red-300';
+                        circleCls = 'bg-red-500 text-white border-red-500';
+                    }
+                } else {
+                    if (correctArr.includes(opt.l)) {
+                        bg = 'bg-green-50 border-green-300';
+                        circleCls = 'bg-green-600 text-white border-green-600';
+                    } else {
+                        bg = 'bg-red-50 border-red-300';
+                        circleCls = 'bg-red-500 text-white border-red-500';
+                    }
+                }
+            }
+
+            html += `<div class="flex items-center p-2 rounded border ${bg}">
+                <span class="w-6 h-6 rounded-full border flex items-center justify-center text-xs mr-2 ${circleCls}">${opt.l}</span>
+                <span class="text-sm text-gray-700 flex-1">${opt.t}</span>
+            </div>`;
+        });
+        html += '</div>';
+        {
+            const correctLabel = correctArr.join('、');
+            const answerLabel = answerArr.join('、');
+            html += `<div class="flex items-center gap-2 text-xs mt-2 mb-3 px-1">
+                <span class="text-gray-400">学生选择:</span>
+                <span class="font-medium ${allCorrect ? 'text-green-600' : 'text-red-500'}">${answerLabel}</span>
+                ${allCorrect ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="fas fa-times-circle text-red-500"></i>'}
+                <span class="text-gray-300">|</span>
+                <span class="text-gray-400">正确答案:</span>
+                <span class="font-medium text-green-600">${correctLabel}</span>
+            </div>`;
+        }
+        html += renderExplanation(q);
+        return html;
+    }
+
+    // 判断题渲染
+    function renderJudgeQuestion(q) {
+        const isCorrectAnswer = q.answer === q.correct;
+        let html = '<div class="space-y-2 mb-3">';
+
+        [true, false].forEach(val => {
+            const label = val ? '正确' : '错误';
+            const isSelected = q.answer === val;
+            let cls = 'border-gray-200 bg-white';
+            let circleCls = 'border-gray-300';
+
+            if (isSelected) {
+                if (isCorrectAnswer) {
+                    cls = 'border-green-300 bg-green-50';
+                    circleCls = 'bg-green-600 text-white border-green-600';
+                } else {
+                    cls = 'border-red-300 bg-red-50';
+                    circleCls = 'bg-red-500 text-white border-red-500';
+                }
+            }
+
+            html += `<div class="flex items-center p-2 rounded border ${cls}">
+                <span class="w-6 h-6 rounded-full border flex items-center justify-center text-xs mr-2 ${circleCls}">${val ? 'T' : 'F'}</span>
+                <span class="text-sm text-gray-700 flex-1">${label}</span>
+            </div>`;
+        });
+
+        html += '</div>';
+        {
+            const correctLabel = q.correct ? '正确' : '错误';
+            const answerLabel = q.answer ? '正确' : '错误';
+            const isRight = q.answer === q.correct;
+            html += `<div class="flex items-center gap-2 text-xs mt-2 mb-3 px-1">
+                <span class="text-gray-400">学生选择:</span>
+                <span class="font-medium ${isRight ? 'text-green-600' : 'text-red-500'}">${answerLabel}</span>
+                ${isRight ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="fas fa-times-circle text-red-500"></i>'}
+                <span class="text-gray-300">|</span>
+                <span class="text-gray-400">正确答案:</span>
+                <span class="font-medium text-green-600">${correctLabel}</span>
+            </div>`;
+        }
+        html += renderExplanation(q);
+        return html;
+    }
+
+    // 填空题渲染（支持多空，答案成组展示）
+    function renderFillQuestion(q) {
+        const blanks = q.blanks || [{ num: 1, correct: q.correct, answer: q.answer }];
+        let html = `<div class="mb-3 rounded border border-gray-200 overflow-hidden">`;
+        blanks.forEach((b, i) => {
+            const isCorrect = b.answer.toLowerCase() === b.correct.toLowerCase();
+            const borderTop = i > 0 ? 'border-t border-gray-200' : '';
+            html += `<div class="${borderTop}">
+                <div class="flex items-center gap-3 px-3 py-2 ${isCorrect ? 'bg-green-50' : 'bg-red-50'}">
+                    <span class="text-xs text-gray-400 shrink-0">第${b.num}空</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400">学生:</span>
+                        <span class="text-sm font-medium ${isCorrect ? 'text-green-700' : 'text-red-600'}">${b.answer}</span>
+                        ${isCorrect
+                            ? '<i class="fas fa-check text-green-500 text-xs"></i>'
+                            : `<i class="fas fa-times text-red-500 text-xs"></i>
+                               <span class="text-xs text-gray-300 mx-1">|</span>
+                               <span class="text-xs text-gray-400">正确:</span>
+                               <span class="text-sm font-medium text-green-700">${b.correct}</span>`}
+                    </div>
+                </div>
+            </div>`;
+        });
+        html += `</div>`;
+        html += renderExplanation(q);
+        return html;
+    }
+
+    // 完形填空渲染
+    function renderClozeQuestion(q) {
+        let html = '<div class="space-y-3 mb-3">';
+        q.blanks.forEach(blank => {
+            const isCorrect = blank.answer === blank.correct;
+            html += `<div class="p-3 rounded border border-gray-200 bg-white">
+                <div class="text-xs text-gray-500 mb-2">第${blank.num}空</div>
+                <div class="flex flex-wrap gap-2">`;
+
+            blank.options.forEach(opt => {
+                const isSelected = opt.l === blank.answer;
+                let cls = 'border-gray-200 bg-white';
+                if (isSelected) {
+                    cls = isCorrect ? 'border-green-300 bg-green-100' : 'border-red-300 bg-red-100';
+                }
+
+                html += `<span class="px-2 py-1 text-xs rounded border ${cls} ${isSelected ? 'font-medium' : ''}">
+                    ${opt.l}. ${opt.t}
+                </span>`;
+            });
+
+            html += `</div>
+                <div class="flex items-center gap-2 text-xs mt-2 px-1">
+                    <span class="text-gray-400">学生选择:</span>
+                    <span class="font-medium ${isCorrect ? 'text-green-600' : 'text-red-500'}">${blank.answer}</span>
+                    ${isCorrect ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="fas fa-times-circle text-red-500"></i>'}
+                    <span class="text-gray-300">|</span>
+                    <span class="text-gray-400">正确答案:</span>
+                    <span class="font-medium text-green-600">${blank.correct}</span>
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        html += renderExplanation(q);
+        return html;
+    }
+
+    // 简答题渲染（内联批阅 + AI评语）
+    function renderEssayQuestion(q) {
+        const isGraded = q.gotScore !== null;
+        const data = gradingData[q.id] || { score: null, comment: '', aiScore: null, aiComment: '' };
+
+        // 附件渲染
+        const attachHtml = (q.attachments && q.attachments.length > 0) ? `
+            <div class="mt-3 pt-3 border-t border-blue-100">
+                <div class="text-xs font-medium text-gray-500 mb-2"><i class="fas fa-paperclip mr-1"></i>附件 (${q.attachments.length})</div>
+                <div class="space-y-2">
+                    ${q.attachments.map(a => {
+                        const iconMap = { pdf: 'fa-file-pdf text-red-500', doc: 'fa-file-word text-blue-500', image: 'fa-file-image text-green-500', excel: 'fa-file-excel text-green-600' };
+                        const icon = iconMap[a.type] || 'fa-file text-gray-400';
+                        return `<div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fas ${icon} text-base flex-shrink-0"></i>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-medium text-gray-700 truncate">${a.name}</div>
+                                    <div class="text-xs text-gray-400">${a.size}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                                <button onclick="previewAttachment('${a.name}','${a.type}','${a.size}')" class="px-2 py-1 text-xs text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" title="预览"><i class="fas fa-eye mr-0.5"></i>预览</button>
+                                <button onclick="downloadAttachment('${a.name}','${a.size}')" class="px-2 py-1 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition" title="下载"><i class="fas fa-download mr-0.5"></i>下载</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : '';
+
+        let html = `<div class="mb-4 grid grid-cols-2 gap-3">
+            <div class="p-4 rounded-lg border border-blue-200 bg-blue-50/30">
+                <div class="text-xs font-medium text-blue-600 mb-2"><i class="fas fa-user-edit mr-1"></i>学生答案</div>
+                <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${q.answer}</div>
+                ${attachHtml}
+            </div>
+            <div class="p-4 rounded-lg border border-green-200 bg-green-50/30">
+                <div class="text-xs font-medium text-green-600 mb-2"><i class="fas fa-check-circle mr-1"></i>参考答案</div>
+                <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${q.correct}</div>
+            </div>
+        </div>`;
+
+        // 内联批阅面板
+        if (examStatus === 'completed') {
+            // 只读模式：显示评分和评语
+            html += `<div class="grading-inline p-4" id="grading-${q.id}">
+                <div class="gi-header flex items-center justify-between px-3 py-2 -mx-4 -mt-4 mb-3">
+                    <span class="text-sm font-medium text-blue-800"><i class="fas fa-pen-fancy mr-1"></i>教师批阅</span>
+                    <span class="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">已评分</span>
+                </div>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-sm text-gray-600">评分：</span>
+                    <span class="font-bold text-lg text-red-600">${q.gotScore}</span>
+                    <span class="text-gray-400 font-medium">/ ${q.score}</span>
+                    <span class="ml-2 text-xs px-2 py-0.5 rounded ${q.gotScore >= q.score ? 'bg-green-100 text-green-700' : q.gotScore >= q.score * 0.6 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}">${q.gotScore >= q.score ? '满分' : Math.round(q.gotScore / q.score * 100) + '%'}</span>
+                </div>
+                ${data.comment ? `<div class="text-sm"><span class="text-gray-500">评语：</span><span class="text-gray-700">${data.comment}</span></div>` : ''}
+            </div>`;
+        } else {
+            // 可编辑模式（原有逻辑）
+            html += `<div class="grading-inline p-4" id="grading-${q.id}">
+                <div class="gi-header flex items-center justify-between px-3 py-2 -mx-4 -mt-4 mb-3">
+                    <span class="text-sm font-medium text-blue-800"><i class="fas fa-pen-fancy mr-1"></i>教师批阅</span>
+                    ${isGraded ? '<span class="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">已评分</span>' : '<span class="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">待评分</span>'}
+                </div>
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">评分：</span>
+                        <input type="number" min="0" max="${q.score}" step="0.5" value="${isGraded ? q.gotScore : ''}"
+                               onchange="inlineSaveScore('${q.id}', this.value, ${q.score})"
+                               class="w-16 px-2 py-1.5 text-center font-bold text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none">
+                        <span class="text-gray-400 font-medium">/ ${q.score}</span>
+                    </div>
+                    <div class="flex gap-1.5 ml-2">
+                        <button onclick="inlineSetScore('${q.id}', ${q.score}, 100)" class="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition">满分</button>
+                        <button onclick="inlineSetScore('${q.id}', ${q.score}, 80)" class="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition">80%</button>
+                        <button onclick="inlineSetScore('${q.id}', ${q.score}, 60)" class="px-2.5 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition">60%</button>
+                        <button onclick="inlineSetScore('${q.id}', ${q.score}, 0)" class="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition">0分</button>
+                    </div>
+                    <div class="w-px h-6 bg-gray-200 mx-1"></div>
+                    <button onclick="getAIScore('${q.id}', ${q.score})" class="ai-btn">
+                        <i class="fas fa-robot"></i>AI评分
+                    </button>
+                </div>
+                <div id="ai-score-${q.id}" class="mb-3 ${data.aiScore !== null ? '' : 'hidden'}">
+                    <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50 text-xs">${data.aiScore !== null ? renderAIScoreHTML(q.id, data, q.score) : ''}</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-sm text-gray-600">评语：</span>
+                    <textarea rows="2" placeholder="输入评语..." onchange="inlineSaveComment('${q.id}', this.value)"
+                        class="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-400 focus:outline-none">${data.comment || ''}</textarea>
+                </div>
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                    ${quickPhrases.map(p => `<button onclick="inlineAddComment('${q.id}', '${p}')" class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition">${p}</button>`).join('')}
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <button onclick="getAIComment('${q.id}', ${q.score})" class="ai-btn">
+                        <i class="fas fa-magic"></i>AI评语
+                    </button>
+                    <span id="ai-comment-hint-${q.id}" class="text-xs text-gray-400">${data.aiComment ? '点击重新生成' : '点击生成AI评语'}</span>
+                </div>
+                <div id="ai-comment-${q.id}" class="${data.aiComment ? '' : 'hidden'}">
+                    <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50 text-xs">
+                        <div class="text-gray-600 leading-relaxed">${data.aiComment || ''}</div>
+                        ${data.aiComment ? `<div class="mt-2 pt-2 border-t border-blue-200 flex justify-end">
+                            <button onclick="adoptAIComment('${q.id}')" class="text-xs px-2.5 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"><i class="fas fa-check mr-1"></i>采纳评语</button>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        return html;
+    }
+
+    // 复合题渲染
+    function renderCompositeQuestion(q) {
+        let totalScore = 0, gotScore = 0, hasUngraded = false;
+        q.subQuestions.forEach(sq => {
+            totalScore += sq.score;
+            if (sq.gotScore !== null) gotScore += sq.gotScore;
+            else hasUngraded = true;
+        });
+        gotScore = round(gotScore);
+
+        let html = `<div class="text-xs text-gray-500 mb-3">本题共${q.subQuestions.length}小题，总分${totalScore}分${hasUngraded ? '' : `，得分 <span class="font-bold ${gotScore >= totalScore * 0.6 ? 'text-green-600' : 'text-red-600'}">${gotScore}分</span>`}</div>`;
+        html += '<div class="space-y-4 border-t border-gray-100 pt-4">';
+
+        q.subQuestions.forEach(sq => {
+            const cfg = typeConfig[sq.type];
+            html += `<div id="question-${sq.id}" class="question-item p-4 rounded-lg border border-gray-200 bg-gray-50 relative">
+                <div class="mb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-bold text-gray-700">第${sq.num}题</span>
+                        <span class="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500">${cfg.name}</span>
+                        <span class="text-xs text-gray-400">（${sq.score}分）</span>
+                    </div>
+                    <div class="absolute right-4 top-3">
+                        ${renderScoreStrip(sq)}
+                    </div>
+                </div>
+                <div class="text-sm text-gray-700 mb-3">${sq.content}</div>`;
+
+            if (sq.type === 'single' || sq.type === 'multiple') html += renderChoiceQuestion(sq);
+            else if (sq.type === 'judge') html += renderJudgeQuestion(sq);
+            else if (sq.type === 'fill') html += renderFillQuestion(sq);
+            else if (sq.type === 'essay') html += renderEssayQuestion(sq);
+
+            html += '</div>';
+        });
+
+        html += '</div>';
+        return html;
+    }
+
+    // 解析渲染
+    function renderExplanation(q) {
+        if (!q.explanation) return '';
+        return `<div class="p-2 bg-gray-50 rounded border border-gray-200 mt-2">
+            <div class="text-xs text-gray-500 mb-1"><i class="fas fa-lightbulb mr-1"></i>解析</div>
+            <div class="text-xs text-gray-600">${q.explanation}</div>
+        </div>`;
+    }
+
+    // 内联评分 - 设置分数
+    function inlineSetScore(qId, maxScore, percent) {
+        const score = Math.round(maxScore * percent / 100 * 2) / 2;
+        inlineSaveScore(qId, score, maxScore);
+    }
+
+    // 内联评分 - 保存分数
+    function inlineSaveScore(qId, value, maxScore) {
+        let score = Math.min(Math.max(parseFloat(value) || 0, 0), maxScore);
+        score = Math.round(score * 2) / 2;
+        if (!gradingData[qId]) gradingData[qId] = { score: null, comment: '', aiScore: null, aiComment: '' };
+        gradingData[qId].score = score;
+
+        // 更新题目数据
+        const updateQ = (q) => { if (q.id === qId) { q.gotScore = score; return true; } return false; };
+        questions.forEach(q => { if (!updateQ(q) && q.subQuestions) q.subQuestions.forEach(sq => updateQ(sq)); });
+
+        renderQuestionNav();
+        renderPaper();
+    }
+
+    // 内联评分 - 保存评语
+    function inlineSaveComment(qId, text) {
+        if (!gradingData[qId]) gradingData[qId] = { score: null, comment: '', aiScore: null, aiComment: '' };
+        gradingData[qId].comment = text;
+    }
+
+    // 内联评分 - 添加快捷评语
+    function inlineAddComment(qId, text) {
+        if (!gradingData[qId]) gradingData[qId] = { score: null, comment: '', aiScore: null, aiComment: '' };
+        const data = gradingData[qId];
+        data.comment = data.comment ? data.comment + '；' + text : text;
+        // 直接更新textarea
+        const panel = document.getElementById('grading-' + qId);
+        if (panel) {
+            const ta = panel.querySelector('textarea');
+            if (ta) ta.value = data.comment;
+        }
+    }
+
+    // AI评语（模拟）
+    // AI评分（仅返回分数）
+    function getAIScore(qId, maxScore) {
+        const el = document.getElementById('ai-score-' + qId);
+        el.classList.remove('hidden');
+        const inner = el.querySelector('div') || el;
+        inner.innerHTML = '<i class="fas fa-spinner fa-spin mr-1 text-blue-500"></i><span class="text-blue-500">AI正在评分...</span>';
+
+        setTimeout(() => {
+            // 生成整数或.5的分数
+            const raw = maxScore * 0.65 + Math.random() * maxScore * 0.25;
+            const aiScore = Math.round(raw * 2) / 2;
+            const matchRate = Math.round(aiScore / maxScore * 100);
+            // 生成评分理由
+            const reasons = [];
+            if (matchRate >= 85) {
+                reasons.push('学生答案与参考答案高度吻合，核心知识点覆盖完整');
+                reasons.push(matchRate >= 95 ? '表述准确，逻辑清晰，几乎无遗漏' : '个别细节表述可进一步完善');
+            } else if (matchRate >= 60) {
+                reasons.push('学生答案覆盖了部分核心知识点，但存在遗漏');
+                reasons.push('建议补充对关键概念的深入阐述');
+            } else {
+                reasons.push('学生答案与参考答案匹配度较低，关键知识点缺失较多');
+                reasons.push('建议重新审阅参考答案，补充核心论点');
+            }
+            if (!gradingData[qId]) gradingData[qId] = { score: null, comment: '', aiScore: null, aiComment: '' };
+            gradingData[qId].aiScore = aiScore;
+            gradingData[qId].aiMatchRate = matchRate;
+            gradingData[qId].aiReasons = reasons;
+
+            renderAIScoreResult(qId, maxScore);
+            // 自动填入评分输入框
+            inlineSaveScore(qId, aiScore, maxScore);
+        }, 800);
+    }
+
+    // AI评语（独立区域，不影响评语）
+    function getAIComment(qId, maxScore) {
+        const el = document.getElementById('ai-comment-' + qId);
+        el.classList.remove('hidden');
+        el.querySelector('div').innerHTML = '<i class="fas fa-spinner fa-spin mr-1 text-blue-500"></i><span class="text-blue-500">AI正在生成评语...</span>';
+        const hint = document.getElementById('ai-comment-hint-' + qId);
+        if (hint) hint.textContent = '正在生成...';
+
+        setTimeout(() => {
+            const comments = [
+                '回答涵盖了主要知识点，但缺少对内存占用差异的说明。建议补充可变与不可变对象在内存管理上的区别。',
+                '答案基本正确，表述清晰。但仅提到了语法层面的区别，未涉及性能和使用场景的差异。',
+                '理解到位，逻辑清晰。可进一步补充元组作为字典键的特性以及列表推导式的应用。'
+            ];
+            const aiComment = comments[Math.floor(Math.random() * comments.length)];
+            if (!gradingData[qId]) gradingData[qId] = { score: null, comment: '', aiScore: null, aiComment: '' };
+            gradingData[qId].aiComment = aiComment;
+
+            el.querySelector('div').innerHTML = `<div class="text-gray-600 leading-relaxed">${aiComment}</div>
+                <div class="mt-2 pt-2 border-t border-blue-200 flex justify-end">
+                    <button onclick="adoptAIComment('${qId}')" class="text-xs px-2.5 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"><i class="fas fa-check mr-1"></i>采纳评语</button>
+                </div>`;
+            if (hint) hint.textContent = '点击重新生成';
+        }, 1200);
+    }
+
+    // AI评分HTML生成（纯字符串，供模板和动态渲染共用）
+    function renderAIScoreHTML(qId, data, maxScore) {
+        const matchRate = data.aiMatchRate || Math.round(data.aiScore / maxScore * 100);
+        const reasons = data.aiReasons || ['AI评分依据暂无详细说明'];
+        const barColor = matchRate >= 80 ? '#22c55e' : matchRate >= 60 ? '#f59e0b' : '#ef4444';
+        return `<div class="flex items-center gap-3 mb-2">
+            <span class="font-medium text-blue-700"><i class="fas fa-robot mr-1"></i>AI评分：<span class="text-sm font-bold">${data.aiScore}/${maxScore}分</span></span>
+            <span class="text-gray-300">|</span>
+            <span class="text-gray-500">匹配度</span>
+            <div class="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all" style="width:${matchRate}%;background:${barColor}"></div>
+                </div>
+                <span class="text-xs font-bold" style="color:${barColor}">${matchRate}%</span>
+            </div>
+            <button onclick="clearAIScore('${qId}', ${maxScore})" class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition">取消</button>
+        </div>
+        <div class="text-gray-500 leading-relaxed">${reasons.map(r => '<div class="flex items-start gap-1"><span class="text-blue-400 mt-px">•</span><span>' + r + '</span></div>').join('')}</div>`;
+    }
+
+    // 渲染AI评分结果到DOM
+    function renderAIScoreResult(qId, maxScore) {
+        const el = document.getElementById('ai-score-' + qId);
+        const data = gradingData[qId] || {};
+        if (data.aiScore !== null && data.aiScore !== undefined) {
+            el.classList.remove('hidden');
+            el.querySelector('div').innerHTML = renderAIScoreHTML(qId, data, maxScore);
+        }
+    }
+
+    // 取消AI评分
+    function clearAIScore(qId, maxScore) {
+        const data = gradingData[qId];
+        if (!data) return;
+        if (data.score === data.aiScore) {
+            data.score = null;
+            const updateQ = (q) => { if (q.id === qId) { q.gotScore = null; return true; } return false; };
+            questions.forEach(q => { if (!updateQ(q) && q.subQuestions) q.subQuestions.forEach(sq => updateQ(sq)); });
+        }
+        data.aiScore = null;
+        const el = document.getElementById('ai-score-' + qId);
+        if (el) { el.classList.add('hidden'); el.querySelector('div').innerHTML = ''; }
+        renderQuestionNav();
+        renderPaper();
+    }
+
+    // 采纳AI评语到评语
+    function adoptAIComment(qId) {
+        const data = gradingData[qId];
+        if (!data || !data.aiComment) return;
+        data.comment = data.aiComment;
+        const panel = document.getElementById('grading-' + qId);
+        if (panel) {
+            const ta = panel.querySelector('textarea');
+            if (ta) ta.value = data.aiComment;
+        }
+        // 按钮变为已采纳
+        const el = document.getElementById('ai-comment-' + qId);
+        if (el) {
+            const btnWrap = el.querySelector('.flex.justify-end');
+            if (btnWrap) btnWrap.innerHTML = '<span class="text-xs px-2.5 py-1 bg-green-100 text-green-600 rounded"><i class="fas fa-check mr-1"></i>已采纳到评语</span>';
+        }
+    }
+
+    // ===== 附件预览与下载 =====
+    function previewAttachment(name, type, size) {
+        const modal = document.getElementById('attachModal');
+        const title = document.getElementById('attachModalTitle');
+        const body = document.getElementById('attachModalBody');
+        title.textContent = name;
+
+        if (type === 'image') {
+            // 图片：模拟显示占位图
+            body.innerHTML = `
+                <div class="text-center">
+                    <div class="inline-block bg-gray-100 rounded-lg p-8 mb-4" style="min-width:400px;min-height:300px;display:flex;align-items:center;justify-content:center;">
+                        <div class="text-center">
+                            <i class="fas fa-image text-5xl text-gray-300 mb-3"></i>
+                            <div class="text-sm text-gray-500">${name}</div>
+                            <div class="text-xs text-gray-400 mt-1">${size}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400">原型阶段：图片预览模拟</div>
+                </div>`;
+        } else if (type === 'pdf') {
+            body.innerHTML = `
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 flex items-center gap-2 border-b border-gray-200">
+                        <i class="fas fa-file-pdf text-red-500"></i>
+                        <span class="text-sm font-medium text-gray-700">${name}</span>
+                        <span class="text-xs text-gray-400 ml-auto">${size}</span>
+                    </div>
+                    <div class="p-8 text-center" style="min-height:320px;display:flex;align-items:center;justify-content:center;">
+                        <div>
+                            <i class="fas fa-file-pdf text-6xl text-red-300 mb-4"></i>
+                            <div class="text-sm text-gray-600 mb-1">PDF 文档预览</div>
+                            <div class="text-xs text-gray-400 mb-4">原型阶段：实际部署后将嵌入 PDF 阅读器</div>
+                            <button onclick="downloadAttachment('${name}','${size}')" class="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                                <i class="fas fa-download mr-1"></i>下载查看
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            // doc / excel / 其他
+            const iconMap = { doc: 'fa-file-word text-blue-500', excel: 'fa-file-excel text-green-600' };
+            const colorMap = { doc: 'blue', excel: 'green' };
+            const icon = iconMap[type] || 'fa-file text-gray-400';
+            const color = colorMap[type] || 'gray';
+            body.innerHTML = `
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 flex items-center gap-2 border-b border-gray-200">
+                        <i class="fas ${icon}"></i>
+                        <span class="text-sm font-medium text-gray-700">${name}</span>
+                        <span class="text-xs text-gray-400 ml-auto">${size}</span>
+                    </div>
+                    <div class="p-8 text-center" style="min-height:320px;display:flex;align-items:center;justify-content:center;">
+                        <div>
+                            <i class="fas ${icon} text-6xl opacity-40 mb-4"></i>
+                            <div class="text-sm text-gray-600 mb-1">文档预览</div>
+                            <div class="text-xs text-gray-400 mb-4">原型阶段：实际部署后将支持在线预览</div>
+                            <button onclick="downloadAttachment('${name}','${size}')" class="px-4 py-2 text-sm bg-${color}-500 text-white rounded-lg hover:bg-${color}-600 transition">
+                                <i class="fas fa-download mr-1"></i>下载查看
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        modal.classList.add('show');
+    }
+
+    function closeAttachModal() {
+        document.getElementById('attachModal').classList.remove('show');
+    }
+
+    function downloadAttachment(name, size) {
+        // 模拟下载进度提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 right-6 bg-gray-800 text-white px-5 py-3 rounded-lg shadow-xl z-[10000] flex items-center gap-3 text-sm';
+        toast.innerHTML = `<i class="fas fa-download text-green-400"></i><div><div class="font-medium">开始下载</div><div class="text-xs text-gray-300 mt-0.5">${name} (${size})</div></div>`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.innerHTML = `<i class="fas fa-check-circle text-green-400"></i><div><div class="font-medium">下载完成</div><div class="text-xs text-gray-300 mt-0.5">${name} (${size})</div></div>`;
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 1500);
+        }, 1200);
+    }
+
+    // ===== 个人成绩分析 =====
+    // 模拟全班成绩数据（原型用）
+    function getMockClassScores(myScore) {
+        const scores = [92,87,85,83,81,79,78,76,74,72,71,69,67,65,63,60,58,55,52,48,45,40,35];
+        if (!scores.includes(myScore)) scores.push(myScore);
+        scores.sort((a, b) => b - a);
+        return scores;
+    }
+    // 模拟各题型班级平均得分率
+    function getMockClassTypeAvg() {
+        return { single: 82, multiple: 65, judge: 78, fill: 60, cloze: 55, essay: 58, composite: 52 };
+    }
+
+    function renderAnalysisSidebar() {
+        const s = currentStudent;
+        const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
+        const gotScore = calcGotScore();
+        const scoreRate = totalScore > 0 ? Math.round(gotScore / totalScore * 100) : 0;
+
+        // 按题型统计
+        const typeStats = {};
+        questions.forEach(q => {
+            const t = q.type;
+            if (!typeStats[t]) typeStats[t] = { name: typeConfig[t]?.name || t, total: 0, got: 0, count: 0 };
+            typeStats[t].total += q.score; typeStats[t].count++;
+            if (q.type === 'composite') {
+                let subGot = 0; q.subQuestions.forEach(sq => { if (sq.gotScore !== null) subGot += sq.gotScore; });
+                typeStats[t].got += round(subGot);
+            } else { typeStats[t].got += (q.gotScore !== null ? q.gotScore : 0); }
+        });
+
+        // 等级
+        let level = '', lc = '', lb = '';
+        if (scoreRate >= 90) { level = '优秀'; lc = 'text-green-600'; lb = 'bg-green-50 border-green-200'; }
+        else if (scoreRate >= 80) { level = '良好'; lc = 'text-blue-600'; lb = 'bg-blue-50 border-blue-200'; }
+        else if (scoreRate >= 70) { level = '中等'; lc = 'text-yellow-600'; lb = 'bg-yellow-50 border-yellow-200'; }
+        else if (scoreRate >= 60) { level = '及格'; lc = 'text-orange-600'; lb = 'bg-orange-50 border-orange-200'; }
+        else { level = '不及格'; lc = 'text-red-600'; lb = 'bg-red-50 border-red-200'; }
+
+        // 排名
+        const classScores = getMockClassScores(gotScore);
+        const ct = classScores.length, rank = classScores.indexOf(gotScore) + 1;
+        const avg = round(classScores.reduce((a, b) => a + b, 0) / ct);
+        const max = classScores[0], median = classScores[Math.floor(ct / 2)];
+        const beatRate = Math.round((ct - rank) / ct * 100);
+        const diff = round(gotScore - avg);
+
+        // 分数段
+        const segs = [{l:'90-100',n:90,x:100,c:'bg-green-400'},{l:'80-89',n:80,x:89,c:'bg-blue-400'},{l:'70-79',n:70,x:79,c:'bg-cyan-400'},{l:'60-69',n:60,x:69,c:'bg-yellow-400'},{l:'0-59',n:0,x:59,c:'bg-red-400'}];
+        segs.forEach(sg => { sg.cnt = classScores.filter(sc => sc >= sg.n && sc <= sg.x).length; sg.mine = gotScore >= sg.n && gotScore <= sg.x; });
+        const segMax = Math.max(...segs.map(s => s.cnt), 1);
+
+        // 薄弱/优势
+        let weakType = null, weakRate = 100;
+        Object.values(typeStats).forEach(ts => { const r = ts.total > 0 ? ts.got / ts.total * 100 : 0; if (r < weakRate) { weakRate = r; weakType = ts.name; } });
+        const fullTypes = Object.values(typeStats).filter(ts => ts.total > 0 && ts.got >= ts.total).map(ts => ts.name);
+
+        // 题型行
+        const cta = getMockClassTypeAvg();
+        const typeRows = Object.entries(typeStats).map(([k, ts]) => {
+            const r = ts.total > 0 ? Math.round(ts.got / ts.total * 100) : 0, ar = cta[k] || 60, d = r - ar;
+            const bc = r >= 80 ? 'bg-green-400' : r >= 60 ? 'bg-blue-400' : r >= 40 ? 'bg-yellow-400' : 'bg-red-400';
+            const dt = d > 0 ? `<span class="text-green-600">+${d}%</span>` : d < 0 ? `<span class="text-red-500">${d}%</span>` : `<span class="text-gray-400">—</span>`;
+            return `<div class="flex items-center gap-1.5 py-1.5">
+                <span class="text-[11px] text-gray-600 w-12 shrink-0">${ts.name}</span>
+                <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div class="${bc} h-full rounded-full" style="width:${r}%"></div>
+                    <div class="absolute top-0 h-full w-0.5 bg-gray-400" style="left:${ar}%"></div>
+                </div>
+                <span class="text-[10px] font-semibold text-gray-600 w-12 text-right">${round(ts.got)}/${ts.total}</span>
+                <span class="text-[10px] w-8 text-right">${dt}</span>
+            </div>`;
+        }).join('');
+
+        // 分数段行
+        const segRows = segs.map(sg => {
+            const w = Math.round(sg.cnt / segMax * 100);
+            return `<div class="flex items-center gap-1.5 py-0.5">
+                <span class="text-[10px] text-gray-500 w-9 shrink-0 text-right">${sg.l}</span>
+                <div class="flex-1 h-3.5 bg-gray-50 rounded overflow-hidden flex items-center">
+                    <div class="${sg.c} ${sg.mine ? 'ring-1 ring-offset-1 ring-blue-400' : ''} h-full rounded flex items-center justify-end pr-0.5" style="width:${Math.max(w, 10)}%">
+                        <span class="text-[9px] text-white font-bold">${sg.cnt}</span>
+                    </div>
+                </div>
+                ${sg.mine ? '<span class="text-[9px] text-blue-600 font-bold w-4">←</span>' : '<span class="w-4"></span>'}
+            </div>`;
+        }).join('');
+
+        // 渲染到侧边栏
+        const sidebar = document.getElementById('analysisSidebar');
+        sidebar.innerHTML = `
+            <div class="p-4 space-y-4">
+                <!-- 标题 -->
+                <div class="flex items-center gap-1.5 pb-3 border-b border-gray-100">
+                    <i class="fas fa-chart-bar text-blue-500 text-sm"></i>
+                    <span class="text-sm font-semibold text-gray-800">个人成绩分析</span>
+                </div>
+
+                <!-- 综合分析 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-lightbulb text-amber-400 text-[10px]"></i>综合分析</div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-start gap-1.5 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                            <i class="fas fa-ranking-star text-indigo-500 mt-0.5 text-[10px]"></i>
+                            <div class="text-[11px] text-indigo-700">排名第 ${rank}/${ct}，超越 ${beatRate}%。${diff >= 0 ? `高于均分 ${diff} 分。` : `低于均分 ${Math.abs(diff)} 分。`}</div>
+                        </div>
+                        ${fullTypes.length > 0 ? `<div class="flex items-start gap-1.5 p-2 bg-green-50 rounded-lg border border-green-100">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 text-[10px]"></i>
+                            <div class="text-[11px] text-green-700"><b>优势：</b>${fullTypes.join('、')}满分</div>
+                        </div>` : ''}
+                        ${weakType && weakRate < 60 ? `<div class="flex items-start gap-1.5 p-2 bg-red-50 rounded-lg border border-red-100">
+                            <i class="fas fa-exclamation-triangle text-red-500 mt-0.5 text-[10px]"></i>
+                            <div class="text-[11px] text-red-700"><b>薄弱：</b>${weakType}仅${Math.round(weakRate)}%，需加强</div>
+                        </div>` : ''}
+                        <div class="flex items-start gap-1.5 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5 text-[10px]"></i>
+                            <div class="text-[11px] text-blue-700">${gotScore}/${totalScore}（${scoreRate}%），「${level}」。${scoreRate >= 80 ? '表现优异。' : scoreRate >= 60 ? '部分题型需加强。' : '建议系统复习。'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心指标 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-bullseye text-rose-400 text-[10px]"></i>核心指标</div>
+                    <div class="grid grid-cols-3 gap-2">
+                    <div class="text-center p-2 rounded-lg ${lb} border">
+                        <div class="text-xl font-bold ${lc}">${gotScore}</div>
+                        <div class="text-[9px] text-gray-500">得分/${totalScore}</div>
+                    </div>
+                    <div class="text-center p-2 rounded-lg bg-indigo-50 border border-indigo-200">
+                        <div class="text-xl font-bold text-indigo-600">${rank}<span class="text-xs">/${ct}</span></div>
+                        <div class="text-[9px] text-gray-500">班级排名</div>
+                    </div>
+                    <div class="text-center p-2 rounded-lg bg-purple-50 border border-purple-200">
+                        <div class="text-xl font-bold text-purple-600">${beatRate}<span class="text-xs">%</span></div>
+                        <div class="text-[9px] text-gray-500">超越比例</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="text-center p-2 rounded-lg bg-gray-50 border border-gray-200">
+                        <div class="text-lg font-bold text-gray-700">${scoreRate}<span class="text-xs">%</span></div>
+                        <div class="text-[9px] text-gray-500">得分率</div>
+                    </div>
+                    <div class="text-center p-2 rounded-lg ${lb} border">
+                        <div class="text-lg font-bold ${lc}">${level}</div>
+                        <div class="text-[9px] text-gray-500">成绩等级</div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- 班级对比 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-users text-indigo-400 text-[10px]"></i>班级对比</div>
+                    <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div class="p-2 bg-gray-50 rounded-lg text-center">
+                            <div class="text-gray-400 text-[10px]">班级平均</div>
+                            <div class="font-bold text-gray-700">${avg}</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg text-center">
+                            <div class="text-gray-400 text-[10px]">与均分差</div>
+                            <div class="font-bold ${diff >= 0 ? 'text-green-600' : 'text-red-500'}">${diff >= 0 ? '+' : ''}${diff}</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg text-center">
+                            <div class="text-gray-400 text-[10px]">最高分</div>
+                            <div class="font-bold text-gray-700">${max}</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg text-center">
+                            <div class="text-gray-400 text-[10px]">中位数</div>
+                            <div class="font-bold text-gray-700">${median}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 题型得分 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-layer-group text-blue-400 text-[10px]"></i>各题型得分 <span class="text-[10px] text-gray-400 font-normal">(|为均值)</span></div>
+                    <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">${typeRows}</div>
+                </div>
+
+                <!-- 分数段分布 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-chart-column text-cyan-400 text-[10px]"></i>分数段分布 <span class="text-[10px] text-gray-400 font-normal">(${ct}人)</span></div>
+                    <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">${segRows}</div>
+                </div>
+
+                <!-- 考试信息 -->
+                <div>
+                    <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-clock text-gray-400 text-[10px]"></i>考试信息</div>
+                    <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-play-circle text-gray-400 text-[10px]"></i><span class="text-gray-500">开始</span><span class="ml-auto font-medium text-gray-700">${s.startTime || '--'}</span></div>
+                        <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-stop-circle text-gray-400 text-[10px]"></i><span class="text-gray-500">交卷</span><span class="ml-auto font-medium text-gray-700">${s.endTime || '--'}</span></div>
+                        <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-hourglass-half text-gray-400 text-[10px]"></i><span class="text-gray-500">用时</span><span class="ml-auto font-medium text-gray-700">${s.duration || '--'}</span></div>
+                        <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-sign-out-alt text-gray-400 text-[10px]"></i><span class="text-gray-500">离开</span><span class="ml-auto font-medium ${(s.leaveCount || 0) > 0 ? 'text-orange-600' : 'text-gray-700'}">${s.leaveCount || 0}次</span></div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    </script>
+
+<!-- 附件预览模态框 -->
+<div id="attachModal" class="attach-modal-mask" onclick="if(event.target===this)closeAttachModal()">
+    <div class="attach-modal">
+        <div class="attach-modal-header">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-eye text-blue-500"></i>
+                <span id="attachModalTitle" class="text-sm font-semibold text-gray-800">附件预览</span>
+            </div>
+            <button onclick="closeAttachModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="attachModalBody" class="attach-modal-body"></div>
+    </div>
+</div>
+
+</body>
+</html>

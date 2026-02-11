@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档模式批阅 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Liu+Jian+Mao+Cao&display=swap">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#E8FFF3', 100: '#C3F5CD', 500: '#00B96B', 600: '#009E5A' },
+            success: { 50: '#E8FFEA', 100: '#C3F5CD', 500: '#00B42A', 600: '#00A35C', 200: '#B3E5BE' },
+            warning: { 50: '#FFF7E8', 100: '#FFE7BA', 500: '#FF7D00', 600: '#F57C00', 200: '#FFD79D' },
+            error: { 50: '#FFECE8', 100: '#FFD4CC', 500: '#F53F3F', 600: '#E53935', 200: '#FFB8B0' },
+            info: { 50: '#E8F7FF', 100: '#B8E8F5', 500: '#14C9C9', 600: '#00ACC1', 200: '#99DDE8' },
+            purple: { 50: '#F3E8FF', 100: '#E0C5FF', 500: '#9333EA', 600: '#7E22CE' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .avatar-color-0 { background: #22c55e; } .avatar-color-1 { background: #3b82f6; }
+    .avatar-color-2 { background: #a855f7; } .avatar-color-3 { background: #f59e0b; }
+    .avatar-color-4 { background: #ef4444; } .avatar-color-5 { background: #06b6d4; }
+    .avatar-color-6 { background: #ec4899; } .avatar-color-7 { background: #8b5cf6; }
+    .q-card { position: relative; width: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+              padding: 2px 1px; border-radius: 5px; cursor: pointer; transition: all 0.15s;
+              background: #f3f4f6; border: 1.5px solid #e5e7eb; gap: 1px; }
+    .q-card:hover { background: #e5e7eb; transform: scale(1.05); }
+    .q-card .q-num { font-size: 11px; font-weight: 600; color: #374151; line-height: 1; }
+    .q-card .q-score { font-size: 8px; font-weight: 700; line-height: 1; }
+    .q-card .q-score.s-full { color: #16a34a; } .q-card .q-score.s-zero { color: #dc2626; }
+    .q-card .q-score.s-partial { color: #d97706; } .q-card .q-score.s-pending { color: #94a3b8; }
+    .nav-filter-btn { transition: all 0.15s; } .nav-filter-btn.active { background: #3b82f6; color: #fff; }
+    .question-item { scroll-margin-top: 20px; }
+    .question-item.highlight { animation: highlight 0.8s ease; }
+    @keyframes highlight { 0%,100% { background: transparent; } 50% { background: #fef9c3; } }
+    .score-strip { font-family: 'Liu Jian Mao Cao', cursive; font-weight: 400; font-size: 28px; color: #dc2626; line-height: 1; }
+    .score-strip.ungraded { font-family: inherit; font-size: 11px; background: #e0e7ff; color: #4f46e5; padding: 3px 8px; border-radius: 5px; font-weight: 600; }
+    .ai-btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none;
+              padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+              cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+              display: inline-flex; align-items: center; gap: 5px; }
+    .ai-btn:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 4px 14px rgba(99,102,241,0.45); transform: translateY(-1px); }
+    .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .quick-tag { padding: 3px 10px; border-radius: 12px; font-size: 12px; border: 1px solid #e5e7eb; color: #6b7280; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .quick-tag:hover { border-color: #00B96B; color: #00B96B; background: #E8FFF3; }
+    .grading-inline { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; }
+    .gi-header { background: linear-gradient(135deg, #dbeafe, #e0e7ff); border-radius: 10px 10px 0 0; border-bottom: 1px solid #bfdbfe; }
+    .attach-modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .attach-modal-mask.show { opacity: 1; pointer-events: auto; }
+    .attach-modal { background: #fff; border-radius: 12px; max-width: 720px; width: 92%; max-height: 85vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(0.92); transition: transform 0.25s; }
+    .attach-modal-mask.show .attach-modal { transform: scale(1); }
+    .attach-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
+    .attach-modal-body { padding: 20px; overflow-y: auto; max-height: calc(85vh - 60px); }
+    .attach-modal-body img { max-width: 100%; border-radius: 8px; }
+    .message-enter { animation: msgIn 0.3s ease-out; } .message-exit { animation: msgOut 0.3s ease-out; }
+    @keyframes msgIn { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes msgOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-12px); opacity: 0; } }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-gray-50">
+  <div id="messageContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2"></div>
+  <!-- 顶部信息栏 -->
+  <header class="bg-white border-b border-gray-200 px-5 py-3 shrink-0">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3 min-w-0">
+        <button onclick="history.back()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg shrink-0 transition"><i class="fas fa-arrow-left"></i></button>
+        <div class="min-w-0">
+          <div class="flex items-center space-x-2">
+            <h1 class="font-semibold text-gray-900 text-base truncate" id="examTitle">加载中...</h1>
+            <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700" id="examStatusBadge">进行中</span>
+            <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-100 text-blue-700">AI批阅</span>
+            <span class="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700">AI评语</span>
+          </div>
+          <div class="flex items-center text-xs text-gray-500 mt-1 space-x-3">
+            <span id="examPaperNo"><i class="far fa-file-alt mr-1"></i>No. -</span>
+            <span class="text-gray-300">|</span>
+            <span id="examPaper"><i class="far fa-copy mr-1"></i>-<span class="text-gray-300 mx-1">|</span><span class="text-gray-400">文档</span></span>
+            <span class="text-gray-300">|</span>
+            <span id="examTime"><i class="far fa-clock mr-1"></i>-</span>
+            <span class="text-gray-300">|</span>
+            <span id="examDeadline"><i class="far fa-calendar-check mr-1"></i>批阅截止: -</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="shrink-0 bg-white border-b border-gray-200 px-5 py-2" id="studentInfoBar"></div>
+  <!-- 主内容区：文档预览 + 题卡导航 + 答题卡 -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- 左侧：试卷文档预览 -->
+    <section id="docSection" class="bg-white border-r border-gray-200 flex flex-col min-w-0 flex-1">
+      <div class="flex-none flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+        <div class="flex items-center gap-2 text-sm">
+          <i class="fas fa-file-pdf text-red-500"></i>
+          <span class="text-gray-700 font-medium" id="docFileName">期末考试试卷.pdf</span>
+          <span class="text-xs text-gray-400">(2.3 MB)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="zoomDoc(-0.1)" class="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 text-xs"><i class="fas fa-minus"></i></button>
+          <span class="text-xs text-gray-600" id="zoomLevel">100%</span>
+          <button onclick="zoomDoc(0.1)" class="w-7 h-7 flex items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 text-xs"><i class="fas fa-plus"></i></button>
+        </div>
+      </div>
+      <div id="pdfPreviewArea" class="flex-1 overflow-auto bg-gray-100">
+        <iframe id="pdfFrame" class="w-full h-full border-0" src="about:blank"></iframe>
+      </div>
+      <div id="wordPreviewArea" class="flex-1 hidden items-center justify-center bg-gray-50">
+        <div class="text-center">
+          <i class="fas fa-file-word text-5xl text-blue-500 mb-3"></i>
+          <p class="text-lg font-medium text-gray-700" id="wordFileName">试卷.docx</p>
+          <p class="text-sm text-gray-500 mt-2">Word 文件预览功能开发中</p>
+        </div>
+      </div>
+    </section>
+    <!-- 中间：题卡导航（可折叠） -->
+    <div id="navPanel" class="w-48 border-x border-gray-200 shrink-0 bg-white flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-2 py-2 border-b border-gray-100">
+        <span class="text-xs font-medium text-gray-500">题目导航</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">总分 <span class="font-bold text-red-600" id="navTotalScore">--</span></span>
+          <button onclick="toggleNavPanel()" class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100 transition" title="折叠导航"><i class="fas fa-chevron-left text-[10px]" id="navToggleIcon"></i></button>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 px-2 py-1.5" id="navFilterBar">
+        <button onclick="filterNav('all')" class="nav-filter-btn active text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500" data-nf="all">全部</button>
+        <button onclick="filterNav('pending')" class="nav-filter-btn text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-500" data-nf="pending">未批</button>
+      </div>
+      <div id="questionNav" class="flex-1 overflow-y-auto px-2 pb-2"></div>
+    </div>
+    <!-- 折叠态按钮（导航收起时显示） -->
+    <div id="navCollapsedBtn" class="hidden shrink-0 border-x border-gray-200 bg-white flex flex-col items-center py-3 cursor-pointer hover:bg-gray-50 transition" onclick="toggleNavPanel()" title="展开题目导航">
+      <i class="fas fa-chevron-right text-gray-400 text-xs mb-2"></i>
+      <span class="text-[10px] text-gray-500 font-medium" style="writing-mode:vertical-lr;">题目导航</span>
+    </div>
+    <!-- 右侧：答题卡 + 批阅面板 -->
+    <section id="answerSection" class="flex flex-col bg-gray-50 shrink-0" style="width:40%;">
+      <div id="answerCardList" class="flex-1 overflow-y-auto px-4 py-3 space-y-4"></div>
+      <div class="flex-none bg-white border-t border-gray-200 px-4 py-3">
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-4">
+            <span class="text-gray-500">已批：<span class="font-semibold text-success-600" id="gradedCount">0</span></span>
+            <span class="text-gray-500">未批：<span class="font-semibold text-warning-600" id="ungradedCount">0</span></span>
+          </div>
+          <span class="text-gray-500">当前得分：<span class="font-bold text-primary-600 text-lg" id="bottomScore">0</span> 分</span>
+        </div>
+      </div>
+    </section>
+    <!-- 右侧：成绩分析面板（completed 时显示） -->
+    <div class="w-80 border-l border-gray-200 overflow-y-auto shrink-0 bg-white hidden" id="analysisSidebar"></div>
+  </div>
+  <!-- 附件预览模态框 -->
+  <div id="attachModal" class="attach-modal-mask" onclick="if(event.target===this)closeAttachModal()">
+    <div class="attach-modal">
+      <div class="attach-modal-header">
+        <div class="flex items-center gap-2"><i class="fas fa-eye text-blue-500"></i><span id="attachModalTitle" class="text-sm font-semibold text-gray-800">附件预览</span></div>
+        <button onclick="closeAttachModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="attachModalBody" class="attach-modal-body"></div>
+    </div>
+  </div>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('examId');
+    const studentId = urlParams.get('studentId');
+    const examStatus = urlParams.get('examStatus') || 'grading';
+    const studentStatus = urlParams.get('studentStatus') || '';
+    const typeConfig = {
+      single:    { name: '单选题', color: 'info',    icon: 'fa-dot-circle',   auto: true },
+      multiple:  { name: '多选题', color: 'purple',  icon: 'fa-check-double', auto: true },
+      judge:     { name: '判断题', color: 'info',    icon: 'fa-check-circle', auto: true },
+      fill:      { name: '填空题', color: 'warning', icon: 'fa-keyboard',     auto: true },
+      cloze:     { name: '完形填空', color: 'success', icon: 'fa-puzzle-piece', auto: true },
+      essay:     { name: '简答题', color: 'error',   icon: 'fa-align-left',   auto: false },
+      composite: { name: '复合题', color: 'purple',  icon: 'fa-layer-group',  auto: false }
+    };
+    const quickComments = ['回答完整，逻辑清晰','理解正确，表达准确','思路清晰，但细节需完善','基本正确，但有小错误','理解有偏差，需加强学习','答案不完整','未回答要点'];
+    let questions = [], scores = {}, comments = {}, aiScoreResults = {}, navFilter = 'all', zoomScale = 1.0, navExpanded = true;
+    const mockStudents = [
+      { username: 'STU001', name: '张三', phone: '138****1234', attempt: 1, startTime: '2026-01-20 09:02', endTime: '2026-01-20 10:35', duration: '93分钟', leaveCount: 0 },
+      { username: 'STU002', name: '李四', phone: '139****5678', attempt: 1, startTime: '2026-01-20 09:00', endTime: '2026-01-20 10:48', duration: '108分钟', leaveCount: 1 },
+      { username: 'STU003', name: '王五', phone: '137****9012', attempt: 2, startTime: '2026-01-20 09:05', endTime: '2026-01-20 10:52', duration: '107分钟', leaveCount: 0 }
+    ];
+    let currentStudentIdx = 0, currentStudent = mockStudents[0];
+    let gradingQueue = mockStudents.map(s => s.username), gradingQueueIndex = 0;
+    let gradingStats = { graded: 0, remaining: mockStudents.length }, autoNextEnabled = false;
+
+    function loadMockData() {
+      const q = []; let num = 1;
+      // 单选题 x8，每题2分=16分
+      const singleData = [
+        { correct:'A', explanation:'面向对象编程的三大特性是封装、继承和多态，不包括重载。重载是方法的多态表现形式之一，但本身不属于三大特性。' },
+        { correct:'B', explanation:'队列（Queue）是一种先进先出（FIFO）的数据结构，元素从队尾入队、从队头出队，天然适合实现 FIFO 语义。' },
+        { correct:'C', explanation:'时间复杂度 O(n log n) 是基于比较的排序算法的理论下界，归并排序和堆排序均能达到该复杂度。' },
+        { correct:'D', explanation:'TCP 协议通过三次握手建立连接、四次挥手断开连接，提供可靠的、面向连接的字节流传输服务。' },
+        { correct:'A', explanation:'进程是操作系统资源分配的基本单位，线程是 CPU 调度的基本单位。一个进程可以包含多个线程。' },
+        { correct:'B', explanation:'B+ 树的所有数据都存储在叶子节点，且叶子节点通过指针相连，非常适合数据库索引的范围查询场景。' },
+        { correct:'C', explanation:'HTTP 状态码 404 表示服务器无法找到请求的资源。200 表示成功，301 表示永久重定向，500 表示服务器内部错误。' },
+        { correct:'D', explanation:'死锁产生的四个必要条件是：互斥条件、请求与保持条件、不可剥夺条件和循环等待条件，缺一不可。' }
+      ];
+      singleData.forEach((d, i) => {
+        const answer = Math.random() > 0.25 ? d.correct : ['A','B','C','D'].filter(x=>x!==d.correct)[Math.floor(Math.random()*3)];
+        q.push({ id:`q${num}`, type:'single', num:num++, score:2, correct:d.correct, answer, gotScore: answer===d.correct?2:0, explanation:d.explanation });
+      });
+      // 多选题 x4，每题3分=12分
+      const multiData = [
+        { correct:['A','C'], explanation:'关系型数据库的核心特性包括 ACID 事务支持和 SQL 查询语言。NoSQL 和分布式存储属于非关系型数据库的特征。' },
+        { correct:['B','D'], explanation:'Java 中的 ArrayList 和 HashMap 都是非线程安全的集合类。Vector 和 ConcurrentHashMap 才是线程安全的实现。' },
+        { correct:['A','B','D'], explanation:'软件测试方法中，单元测试验证最小模块、集成测试验证模块间接口、回归测试验证修改后的正确性。代码审查属于静态分析而非测试方法。' },
+        { correct:['A','C','D'], explanation:'设计模式中，单例模式、工厂模式和建造者模式都属于创建型模式，负责对象的创建机制。观察者模式属于行为型模式。' }
+      ];
+      multiData.forEach((d, i) => {
+        const answer = Math.random() > 0.3 ? [...d.correct] : d.correct.slice(0, Math.max(1, d.correct.length-1));
+        const isCorrect = JSON.stringify(answer.sort()) === JSON.stringify([...d.correct].sort());
+        q.push({ id:`q${num}`, type:'multiple', num:num++, score:3, correct:d.correct, answer, gotScore:isCorrect?3:0, explanation:d.explanation });
+      });
+      // 判断题 x5，每题2分=10分
+      const judgeData = [
+        { correct:true,  explanation:'栈是后进先出（LIFO）的数据结构，最后压入栈的元素最先被弹出，这是栈的基本定义。' },
+        { correct:false, explanation:'IPv4 地址长度为 32 位（4字节），而非 64 位。IPv6 地址才是 128 位长度。' },
+        { correct:true,  explanation:'二叉搜索树的中序遍历结果是有序的，这是 BST 的核心性质，也是其支持高效查找的基础。' },
+        { correct:false, explanation:'UDP 是无连接的传输协议，不保证数据的可靠传输。TCP 才提供可靠传输保证。' },
+        { correct:true,  explanation:'哈希表的平均查找时间复杂度为 O(1)，通过哈希函数直接计算存储位置，避免了逐一比较。' }
+      ];
+      judgeData.forEach((d, i) => {
+        const answer = Math.random() > 0.15 ? d.correct : !d.correct;
+        q.push({ id:`q${num}`, type:'judge', num:num++, score:2, correct:d.correct, answer, gotScore:answer===d.correct?2:0, explanation:d.explanation });
+      });
+      // 填空题 x3，每题4分=12分
+      const fillData = [
+        { blanks:[{correct:'封装',answer:'封装'},{correct:'继承',answer:Math.random()>0.3?'继承':'多态'}], explanation:'面向对象的三大特性依次是封装（Encapsulation）、继承（Inheritance）和多态（Polymorphism）。封装隐藏内部实现，继承实现代码复用。' },
+        { blanks:[{correct:'O(n²)',answer:'O(n²)'},{correct:'O(n log n)',answer:Math.random()>0.4?'O(n log n)':'O(n)'}], explanation:'冒泡排序的平均时间复杂度为 O(n²)，快速排序的平均时间复杂度为 O(n log n)。快速排序通过分治策略显著提升了排序效率。' },
+        { blanks:[{correct:'主键',answer:'主键'},{correct:'外键',answer:Math.random()>0.3?'外键':'索引'}], explanation:'主键（Primary Key）用于唯一标识表中的每条记录，外键（Foreign Key）用于建立表与表之间的关联关系，维护参照完整性。' }
+      ];
+      fillData.forEach((d, i) => {
+        const allCorrect = d.blanks.every(b => b.answer === b.correct);
+        q.push({ id:`q${num}`, type:'fill', num:num++, score:4, blanks:d.blanks, gotScore:allCorrect?4:(d.blanks.filter(b=>b.answer===b.correct).length/d.blanks.length*4), explanation:d.explanation });
+      });
+      // 完形填空 x1，10空每空1分=10分
+      q.push({ id: `q${num}`, type: 'cloze', num: num++, score: 10, gotScore: 7,
+        content: '阅读下面短文，从每题所给的A、B、C、D四个选项中选出最佳选项。\n\n软件工程是一门研究用工程化方法构建和维护有效的、实用的和高质量的软件的学科。它涉及到程序设计语言、数据库、软件开发工具、系统平台等方面的知识。',
+        blanks: [
+          { num: 1, options: [{l:'A',t:'方法'},{l:'B',t:'工具'},{l:'C',t:'过程'},{l:'D',t:'模型'}], correct: 'A', answer: 'A', gotScore: 1 },
+          { num: 2, options: [{l:'A',t:'需求分析'},{l:'B',t:'概要设计'},{l:'C',t:'详细设计'},{l:'D',t:'编码实现'}], correct: 'A', answer: 'A', gotScore: 1 },
+          { num: 3, options: [{l:'A',t:'瀑布模型'},{l:'B',t:'螺旋模型'},{l:'C',t:'增量模型'},{l:'D',t:'敏捷开发'}], correct: 'D', answer: 'C', gotScore: 0 },
+          { num: 4, options: [{l:'A',t:'可维护性'},{l:'B',t:'可靠性'},{l:'C',t:'可用性'},{l:'D',t:'可扩展性'}], correct: 'B', answer: 'B', gotScore: 1 },
+          { num: 5, options: [{l:'A',t:'黑盒测试'},{l:'B',t:'白盒测试'},{l:'C',t:'灰盒测试'},{l:'D',t:'回归测试'}], correct: 'A', answer: 'A', gotScore: 1 },
+          { num: 6, options: [{l:'A',t:'模块化'},{l:'B',t:'抽象化'},{l:'C',t:'信息隐藏'},{l:'D',t:'以上都是'}], correct: 'D', answer: 'D', gotScore: 1 },
+          { num: 7, options: [{l:'A',t:'耦合度'},{l:'B',t:'内聚度'},{l:'C',t:'复杂度'},{l:'D',t:'规模'}], correct: 'A', answer: 'B', gotScore: 0 },
+          { num: 8, options: [{l:'A',t:'文档'},{l:'B',t:'代码'},{l:'C',t:'测试用例'},{l:'D',t:'需求规格'}], correct: 'A', answer: 'A', gotScore: 1 },
+          { num: 9, options: [{l:'A',t:'版本控制'},{l:'B',t:'配置管理'},{l:'C',t:'变更控制'},{l:'D',t:'发布管理'}], correct: 'B', answer: 'A', gotScore: 0 },
+          { num: 10, options: [{l:'A',t:'质量保证'},{l:'B',t:'质量控制'},{l:'C',t:'质量改进'},{l:'D',t:'质量评审'}], correct: 'A', answer: 'A', gotScore: 1 }
+        ],
+        explanation: '本题围绕软件工程核心知识展开。第3空考查开发模型，敏捷开发强调迭代和快速响应变化；第7空考查模块设计原则，耦合度衡量模块间依赖程度，低耦合是良好设计的标志；第9空考查配置管理，它是对软件产品及其开发过程进行标识、控制和追踪的系统化方法。' });
+      // 简答题 x2，每题10分=20分
+      const essayTopics = [
+        { content: '请简述面向对象编程的三大特性及其含义。', ref: '面向对象编程的三大特性是：封装、继承和多态。封装是将数据和操作数据的方法绑定在一起；继承是子类可以继承父类的属性和方法；多态是同一接口可以有不同的实现。', answer: '面向对象有封装、继承、多态三个特性。封装就是把数据包起来，继承是子类继承父类，多态是一个接口多种实现。',
+          explanation: '评分标准：①准确列出三大特性名称（3分）；②每个特性含义解释正确且完整（各2分，共6分）；③使用专业术语、表述规范（1分）。该生能列出三个特性但解释过于口语化，缺少"数据隐藏""代码复用""动态绑定"等关键术语。',
+          attachments: [
+            { name: 'OOP概念笔记.pdf', size: '245KB', type: 'pdf' },
+            { name: '类图设计.docx', size: '128KB', type: 'doc' }
+          ] },
+        { content: '请阐述数据库事务的ACID特性。', ref: 'ACID是指原子性、一致性、隔离性、持久性。原子性保证事务要么全部执行要么全部回滚；一致性保证数据库从一个一致状态转换到另一个一致状态；隔离性保证并发事务互不干扰；持久性保证事务提交后数据永久保存。', answer: '事务的ACID特性包括原子性、一致性、隔离性和持久性。原子性是事务不可分割，一致性是数据保持一致，隔离性是事务之间互不影响，持久性是提交后永久保存。',
+          explanation: '评分标准：①正确写出 ACID 四个特性的中英文名称（2分）；②每个特性的定义准确（各1.5分，共6分）；③能结合实际场景举例说明（2分）。该生四个特性均已列出，定义基本正确但缺少具体场景示例，如转账操作中原子性的体现。',
+          attachments: [
+            { name: '事务测试截图.jpg', size: '1.2MB', type: 'image' }
+          ] }
+      ];
+      essayTopics.forEach(t => {
+        q.push({ id: `q${num}`, type: 'essay', num: num++, score: 10, content: t.content, correct: t.ref, answer: t.answer, gotScore: null,
+          explanation: t.explanation, attachments: t.attachments || [] });
+      });
+      // 复合题 x1，总分20分，包含5种子题类型
+      const compNum = num;
+      q.push({ id: `q${num}`, type: 'composite', num: num++, score: 20,
+        subQuestions: [
+          { id: `q${compNum}_1`, type: 'single', num: 1, score: 3, correct: 'B', answer: 'B', gotScore: 3,
+            options: [{label:'A',text:'关系型数据库分表'},{label:'B',text:'Redis缓存集群'},{label:'C',text:'消息队列'},{label:'D',text:'CDN加速'}],
+            explanation: 'Redis 基于内存存储，读写速度可达 10 万+ QPS，通过集群模式可水平扩展，最适合解决高并发读取问题。' },
+          { id: `q${compNum}_2`, type: 'multiple', num: 2, score: 3, correct: ['A','C','D'], answer: ['A','C'], gotScore: 1,
+            options: [{label:'A',text:'负载均衡'},{label:'B',text:'单机部署'},{label:'C',text:'服务降级'},{label:'D',text:'熔断机制'}],
+            explanation: '高可用架构的核心策略包括负载均衡（分散请求）、服务降级（保障核心功能）和熔断机制（防止级联故障）。单机部署是高可用的反面。' },
+          { id: `q${compNum}_3`, type: 'judge', num: 3, score: 2, correct: false, answer: true, gotScore: 0,
+            explanation: '消息队列的核心作用是异步解耦和流量削峰，而非提高数据库查询速度。数据库查询优化应使用索引、缓存等手段。' },
+          { id: `q${compNum}_4`, type: 'fill', num: 4, score: 4,
+            blanks: [
+              { answer: 'CAP', correct: 'CAP', gotScore: 2 },
+              { answer: '最终一致性', correct: '最终一致性', gotScore: 2 }
+            ], gotScore: 4,
+            explanation: 'CAP 定理指出分布式系统无法同时满足一致性、可用性和分区容错性。BASE 理论是对 CAP 的补充，其中最终一致性是核心思想。' },
+          { id: `q${compNum}_5`, type: 'essay', num: 5, score: 8, correct: '应从以下几个方面设计：1)使用负载均衡分散请求；2)引入缓存层减少数据库压力；3)采用消息队列进行异步处理；4)实施服务降级和熔断机制；5)使用CDN加速静态资源分发。',
+            answer: '我认为应该使用负载均衡来分散请求，然后用Redis做缓存减少数据库查询。还可以用消息队列来处理订单，避免系统崩溃。', gotScore: null,
+            explanation: '评分标准：①提出至少3种有效技术方案（4分）；②说明每种技术的具体作用（2分）；③方案之间有逻辑关联（2分）。' }
+        ]
+      });
+      questions = q;
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      if (studentId) { const idx = mockStudents.findIndex(s => s.username === studentId); if (idx >= 0) currentStudentIdx = idx; }
+      currentStudent = mockStudents[currentStudentIdx]; gradingQueueIndex = currentStudentIdx;
+      loadMockData();
+      if (examStatus === 'completed') {
+        assignAllEssayScores();
+        // 切换布局：答题卡缩窄，给分析面板腾空间
+        const ans = document.getElementById('answerSection');
+        ans.style.width = '500px';
+        // 默认收起题目导航
+        navExpanded = false;
+        document.getElementById('navPanel').classList.add('hidden');
+        const btn = document.getElementById('navCollapsedBtn');
+        btn.classList.remove('hidden'); btn.classList.add('flex');
+        document.getElementById('navToggleIcon').className = 'fas fa-chevron-right text-[10px]';
+        // 显示分析面板
+        document.getElementById('analysisSidebar').classList.remove('hidden');
+      }
+      else if (studentStatus === 'graded') restoreGradedScores();
+      renderAll();
+      if (examStatus === 'completed') renderAnalysisSidebar();
+    });
+
+    // 已批阅考生：恢复之前的评分和评语（模拟）
+    function restoreGradedScores() {
+      const mockComments = ['回答完整，逻辑清晰','理解正确，表达准确','思路清晰，但细节需完善','基本正确，但有小错误'];
+      function fillEssay(item) {
+        if (item.gotScore === null) {
+          const r = 0.65 + Math.random() * 0.25;
+          item.gotScore = Math.round(item.score * r * 2) / 2;
+        }
+        scores[item.id] = item.gotScore;
+        comments[item.id] = mockComments[Math.floor(Math.random() * mockComments.length)];
+      }
+      questions.forEach(q => {
+        if (q.type === 'essay') fillEssay(q);
+        if (q.type === 'composite') q.subQuestions.forEach(sq => { if (sq.type === 'essay') fillEssay(sq); });
+      });
+    }
+
+    function renderAll() { renderStudentInfoBar(); renderQuestionNav(); renderAnswerCard(); updateScores(); }
+    function round(n) { return Math.round(n * 10) / 10; }
+    function getAvatarColorIndex(name) { let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return Math.abs(h) % 8; }
+
+    function getItemScore(item) {
+      if (scores[item.id] !== undefined) return scores[item.id];
+      if (item.gotScore !== null && item.gotScore !== undefined) return item.gotScore;
+      return null;
+    }
+
+    function renderScoreTag(got, total) {
+      if (got === null || got === undefined) return `<div class="score-strip ungraded"><i class="fas fa-pen text-[10px] mr-0.5"></i>待批</div>`;
+      const v = round(got);
+      return `<div class="score-strip">+${v}</div>`;
+    }
+
+    function renderExplanation(text, indent) {
+      if (!text) return '';
+      const ml = indent ? ' ml-4' : '';
+      return `<div class="mt-1.5${ml} rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+        <p class="text-xs text-gray-500 leading-relaxed"><i class="fas fa-lightbulb text-gray-400 mr-1"></i>${text}</p>
+      </div>`;
+    }
+
+    function calcGotScore() {
+      let total = 0;
+      questions.forEach(q => {
+        if (q.type === 'composite') { q.subQuestions.forEach(sq => { const s = getItemScore(sq); if (s !== null) total += s; }); }
+        else if (q.type === 'cloze') { q.blanks.forEach(b => { if (b.gotScore !== null) total += b.gotScore; }); }
+        else { const s = getItemScore(q); if (s !== null) total += s; }
+      });
+      return round(total);
+    }
+
+    function renderStudentInfoBar() {
+      const s = currentStudent, totalScore = questions.reduce((sum, q) => sum + q.score, 0), gotScore = calcGotScore();
+      const colorIdx = getAvatarColorIndex(s.name), displayName = s.name.length <= 2 ? s.name : s.name.slice(-2);
+      document.getElementById('examTitle').textContent = '2026年春季期末考试（文档模式）';
+      document.getElementById('examPaperNo').innerHTML = '<i class="far fa-file-alt mr-1"></i>No. EX-2026-001';
+      document.getElementById('examPaper').innerHTML = '<i class="far fa-copy mr-1"></i>期末考试A卷<span class="text-gray-300 mx-1">|</span><span class="text-gray-400">文档</span>';
+      document.getElementById('examTime').innerHTML = '<i class="far fa-clock mr-1"></i>120分钟';
+      document.getElementById('examDeadline').innerHTML = '<i class="far fa-calendar-check mr-1"></i>批阅截止: 2026-02-20';
+      if (examStatus === 'completed') { document.getElementById('examStatusBadge').textContent = '已完成'; document.getElementById('examStatusBadge').className = 'shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 text-green-700'; }
+      document.getElementById('studentInfoBar').innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-5 text-sm">
+            <div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0 avatar-color-${colorIdx}">${displayName}</div><span class="font-semibold text-gray-900">${s.name}</span></div>
+            <div class="flex items-center gap-1.5 text-gray-700"><i class="fas fa-user text-gray-400 text-xs"></i><span class="font-medium">${s.username}</span></div>
+            <div class="flex items-center gap-1.5 text-gray-700"><i class="fas fa-phone text-gray-400 text-xs"></i><span>${s.phone}</span></div>
+            <div class="flex items-center gap-1.5 text-gray-700"><i class="fas fa-pen-to-square text-gray-400 text-xs"></i><span>已考 <span class="font-semibold text-gray-900">${s.attempt||1}</span> 次</span></div>
+            <div class="w-px h-4 bg-gray-200"></div>
+            <div class="flex items-center gap-1.5"><span class="text-gray-500">批阅得分</span><span class="font-bold text-red-600 text-base">${gotScore}</span><span class="text-gray-400">/</span><span class="font-semibold text-gray-700">${totalScore}</span></div>
+          </div>
+          <div class="flex items-center gap-3">
+            ${examStatus === 'completed' ? `
+            <button onclick="navigateStudent(-1)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition flex items-center gap-1.5"><i class="fas fa-chevron-left text-xs"></i>上一位</button>
+            <span class="text-xs text-gray-400">${currentStudentIdx+1} / ${mockStudents.length}</span>
+            <button onclick="navigateStudent(1)" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-lg transition flex items-center gap-1.5">下一位<i class="fas fa-chevron-right text-xs"></i></button>
+            ` : `
+            <div class="flex items-center gap-1.5 text-xs text-gray-500"><i class="fas fa-chart-pie text-gray-400"></i><span>已批 <span class="font-semibold text-green-600">${gradingStats.graded}</span></span><span class="text-gray-300">/</span><span>剩余 <span class="font-semibold text-amber-600">${gradingStats.remaining}</span></span></div>
+            <div class="w-px h-4 bg-gray-200"></div>
+            <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none"><input type="checkbox" ${autoNextEnabled?'checked':''} onchange="autoNextEnabled=this.checked" class="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">提交后继续下一份</label>
+            <button onclick="submitGrading()" class="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition flex items-center gap-1.5"><i class="fas fa-check"></i>提交批阅</button>
+            `}
+          </div>
+        </div>`;
+    }
+
+    // 题目导航（与 grading.html 一致：左侧竖排，按题型分组，显示得分）
+    function renderQuestionNav() {
+      const nav = document.getElementById('questionNav');
+      const totalPaperScore = questions.reduce((s, q) => s + q.score, 0);
+      document.getElementById('navTotalScore').textContent = totalPaperScore;
+      const grouped = {};
+      questions.forEach(q => { if (!grouped[q.type]) grouped[q.type] = []; grouped[q.type].push(q); });
+      function getCompositeScore(q) { let got = 0, hasNull = false; q.subQuestions.forEach(sq => { const ss = getItemScore(sq); if (ss !== null) got += ss; else hasNull = true; }); return hasNull ? null : round(got); }
+      function getClozeScore(q) { return q.blanks.reduce((s, b) => s + (b.gotScore || 0), 0); }
+      if (navFilter === 'pending') {
+        Object.keys(grouped).forEach(t => {
+          grouped[t] = grouped[t].filter(q => { if (q.type === 'composite') return getCompositeScore(q) === null; if (q.type === 'essay') return getItemScore(q) === null; return false; });
+          if (grouped[t].length === 0) delete grouped[t];
+        });
+      }
+      if (Object.keys(grouped).length === 0) { nav.innerHTML = '<div class="text-xs text-gray-400 text-center py-4">无未批阅题目</div>'; return; }
+      const typeOrder = ['single','multiple','judge','fill','cloze','essay','composite'];
+      let html = '';
+      typeOrder.forEach(type => {
+        if (!grouped[type]) return;
+        const cfg = typeConfig[type];
+        html += `<div class="mb-3"><div class="text-xs text-gray-400 mb-1.5">${cfg.name}</div><div class="flex flex-wrap gap-1.5">`;
+        grouped[type].forEach(q => {
+          let got, total = q.score;
+          if (q.type === 'composite') got = getCompositeScore(q);
+          else if (q.type === 'cloze') got = getClozeScore(q);
+          else got = getItemScore(q);
+          const scoreText = got === null ? '—' : (got === 0 ? '+0' : '+' + got);
+          const scoreCls = got === null ? 's-pending' : (got === total ? 's-full' : (got === 0 ? 's-zero' : 's-partial'));
+          html += `<div class="q-card" onclick="scrollToQuestion('${q.id}')" title="第${q.num}题 ${got !== null ? got+'/'+total+'分' : '待批阅'}"><span class="q-num">${q.num}</span><span class="q-score ${scoreCls}">${scoreText}</span></div>`;
+        });
+        html += '</div></div>';
+      });
+      nav.innerHTML = html;
+    }
+
+    // 渲染答题卡（按题型分组，同类题目在一个大卡片内连续展示）
+    function renderAnswerCard() {
+      const container = document.getElementById('answerCardList');
+      const groups = []; const typeOrder = [];
+      questions.forEach(q => {
+        if (typeOrder.length === 0 || typeOrder[typeOrder.length - 1] !== q.type) { typeOrder.push(q.type); groups.push({ type: q.type, questions: [q] }); }
+        else groups[groups.length - 1].questions.push(q);
+      });
+      const sectionLabels = ['一','二','三','四','五','六','七','八','九','十'];
+      container.innerHTML = groups.map((group, gi) => {
+        const cfg = typeConfig[group.type];
+        const totalScore = group.questions.reduce((s, q) => s + q.score, 0);
+        const count = group.questions.length;
+        let gotTotal = 0, hasNull = false;
+        group.questions.forEach(q => {
+          if (q.type === 'composite') { let sub = 0, sn = false; q.subQuestions.forEach(sq => { const ss = getItemScore(sq); if (ss !== null) sub += ss; else sn = true; }); if (sn) hasNull = true; else gotTotal += sub; }
+          else if (q.type === 'cloze') { q.blanks.forEach(b => { gotTotal += (b.gotScore || 0); }); }
+          else { const gs = getItemScore(q); if (gs !== null) gotTotal += gs; else hasNull = true; }
+        });
+        const label = sectionLabels[gi] || (gi + 1);
+        return `<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" id="card-${group.questions[0].id}">
+          <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2"><span class="font-semibold text-gray-800 text-sm">${label}、${cfg.name}</span><span class="text-xs text-gray-400">(${count}题，共${totalScore}分)</span></div>
+            <div class="text-sm"><span class="font-bold text-red-500">${hasNull ? '--' : round(gotTotal)}</span><span class="text-gray-400">/${totalScore}</span></div>
+          </div>
+          <div class="divide-y divide-gray-100">${group.questions.map(q => renderQuestionItem(q)).join('')}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderQuestionItem(q) {
+      if (q.type === 'composite') return renderCompositeItem(q);
+      if (q.type === 'essay') return renderEssayItem(q);
+      if (q.type === 'cloze') return renderClozeItem(q);
+      if (q.type === 'fill') return renderFillItem(q);
+      return renderObjectiveItem(q);
+    }
+
+    // 客观题行
+    function renderObjectiveItem(q) {
+      const s = getItemScore(q);
+      const ans = formatAnswer(q), cor = formatCorrect(q), isRight = ans === cor;
+      const icon = isRight ? '<i class="fas fa-check-circle text-green-500 text-[10px]"></i>' : '<i class="fas fa-times-circle text-red-500 text-[10px]"></i>';
+      return `<div class="px-3 py-1.5 question-item" id="question-${q.id}">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-sm">
+            <span class="font-medium text-gray-800">${q.num}.</span>
+            <span class="text-gray-500">学生选择:</span><span class="font-semibold ${isRight?'text-green-600':'text-red-500'}">${ans}</span>${icon}
+            <span class="text-gray-300 mx-0.5">|</span>
+            <span class="text-gray-500">正确答案:</span><span class="font-semibold text-green-600">${cor}</span>
+          </div>
+          ${renderScoreTag(s, q.score)}
+        </div>
+        ${renderExplanation(q.explanation, true)}
+      </div>`;
+    }
+
+    // 填空题（每空一行，带背景色）
+    function renderFillItem(q) {
+      const s = getItemScore(q);
+      return `<div class="px-3 py-2 question-item" id="question-${q.id}">
+        <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center gap-1.5"><span class="text-sm font-medium text-gray-800">${q.num}.</span><span class="text-xs text-gray-500">${q.score}分</span></div>
+          ${renderScoreTag(s, q.score)}
+        </div>
+        <div class="rounded-lg overflow-hidden border border-gray-100">
+          ${q.blanks.map((b, i) => {
+            const ok = b.answer === b.correct;
+            return `<div class="flex items-center gap-3 px-3 py-2 text-sm ${ok ? 'bg-green-50' : 'bg-red-50'} ${i > 0 ? 'border-t border-gray-100' : ''}">
+              <span class="text-gray-500 text-xs shrink-0">第${i+1}空</span>
+              <span class="text-gray-500">学生:</span><span class="font-bold ${ok?'text-green-700':'text-red-600'}">${b.answer||'未填'}</span>${ok ? '<i class="fas fa-check text-green-500 text-xs"></i>' : '<i class="fas fa-times text-red-500 text-xs"></i>'}
+              ${!ok ? `<span class="text-gray-300">|</span><span class="text-gray-500">正确:</span><span class="font-bold text-gray-800">${b.correct}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${renderExplanation(q.explanation, false)}
+      </div>`;
+    }
+
+    // 完形填空（与单选题相同格式）
+    function renderClozeItem(q) {
+      const totalGot = q.blanks.reduce((s, b) => s + (b.gotScore || 0), 0);
+      return `<div class="px-3 py-2 question-item" id="question-${q.id}">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-sm font-medium text-gray-800">${q.num}. 完形填空</span>
+          ${renderScoreTag(totalGot, q.score)}
+        </div>
+        <div class="divide-y divide-gray-100">
+          ${q.blanks.map(b => {
+            const ok = b.answer === b.correct;
+            const icon = ok ? '<i class="fas fa-check-circle text-green-500 text-[10px]"></i>' : '<i class="fas fa-times-circle text-red-500 text-[10px]"></i>';
+            return `<div class="flex items-center gap-1.5 text-sm px-1 py-1.5">
+              <span class="text-gray-400 text-xs w-5 shrink-0">(${b.num})</span>
+              <span class="text-gray-500">学生选择:</span><span class="font-semibold ${ok?'text-green-600':'text-red-500'}">${b.answer}</span>${icon}
+              <span class="text-gray-300 mx-0.5">|</span>
+              <span class="text-gray-500">正确答案:</span><span class="font-semibold text-green-600">${b.correct}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        ${renderExplanation(q.explanation, false)}
+      </div>`;
+    }
+
+    // 简答题（含批阅面板）
+    function renderEssayItem(q, isSubQuestion) {
+      const s = getItemScore(q);
+      const isCompleted = examStatus === 'completed';
+      const isGraded = s !== null;
+      const subTag = isSubQuestion ? '<span class="inline-block px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">简答题</span>' : '';
+
+      const numLabel = isSubQuestion ? `(${q.num})` : `${q.num}.`;
+      const wrapCls = isSubQuestion ? 'bg-gray-50 rounded p-2.5 mb-1.5 question-item' : 'px-4 py-3 question-item';
+
+      let html = `<div class="${wrapCls}" id="question-${q.id}">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2"><span class="text-sm font-medium text-gray-${isSubQuestion ? '700' : '800'}">${numLabel}</span>${subTag}<span class="text-xs text-gray-${isSubQuestion ? '400' : '500'}">${q.score}分</span></div>
+          ${renderScoreTag(s, q.score)}
+        </div>
+        <!-- 学生答案 -->
+        <div class="p-3 rounded-lg border border-blue-200 bg-blue-50/30 mb-2.5">
+          <div class="text-xs font-medium text-blue-600 mb-1.5"><i class="fas fa-user-edit mr-1"></i>学生答案</div>
+          <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${q.answer || '<span class="text-gray-400">未作答</span>'}</div>
+          ${(q.attachments && q.attachments.length > 0) ? `
+          <div class="mt-3 pt-3 border-t border-blue-100">
+            <div class="text-xs font-medium text-gray-500 mb-2"><i class="fas fa-paperclip mr-1"></i>附件 (${q.attachments.length})</div>
+            <div class="space-y-2">
+              ${q.attachments.map(a => {
+                const iconMap = { pdf: 'fa-file-pdf text-red-500', doc: 'fa-file-word text-blue-500', image: 'fa-file-image text-green-500', excel: 'fa-file-excel text-green-600' };
+                const icon = iconMap[a.type] || 'fa-file text-gray-400';
+                return `<div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i class="fas ${icon} text-base flex-shrink-0"></i>
+                    <div class="min-w-0">
+                      <div class="text-xs font-medium text-gray-700 truncate">${a.name}</div>
+                      <div class="text-xs text-gray-400">${a.size}</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    <button onclick="previewAttachment('${a.name}','${a.type}','${a.size}')" class="px-2 py-1 text-xs text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition" title="预览"><i class="fas fa-eye mr-0.5"></i>预览</button>
+                    <button onclick="downloadAttachment('${a.name}','${a.size}')" class="px-2 py-1 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition" title="下载"><i class="fas fa-download mr-0.5"></i>下载</button>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>` : ''}
+        </div>
+        <!-- 参考答案 -->
+        <div class="p-3 rounded-lg border border-green-200 bg-green-50/30 mb-2.5">
+          <div class="text-xs font-medium text-green-600 mb-1.5"><i class="fas fa-check-circle mr-1"></i>参考答案</div>
+          <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${q.correct}</div>
+        </div>`;
+
+      if (isCompleted) {
+        // 只读模式
+        html += `<div class="grading-inline p-4 mt-2.5">
+          <div class="gi-header flex items-center justify-between px-3 py-2 -mx-4 -mt-4 mb-3">
+            <span class="text-sm font-medium text-blue-800"><i class="fas fa-pen-fancy mr-1"></i>教师批阅</span>
+            <span class="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">已评分</span>
+          </div>
+          <div class="flex items-center gap-3 mb-2">
+            <span class="text-sm text-gray-600">评分：</span>
+            <span class="font-bold text-lg text-red-600">${s}</span>
+            <span class="text-gray-400 font-medium">/ ${q.score}</span>
+            <span class="ml-2 text-xs px-2 py-0.5 rounded ${s >= q.score ? 'bg-green-100 text-green-700' : s >= q.score*0.6 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}">${s >= q.score ? '满分' : Math.round(s/q.score*100)+'%'}</span>
+          </div>
+          ${comments[q.id] ? `<div class="text-sm"><span class="text-gray-500">评语：</span><span class="text-gray-700">${comments[q.id]}</span></div>` : ''}
+        </div>`;
+      } else {
+        // 可编辑模式
+        html += `<div class="grading-inline p-4 mt-2.5" id="grading-${q.id}">
+          <div class="gi-header flex items-center justify-between px-3 py-2 -mx-4 -mt-4 mb-3">
+            <span class="text-sm font-medium text-blue-800"><i class="fas fa-pen-fancy mr-1"></i>教师批阅</span>
+            ${isGraded ? '<span class="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">已评分</span>' : '<span class="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">待评分</span>'}
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600">评分：</span>
+              <input type="number" id="score-${q.id}" min="0" max="${q.score}" step="0.5" value="${isGraded ? s : ''}" onchange="applyScore('${q.id}',this.value,${q.score})" class="w-16 px-2 py-1.5 text-center font-bold text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none">
+              <span class="text-gray-400 font-medium">/ ${q.score}</span>
+            </div>
+            <div class="flex gap-1.5">
+              <button onclick="quickScore('${q.id}',${q.score},${q.score})" class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition">满分</button>
+              <button onclick="quickScore('${q.id}',${Math.round(q.score*0.8*2)/2},${q.score})" class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition">80%</button>
+              <button onclick="quickScore('${q.id}',${Math.round(q.score*0.6*2)/2},${q.score})" class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition">60%</button>
+              <button onclick="quickScore('${q.id}',0,${q.score})" class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition">0分</button>
+            </div>
+            <button class="ai-btn" onclick="getAIScore('${q.id}',${q.score})"><i class="fas fa-robot"></i>AI评分</button>
+          </div>
+          <div id="ai-score-${q.id}" class="${aiScoreResults[q.id] ? '' : 'hidden'} mb-3">${aiScoreResults[q.id] ? renderAIScoreCard(q.id, aiScoreResults[q.id]) : ''}</div>
+          <div class="mb-2">
+            <span class="text-sm text-gray-600">评语：</span>
+            <textarea id="comment-${q.id}" rows="2" placeholder="输入评语..." onchange="comments['${q.id}']=this.value" class="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-400 focus:outline-none">${comments[q.id]||''}</textarea>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-3">
+            ${quickComments.map(c=>`<button onclick="appendComment('${q.id}','${c}')" class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition">${c}</button>`).join('')}
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="ai-btn" onclick="getAIComment('${q.id}')"><i class="fas fa-magic"></i>AI评语</button>
+            <span class="text-xs text-gray-400">点击生成AI评语</span>
+          </div>
+        </div>`;
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // 复合题
+    function renderCompositeItem(q) {
+      const subScores = q.subQuestions.map(sq => getItemScore(sq));
+      const totalGot = subScores.every(s => s !== null) ? subScores.reduce((a,b) => a+b, 0) : null;
+      return `<div class="px-4 py-3 question-item" id="question-${q.id}">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2"><span class="text-sm font-medium text-gray-800">${q.num}.</span><span class="text-xs text-gray-500">${q.score}分</span></div>
+          ${renderScoreTag(totalGot, q.score)}
+        </div>
+        <div class="space-y-2">
+          ${q.subQuestions.map(sq => {
+            if (sq.type === 'essay') return renderEssayItem(sq, true);
+            if (sq.type === 'fill') return renderSubFillItem(sq);
+            return renderSubObjectiveItem(sq);
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    function renderSubObjectiveItem(sq) {
+      const s = getItemScore(sq);
+      const cfg = typeConfig[sq.type] || { name: sq.type, color: 'info' };
+      const tagCls = 'bg-gray-100 text-gray-500';
+      const ans = formatAnswer(sq), cor = formatCorrect(sq), isRight = ans === cor;
+      const icon = isRight ? '<i class="fas fa-check-circle text-green-500 text-[10px]"></i>' : '<i class="fas fa-times-circle text-red-500 text-[10px]"></i>';
+      return `<div class="bg-gray-50 rounded p-2.5 mb-1.5 question-item" id="question-${sq.id}">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-sm">
+            <span class="font-medium text-gray-700">(${sq.num})</span>
+            <span class="inline-block px-1.5 py-0.5 text-[10px] rounded ${tagCls}">${cfg.name}</span>
+            <span class="text-xs text-gray-400">${sq.score}分</span>
+            <span class="text-gray-300 mx-0.5">|</span>
+            <span class="text-gray-500">学生:</span><span class="font-semibold ${isRight?'text-green-600':'text-red-500'}">${ans}</span>${icon}
+            <span class="text-gray-300 mx-0.5">|</span>
+            <span class="text-gray-500">正确:</span><span class="font-semibold text-green-600">${cor}</span>
+          </div>
+          ${renderScoreTag(s, sq.score)}
+        </div>
+        ${renderExplanation(sq.explanation, false)}
+      </div>`;
+    }
+
+    // 复合题内的填空子题
+    function renderSubFillItem(sq) {
+      const s = getItemScore(sq);
+      const cfg = typeConfig.fill;
+      return `<div class="bg-gray-50 rounded p-2.5 mb-1.5 question-item" id="question-${sq.id}">
+        <div class="flex items-center justify-between mb-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm font-medium text-gray-700">(${sq.num})</span>
+            <span class="inline-block px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">${cfg.name}</span>
+            <span class="text-xs text-gray-400">${sq.score}分</span>
+          </div>
+          ${renderScoreTag(s, sq.score)}
+        </div>
+        <div class="rounded-lg overflow-hidden border border-gray-100">
+          ${sq.blanks.map((b, i) => {
+            const ok = b.answer === b.correct;
+            return `<div class="flex items-center gap-3 px-3 py-1.5 text-sm ${ok ? 'bg-green-50' : 'bg-red-50'} ${i > 0 ? 'border-t border-gray-100' : ''}">
+              <span class="text-gray-500 text-xs shrink-0">第${i+1}空</span>
+              <span class="text-gray-500">学生:</span><span class="font-bold ${ok?'text-green-700':'text-red-600'}">${b.answer||'未填'}</span>${ok ? '<i class="fas fa-check text-green-500 text-xs"></i>' : '<i class="fas fa-times text-red-500 text-xs"></i>'}
+              ${!ok ? `<span class="text-gray-300">|</span><span class="text-gray-500">正确:</span><span class="font-bold text-gray-800">${b.correct}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        ${renderExplanation(sq.explanation, false)}
+      </div>`;
+    }
+
+    function formatAnswer(q) {
+      if (q.type === 'single') return q.answer || '未作答';
+      if (q.type === 'multiple') return Array.isArray(q.answer) ? q.answer.join('') : (q.answer || '未作答');
+      if (q.type === 'judge') return q.answer === true ? '正确' : (q.answer === false ? '错误' : '未作答');
+      if (q.type === 'fill') return q.blanks ? q.blanks.map((b,i) => `(${i+1})${b.answer}`).join(' ') : '未作答';
+      return q.answer || '未作答';
+    }
+    function formatCorrect(q) {
+      if (q.type === 'single') return q.correct;
+      if (q.type === 'multiple') return Array.isArray(q.correct) ? q.correct.join('') : q.correct;
+      if (q.type === 'judge') return q.correct ? '正确' : '错误';
+      if (q.type === 'fill') return q.blanks ? q.blanks.map((b,i) => `(${i+1})${b.correct}`).join(' ') : '';
+      return q.correct || '';
+    }
+
+    function quickScore(qId, val, maxScore) {
+      const input = document.getElementById('score-' + qId);
+      if (input) input.value = val;
+      applyScore(qId, val, maxScore);
+    }
+
+    function applyScore(qId, value, maxScore) {
+      let v = parseFloat(value); if (isNaN(v) || v < 0 || v > maxScore) { showMessage(`请输入 0~${maxScore} 之间的分数`, 'warning'); return; }
+      v = Math.round(v * 2) / 2;
+      scores[qId] = v; renderAnswerCard(); renderQuestionNav(); updateScores(); renderStudentInfoBar();
+    }
+    function appendComment(qId, text) { const el = document.getElementById('comment-'+qId); if (!el) return; el.value = el.value ? el.value+'；'+text : text; comments[qId] = el.value; }
+
+    function renderAIScoreCard(qId, data) {
+      const barColor = data.matchRate >= 80 ? '#22c55e' : data.matchRate >= 60 ? '#f59e0b' : '#ef4444';
+      return `<div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50 text-xs">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="font-medium text-blue-700"><i class="fas fa-robot mr-1"></i>AI评分：<span class="text-sm font-bold">${data.score}/${data.maxScore}分</span></span>
+          <span class="text-gray-300">|</span>
+          <span class="text-gray-500">匹配度</span>
+          <div class="flex items-center gap-1.5 flex-1 max-w-[140px]">
+            <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all" style="width:${data.matchRate}%;background:${barColor}"></div></div>
+            <span class="text-xs font-medium" style="color:${barColor}">${data.matchRate}%</span>
+          </div>
+        </div>
+        <div class="text-gray-600 text-xs leading-relaxed">${data.reasons.map(r => '• ' + r).join('<br>')}</div>
+        <div class="mt-2 pt-2 border-t border-blue-200 flex justify-end">
+          <button onclick="dismissAIScore('${qId}')" class="text-xs text-gray-500 hover:text-gray-700 transition"><i class="fas fa-times mr-1"></i>取消评分</button>
+        </div>
+      </div>`;
+    }
+
+    function getAIScore(qId, maxScore) {
+      const el = document.getElementById('ai-score-' + qId);
+      el.classList.remove('hidden');
+      el.innerHTML = '<div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50 text-xs"><i class="fas fa-spinner fa-spin mr-1 text-blue-500"></i><span class="text-blue-500">AI正在评分...</span></div>';
+      setTimeout(() => {
+        const aiScore = Math.round(maxScore * (0.65 + Math.random()*0.25) * 2) / 2;
+        const matchRate = Math.round(aiScore / maxScore * 100);
+        const reasonPool = [
+          '学生答案覆盖了部分核心知识点，但存在遗漏',
+          '建议补充对关键概念的深入阐述',
+          '答案涵盖了主要知识点',
+          '逻辑结构清晰，表述准确',
+          '缺少部分细节说明',
+          '未提及关键概念',
+          '部分表述不够准确',
+          '论据充分但缺少具体示例'
+        ];
+        const reasons = reasonPool.sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random()*2));
+        // 缓存结果并更新分数
+        aiScoreResults[qId] = { score: aiScore, maxScore, matchRate, reasons };
+        scores[qId] = aiScore;
+        // 全量重渲染
+        renderAnswerCard(); renderQuestionNav(); updateScores(); renderStudentInfoBar();
+      }, 800);
+    }
+
+    function dismissAIScore(qId) {
+      delete scores[qId];
+      delete aiScoreResults[qId];
+      renderAnswerCard(); renderQuestionNav(); updateScores(); renderStudentInfoBar();
+    }
+    function getAIComment(qId) {
+      const btn = event.target.closest('.ai-btn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>生成中...';
+      const pool = ['回答基本正确，但论述不够深入，建议补充具体案例。','概念理解准确，逻辑清晰，表述规范。','要点覆盖不全，缺少对核心概念的阐述。','有一定理解，但部分表述不够准确。','回答较为完整，分析有条理。'];
+      setTimeout(() => {
+        const c = pool[Math.floor(Math.random()*pool.length)];
+        const el = document.getElementById('comment-'+qId); if (el) { el.value = c; comments[qId] = c; }
+        btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i>AI评语';
+      }, 800);
+    }
+
+    function updateScores() {
+      let total = 0, graded = 0, ungraded = 0; const allItems = [];
+      questions.forEach(q => { if (q.type === 'composite') q.subQuestions.forEach(sq => allItems.push(sq)); else allItems.push(q); });
+      allItems.forEach(item => { const s = getItemScore(item); if (s !== null) { total += s; graded++; } else ungraded++; });
+      document.getElementById('bottomScore').textContent = round(total).toFixed(1);
+      document.getElementById('gradedCount').textContent = graded;
+      document.getElementById('ungradedCount').textContent = ungraded;
+    }
+
+    function scrollToQuestion(id) {
+      const el = document.getElementById('question-'+id);
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('highlight'); setTimeout(() => el.classList.remove('highlight'), 800); }
+    }
+
+    function filterNav(filter) {
+      navFilter = filter;
+      document.querySelectorAll('.nav-filter-btn').forEach(btn => { btn.classList.remove('active'); if (btn.dataset.nf === filter) btn.classList.add('active'); });
+      renderQuestionNav();
+    }
+
+    function toggleNavPanel() {
+      navExpanded = !navExpanded;
+      const panel = document.getElementById('navPanel');
+      const btn = document.getElementById('navCollapsedBtn');
+      const icon = document.getElementById('navToggleIcon');
+      if (navExpanded) {
+        panel.classList.remove('hidden'); btn.classList.add('hidden'); btn.classList.remove('flex');
+        icon.className = 'fas fa-chevron-left text-[10px]';
+      } else {
+        panel.classList.add('hidden'); btn.classList.remove('hidden'); btn.classList.add('flex');
+        icon.className = 'fas fa-chevron-right text-[10px]';
+      }
+    }
+
+    function navigateStudent(dir) {
+      const next = currentStudentIdx + dir;
+      if (next < 0 || next >= mockStudents.length) { showMessage(dir < 0 ? '已经是第一位考生' : '已经是最后一位考生', 'warning'); return; }
+      currentStudentIdx = next; currentStudent = mockStudents[currentStudentIdx]; gradingQueueIndex = currentStudentIdx;
+      scores = {}; comments = {}; loadMockData();
+      if (examStatus === 'completed') assignAllEssayScores();
+      else if (studentStatus === 'graded') restoreGradedScores();
+      renderAll();
+      if (examStatus === 'completed') renderAnalysisSidebar();
+    }
+
+    function assignAllEssayScores() {
+      questions.forEach(q => {
+        if (q.type === 'essay' && q.gotScore === null) { const r = 0.65+Math.random()*0.25; q.gotScore = Math.round(q.score*r*2)/2; scores[q.id] = q.gotScore; comments[q.id] = '回答基本正确，论述较为完整。'; }
+        if (q.type === 'composite') { q.subQuestions.forEach(sq => { if (sq.type === 'essay' && sq.gotScore === null) { const r = 0.65+Math.random()*0.25; sq.gotScore = Math.round(sq.score*r*2)/2; scores[sq.id] = sq.gotScore; comments[sq.id] = '回答基本正确，但可以进一步展开。'; } }); }
+      });
+    }
+
+    function submitGrading() {
+      const allItems = [];
+      questions.forEach(q => { if (q.type === 'composite') q.subQuestions.forEach(sq => { if (!typeConfig[sq.type]?.auto) allItems.push(sq); }); else if (!typeConfig[q.type]?.auto) allItems.push(q); });
+      const ungradedItems = allItems.filter(item => getItemScore(item) === null);
+      if (ungradedItems.length > 0) { showMessage(`还有 ${ungradedItems.length} 道主观题未批阅，请全部批阅后再提交`, 'warning'); return; }
+      allItems.forEach(item => { const el = document.getElementById('comment-'+item.id); if (el && el.value.trim()) comments[item.id] = el.value.trim(); });
+      // 保存批阅结果到 sessionStorage，供 grade.html 读取
+      const totalScore = calcGotScore();
+      const results = JSON.parse(sessionStorage.getItem('gradingResults') || '{}');
+      results[currentStudent.username] = { status: 'graded', score: totalScore };
+      sessionStorage.setItem('gradingResults', JSON.stringify(results));
+      gradingStats.graded++; gradingStats.remaining = Math.max(0, gradingStats.remaining - 1);
+      if (autoNextEnabled && currentStudentIdx < mockStudents.length - 1) {
+        const nextStudent = mockStudents[currentStudentIdx + 1];
+        showMessage(`提交成功！得分 ${totalScore}/${questions.reduce((s,q)=>s+q.score,0)}。正在加载${nextStudent.name}的答卷...`, 'success');
+        setTimeout(() => navigateStudent(1), 800);
+      } else {
+        history.back();
+      }
+    }
+
+    function zoomDoc(delta) {
+      zoomScale = Math.max(0.5, Math.min(2.0, zoomScale + delta));
+      document.getElementById('zoomLevel').textContent = Math.round(zoomScale*100)+'%';
+      const frame = document.getElementById('pdfFrame');
+      frame.style.transform = `scale(${zoomScale})`; frame.style.transformOrigin = 'top left';
+      frame.style.width = (100/zoomScale)+'%'; frame.style.height = (100/zoomScale)+'%';
+    }
+
+    function showMessage(text, type) {
+      const container = document.getElementById('messageContainer');
+      const colors = { success:'bg-success-500', error:'bg-error-500', warning:'bg-warning-500', info:'bg-info-500' };
+      const icons = { success:'fa-check-circle', error:'fa-times-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+      const div = document.createElement('div');
+      div.className = `message-enter flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white text-sm ${colors[type]||colors.info}`;
+      div.innerHTML = `<i class="fas ${icons[type]||icons.info}"></i><span>${text}</span>`;
+      container.appendChild(div);
+      setTimeout(() => { div.classList.replace('message-enter','message-exit'); setTimeout(() => div.remove(), 300); }, 3000);
+    }
+
+    // ===== 附件预览与下载 =====
+    function previewAttachment(name, type, size) {
+      const modal = document.getElementById('attachModal');
+      const title = document.getElementById('attachModalTitle');
+      const body = document.getElementById('attachModalBody');
+      title.textContent = name;
+      if (type === 'image') {
+        body.innerHTML = `<div class="text-center"><div class="inline-block bg-gray-100 rounded-lg p-8 mb-4" style="min-width:400px;min-height:300px;display:flex;align-items:center;justify-content:center;"><div class="text-center"><i class="fas fa-image text-5xl text-gray-300 mb-3"></i><div class="text-sm text-gray-500">${name}</div><div class="text-xs text-gray-400 mt-1">${size}</div></div></div><div class="text-xs text-gray-400">原型阶段：图片预览模拟</div></div>`;
+      } else if (type === 'pdf') {
+        body.innerHTML = `<div class="border border-gray-200 rounded-lg overflow-hidden"><div class="bg-gray-50 px-4 py-3 flex items-center gap-2 border-b border-gray-200"><i class="fas fa-file-pdf text-red-500"></i><span class="text-sm font-medium text-gray-700">${name}</span><span class="text-xs text-gray-400 ml-auto">${size}</span></div><div class="p-8 text-center" style="min-height:320px;display:flex;align-items:center;justify-content:center;"><div><i class="fas fa-file-pdf text-6xl text-red-300 mb-4"></i><div class="text-sm text-gray-600 mb-1">PDF 文档预览</div><div class="text-xs text-gray-400 mb-4">原型阶段：实际部署后将嵌入 PDF 阅读器</div><button onclick="downloadAttachment('${name}','${size}')" class="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition"><i class="fas fa-download mr-1"></i>下载查看</button></div></div></div>`;
+      } else {
+        const iconMap = { doc: 'fa-file-word text-blue-500', excel: 'fa-file-excel text-green-600' };
+        const colorMap = { doc: 'blue', excel: 'green' };
+        const icon = iconMap[type] || 'fa-file text-gray-400';
+        const color = colorMap[type] || 'gray';
+        body.innerHTML = `<div class="border border-gray-200 rounded-lg overflow-hidden"><div class="bg-gray-50 px-4 py-3 flex items-center gap-2 border-b border-gray-200"><i class="fas ${icon}"></i><span class="text-sm font-medium text-gray-700">${name}</span><span class="text-xs text-gray-400 ml-auto">${size}</span></div><div class="p-8 text-center" style="min-height:320px;display:flex;align-items:center;justify-content:center;"><div><i class="fas ${icon} text-6xl opacity-40 mb-4"></i><div class="text-sm text-gray-600 mb-1">文档预览</div><div class="text-xs text-gray-400 mb-4">原型阶段：实际部署后将支持在线预览</div><button onclick="downloadAttachment('${name}','${size}')" class="px-4 py-2 text-sm bg-${color}-500 text-white rounded-lg hover:bg-${color}-600 transition"><i class="fas fa-download mr-1"></i>下载查看</button></div></div></div>`;
+      }
+      modal.classList.add('show');
+    }
+    function closeAttachModal() { document.getElementById('attachModal').classList.remove('show'); }
+    function downloadAttachment(name, size) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 right-6 bg-gray-800 text-white px-5 py-3 rounded-lg shadow-xl z-[10000] flex items-center gap-3 text-sm';
+      toast.innerHTML = `<i class="fas fa-download text-green-400"></i><div><div class="font-medium">开始下载</div><div class="text-xs text-gray-300 mt-0.5">${name} (${size})</div></div>`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.innerHTML = `<i class="fas fa-check-circle text-green-400"></i><div><div class="font-medium">下载完成</div><div class="text-xs text-gray-300 mt-0.5">${name} (${size})</div></div>`;
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 1500);
+      }, 1200);
+    }
+
+    function initDocPreview() {
+      const frame = document.getElementById('pdfFrame');
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(`<html><body style="margin:0;padding:40px;font-family:sans-serif;background:#f9fafb;">
+        <div style="max-width:700px;margin:0 auto;background:#fff;padding:60px 50px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border-radius:8px;">
+          <h1 style="text-align:center;font-size:22px;margin-bottom:8px;">2026年春季学期期末考试</h1>
+          <h2 style="text-align:center;font-size:16px;color:#666;margin-bottom:30px;">计算机科学与技术专业 · A卷</h2>
+          <div style="border-top:2px solid #00B96B;padding-top:20px;font-size:14px;color:#333;line-height:2;">
+            <p><b>考试时间：</b>120分钟　　<b>满分：</b>100分</p>
+            <p><b>注意事项：</b></p>
+            <ol style="padding-left:20px;"><li>请在答题卡上作答，在试卷上作答无效。</li><li>选择题用2B铅笔填涂，非选择题用黑色签字笔书写。</li><li>考试结束后，将试卷和答题卡一并交回。</li></ol>
+            <hr style="margin:20px 0;border:none;border-top:1px solid #e5e7eb;">
+            <h3 style="font-size:15px;">一、单项选择题（每题2分，共16分）</h3>
+            <p>1. 面向对象编程的三大特性不包括以下哪项？</p>
+            <p style="padding-left:20px;">A. 封装　B. 继承　C. 多态　D. 重载</p>
+            <p>2. 以下哪种数据结构适合实现FIFO？</p>
+            <p style="padding-left:20px;">A. 栈　B. 队列　C. 二叉树　D. 哈希表</p>
+            <p style="color:#999;text-align:center;margin-top:30px;">... 试卷内容继续 ...</p>
+          </div>
+        </div>
+      </body></html>`);
+      doc.close();
+    }
+    setTimeout(initDocPreview, 200);
+
+    // ===== 成绩分析（照搬 grading.html） =====
+    function getMockClassScores(myScore) {
+      const scores = [92,87,85,83,81,79,78,76,74,72,71,69,67,65,63,60,58,55,52,48,45,40,35];
+      if (!scores.includes(myScore)) scores.push(myScore);
+      scores.sort((a, b) => b - a);
+      return scores;
+    }
+    function getMockClassTypeAvg() {
+      return { single: 82, multiple: 65, judge: 78, fill: 60, cloze: 55, essay: 58, composite: 52 };
+    }
+    function renderAnalysisSidebar() {
+      const s = currentStudent;
+      const totalScore = questions.reduce((sum, q) => sum + q.score, 0);
+      const gotScore = calcGotScore();
+      const scoreRate = totalScore > 0 ? Math.round(gotScore / totalScore * 100) : 0;
+
+      // 按题型统计
+      const typeStats = {};
+      questions.forEach(q => {
+        const t = q.type;
+        if (!typeStats[t]) typeStats[t] = { name: typeConfig[t]?.name || t, total: 0, got: 0, count: 0 };
+        typeStats[t].total += q.score; typeStats[t].count++;
+        if (q.type === 'composite') {
+          let subGot = 0; q.subQuestions.forEach(sq => { const ss = getItemScore(sq); if (ss !== null) subGot += ss; });
+          typeStats[t].got += round(subGot);
+        } else { const gs = getItemScore(q); typeStats[t].got += (gs !== null ? gs : 0); }
+      });
+
+      // 等级
+      let level = '', lc = '', lb = '';
+      if (scoreRate >= 90) { level = '优秀'; lc = 'text-green-600'; lb = 'bg-green-50 border-green-200'; }
+      else if (scoreRate >= 80) { level = '良好'; lc = 'text-blue-600'; lb = 'bg-blue-50 border-blue-200'; }
+      else if (scoreRate >= 70) { level = '中等'; lc = 'text-yellow-600'; lb = 'bg-yellow-50 border-yellow-200'; }
+      else if (scoreRate >= 60) { level = '及格'; lc = 'text-orange-600'; lb = 'bg-orange-50 border-orange-200'; }
+      else { level = '不及格'; lc = 'text-red-600'; lb = 'bg-red-50 border-red-200'; }
+
+      // 排名
+      const classScores = getMockClassScores(gotScore);
+      const ct = classScores.length, rank = classScores.indexOf(gotScore) + 1;
+      const avg = round(classScores.reduce((a, b) => a + b, 0) / ct);
+      const max = classScores[0], median = classScores[Math.floor(ct / 2)];
+      const beatRate = Math.round((ct - rank) / ct * 100);
+      const diff = round(gotScore - avg);
+
+      // 分数段
+      const segs = [{l:'90-100',n:90,x:100,c:'bg-green-400'},{l:'80-89',n:80,x:89,c:'bg-blue-400'},{l:'70-79',n:70,x:79,c:'bg-cyan-400'},{l:'60-69',n:60,x:69,c:'bg-yellow-400'},{l:'0-59',n:0,x:59,c:'bg-red-400'}];
+      segs.forEach(sg => { sg.cnt = classScores.filter(sc => sc >= sg.n && sc <= sg.x).length; sg.mine = gotScore >= sg.n && gotScore <= sg.x; });
+      const segMax = Math.max(...segs.map(s => s.cnt), 1);
+
+      // 薄弱/优势
+      let weakType = null, weakRate = 100;
+      Object.values(typeStats).forEach(ts => { const r = ts.total > 0 ? ts.got / ts.total * 100 : 0; if (r < weakRate) { weakRate = r; weakType = ts.name; } });
+      const fullTypes = Object.values(typeStats).filter(ts => ts.total > 0 && ts.got >= ts.total).map(ts => ts.name);
+
+      // 题型行
+      const cta = getMockClassTypeAvg();
+      const typeRows = Object.entries(typeStats).map(([k, ts]) => {
+        const r = ts.total > 0 ? Math.round(ts.got / ts.total * 100) : 0, ar = cta[k] || 60, d = r - ar;
+        const bc = r >= 80 ? 'bg-green-400' : r >= 60 ? 'bg-blue-400' : r >= 40 ? 'bg-yellow-400' : 'bg-red-400';
+        const dt = d > 0 ? `<span class="text-green-600">+${d}%</span>` : d < 0 ? `<span class="text-red-500">${d}%</span>` : `<span class="text-gray-400">—</span>`;
+        return `<div class="flex items-center gap-1.5 py-1.5">
+          <span class="text-[11px] text-gray-600 w-12 shrink-0">${ts.name}</span>
+          <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+            <div class="${bc} h-full rounded-full" style="width:${r}%"></div>
+            <div class="absolute top-0 h-full w-0.5 bg-gray-400" style="left:${ar}%"></div>
+          </div>
+          <span class="text-[10px] font-semibold text-gray-600 w-12 text-right">${round(ts.got)}/${ts.total}</span>
+          <span class="text-[10px] w-8 text-right">${dt}</span>
+        </div>`;
+      }).join('');
+
+      // 分数段行
+      const segRows = segs.map(sg => {
+        const w = Math.round(sg.cnt / segMax * 100);
+        return `<div class="flex items-center gap-1.5 py-0.5">
+          <span class="text-[10px] text-gray-500 w-9 shrink-0 text-right">${sg.l}</span>
+          <div class="flex-1 h-3.5 bg-gray-50 rounded overflow-hidden flex items-center">
+            <div class="${sg.c} ${sg.mine ? 'ring-1 ring-offset-1 ring-blue-400' : ''} h-full rounded flex items-center justify-end pr-0.5" style="width:${Math.max(w, 10)}%">
+              <span class="text-[9px] text-white font-bold">${sg.cnt}</span>
+            </div>
+          </div>
+          ${sg.mine ? '<span class="text-[9px] text-blue-600 font-bold w-4">←</span>' : '<span class="w-4"></span>'}
+        </div>`;
+      }).join('');
+
+      // 渲染
+      const sidebar = document.getElementById('analysisSidebar');
+      sidebar.innerHTML = `
+        <div class="p-4 space-y-4">
+          <!-- 标题 -->
+          <div class="flex items-center gap-1.5 pb-3 border-b border-gray-100">
+            <i class="fas fa-chart-bar text-blue-500 text-sm"></i>
+            <span class="text-sm font-semibold text-gray-800">个人成绩分析</span>
+          </div>
+
+          <!-- 综合分析 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-lightbulb text-amber-400 text-[10px]"></i>综合分析</div>
+            <div class="space-y-1.5">
+              <div class="flex items-start gap-1.5 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                <i class="fas fa-ranking-star text-indigo-500 mt-0.5 text-[10px]"></i>
+                <div class="text-[11px] text-indigo-700">排名第 ${rank}/${ct}，超越 ${beatRate}%。${diff >= 0 ? `高于均分 ${diff} 分。` : `低于均分 ${Math.abs(diff)} 分。`}</div>
+              </div>
+              ${fullTypes.length > 0 ? `<div class="flex items-start gap-1.5 p-2 bg-green-50 rounded-lg border border-green-100">
+                <i class="fas fa-check-circle text-green-500 mt-0.5 text-[10px]"></i>
+                <div class="text-[11px] text-green-700"><b>优势：</b>${fullTypes.join('、')}满分</div>
+              </div>` : ''}
+              ${weakType && weakRate < 60 ? `<div class="flex items-start gap-1.5 p-2 bg-red-50 rounded-lg border border-red-100">
+                <i class="fas fa-exclamation-triangle text-red-500 mt-0.5 text-[10px]"></i>
+                <div class="text-[11px] text-red-700"><b>薄弱：</b>${weakType}仅${Math.round(weakRate)}%，需加强</div>
+              </div>` : ''}
+              <div class="flex items-start gap-1.5 p-2 bg-blue-50 rounded-lg border border-blue-100">
+                <i class="fas fa-info-circle text-blue-500 mt-0.5 text-[10px]"></i>
+                <div class="text-[11px] text-blue-700">${gotScore}/${totalScore}（${scoreRate}%），「${level}」。${scoreRate >= 80 ? '表现优异。' : scoreRate >= 60 ? '部分题型需加强。' : '建议系统复习。'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 核心指标 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-bullseye text-rose-400 text-[10px]"></i>核心指标</div>
+            <div class="grid grid-cols-3 gap-2">
+            <div class="text-center p-2 rounded-lg ${lb} border">
+              <div class="text-xl font-bold ${lc}">${gotScore}</div>
+              <div class="text-[9px] text-gray-500">得分/${totalScore}</div>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-indigo-50 border border-indigo-200">
+              <div class="text-xl font-bold text-indigo-600">${rank}<span class="text-xs">/${ct}</span></div>
+              <div class="text-[9px] text-gray-500">班级排名</div>
+            </div>
+            <div class="text-center p-2 rounded-lg bg-purple-50 border border-purple-200">
+              <div class="text-xl font-bold text-purple-600">${beatRate}<span class="text-xs">%</span></div>
+              <div class="text-[9px] text-gray-500">超越比例</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="text-center p-2 rounded-lg bg-gray-50 border border-gray-200">
+              <div class="text-lg font-bold text-gray-700">${scoreRate}<span class="text-xs">%</span></div>
+              <div class="text-[9px] text-gray-500">得分率</div>
+            </div>
+            <div class="text-center p-2 rounded-lg ${lb} border">
+              <div class="text-lg font-bold ${lc}">${level}</div>
+              <div class="text-[9px] text-gray-500">成绩等级</div>
+            </div>
+            </div>
+          </div>
+
+          <!-- 班级对比 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-users text-indigo-400 text-[10px]"></i>班级对比</div>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+              <div class="p-2 bg-gray-50 rounded-lg text-center">
+                <div class="text-gray-400 text-[10px]">班级平均</div>
+                <div class="font-bold text-gray-700">${avg}</div>
+              </div>
+              <div class="p-2 bg-gray-50 rounded-lg text-center">
+                <div class="text-gray-400 text-[10px]">与均分差</div>
+                <div class="font-bold ${diff >= 0 ? 'text-green-600' : 'text-red-500'}">${diff >= 0 ? '+' : ''}${diff}</div>
+              </div>
+              <div class="p-2 bg-gray-50 rounded-lg text-center">
+                <div class="text-gray-400 text-[10px]">最高分</div>
+                <div class="font-bold text-gray-700">${max}</div>
+              </div>
+              <div class="p-2 bg-gray-50 rounded-lg text-center">
+                <div class="text-gray-400 text-[10px]">中位数</div>
+                <div class="font-bold text-gray-700">${median}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 题型得分 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-layer-group text-blue-400 text-[10px]"></i>各题型得分 <span class="text-[10px] text-gray-400 font-normal">(|为均值)</span></div>
+            <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">${typeRows}</div>
+          </div>
+
+          <!-- 分数段分布 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-chart-column text-cyan-400 text-[10px]"></i>分数段分布 <span class="text-[10px] text-gray-400 font-normal">(${ct}人)</span></div>
+            <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">${segRows}</div>
+          </div>
+
+          <!-- 考试信息 -->
+          <div>
+            <div class="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><i class="fas fa-clock text-gray-400 text-[10px]"></i>考试信息</div>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+              <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-play-circle text-gray-400 text-[10px]"></i><span class="text-gray-500">开始</span><span class="ml-auto font-medium text-gray-700">${s.startTime || '--'}</span></div>
+              <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-stop-circle text-gray-400 text-[10px]"></i><span class="text-gray-500">交卷</span><span class="ml-auto font-medium text-gray-700">${s.endTime || '--'}</span></div>
+              <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-hourglass-half text-gray-400 text-[10px]"></i><span class="text-gray-500">用时</span><span class="ml-auto font-medium text-gray-700">${s.duration || '--'}</span></div>
+              <div class="flex items-center gap-1.5 p-2 bg-gray-50 rounded-lg"><i class="fas fa-sign-out-alt text-gray-400 text-[10px]"></i><span class="text-gray-500">离开</span><span class="ml-auto font-medium ${(s.leaveCount || 0) > 0 ? 'text-orange-600' : 'text-gray-700'}">${s.leaveCount || 0}次</span></div>
+            </div>
+          </div>
+        </div>`;
+    }
+  </script>
+</body>
+</html>

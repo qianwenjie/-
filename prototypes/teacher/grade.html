@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考生列表 - 教师端</title>
+    <script src="assets/js/tailwind.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .tab-active { border-color: #10b981; color: #059669; font-weight: 600; }
+        .tab-inactive { border-color: transparent; color: #6B7280; }
+        .tab-inactive:hover { color: #111827; border-color: #d1d5db; }
+        thead th { position: sticky; top: 0; z-index: 10; background: #f9fafb; box-shadow: inset 0 -1px 0 #e5e7eb; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- 主内容区 -->
+    <main class="h-screen flex flex-col">
+        <!-- 头部信息栏 -->
+        <div class="flex-none bg-white border-b border-gray-200 px-6 py-3" id="headerInfo"></div>
+
+        <!-- 筛选 Tab 栏 -->
+        <div class="flex-none bg-white border-b border-gray-200 px-6" id="filterBar"></div>
+
+        <!-- 表格区域 -->
+        <div class="flex-1 overflow-auto px-6 pt-0 pb-4" id="tableContainer"></div>
+
+        <!-- 底部分页 -->
+        <div class="flex-none bg-white border-t border-gray-200" style="min-height:52px" id="paginationBar"></div>
+    </main>
+
+    <script>
+    // ========== 全局变量 ==========
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('taskId') || urlParams.get('examId');
+    const examStatus = urlParams.get('examStatus') || 'in_progress';
+    const paperMode = urlParams.get('paperMode') || 'random';
+    let allStudents = [];
+    let filteredStudents = [];
+    let currentTab = 'all';
+    let searchKeyword = '';
+    let currentPage = 1;
+    const pageSize = 20;
+    let currentExam = null;
+
+    // ========== 配置常量 ==========
+    const AVATAR_COLORS = [
+        '#10b981','#14b8a6','#3b82f6','#8b5cf6','#ec4899',
+        '#f59e0b','#ef4444','#06b6d4','#6366f1','#f97316'
+    ];
+
+    const STATUS_CONFIG = {
+        ungraded:  { label: '未批阅',   bg: 'bg-amber-50',   text: 'text-amber-600',  border: 'border-amber-200' },
+        graded:    { label: '已批阅',   bg: 'bg-green-50',   text: 'text-green-600',  border: 'border-green-200' },
+        violation: { label: '违纪',     bg: 'bg-red-50',     text: 'text-red-600',    border: 'border-red-200' },
+        cheating:  { label: '作弊',     bg: 'bg-red-100',    text: 'text-red-700',    border: 'border-red-300' },
+        suspected: { label: '疑似作弊', bg: 'bg-purple-50',  text: 'text-purple-600', border: 'border-purple-200' },
+        absent:    { label: '缺考',     bg: 'bg-gray-100',   text: 'text-gray-500',   border: 'border-gray-200' }
+    };
+
+    const TABS = [
+        { key: 'all',       label: '全部' },
+        { key: 'ungraded',  label: '未批阅' },
+        { key: 'graded',    label: '已批阅' },
+        { key: 'violation', label: '违纪' },
+        { key: 'cheating',  label: '作弊' },
+        { key: 'suspected', label: '疑似作弊' },
+        { key: 'absent',    label: '缺考' }
+    ];
+
+    function getAvatarColor(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+    }
+
+    // ========== Mock 数据 ==========
+    function generateMockStudents() {
+        const names = [
+            '张三','李四','王五','赵六','孙七','周八','吴九','郑十',
+            '钱十一','冯十二','陈小明','褚小红','卫小刚','蒋小丽',
+            '沈小华','韩小强','杨小芳','朱小伟','秦小敏','尤小军',
+            '许小燕','何小波','吕小琴','施小龙'
+        ];
+
+        // 根据考试状态决定考生状态分布
+        let statuses;
+        if (examStatus === 'not_started') {
+            // 未开始：全部为"未批阅"（考试还没开始，无缺考状态）
+            statuses = names.map(() => 'ungraded');
+        } else if (examStatus === 'completed') {
+            // 已结束：全部已批阅（含违纪等特殊状态也有分数）
+            statuses = [
+                'graded','graded','graded','graded','graded',
+                'graded','graded','graded','graded','graded',
+                'graded','graded','graded','graded','graded','graded','graded','graded',
+                'violation','violation',
+                'cheating',
+                'suspected',
+                'absent','absent'
+            ];
+        } else {
+            // 进行中：混合状态
+            statuses = [
+                'ungraded','ungraded','ungraded','ungraded','ungraded',
+                'ungraded','ungraded','ungraded','ungraded','ungraded',
+                'graded','graded','graded','graded','graded','graded','graded','graded',
+                'violation','violation',
+                'cheating',
+                'suspected',
+                'absent','absent'
+            ];
+        }
+
+        return names.map((name, i) => {
+            const status = statuses[i];
+            const sid = `2026${String(i + 1).padStart(4, '0')}`;
+            const phone = `138${String(1000 + i * 37).padStart(8, '0')}`;
+            const isNormal = (status === 'ungraded' || status === 'graded');
+            const hour = 8 + Math.floor(i % 3);
+            const minute = (i * 2) % 60;
+            const hasExamData = isNormal || status === 'violation' || status === 'cheating' || status === 'suspected';
+            const startTime = (hasExamData && examStatus !== 'not_started') ? `2026-01-15 ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}` : '';
+            const dur = (hasExamData && examStatus !== 'not_started') ? (30 + Math.floor(Math.random() * 60)) : 0;
+            const endMinute = (minute + dur) % 60;
+            const endHour = hour + Math.floor((minute + dur) / 60);
+            const endTime = (hasExamData && examStatus !== 'not_started') ? `2026-01-15 ${String(endHour).padStart(2,'0')}:${String(endMinute).padStart(2,'0')}` : '';
+            const leaves = (hasExamData && examStatus !== 'not_started') ? Math.floor(Math.random() * 4) : 0;
+
+            let score;
+            if (examStatus === 'completed') {
+                // 已结束：所有正常考生都有分数
+                if (status === 'absent') score = 0;
+                else if (status === 'violation' || status === 'cheating' || status === 'suspected') score = 0;
+                else score = 50 + Math.floor(Math.random() * 51);
+            } else if (examStatus === 'not_started') {
+                score = null;
+            } else {
+                score = status === 'graded' ? (50 + Math.floor(Math.random() * 51)) : (isNormal ? null : 0);
+            }
+
+            return {
+                id: `stu_${i + 1}`, name, username: `user_${sid}`, studentId: sid,
+                phone, photo: null, status,
+                examCount: (status === 'absent' && examStatus !== 'completed') ? 0 : (hasExamData ? 1 : 0),
+                maxExamCount: 1, leaveCount: leaves,
+                startTime, endTime,
+                duration: dur > 0 ? `${dur}分钟` : '--',
+                score
+            };
+        });
+    }
+
+    // ========== 考试信息 ==========
+    function loadExamData() {
+        // 根据考试状态设置不同的时间
+        let startTime, endTime, deadline;
+        if (examStatus === 'not_started') {
+            startTime = '2026-02-15 09:00';
+            endTime = '2026-02-15 11:00';
+            deadline = '2026-02-20 18:00';
+        } else if (examStatus === 'completed') {
+            startTime = '2026-01-10 09:00';
+            endTime = '2026-01-10 11:00';
+            deadline = '2026-01-15 18:00';
+        } else {
+            startTime = '2026-01-20 09:00';
+            endTime = '2026-01-20 11:00';
+            deadline = '2026-02-04 18:00';
+        }
+        currentExam = {
+            id: taskId || 'exam_001',
+            name: '大学英语期末考试',
+            paperName: '大学英语期末试卷A',
+            paperMode: paperMode,
+            code: 'EX-2026012001',
+            startTime, endTime, deadline,
+            totalScore: 105,
+            questionCount: 50,
+            totalStudents: 24,
+            aiEnabled: true
+        };
+        allStudents = generateMockStudents();
+        // 从 sessionStorage 读取已批阅结果，更新考生状态和分数
+        if (examStatus === 'in_progress') applyGradingResults();
+        applyFilter(true);
+    }
+
+    // 读取阅卷页提交的批阅结果
+    function applyGradingResults() {
+        const results = JSON.parse(sessionStorage.getItem('gradingResults') || '{}');
+        allStudents.forEach(s => {
+            if (results[s.id]) {
+                s.status = results[s.id].status;
+                s.score = results[s.id].score;
+            }
+        });
+    }
+
+    // ========== 渲染头部 ==========
+    function renderHeader() {
+        const e = currentExam;
+        const graded = allStudents.filter(s => s.status === 'graded').length;
+        const ungraded = allStudents.filter(s => s.status === 'ungraded').length;
+        document.getElementById('headerInfo').innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button onclick="history.back()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg shrink-0 transition">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-base font-semibold text-gray-900">${e.name}</h1>
+                            ${examStatus === 'not_started' ? '<span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500">未开始</span>' :
+                              examStatus === 'completed' ? '<span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 text-green-700">已结束</span>' :
+                              '<span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-700">进行中</span>'}
+                            ${e.aiEnabled ? '<span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-100 text-blue-700">AI批阅</span>' : ''}
+                            ${e.aiEnabled ? '<span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700">AI评语</span>' : ''}
+                        </div>
+                        <div class="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                            <span><i class="far fa-file-alt mr-1"></i>No. ${e.code}</span>
+                            <span class="text-gray-300">|</span>
+                            <span><i class="far fa-copy mr-1"></i>${e.paperName}<span class="text-gray-300 mx-1">|</span><span class="text-gray-400">${e.paperMode === 'doc' ? '文档' : '抽题'}</span></span>
+                            <span class="text-gray-300">|</span>
+                            <span><i class="far fa-clock mr-1"></i>${e.startTime} ~ ${e.endTime}</span>
+                            <span class="text-gray-300">|</span>
+                            <span><i class="far fa-calendar-check mr-1"></i>批阅截止: ${e.deadline}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 text-xs">
+                    <div class="text-center px-3">
+                        <div class="text-lg font-semibold text-gray-900">${e.totalStudents}</div>
+                        <div class="text-gray-400">考生</div>
+                    </div>
+                    <div class="w-px h-8 bg-gray-200"></div>
+                    <div class="text-center px-3">
+                        <div class="text-lg font-semibold text-green-600">${graded}</div>
+                        <div class="text-gray-400">已批</div>
+                    </div>
+                    <div class="w-px h-8 bg-gray-200"></div>
+                    <div class="text-center px-3">
+                        <div class="text-lg font-semibold text-amber-500">${ungraded}</div>
+                        <div class="text-gray-400">待批</div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // ========== 渲染筛选栏 ==========
+    function renderFilterBar() {
+        const counts = {};
+        counts.all = allStudents.length;
+        TABS.forEach(t => { if (t.key !== 'all') counts[t.key] = allStudents.filter(s => s.status === t.key).length; });
+        const tabsHtml = TABS.map(t => {
+            const cls = currentTab === t.key ? 'tab-active' : 'tab-inactive';
+            return `<button onclick="filterByTab('${t.key}')" class="px-4 py-3 border-b-2 text-sm whitespace-nowrap ${cls}">
+                ${t.label} <span class="ml-1 text-xs opacity-70">(${counts[t.key]})</span>
+            </button>`;
+        }).join('');
+        document.getElementById('filterBar').innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex space-x-1 overflow-x-auto">${tabsHtml}</div>
+                <div class="flex-shrink-0 ml-4 py-2">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="搜索姓名/用户名/手机号"
+                            class="w-56 pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            value="${searchKeyword}"
+                            oncompositionstart="isComposing=true"
+                            oncompositionend="handleCompositionEnd(this)"
+                            oninput="handleSearch(this.value)">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function filterByTab(tab) {
+        currentTab = tab;
+        searchKeyword = '';
+        currentPage = 1;
+        applyFilter(true);
+    }
+
+    let isComposing = false;
+    let searchTimer = null;
+
+    function handleSearch(keyword) {
+        if (isComposing) return;
+        searchKeyword = keyword.trim().toLowerCase();
+        currentPage = 1;
+        // 防抖：避免频繁渲染
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            applyFilter(false);
+        }, 150);
+    }
+
+    function handleCompositionEnd(el) {
+        isComposing = false;
+        searchKeyword = el.value.trim().toLowerCase();
+        currentPage = 1;
+        applyFilter(false);
+    }
+
+    // rebuildFilterBar: 是否重建筛选栏（Tab切换时需要，搜索时不需要）
+    function applyFilter(rebuildFilterBar) {
+        let list = allStudents;
+        if (currentTab !== 'all') list = list.filter(s => s.status === currentTab);
+        if (searchKeyword) {
+            list = list.filter(s =>
+                s.name.toLowerCase().includes(searchKeyword) ||
+                s.username.toLowerCase().includes(searchKeyword) ||
+                s.phone.includes(searchKeyword)
+            );
+        }
+        filteredStudents = list;
+        renderHeader();
+        if (rebuildFilterBar) renderFilterBar();
+        renderTable();
+        renderPagination();
+    }
+
+    // ========== 渲染表格 ==========
+    function renderTable() {
+        const start = (currentPage - 1) * pageSize;
+        const pageData = filteredStudents.slice(start, start + pageSize);
+        if (pageData.length === 0) {
+            document.getElementById('tableContainer').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+                    <i class="fas fa-inbox text-5xl mb-4"></i>
+                    <p class="text-sm">暂无数据</p>
+                </div>`;
+            return;
+        }
+        const rows = pageData.map(s => `
+            <tr class="hover:bg-gray-50 border-b border-gray-100">
+                <td class="px-2 py-2.5 text-center" style="width:42px">${renderAvatar(s)}</td>
+                <td class="px-2 py-2.5 text-sm text-gray-700" style="width:110px">${s.username}</td>
+                <td class="px-2 py-2.5 text-sm font-medium text-gray-900" style="width:70px">${s.name}</td>
+                <td class="px-2 py-2.5 text-sm text-gray-600" style="width:110px">${s.phone}</td>
+                <td class="px-2 py-2.5 text-sm text-center text-gray-600" style="width:50px">${s.examCount}</td>
+                <td class="px-2 py-2.5 text-sm text-center text-gray-600" style="width:50px">${s.maxExamCount}</td>
+                <td class="px-2 py-2.5 text-sm text-center ${s.leaveCount > 0 ? 'text-amber-500 font-medium' : 'text-gray-600'}" style="width:50px">${s.leaveCount}</td>
+                <td class="px-2 py-2.5 text-sm text-gray-600 whitespace-nowrap" style="width:135px">${s.startTime || '--'}</td>
+                <td class="px-2 py-2.5 text-sm text-gray-600 whitespace-nowrap" style="width:135px">${s.endTime || '--'}</td>
+                <td class="px-2 py-2.5 text-sm text-center text-gray-600" style="width:60px">${s.duration}</td>
+                <td class="px-2 py-2.5 text-center" style="width:80px">${renderStatusTag(s.status)}</td>
+                <td class="px-2 py-2.5 text-center font-medium" style="width:50px">${renderScore(s)}</td>
+                <td class="px-2 py-2.5 text-center" style="width:85px">${renderAction(s)}</td>
+            </tr>`).join('');
+        document.getElementById('tableContainer').innerHTML = `
+            <table class="w-full bg-white border border-gray-200 border-collapse" style="table-layout:fixed">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:42px">照片</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-left" style="width:110px">用户名</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-left" style="width:70px">姓名</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-left" style="width:110px">手机号</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:50px">已考</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:50px">可考</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:50px">离开</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-left" style="width:135px">开始答卷</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-left" style="width:135px">交卷时间</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:60px">用时</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:80px">阅卷状态</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:50px">分数</th>
+                        <th class="px-2 py-2.5 text-xs font-medium text-gray-500 text-center" style="width:85px">操作</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    }
+
+    // ========== 单元格渲染 ==========
+    function renderAvatar(s) {
+        const color = getAvatarColor(s.name);
+        const initial = s.name.charAt(s.name.length - 1);
+        return `<div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium mx-auto" style="background:${color}">${initial}</div>`;
+    }
+
+    function renderStatusTag(status) {
+        const cfg = STATUS_CONFIG[status];
+        if (!cfg) return '--';
+        return `<span class="inline-block px-2 py-0.5 rounded text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}">${cfg.label}</span>`;
+    }
+
+    function renderScore(s) {
+        if (examStatus === 'not_started') return '<span class="text-gray-400">--</span>';
+        if (examStatus === 'completed') {
+            if (s.status === 'absent') return '<span class="text-red-500">0</span>';
+            if (s.status === 'violation' || s.status === 'cheating' || s.status === 'suspected') return '<span class="text-red-500">0</span>';
+            return `<span class="text-gray-900">${s.score}</span>`;
+        }
+        if (s.status === 'ungraded') return '<span class="text-gray-400">--</span>';
+        if (s.status === 'graded') return `<span class="text-gray-900">${s.score}</span>`;
+        return '<span class="text-red-500">0</span>';
+    }
+
+    function renderAction(s) {
+        // 未开始：除缺考外显示灰色"去批阅"，点击提示
+        if (examStatus === 'not_started') {
+            if (s.status === 'absent') return '<span class="text-gray-400">--</span>';
+            return `<button onclick="event.stopPropagation();handleNotStarted()" class="px-3 py-1 bg-gray-200 text-gray-400 text-xs rounded font-medium cursor-not-allowed">去批阅</button>`;
+        }
+        // 已结束：除缺考外显示"查看详情"
+        if (examStatus === 'completed') {
+            if (s.status === 'absent') return '<span class="text-gray-400">--</span>';
+            return `<button onclick="goToGrading('${s.id}')" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded font-medium">查看详情</button>`;
+        }
+        // 进行中：保持原逻辑
+        if (s.status === 'ungraded') {
+            return `<button onclick="goToGrading('${s.id}')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded font-medium">去批阅</button>`;
+        }
+        if (s.status === 'graded') {
+            return `<button onclick="goToGrading('${s.id}')" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded font-medium">重新批阅</button>`;
+        }
+        return '<span class="text-gray-400">--</span>';
+    }
+
+    // 未开始考试点击提示
+    function handleNotStarted() {
+        const deadline = new Date(currentExam.startTime);
+        const now = new Date();
+        const diffMs = deadline - now;
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+            alert(`批阅时间未到，考试将于 ${currentExam.startTime} 开始。\n距离开考还有 ${diffDays} 天。`);
+        } else {
+            alert('考试尚未开始，暂时无法批阅。');
+        }
+    }
+
+    function goToGrading(studentId) {
+        const eid = currentExam ? currentExam.id : '';
+        const mode = currentExam ? currentExam.paperMode : '';
+        const student = allStudents.find(s => s.id === studentId);
+        const sStatus = student ? student.status : '';
+        if (mode === 'doc') {
+            window.location.href = `grading-doc.html?studentId=${studentId}&examId=${eid}&examStatus=${examStatus}&studentStatus=${sStatus}`;
+        } else {
+            window.location.href = `grading.html?studentId=${studentId}&taskId=${eid}&examStatus=${examStatus}&studentStatus=${sStatus}`;
+        }
+    }
+
+    // ========== 分页 ==========
+    function renderPagination() {
+        const total = filteredStudents.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        const end = Math.min(currentPage * pageSize, total);
+
+        let pagesHtml = '';
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+                pagesHtml += `<button class="w-8 h-8 rounded bg-green-500 text-white text-sm font-medium">${i}</button>`;
+            } else {
+                pagesHtml += `<button onclick="goToPage(${i})" class="w-8 h-8 rounded hover:bg-gray-100 text-sm text-gray-600">${i}</button>`;
+            }
+        }
+        document.getElementById('paginationBar').innerHTML = `
+            <div class="flex items-center justify-between px-6 py-2.5">
+                <span class="text-sm text-gray-500">显示 ${start}-${end} 条，共 ${total} 条</span>
+                <div class="flex items-center space-x-1">
+                    <button onclick="goToPage(${currentPage - 1})" class="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed' : ''}" ${currentPage <= 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    ${pagesHtml}
+                    <button onclick="goToPage(${currentPage + 1})" class="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : ''}" ${currentPage >= totalPages ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    function goToPage(page) {
+        const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderTable();
+        renderPagination();
+        document.getElementById('tableContainer').scrollTop = 0;
+    }
+
+    // ========== 初始化 ==========
+    loadExamData();
+    </script>
+</body>
+</html>

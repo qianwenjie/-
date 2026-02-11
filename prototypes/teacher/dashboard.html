@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作台 - 教师端</title>
+    <script src="assets/js/tailwind.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .exam-card { transition: all 0.2s ease; position: relative; z-index: 1; cursor: pointer; }
+        .exam-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.12); z-index: 2; }
+        .progress-bar { transition: width 0.6s ease-out; }
+        @keyframes urgentPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .urgent-badge { animation: urgentPulse 1.2s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="glass-card shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center h-14">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chalkboard-teacher text-white text-sm"></i>
+                    </div>
+                    <span class="text-lg font-semibold text-gray-800">教师工作台</span>
+                </div>
+                <div class="relative">
+                    <button id="userMenuBtn" class="flex items-center space-x-2 hover:bg-white/50 rounded-md px-2 py-1.5">
+                        <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-green-600 text-xs"></i>
+                        </div>
+                        <span class="text-sm text-gray-700" id="teacherName">王老师</span>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </button>
+                    <div id="userMenu" class="hidden absolute right-0 mt-1 w-40 glass-card rounded-lg shadow-lg py-1 z-50">
+                        <a href="profile/index.html" class="block px-3 py-2 text-sm text-gray-700 hover:bg-white/50">
+                            <i class="fas fa-user mr-2 text-gray-400"></i>个人中心
+                        </a>
+                        <hr class="my-1 border-gray-200/50">
+                        <a href="#" onclick="logout()" class="block px-3 py-2 text-sm text-red-600 hover:bg-red-50/50">
+                            <i class="fas fa-sign-out-alt mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 固定顶部区域：问候语+筛选 -->
+    <div class="sticky top-14 z-40 bg-[#f5f7fa] pt-4 pb-2">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <!-- 顶部信息 -->
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h1 class="text-lg font-semibold text-gray-800"><span id="greeting">早上好</span>，<span id="teacherNameDisplay">王老师</span></h1>
+                    <p class="text-xs text-gray-500"><span id="currentDate"></span></p>
+                </div>
+                <div class="flex items-center space-x-5">
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-orange-500" id="pendingCount">0</div>
+                        <div class="text-xs text-gray-400">待批阅考生</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="glass-card rounded-xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-1 bg-gray-100/80 rounded-lg p-1">
+                    <button onclick="filterTasks('all')" class="filter-btn px-3 py-1.5 text-xs rounded-md text-gray-500" data-filter="all">全部</button>
+                    <button onclick="filterTasks('not_started')" class="filter-btn px-3 py-1.5 text-xs rounded-md text-gray-500" data-filter="not_started">未开始 <span class="tab-count ml-0.5 text-[10px] opacity-70" data-count="not_started"></span></button>
+                    <button onclick="filterTasks('in_progress')" class="filter-btn px-3 py-1.5 text-xs rounded-md bg-white text-green-600 font-medium shadow-sm" data-filter="in_progress">进行中 <span class="tab-count ml-0.5 text-[10px] opacity-70" data-count="in_progress"></span></button>
+                    <button onclick="filterTasks('completed')" class="filter-btn px-3 py-1.5 text-xs rounded-md text-gray-500" data-filter="completed">已结束 <span class="tab-count ml-0.5 text-[10px] opacity-70" data-count="completed"></span></button>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="搜索考试名称..."
+                            class="w-48 pl-8 pr-3 py-1.5 text-xs bg-white/80 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400"
+                            oninput="handleSearch(this.value)">
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    </div>
+                    <span class="text-xs text-gray-400">共 <span id="totalCount" class="font-medium text-gray-600">0</span> 场</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <!-- 卡片列表 -->
+        <div id="taskList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+
+        <!-- 加载更多 -->
+        <div id="loadMore" class="hidden py-6 text-center">
+            <div class="inline-flex items-center space-x-2 text-gray-400 text-sm">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>加载中...</span>
+            </div>
+        </div>
+
+        <!-- 没有更多 -->
+        <div id="noMore" class="hidden py-6 text-center">
+            <span class="text-gray-400 text-sm">— 没有更多了 —</span>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="hidden py-16 text-center glass-card rounded-xl">
+            <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-inbox text-gray-400 text-xl"></i>
+            </div>
+            <p class="text-gray-500 text-sm">暂无批阅任务</p>
+        </div>
+    </main>
+
+    <!-- 成绩分析全屏大屏 -->
+    <div id="analysisModal" class="fixed inset-0 z-[100] bg-gray-900/60 backdrop-blur-sm hidden">
+        <div class="w-full h-full bg-[#f5f7fa] overflow-y-auto" id="analysisContent"></div>
+    </div>
+
+    <script>
+    let allTasks = [];
+    let currentFilter = sessionStorage.getItem('dashboardFilter') || 'in_progress';
+    let currentPage = 1;
+    let searchKeyword = '';
+    let isLoading = false;
+    let hasMore = true;
+    const pageSize = 20;
+
+    function generateMockData() {
+        const exams = [
+            { name: '数据结构期末考试', paper: '数据结构试卷A' },
+            { name: '算法设计期中考试', paper: '算法设计试卷B' },
+            { name: '操作系统原理测验', paper: '操作系统试卷' },
+            { name: '数据库原理期末考试', paper: '数据库试卷A' },
+            { name: 'C语言程序设计考试', paper: 'C语言试卷' },
+            { name: '计算机网络测验', paper: '网络基础试卷' },
+            { name: '软件工程期末考试', paper: '软件工程试卷A' },
+            { name: 'Java程序设计考试', paper: 'Java试卷B' },
+            { name: '离散数学期末考试', paper: '离散数学试卷A' },
+            { name: '编译原理测验', paper: '编译原理试卷' },
+            { name: '人工智能导论考试', paper: 'AI导论试卷' },
+            { name: '机器学习期末考试', paper: '机器学习试卷A' }
+        ];
+        const tasks = [];
+        const now = new Date();
+        for (let i = 0; i < 20; i++) {
+            const exam = exams[i % exams.length];
+            const total = 40 + Math.floor(Math.random() * 80);
+            const submitted = Math.floor(Math.random() * total);
+            const graded = Math.floor(Math.random() * submitted);
+            let status, examStart, examEnd, gradingDeadline;
+            const rand = Math.random();
+            if (rand < 0.15) {
+                status = 'not_started';
+                examStart = new Date(now.getTime() + (2 + Math.random() * 10) * 24 * 60 * 60 * 1000);
+                examEnd = new Date(examStart.getTime() + 2 * 60 * 60 * 1000);
+                gradingDeadline = new Date(examEnd.getTime() + 3 * 24 * 60 * 60 * 1000);
+            } else if (rand < 0.75) {
+                status = 'in_progress';
+                examStart = new Date(now.getTime() - (1 + Math.random() * 5) * 24 * 60 * 60 * 1000);
+                examEnd = new Date(examStart.getTime() + 2 * 60 * 60 * 1000);
+                gradingDeadline = new Date(now.getTime() + (-36 + Math.random() * 96) * 60 * 60 * 1000);
+            } else {
+                status = 'completed';
+                examStart = new Date(now.getTime() - (10 + Math.random() * 20) * 24 * 60 * 60 * 1000);
+                examEnd = new Date(examStart.getTime() + 2 * 60 * 60 * 1000);
+                gradingDeadline = new Date(examEnd.getTime() + 3 * 24 * 60 * 60 * 1000);
+            }
+            tasks.push({
+                id: `EX${String(2026020001 + i)}`, examName: `${exam.name}${i > 11 ? ' #' + Math.floor(i/12 + 1) : ''}`, paperName: exam.paper,
+                paperMode: Math.random() > 0.5 ? 'doc' : 'random',
+                examStart, examEnd, gradingDeadline,
+                duration: 60 + Math.floor(Math.random() * 60),
+                questionCount: 15 + Math.floor(Math.random() * 20),
+                totalScore: 100, maxAttempts: 1 + Math.floor(Math.random() * 2),
+                totalStudents: total,
+                submittedCount: status === 'not_started' ? 0 : submitted,
+                gradedCount: status === 'completed' ? submitted : graded,
+                status, aiEnabled: Math.random() > 0.4, aiComment: Math.random() > 0.5
+            });
+        }
+        return tasks;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        checkLogin(); setGreeting(); setCurrentDate();
+        allTasks = generateMockData();
+        updateStats(); filterTasks(currentFilter); initUserMenu(); initScrollLoad();
+    });
+
+    function checkLogin() {
+        const info = localStorage.getItem('teacherInfo') || sessionStorage.getItem('teacherInfo');
+        if (!info) { window.location.href = 'login.html'; return; }
+        const data = JSON.parse(info);
+        document.getElementById('teacherName').textContent = data.name;
+        document.getElementById('teacherNameDisplay').textContent = data.name;
+    }
+    function setGreeting() {
+        const h = new Date().getHours();
+        document.getElementById('greeting').textContent = h < 12 ? '早上好' : h < 18 ? '下午好' : '晚上好';
+    }
+    function setCurrentDate() {
+        const now = new Date();
+        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        document.getElementById('currentDate').textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
+    }
+    function formatDateTime(date) {
+        const d = new Date(date);
+        return `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function getDeadlineInfo(deadline) {
+        const now = new Date();
+        const diff = new Date(deadline) - now;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(Math.abs(hours) / 24);
+        if (diff < 0) return { text: `已逾期${days > 0 ? days + '天' : Math.abs(hours) + '小时'}`, status: 'overdue' };
+        if (hours < 24) return { text: `剩余${hours}小时`, status: 'urgent' };
+        return { text: `剩余${days}天`, status: 'normal' };
+    }
+    function updateStats() {
+        const pending = allTasks.filter(t => t.status === 'in_progress').reduce((s, t) => s + (t.submittedCount - t.gradedCount), 0);
+        document.getElementById('pendingCount').textContent = pending;
+    }
+    function handleSearch(keyword) {
+        searchKeyword = keyword.trim().toLowerCase();
+        currentPage = 1;
+        hasMore = true;
+        renderTasks();
+    }
+
+    function getFilteredTasks() {
+        let filtered = allTasks.filter(t => {
+            if (currentFilter !== 'all' && t.status !== currentFilter) return false;
+            if (searchKeyword && !t.examName.toLowerCase().includes(searchKeyword)) return false;
+            return true;
+        });
+        filtered.sort((a, b) => {
+            if (currentFilter === 'in_progress') {
+                const aDeadline = getDeadlineInfo(a.gradingDeadline);
+                const bDeadline = getDeadlineInfo(b.gradingDeadline);
+                const priority = { overdue: 0, urgent: 1, normal: 2 };
+                if (priority[aDeadline.status] !== priority[bDeadline.status]) {
+                    return priority[aDeadline.status] - priority[bDeadline.status];
+                }
+            }
+            return new Date(b.examStart) - new Date(a.examStart);
+        });
+        return filtered;
+    }
+
+    function filterTasks(filter) {
+        currentFilter = filter;
+        sessionStorage.setItem('dashboardFilter', filter);
+        currentPage = 1;
+        hasMore = true;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('bg-white', 'text-green-600', 'font-medium', 'shadow-sm');
+            btn.classList.add('text-gray-500');
+        });
+        const activeBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('text-gray-500');
+            activeBtn.classList.add('bg-white', 'text-green-600', 'font-medium', 'shadow-sm');
+        }
+        renderTasks();
+    }
+
+    function renderTasks(append = false) {
+        // 更新 tab 数量
+        ['not_started', 'in_progress', 'completed'].forEach(key => {
+            const el = document.querySelector(`.tab-count[data-count="${key}"]`);
+            if (el) el.textContent = allTasks.filter(t => t.status === key).length;
+        });
+        const filtered = getFilteredTasks();
+        const total = filtered.length;
+        const start = (currentPage - 1) * pageSize;
+        const pageTasks = filtered.slice(start, start + pageSize);
+
+        hasMore = start + pageSize < total;
+        document.getElementById('totalCount').textContent = total;
+
+        const container = document.getElementById('taskList');
+        const emptyState = document.getElementById('emptyState');
+        const loadMore = document.getElementById('loadMore');
+        const noMore = document.getElementById('noMore');
+
+        if (total === 0) {
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            loadMore.classList.add('hidden');
+            noMore.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            if (append) {
+                container.insertAdjacentHTML('beforeend', pageTasks.map(t => renderCard(t)).join(''));
+            } else {
+                container.innerHTML = pageTasks.map(t => renderCard(t)).join('');
+            }
+            loadMore.classList.add('hidden');
+            noMore.classList.toggle('hidden', hasMore);
+        }
+        isLoading = false;
+    }
+
+    function loadMoreTasks() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+        document.getElementById('loadMore').classList.remove('hidden');
+        document.getElementById('noMore').classList.add('hidden');
+
+        // 模拟异步加载延迟
+        setTimeout(() => {
+            currentPage++;
+            renderTasks(true);
+        }, 300);
+    }
+
+    function initScrollLoad() {
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight;
+
+            if (scrollTop + windowHeight >= docHeight - 200) {
+                loadMoreTasks();
+            }
+        });
+    }
+
+    function renderCard(task) {
+        const deadline = getDeadlineInfo(task.gradingDeadline);
+        const pending = task.submittedCount - task.gradedCount;
+        const progress = task.submittedCount > 0 ? Math.round((task.gradedCount / task.submittedCount) * 100) : 0;
+        let deadlineHtml = `<span class="text-gray-600">${formatDateTime(task.gradingDeadline)}</span>`;
+        if (task.status === 'in_progress' && deadline.status !== 'normal') {
+            const color = deadline.status === 'overdue' ? 'text-red-500' : 'text-orange-500';
+            deadlineHtml = `<span class="${color}">${formatDateTime(task.gradingDeadline)} · ${deadline.text}</span>`;
+        }
+        // AI功能标签 - 放在基本信息行右侧
+        let aiTags = '';
+        if (task.aiEnabled || task.aiComment) {
+            aiTags = `<div class="flex items-center gap-2 ml-auto shrink-0">
+                ${task.aiEnabled ? '<span class="text-purple-500"><i class="fas fa-check mr-1"></i>AI批阅</span>' : ''}
+                ${task.aiComment ? '<span class="text-blue-500"><i class="fas fa-check mr-1"></i>AI评语</span>' : ''}
+            </div>`;
+        }
+        // 去掉考试名称后面的序号
+        let examName = task.examName.replace(/ #\d+$/, '');
+        // 搜索关键词高亮
+        if (searchKeyword) {
+            const regex = new RegExp(`(${searchKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            examName = examName.replace(regex, '<span class="bg-yellow-200 text-yellow-800 px-0.5 rounded">$1</span>');
+        }
+        // 状态标签（逾期、紧急）
+        let statusTag = '';
+        if (task.status === 'in_progress') {
+            if (deadline.status === 'overdue') {
+                statusTag = '<span class="urgent-badge inline-flex items-center px-1.5 py-0.5 bg-red-500 text-white text-xs rounded mr-2 shrink-0">逾期未完成</span>';
+            } else if (deadline.status === 'urgent') {
+                statusTag = '<span class="urgent-badge inline-flex items-center px-1.5 py-0.5 bg-orange-500 text-white text-xs rounded mr-2 shrink-0">紧急</span>';
+            }
+        }
+        return `
+        <div class="exam-card glass-card rounded-xl overflow-hidden" onclick="goToExam('${task.id}','${task.status}')">
+            <div class="p-4">
+                <!-- 标题行 -->
+                <div class="flex items-start justify-between mb-3 gap-3">
+                    <h3 class="font-semibold text-gray-800 flex-1">${statusTag}${examName}</h3>
+                    <div class="shrink-0">
+                        ${task.status === 'in_progress' ?
+                            `<button onclick="event.stopPropagation();startGrading('${task.id}')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg font-medium">开始批阅</button>` :
+                          task.status === 'completed' ?
+                            `<button onclick="event.stopPropagation();showAnalysis('${task.id}')" class="px-3 py-1.5 border border-blue-300 hover:bg-blue-50 text-blue-600 text-xs rounded-lg font-medium mr-1.5"><i class="fas fa-chart-bar mr-1"></i>成绩分析</button><button onclick="event.stopPropagation();viewResult('${task.id}')" class="px-3 py-1.5 border border-gray-300 hover:bg-gray-50 text-gray-600 text-xs rounded-lg">查看结果</button>` :
+                            `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">未开始</span>`}
+                    </div>
+                </div>
+
+                <!-- 基本信息 -->
+                <div class="text-xs text-gray-500 mb-3 flex items-center gap-x-3">
+                    <span><i class="fas fa-hashtag mr-1 text-gray-400"></i>${task.id}</span>
+                    <span class="text-gray-300">·</span>
+                    <span><i class="far fa-file-alt mr-1 text-gray-400"></i>${task.paperName}<span class="text-gray-300 mx-1">|</span><span class="text-gray-400">${task.paperMode === 'doc' ? '文档' : '抽题'}</span></span>
+                    ${aiTags}
+                </div>
+
+                <!-- 时间信息 -->
+                <div class="text-xs space-y-1.5 mb-3 pb-3 border-b border-gray-100">
+                    <div class="flex">
+                        <span class="text-gray-400 w-20 shrink-0"><i class="far fa-clock mr-1.5"></i>考试时间</span>
+                        <span class="text-gray-600">${formatDateTime(task.examStart)} ~ ${formatDateTime(task.examEnd)}</span>
+                    </div>
+                    <div class="flex">
+                        <span class="text-gray-400 w-20 shrink-0"><i class="far fa-flag mr-1.5"></i>阅卷截止</span>
+                        ${deadlineHtml}
+                    </div>
+                </div>
+
+                <!-- 数据统计 -->
+                <div class="flex items-center justify-between text-xs mb-3">
+                    <div class="flex gap-4">
+                        <span class="text-gray-500">${task.duration}分钟 · ${task.questionCount}题 · ${task.totalScore}分</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="text-gray-500">考生 <span class="text-gray-700 font-medium">${task.totalStudents}</span></span>
+                        <span class="text-gray-500">已交 <span class="text-gray-700 font-medium">${task.submittedCount}</span></span>
+                        <span class="text-gray-500">待批 <span class="text-orange-500 font-medium">${pending}</span></span>
+                    </div>
+                </div>
+
+                <!-- 进度条 -->
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+                        <div class="progress-bar bg-green-500 h-1.5 rounded-full" style="width:${progress}%"></div>
+                    </div>
+                    <span class="text-xs font-medium text-gray-600 w-9 text-right">${progress}%</span>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function getTaskMode(id) {
+        const t = allTasks.find(t => t.id === id);
+        return t ? t.paperMode : 'random';
+    }
+    function goToExam(id, status) { window.location.href = `grade.html?taskId=${id}&examStatus=${status}&paperMode=${getTaskMode(id)}`; }
+    function startGrading(id) { window.location.href = `grade.html?taskId=${id}&examStatus=in_progress&paperMode=${getTaskMode(id)}`; }
+    function viewResult(id) { window.location.href = `grade.html?taskId=${id}&examStatus=completed&paperMode=${getTaskMode(id)}`; }
+
+    function initUserMenu() {
+        const btn = document.getElementById('userMenuBtn');
+        const menu = document.getElementById('userMenu');
+        btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+        document.addEventListener('click', () => menu.classList.add('hidden'));
+    }
+
+    function logout() {
+        localStorage.removeItem('teacherInfo');
+        sessionStorage.removeItem('teacherInfo');
+        window.location.href = 'login.html';
+    }
+
+    // ========== 成绩分析大屏 ==========
+
+    // Box-Muller 正态分布随机数
+    function gaussianRandom(mean, stdDev) {
+        let u = 0, v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        return mean + z * stdDev;
+    }
+
+    // 生成全班成绩 mock 数据
+    function generateClassScores(task) {
+        const total = task.totalScore;
+        const count = task.totalStudents;
+        const surnames = ['张','李','王','刘','陈','杨','赵','黄','周','吴',
+            '徐','孙','胡','朱','高','林','何','郭','马','罗'];
+        const names = ['伟','芳','娜','敏','静','丽','强','磊','洋','艳',
+            '勇','军','杰','娟','涛','明','超','秀英','华','慧'];
+        const students = [];
+        // 题型满分分配（按比例分配到 totalScore）
+        const typeRatios = {
+            single: 0.20, multiple: 0.15, judge: 0.10,
+            fill: 0.15, essay: 0.25, composite: 0.15
+        };
+        const typeMaxScores = {};
+        for (const [k, r] of Object.entries(typeRatios)) {
+            typeMaxScores[k] = Math.round(total * r);
+        }
+        for (let i = 0; i < count; i++) {
+            const sn = surnames[Math.floor(Math.random() * surnames.length)];
+            const nm = names[Math.floor(Math.random() * names.length)];
+            const zeroScores = { single:0,multiple:0,judge:0,fill:0,essay:0,composite:0 };
+            // 缺考 2 人、违纪 1 人、作弊 1 人、疑似作弊 1 人
+            const specialMap = {
+                [count - 1]: 'absent',
+                [count - 2]: 'absent',
+                [count - 3]: 'cheating',
+                [count - 4]: 'fraud',
+                [count - 5]: 'suspect'
+            };
+            if (specialMap[i]) {
+                students.push({ name: sn + nm, score: 0, status: specialMap[i], typeScores: zeroScores });
+                continue;
+            }
+            // 正态分布生成各题型得分
+            const typeScores = {};
+            let sum = 0;
+            for (const [k, max] of Object.entries(typeMaxScores)) {
+                const rate = Math.max(0, Math.min(1, gaussianRandom(0.70, 0.15)));
+                typeScores[k] = Math.round(max * rate);
+                sum += typeScores[k];
+            }
+            students.push({ name: sn + nm, score: Math.min(sum, total),
+                status: 'normal', typeScores });
+        }
+        return students;
+    }
+
+    function showAnalysis(taskId) {
+        const task = allTasks.find(t => t.id === taskId);
+        if (!task) return;
+        const students = generateClassScores(task);
+        document.body.style.overflow = 'hidden';
+        const modal = document.getElementById('analysisModal');
+        modal.classList.remove('hidden');
+        const content = document.getElementById('analysisContent');
+        const result = renderAnalysisContent(task, students);
+        content.innerHTML = result.html;
+        content.scrollTop = 0;
+        // 延迟初始化 ECharts，确保 DOM 布局完成后再计算容器尺寸
+        setTimeout(() => initAnalysisCharts(result.chartData), 50);
+    }
+
+    // 存储 ECharts 实例，关闭时销毁
+    let analysisCharts = [];
+
+    function closeAnalysis() {
+        analysisCharts.forEach(c => c.dispose());
+        analysisCharts = [];
+        document.getElementById('analysisModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function filterAnalysisTable(value) {
+        const table = document.getElementById('analysisDetailTable');
+        const container = document.getElementById('analysisContent');
+        if (!table || !container) return;
+        // 记录 sticky 标题区域的位置，筛选后滚动到该位置
+        const stickyHeader = table.closest('.glass-card')?.querySelector('.sticky');
+        const rows = table.querySelectorAll('tbody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const grade = row.getAttribute('data-grade');
+            const show = value === 'all' || grade === value;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const countEl = document.getElementById('analysisTableCount');
+        if (countEl) countEl.textContent = value === 'all'
+            ? `共${rows.length}人`
+            : `${visible}/${rows.length}人`;
+        // 筛选后确保表格区域可见，不跳到页面顶部
+        if (stickyHeader) {
+            const card = stickyHeader.closest('.glass-card');
+            if (card) {
+                const cardTop = card.offsetTop - 60;
+                if (container.scrollTop > cardTop) {
+                    container.scrollTop = cardTop;
+                }
+            }
+        }
+    }
+
+    function initAnalysisCharts(data) {
+        analysisCharts = [];
+        const { segReversed, typeStats, grades } = data;
+
+        // 1. 分数段面积图
+        const segChart = echarts.init(document.getElementById('segAreaChart'));
+        analysisCharts.push(segChart);
+        segChart.setOption({
+            tooltip: { trigger: 'axis',
+                formatter: p => `${p[0].name}<br/>${p[0].marker} ${p[0].value}人`
+            },
+            grid: { left: 15, right: 15, top: 40, bottom: 10, containLabel: true },
+            xAxis: { type: 'category', boundaryGap: true,
+                data: segReversed.map(s => s.label),
+                axisLine: { lineStyle: { color: '#e5e7eb' } },
+                axisLabel: { color: '#6b7280', fontSize: 11 },
+                axisTick: { show: false }
+            },
+            yAxis: { type: 'value', minInterval: 1,
+                axisLine: { show: false },
+                splitLine: { lineStyle: { color: '#f3f4f6' } },
+                axisLabel: { color: '#9ca3af', fontSize: 11 }
+            },
+            series: [{
+                type: 'line', smooth: true, symbol: 'circle', symbolSize: 7,
+                data: segReversed.map(s => s.count),
+                lineStyle: { color: '#3b82f6', width: 2.5 },
+                itemStyle: { color: '#3b82f6', borderColor: '#fff', borderWidth: 2 },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(59,130,246,0.35)' },
+                        { offset: 1, color: 'rgba(59,130,246,0.03)' }
+                    ])
+                },
+                label: { show: true, position: 'top', fontSize: 11,
+                    color: '#3b82f6', formatter: '{c}人' }
+            }]
+        });
+
+        // 2. 题型柱状图
+        const typeColors = ['#3b82f6','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ef4444'];
+        const typeChart = echarts.init(document.getElementById('typeBarChart'));
+        analysisCharts.push(typeChart);
+        typeChart.setOption({
+            tooltip: { trigger: 'axis',
+                formatter: p => `${p[0].name}<br/>${p[0].marker} 得分率 ${p[0].value.toFixed(1)}%`
+            },
+            grid: { left: 10, right: 10, top: 40, bottom: 5, containLabel: true },
+            xAxis: { type: 'category',
+                data: typeStats.map(t => t.name),
+                axisLine: { lineStyle: { color: '#e5e7eb' } },
+                axisLabel: { color: '#6b7280', fontSize: 10, interval: 0 },
+                axisTick: { show: false }
+            },
+            yAxis: { type: 'value', max: 100,
+                axisLine: { show: false },
+                splitLine: { lineStyle: { color: '#f3f4f6' } },
+                axisLabel: { color: '#9ca3af', fontSize: 10, formatter: '{value}%' }
+            },
+            series: [{
+                type: 'bar', barWidth: '40%',
+                data: typeStats.map((t, i) => ({
+                    value: parseFloat(t.rate.toFixed(1)),
+                    itemStyle: { color: typeColors[i],
+                        borderRadius: [4, 4, 0, 0] }
+                })),
+                label: { show: true, position: 'top', fontSize: 10,
+                    color: '#374151', formatter: '{c}%' }
+            }]
+        });
+
+        // 3. 等级环形图
+        const pieChart = echarts.init(document.getElementById('gradePieChart'));
+        analysisCharts.push(pieChart);
+        pieChart.setOption({
+            tooltip: { trigger: 'item',
+                formatter: p => `${p.name}<br/>${p.value}人 (${p.percent}%)`
+            },
+            legend: { orient: 'horizontal', bottom: 5, left: 'center',
+                textStyle: { fontSize: 10, color: '#374151' },
+                itemWidth: 10, itemHeight: 10, itemGap: 12,
+                formatter: name => {
+                    const item = grades.find(g => g.name === name);
+                    return item ? `${name} ${item.count}人` : name;
+                }
+            },
+            series: [{
+                type: 'pie', radius: ['35%', '60%'],
+                center: ['50%', '45%'],
+                avoidLabelOverlap: true,
+                itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+                label: { show: false },
+                labelLine: { show: false },
+                data: grades.map(g => ({
+                    value: g.count, name: g.name,
+                    itemStyle: { color: g.color }
+                }))
+            }]
+        });
+
+        // 响应窗口 resize
+        window.addEventListener('resize', () => {
+            analysisCharts.forEach(c => c.resize());
+        });
+    }
+
+    function renderAnalysisContent(task, students) {
+        const total = task.totalScore;
+        const valid = students.filter(s => s.status === 'normal');
+        const absentCount = students.filter(s => s.status === 'absent').length;
+        const cheatingCount = students.filter(s => s.status === 'cheating').length;
+        const fraudCount = students.filter(s => s.status === 'fraud').length;
+        const suspectCount = students.filter(s => s.status === 'suspect').length;
+        const scores = valid.map(s => s.score).sort((a, b) => b - a);
+        const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const maxScore = scores.length ? scores[0] : 0;
+        const minScore = scores.length ? scores[scores.length - 1] : 0;
+        const passLine = Math.round(total * 0.6);
+        const excellentLine = Math.round(total * 0.9);
+        const passCount = scores.filter(s => s >= passLine).length;
+        const excellentCount = scores.filter(s => s >= excellentLine).length;
+        const passRate = scores.length ? (passCount / scores.length * 100) : 0;
+        const excellentRate = scores.length ? (excellentCount / scores.length * 100) : 0;
+
+        // 分数段统计
+        const segments = [
+            { label: '90-100', min: Math.round(total*0.9), max: total, color: 'bg-green-500' },
+            { label: '80-89', min: Math.round(total*0.8), max: Math.round(total*0.9)-1, color: 'bg-blue-500' },
+            { label: '70-79', min: Math.round(total*0.7), max: Math.round(total*0.8)-1, color: 'bg-cyan-500' },
+            { label: '60-69', min: Math.round(total*0.6), max: Math.round(total*0.7)-1, color: 'bg-yellow-500' },
+            { label: '0-59', min: 0, max: Math.round(total*0.6)-1, color: 'bg-red-400' }
+        ];
+        segments.forEach(seg => {
+            seg.count = scores.filter(s => s >= seg.min && s <= seg.max).length;
+            seg.pct = scores.length ? (seg.count / scores.length * 100) : 0;
+        });
+
+        // 等级分布
+        const grades = [
+            { name: '优秀', min: 90, color: '#10b981', bg: 'bg-green-100 text-green-700' },
+            { name: '良好', min: 80, color: '#3b82f6', bg: 'bg-blue-100 text-blue-700' },
+            { name: '中等', min: 70, color: '#06b6d4', bg: 'bg-cyan-100 text-cyan-700' },
+            { name: '及格', min: 60, color: '#f59e0b', bg: 'bg-yellow-100 text-yellow-700' },
+            { name: '不及格', min: 0, color: '#ef4444', bg: 'bg-red-100 text-red-700' }
+        ];
+        grades.forEach((g, i) => {
+            const maxPct = i === 0 ? 100 : grades[i-1].min;
+            g.count = scores.filter(s => {
+                const pct = s / total * 100;
+                return pct >= g.min && pct < maxPct;
+            }).length;
+            // 优秀段包含满分
+            if (i === 0) g.count = scores.filter(s => s / total * 100 >= g.min).length;
+            g.pct = scores.length ? (g.count / scores.length * 100) : 0;
+        });
+
+        // 题型得分率
+        const typeNames = { single:'单选题', multiple:'多选题', judge:'判断题',
+            fill:'填空题', essay:'简答题', composite:'复合题' };
+        const typeRatios = { single:0.20, multiple:0.15, judge:0.10,
+            fill:0.15, essay:0.25, composite:0.15 };
+        const typeStats = Object.keys(typeNames).map(k => {
+            const max = Math.round(total * typeRatios[k]);
+            const avgScore = valid.length
+                ? valid.reduce((s, st) => s + st.typeScores[k], 0) / valid.length : 0;
+            return { key: k, name: typeNames[k], max, avg: avgScore,
+                rate: max > 0 ? (avgScore / max * 100) : 0 };
+        });
+
+        // 等级判定函数
+        function getGrade(score) {
+            const pct = score / total * 100;
+            if (pct >= 90) return '优秀';
+            if (pct >= 80) return '良好';
+            if (pct >= 70) return '中等';
+            if (pct >= 60) return '及格';
+            return '不及格';
+        }
+        function getGradeColor(grade) {
+            const m = { '优秀':'text-green-600','良好':'text-blue-600',
+                '中等':'text-cyan-600','及格':'text-yellow-600','不及格':'text-red-500' };
+            return m[grade] || 'text-gray-500';
+        }
+
+        let html = `
+        <!-- 区域1: Header -->
+        <div class="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 py-3">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <button onclick="closeAnalysis()" class="flex items-center text-gray-500 hover:text-gray-700 text-sm">
+                    <i class="fas fa-times text-lg mr-2"></i>关闭
+                </button>
+                <h2 class="text-base font-semibold text-gray-800">
+                    <i class="fas fa-chart-bar text-blue-500 mr-2"></i>${task.examName.replace(/ #\d+$/,'')} · 成绩分析
+                </h2>
+                <div class="text-xs text-gray-400 text-right">
+                    <div>${task.paperName} · 满分${total}分</div>
+                    <div>${formatDateTime(task.examStart)} ~ ${formatDateTime(task.examEnd)}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 py-5 space-y-5">
+
+        <!-- 区域2: 核心指标卡片 -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-gray-800">${valid.length}<span class="text-sm font-normal text-gray-400">/${task.totalStudents}</span></div>
+                <div class="text-xs text-gray-500 mt-1">参考人数</div>
+                <div class="text-xs text-gray-400 mt-0.5">缺考${absentCount} · 违纪${cheatingCount} · 作弊${fraudCount} · 疑似${suspectCount}</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600">${avg.toFixed(1)}</div>
+                <div class="text-xs text-gray-500 mt-1">平均分</div>
+                <div class="text-xs text-gray-400 mt-0.5">得分率 ${(avg/total*100).toFixed(1)}%</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-green-600">${maxScore}<span class="text-sm font-normal text-gray-400">/${minScore}</span></div>
+                <div class="text-xs text-gray-500 mt-1">最高分 / 最低分</div>
+                <div class="text-xs text-gray-400 mt-0.5">极差 ${maxScore - minScore}</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-emerald-600">${passRate.toFixed(1)}%</div>
+                <div class="text-xs text-gray-500 mt-1">及格率</div>
+                <div class="text-xs text-gray-400 mt-0.5">${passCount}人 ≥ ${passLine}分</div>
+            </div>
+            <div class="glass-card rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-purple-600">${excellentRate.toFixed(1)}%</div>
+                <div class="text-xs text-gray-500 mt-1">优秀率</div>
+                <div class="text-xs text-gray-400 mt-0.5">${excellentCount}人 ≥ ${excellentLine}分</div>
+            </div>
+        </div>`;
+
+        // 区域3: ECharts 图表数据准备
+        const segReversed = [...segments].reverse();
+
+        html += `
+        <!-- 分数段分布（独占一行） -->
+        <div class="glass-card rounded-xl p-5 overflow-hidden">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-area text-blue-500 mr-2"></i>分数段分布</h3>
+            <div id="segAreaChart" style="height:220px"></div>
+        </div>
+
+        <!-- 题型得分率 + 等级分布（并排一行） -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="glass-card rounded-xl p-5 overflow-hidden">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-bar text-cyan-500 mr-2"></i>各题型平均得分率</h3>
+                <div id="typeBarChart" style="width:100%;height:260px"></div>
+            </div>
+            <div class="glass-card rounded-xl p-5 overflow-hidden">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-pie text-purple-500 mr-2"></i>成绩等级分布</h3>
+                <div id="gradePieChart" style="width:100%;height:260px"></div>
+            </div>
+        </div>`;
+
+        // 区域4+5: 等级分布 + 全班成绩明细表
+        const allSorted = [...students].sort((a, b) => b.score - a.score);
+        let rank = 0;
+        let tableRows = allSorted.map((s, i) => {
+            const isSpecial = s.status !== 'normal';
+            if (!isSpecial) rank++;
+            const grade = isSpecial ? '-' : getGrade(s.score);
+            const gc = getGradeColor(grade);
+            const statusLabel = { absent:'缺考', cheating:'违纪', fraud:'作弊', suspect:'疑似作弊' }[s.status] || '';
+            const statusColor = { absent:'bg-gray-100 text-gray-500', cheating:'bg-red-100 text-red-500', fraud:'bg-orange-100 text-orange-600', suspect:'bg-yellow-100 text-yellow-600' }[s.status] || '';
+            const rowBg = isSpecial ? 'bg-gray-50 text-gray-400' : '';
+            const ts = s.typeScores;
+            const dataGrade = isSpecial ? s.status : grade;
+            return `<tr class="${rowBg} border-b border-gray-100 hover:bg-blue-50/30" data-grade="${dataGrade}">
+                <td class="py-2 px-3 text-center">${isSpecial ? '-' : rank}</td>
+                <td class="py-2 px-3">${s.name}</td>
+                <td class="py-2 px-3 text-center font-medium">${s.score}</td>
+                <td class="py-2 px-3 text-center">${ts.single}</td>
+                <td class="py-2 px-3 text-center">${ts.multiple}</td>
+                <td class="py-2 px-3 text-center">${ts.judge}</td>
+                <td class="py-2 px-3 text-center">${ts.fill}</td>
+                <td class="py-2 px-3 text-center">${ts.essay}</td>
+                <td class="py-2 px-3 text-center">${ts.composite}</td>
+                <td class="py-2 px-3 text-center ${gc}">${grade}</td>
+                <td class="py-2 px-3 text-center">${statusLabel
+                    ? `<span class="px-1.5 py-0.5 ${statusColor} rounded text-xs">${statusLabel}</span>` : ''}</td>
+            </tr>`;
+        }).join('');
+
+        // 题型满分值（用于表头显示）
+        const tm = typeStats.reduce((o, t) => { o[t.key] = t.max; return o; }, {});
+
+        html += `
+        <!-- 区域5: 全班成绩明细表 -->
+        <div class="glass-card rounded-xl">
+            <div class="sticky top-[53px] z-[5] bg-white/95 backdrop-blur-md px-5 pt-4 pb-0 border-b border-gray-100">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-700">
+                        <i class="fas fa-table text-green-500 mr-2"></i>全班成绩明细
+                        <span class="text-xs font-normal text-gray-400 ml-2" id="analysisTableCount">共${students.length}人</span>
+                    </h3>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="text-gray-400">等级筛选</span>
+                        <select id="gradeFilter" onchange="filterAnalysisTable(this.value)"
+                            class="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-blue-300">
+                            <option value="all">全部</option>
+                            <option value="优秀">优秀</option>
+                            <option value="良好">良好</option>
+                            <option value="中等">中等</option>
+                            <option value="及格">及格</option>
+                            <option value="不及格">不及格</option>
+                            <option value="absent">缺考</option>
+                            <option value="cheating">违纪</option>
+                            <option value="fraud">作弊</option>
+                            <option value="suspect">疑似作弊</option>
+                        </select>
+                    </div>
+                </div>
+                <table class="w-full text-xs" style="table-layout:fixed"><colgroup>
+                    <col style="width:50px"><col><col style="width:60px">
+                    <col style="width:70px"><col style="width:70px"><col style="width:70px">
+                    <col style="width:70px"><col style="width:70px"><col style="width:70px">
+                    <col style="width:60px"><col style="width:60px">
+                </colgroup><thead>
+                    <tr class="bg-gray-50/80 text-gray-500">
+                        <th class="py-2 px-3 text-center font-medium">排名</th>
+                        <th class="py-2 px-3 text-left font-medium">姓名</th>
+                        <th class="py-2 px-3 text-center font-medium">总分</th>
+                        <th class="py-2 px-3 text-center font-medium">单选(${tm.single})</th>
+                        <th class="py-2 px-3 text-center font-medium">多选(${tm.multiple})</th>
+                        <th class="py-2 px-3 text-center font-medium">判断(${tm.judge})</th>
+                        <th class="py-2 px-3 text-center font-medium">填空(${tm.fill})</th>
+                        <th class="py-2 px-3 text-center font-medium">简答(${tm.essay})</th>
+                        <th class="py-2 px-3 text-center font-medium">复合(${tm.composite})</th>
+                        <th class="py-2 px-3 text-center font-medium">等级</th>
+                        <th class="py-2 px-3 text-center font-medium">状态</th>
+                    </tr>
+                </thead></table>
+            </div>
+            <div class="px-5 pb-5" style="min-height:200px">
+                <table class="w-full text-xs" id="analysisDetailTable" style="table-layout:fixed"><colgroup>
+                    <col style="width:50px"><col><col style="width:60px">
+                    <col style="width:70px"><col style="width:70px"><col style="width:70px">
+                    <col style="width:70px"><col style="width:70px"><col style="width:70px">
+                    <col style="width:60px"><col style="width:60px">
+                </colgroup>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+        </div>
+
+        </div><!-- end max-w-7xl container -->
+        `;
+
+        return {
+            html,
+            chartData: { segReversed, typeStats, grades }
+        };
+    }
+    </script>
+</body>
+</html>

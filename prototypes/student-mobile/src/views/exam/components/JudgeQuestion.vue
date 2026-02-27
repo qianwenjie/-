@@ -1,26 +1,24 @@
 <template>
   <div class="judge-question">
     <div
-      class="judge-option"
-      :class="{ 'option-selected correct': value === 'true' }"
+      class="judge-row"
+      :class="{ 'row-selected correct': value === 'true' }"
       @click="handleSelect('true')"
     >
-      <div class="option-icon correct-icon">
+      <div class="row-icon correct-icon">
         <van-icon name="success" />
       </div>
-      <span class="option-text">正确</span>
-      <van-icon v-if="value === 'true'" name="checked" class="check-icon" />
+      <span class="row-text">正确</span>
     </div>
     <div
-      class="judge-option"
-      :class="{ 'option-selected wrong': value === 'false' }"
+      class="judge-row"
+      :class="{ 'row-selected wrong': value === 'false' }"
       @click="handleSelect('false')"
     >
-      <div class="option-icon wrong-icon">
+      <div class="row-icon wrong-icon">
         <van-icon name="cross" />
       </div>
-      <span class="option-text">错误</span>
-      <van-icon v-if="value === 'false'" name="checked" class="check-icon" />
+      <span class="row-text">错误</span>
     </div>
   </div>
 </template>
@@ -47,37 +45,38 @@ const handleSelect = (val) => {
 <style scoped>
 .judge-question {
   display: flex;
-  gap: 12px;
-}
-
-.judge-option {
-  flex: 1;
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 20px 16px;
-  background: #F7F8FA;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
   gap: 10px;
 }
 
-.judge-option:active {
-  transform: scale(0.96);
+.judge-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
 }
 
-.option-selected.correct {
+.judge-row:active {
+  transform: scale(0.98);
+  background: #F0F1F3;
+}
+
+.row-selected.correct {
   background: #E8F8F0;
 }
 
-.option-selected.wrong {
+.row-selected.wrong {
   background: #FFF1F0;
 }
 
-.option-icon {
-  width: 48px;
-  height: 48px;
+.row-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -95,35 +94,24 @@ const handleSelect = (val) => {
   color: #F53F3F;
 }
 
-.option-selected.correct .correct-icon {
+.row-selected.correct .correct-icon {
   background: #00B96B;
   color: #FFFFFF;
 }
 
-.option-selected.wrong .wrong-icon {
+.row-selected.wrong .wrong-icon {
   background: #F53F3F;
   color: #FFFFFF;
 }
 
-.option-icon .van-icon {
-  font-size: 24px;
+.row-icon .van-icon {
+  font-size: 14px;
 }
 
-.option-text {
-  font-size: 16px;
+.row-text {
+  flex: 1;
+  font-size: 15px;
   font-weight: 600;
   color: #1D2129;
-}
-
-.check-icon {
-  font-size: 20px;
-}
-
-.option-selected.correct .check-icon {
-  color: #00B96B;
-}
-
-.option-selected.wrong .check-icon {
-  color: #F53F3F;
 }
 </style>

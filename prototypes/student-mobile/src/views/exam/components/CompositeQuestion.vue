@@ -1,192 +1,258 @@
 <template>
   <div class="composite-question">
-    <!-- 答题面板 -->
-    <div class="answer-panel" :style="{ height: panelHeight + 'vh' }">
-      <!-- 拖拽手柄 -->
+    <!-- 全屏答题面板 -->
+    <van-popup
+      v-model:show="panelVisible"
+      position="right"
+      :style="{ width: '90%', height: '100vh' }"
+      :lock-scroll="true"
+      :close-on-click-overlay="true"
+    >
       <div
-        class="drag-handle"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
+        class="panel-wrapper"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
       >
-        <div class="handle-bar"></div>
-      </div>
-
-      <!-- 面板头部 -->
-      <div class="panel-header">
-        <div class="header-left">
-          <span class="sub-indicator">第 {{ currentSubIndex + 1 }} 小题</span>
-          <span class="sub-total">共 {{ question.subQuestions.length }} 题</span>
-        </div>
-        <div class="header-right">
-          <span class="sub-score">{{ currentSubQuestion.score }}分</span>
-          <span class="answer-status" :class="hasAnswer ? 'status-done' : 'status-pending'">
-            {{ hasAnswer ? '已答' : '未答' }}
-          </span>
-        </div>
-      </div>
-
-      <!-- 子题进度条 -->
-      <div class="header-progress">
-        <div
-          v-for="(sub, index) in question.subQuestions"
-          :key="sub.id"
-          class="progress-dot"
-          :class="{
-            'dot-current': index === currentSubIndex,
-            'dot-answered': isSubAnswered(sub.id, sub.type)
-          }"
-          @click="currentSubIndex = index"
-        ></div>
-      </div>
-
-      <!-- 子题内容 -->
-      <div class="panel-content">
-        <div
-          v-for="(subQuestion, index) in question.subQuestions"
-          :key="subQuestion.id"
-          class="sub-question-wrapper"
-          v-show="currentSubIndex === index"
-        >
-          <!-- 子题题干 -->
-          <div class="sub-stem">
-            <span class="stem-number">({{ index + 1 }})</span>
-            <span class="stem-text">{{ subQuestion.content }}</span>
-          </div>
-
-          <!-- 子题类型标签 -->
-          <div class="sub-type-tag">
-            <van-tag :type="getSubTypeColor(subQuestion.type)" size="medium">
-              {{ getSubTypeName(subQuestion.type) }}
-            </van-tag>
-          </div>
-
-          <!-- 根据子题类型渲染答题区域 -->
-          <div class="sub-answer-area">
-            <!-- 单选题 -->
-            <div v-if="subQuestion.type === 'single'" class="options-list">
-              <div
-                v-for="option in subQuestion.options"
-                :key="option.label"
-                class="option-card"
-                :class="{ 'option-selected': isSelected(subQuestion.id, option.label) }"
-                @click="selectOption(subQuestion.id, option.label)"
-              >
-                <div class="option-indicator">{{ option.label }}</div>
-                <div class="option-content">{{ option.text }}</div>
-                <div class="option-check" v-if="isSelected(subQuestion.id, option.label)">
-                  <van-icon name="success" />
-                </div>
-              </div>
-            </div>
-
-            <!-- 多选题 -->
-            <div v-else-if="subQuestion.type === 'multiple'" class="options-list">
-              <div class="multi-hint">
-                <van-icon name="info-o" />
-                <span>本题为多选题</span>
-              </div>
-              <div
-                v-for="option in subQuestion.options"
-                :key="option.label"
-                class="option-card multi-option"
-                :class="{ 'option-selected': isMultiSelected(subQuestion.id, option.label) }"
-                @click="toggleMultiOption(subQuestion.id, option.label)"
-              >
-                <div class="checkbox-indicator" :class="{ 'checkbox-checked': isMultiSelected(subQuestion.id, option.label) }">
-                  <van-icon v-if="isMultiSelected(subQuestion.id, option.label)" name="success" />
-                </div>
-                <div class="option-label">{{ option.label }}</div>
-                <div class="option-content">{{ option.text }}</div>
-              </div>
-            </div>
-
-            <!-- 简答题 -->
-            <div v-else-if="subQuestion.type === 'essay'" class="essay-area">
-              <textarea
-                :value="getSubAnswer(subQuestion.id).text"
-                @input="(e) => handleEssayChange(subQuestion.id, e.target.value)"
-                placeholder="请输入你的答案..."
-                class="essay-input"
-                rows="6"
-              ></textarea>
-              <div class="essay-footer">
-                <span class="char-count">{{ (getSubAnswer(subQuestion.id).text || '').length }} 字</span>
-                <div class="attachment-count">{{ (getSubAnswer(subQuestion.id).attachments || []).length }}/3</div>
-              </div>
-
-              <!-- 已上传的附件列表 -->
-              <div v-if="(getSubAnswer(subQuestion.id).attachments || []).length > 0" class="attachment-list">
-                <div
-                  v-for="(file, fileIndex) in getSubAnswer(subQuestion.id).attachments"
-                  :key="fileIndex"
-                  class="attachment-item"
-                >
-                  <div class="file-preview">
-                    <img v-if="file.type && file.type.startsWith('image/')" :src="file.url" class="preview-image" />
-                    <div v-else class="file-icon-wrapper">
-                      <van-icon name="description" />
-                    </div>
-                  </div>
-                  <div class="file-info">
-                    <div class="file-name">{{ file.name }}</div>
-                    <div class="file-meta">{{ formatFileSize(file.size) }}</div>
-                  </div>
-                  <van-icon
-                    name="cross"
-                    class="delete-btn"
-                    @click="handleAttachmentDelete(subQuestion.id, fileIndex)"
-                  />
-                </div>
-              </div>
-
-              <!-- 上传按钮 -->
-              <van-uploader
-                v-model="tempFileList"
-                :max-count="3"
-                :max-size="10 * 1024 * 1024"
-                :after-read="(file) => handleAttachmentUpload(subQuestion.id, file)"
-                @oversize="handleOversize"
-                multiple
-                :disabled="(getSubAnswer(subQuestion.id).attachments || []).length >= 3"
-              >
-                <div class="upload-trigger" :class="{ 'trigger-disabled': (getSubAnswer(subQuestion.id).attachments || []).length >= 3 }">
-                  <van-icon name="plus" />
-                  <span>{{ (getSubAnswer(subQuestion.id).attachments || []).length >= 3 ? '已达上限' : '添加附件' }}</span>
-                </div>
-              </van-uploader>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 导航栏 -->
-      <div class="panel-nav">
-        <van-button
-          class="nav-btn"
-          :disabled="currentSubIndex === 0"
-          @click="prevSub"
-        >
-          <van-icon name="arrow-left" />
-          上一题
-        </van-button>
-
-        <div class="nav-progress">
-          <span class="progress-current">{{ currentSubIndex + 1 }}</span>
-          <span class="progress-divider">/</span>
-          <span class="progress-total">{{ question.subQuestions.length }}</span>
-        </div>
-
-        <van-button
-          class="nav-btn nav-btn-primary"
-          :disabled="currentSubIndex === question.subQuestions.length - 1"
-          @click="nextSub"
-        >
-          下一题
+        <!-- 左侧突出页签：查看题目 -->
+        <div class="panel-tab" @click="panelVisible = false">
           <van-icon name="arrow" />
-        </van-button>
+          <span>查</span>
+          <span>看</span>
+          <span>题</span>
+          <span>目</span>
+        </div>
+
+        <!-- 顶部栏 -->
+        <div class="panel-top">
+          <div class="top-title">
+            <span class="sub-indicator">第 {{ currentSubIndex + 1 }} 小题</span>
+            <span class="sub-total">共 {{ question.subQuestions.length }} 题</span>
+          </div>
+          <div class="top-progress">
+            <div
+              v-for="(sub, index) in question.subQuestions"
+              :key="sub.id"
+              class="progress-dot"
+              :class="{
+                'dot-current': index === currentSubIndex,
+                'dot-answered': isSubAnswered(sub.id, sub.type)
+              }"
+              @click="currentSubIndex = index"
+            ></div>
+          </div>
+        </div>
+
+        <!-- 子题内容区域 -->
+        <div class="panel-content">
+          <div
+            v-for="(subQuestion, index) in question.subQuestions"
+            :key="subQuestion.id"
+            class="sub-question-wrapper"
+            v-show="currentSubIndex === index"
+          >
+            <!-- 子题题干 -->
+            <div class="sub-stem">
+              <span class="stem-number">({{ index + 1 }})</span>
+              <span class="stem-text">{{ subQuestion.content }}</span>
+            </div>
+
+            <!-- 子题类型标签 + 分值 -->
+            <div class="sub-meta">
+              <van-tag :type="getSubTypeColor(subQuestion.type)" size="medium">
+                {{ getSubTypeName(subQuestion.type) }}
+              </van-tag>
+              <span class="sub-score">{{ subQuestion.score }}分</span>
+            </div>
+
+            <!-- 根据子题类型渲染答题区域 -->
+            <div class="sub-answer-area">
+              <!-- 单选题 -->
+              <div v-if="subQuestion.type === 'single'" class="options-list">
+                <div
+                  v-for="option in subQuestion.options"
+                  :key="option.label"
+                  class="option-item"
+                  :class="{ 'option-selected': isSelected(subQuestion.id, option.label) }"
+                  @click="selectOption(subQuestion.id, option.label)"
+                >
+                  <div class="option-badge">{{ option.label }}</div>
+                  <div class="option-text">{{ option.text }}</div>
+                </div>
+              </div>
+
+              <!-- 多选题 -->
+              <div v-else-if="subQuestion.type === 'multiple'" class="options-list">
+                <div class="multi-hint">
+                  <van-icon name="info-o" />
+                  <span>本题为多选题</span>
+                </div>
+                <div
+                  v-for="option in subQuestion.options"
+                  :key="option.label"
+                  class="option-item multi-option"
+                  :class="{ 'option-selected': isMultiSelected(subQuestion.id, option.label) }"
+                  @click="toggleMultiOption(subQuestion.id, option.label)"
+                >
+                  <div class="checkbox-indicator" :class="{ 'checkbox-checked': isMultiSelected(subQuestion.id, option.label) }">
+                    <van-icon v-if="isMultiSelected(subQuestion.id, option.label)" name="success" />
+                  </div>
+                  <div class="option-label">{{ option.label }}</div>
+                  <div class="option-text">{{ option.text }}</div>
+                </div>
+              </div>
+
+              <!-- 判断题 -->
+              <div v-else-if="subQuestion.type === 'judge'" class="judge-area">
+                <div
+                  class="judge-row"
+                  :class="{ 'row-selected correct': value[subQuestion.id] === 'true' }"
+                  @click="selectOption(subQuestion.id, 'true')"
+                >
+                  <div class="row-icon correct-icon">
+                    <van-icon name="success" />
+                  </div>
+                  <span class="row-text">正确</span>
+                </div>
+                <div
+                  class="judge-row"
+                  :class="{ 'row-selected wrong': value[subQuestion.id] === 'false' }"
+                  @click="selectOption(subQuestion.id, 'false')"
+                >
+                  <div class="row-icon wrong-icon">
+                    <van-icon name="cross" />
+                  </div>
+                  <span class="row-text">错误</span>
+                </div>
+              </div>
+
+              <!-- 填空题 -->
+              <div v-else-if="subQuestion.type === 'blank'" class="blank-area">
+                <div
+                  v-for="(blank, bIdx) in subQuestion.blanks"
+                  :key="blank.id"
+                  class="blank-item"
+                >
+                  <div class="blank-header">
+                    <span class="blank-num">第 {{ blank.order }} 空</span>
+                    <span v-if="getBlankValue(subQuestion.id, blank.id)" class="filled-tag">
+                      <van-icon name="passed" /> 已填
+                    </span>
+                  </div>
+                  <div v-if="subQuestion.blankHints && subQuestion.blankHints[bIdx]" class="blank-hint">
+                    {{ subQuestion.blankHints[bIdx] }}
+                  </div>
+                  <div class="input-wrapper">
+                    <input
+                      :value="getBlankValue(subQuestion.id, blank.id)"
+                      @input="(e) => handleBlankChange(subQuestion.id, blank.id, e.target.value)"
+                      placeholder="请输入答案"
+                      class="blank-input"
+                      type="text"
+                    />
+                    <van-icon
+                      v-if="getBlankValue(subQuestion.id, blank.id)"
+                      name="clear"
+                      class="clear-input-btn"
+                      @click="handleBlankChange(subQuestion.id, blank.id, '')"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 简答题 -->
+              <div v-else-if="subQuestion.type === 'essay'" class="essay-area">
+                <textarea
+                  :value="getSubAnswer(subQuestion.id).text"
+                  @input="(e) => handleEssayChange(subQuestion.id, e.target.value)"
+                  placeholder="请输入你的答案..."
+                  class="essay-input"
+                  rows="6"
+                ></textarea>
+                <div class="essay-footer">
+                  <span class="char-count">{{ (getSubAnswer(subQuestion.id).text || '').length }} 字</span>
+                  <div class="attachment-count">{{ (getSubAnswer(subQuestion.id).attachments || []).length }}/3</div>
+                </div>
+
+                <!-- 已上传的附件列表 -->
+                <div v-if="(getSubAnswer(subQuestion.id).attachments || []).length > 0" class="attachment-list">
+                  <div
+                    v-for="(file, fileIndex) in getSubAnswer(subQuestion.id).attachments"
+                    :key="fileIndex"
+                    class="attachment-item"
+                  >
+                    <div class="file-preview">
+                      <img v-if="file.type && file.type.startsWith('image/')" :src="file.url" class="preview-image" />
+                      <div v-else class="file-icon-wrapper">
+                        <van-icon name="description" />
+                      </div>
+                    </div>
+                    <div class="file-info">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-meta">{{ formatFileSize(file.size) }}</div>
+                    </div>
+                    <van-icon
+                      name="cross"
+                      class="delete-btn"
+                      @click="handleAttachmentDelete(subQuestion.id, fileIndex)"
+                    />
+                  </div>
+                </div>
+
+                <!-- 上传按钮 -->
+                <van-uploader
+                  v-model="tempFileList"
+                  :max-count="3"
+                  :max-size="10 * 1024 * 1024"
+                  :after-read="(file) => handleAttachmentUpload(subQuestion.id, file)"
+                  @oversize="handleOversize"
+                  multiple
+                  :disabled="(getSubAnswer(subQuestion.id).attachments || []).length >= 3"
+                >
+                  <div class="upload-trigger" :class="{ 'trigger-disabled': (getSubAnswer(subQuestion.id).attachments || []).length >= 3 }">
+                    <van-icon name="plus" />
+                    <span>{{ (getSubAnswer(subQuestion.id).attachments || []).length >= 3 ? '已达上限' : '添加附件' }}</span>
+                  </div>
+                </van-uploader>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="panel-nav">
+          <van-button
+            class="nav-btn"
+            :disabled="currentSubIndex === 0"
+            @click="prevSub"
+          >
+            <van-icon name="arrow-left" />
+            上一题
+          </van-button>
+
+          <div class="nav-indicator">
+            {{ currentSubIndex + 1 }} / {{ question.subQuestions.length }}
+          </div>
+
+          <van-button
+            v-if="currentSubIndex < question.subQuestions.length - 1"
+            class="nav-btn nav-btn-primary"
+            @click="nextSub"
+          >
+            下一题
+            <van-icon name="arrow" />
+          </van-button>
+          <van-button
+            v-else
+            class="nav-btn nav-btn-done"
+            @click="panelVisible = false"
+          >
+            完成作答
+            <van-icon name="success" />
+          </van-button>
+        </div>
       </div>
-    </div>
+    </van-popup>
   </div>
 </template>
 
@@ -205,57 +271,45 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:value', 'complete'])
+const emit = defineEmits(['update:value'])
+
+// 面板显示状态
+const panelVisible = ref(false)
 
 // 当前子题索引
 const currentSubIndex = ref(0)
 
-// 面板高度（默认55vh）
-const panelHeight = ref(55)
-
 // 临时文件列表（用于上传组件）
 const tempFileList = ref([])
 
-// 当前子题
-const currentSubQuestion = computed(() => {
-  return props.question.subQuestions[currentSubIndex.value] || {}
-})
+// 右滑收起手势
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const isSwiping = ref(false)
 
-// 当前子题是否已答
-const hasAnswer = computed(() => {
-  const sub = currentSubQuestion.value
-  return isSubAnswered(sub.id, sub.type)
-})
-
-// 拖动相关
-let startY = 0
-let startHeight = 0
-let isDragging = false
-
-const handleTouchStart = (e) => {
-  isDragging = true
-  startY = e.touches[0].clientY
-  startHeight = panelHeight.value
-  e.preventDefault()
+const onTouchStart = (e) => {
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
+  isSwiping.value = false
 }
 
-const handleTouchMove = (e) => {
-  if (!isDragging) return
-  e.preventDefault()
-
-  const currentY = e.touches[0].clientY
-  const deltaY = startY - currentY
-  const deltaVh = (deltaY / window.innerHeight) * 100
-  const newHeight = startHeight + deltaVh
-
-  if (newHeight >= 35 && newHeight <= 85) {
-    panelHeight.value = newHeight
+const onTouchMove = (e) => {
+  const deltaX = e.touches[0].clientX - touchStartX.value
+  const deltaY = Math.abs(e.touches[0].clientY - touchStartY.value)
+  // 水平滑动距离大于垂直滑动，判定为横向手势
+  if (deltaX > 20 && deltaX > deltaY) {
+    isSwiping.value = true
   }
 }
 
-const handleTouchEnd = (e) => {
-  isDragging = false
-  e.preventDefault()
+const onTouchEnd = (e) => {
+  if (!isSwiping.value) return
+  const deltaX = e.changedTouches[0].clientX - touchStartX.value
+  // 右滑超过 80px 收起面板
+  if (deltaX > 80) {
+    panelVisible.value = false
+  }
+  isSwiping.value = false
 }
 
 // 获取子题类型名称
@@ -263,6 +317,8 @@ const getSubTypeName = (type) => {
   const nameMap = {
     single: '单选',
     multiple: '多选',
+    judge: '判断',
+    blank: '填空',
     essay: '简答',
   }
   return nameMap[type] || type
@@ -273,7 +329,9 @@ const getSubTypeColor = (type) => {
   const colorMap = {
     single: 'primary',
     multiple: 'success',
-    essay: 'warning',
+    judge: 'warning',
+    blank: 'danger',
+    essay: 'default',
   }
   return colorMap[type] || 'default'
 }
@@ -285,6 +343,13 @@ const isSubAnswered = (subId, type) => {
 
   if (type === 'essay') {
     return (answer.text && answer.text.trim()) || (answer.attachments && answer.attachments.length > 0)
+  }
+  if (type === 'blank') {
+    // 填空题：answer 是 { blankId: value } 对象，至少有一个空填了
+    if (typeof answer === 'object' && !Array.isArray(answer)) {
+      return Object.values(answer).some(v => v && String(v).trim())
+    }
+    return false
   }
   if (Array.isArray(answer)) {
     return answer.length > 0
@@ -315,6 +380,21 @@ const isMultiSelected = (subQuestionId, label) => {
 // 单选题选择
 const selectOption = (subQuestionId, label) => {
   const newValue = { ...props.value, [subQuestionId]: label }
+  emit('update:value', newValue)
+}
+
+// 获取填空题某个空的值
+const getBlankValue = (subQuestionId, blankId) => {
+  const answer = props.value[subQuestionId]
+  if (!answer || typeof answer !== 'object') return ''
+  return answer[blankId] || ''
+}
+
+// 填空题输入
+const handleBlankChange = (subQuestionId, blankId, val) => {
+  const currentAnswer = props.value[subQuestionId] || {}
+  const newSubAnswer = { ...currentAnswer, [blankId]: val }
+  const newValue = { ...props.value, [subQuestionId]: newSubAnswer }
   emit('update:value', newValue)
 }
 
@@ -432,71 +512,89 @@ const nextSub = () => {
     currentSubIndex.value++
   }
 }
+
+// 暴露给父组件的方法
+const showPanel = () => {
+  panelVisible.value = true
+}
+
+const openAtBlank = (index) => {
+  currentSubIndex.value = index
+  panelVisible.value = true
+}
+
+defineExpose({ showPanel, openAtBlank })
 </script>
 
 <style scoped>
 .composite-question {
   position: relative;
-  min-height: 400px;
 }
 
-/* 答题面板 */
-.answer-panel {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 64px;
-  background: #FFFFFF;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+/* 覆盖 van-popup 溢出裁切，让页签可以突出 */
+.composite-question :deep(.van-popup) {
+  overflow: visible !important;
+}
+
+/* 面板容器 */
+.panel-wrapper {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  z-index: 60; /* 高于题目信息栏的 z-index: 50 */
-  will-change: height;
+  background: #FFFFFF;
+  position: relative;
 }
 
-/* 拖拽手柄 */
-.drag-handle {
-  flex-shrink: 0;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: ns-resize;
-  touch-action: none;
-  user-select: none;
-}
-
-.handle-bar {
+/* 左侧突出页签 */
+.panel-tab {
+  position: absolute;
+  left: -36px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 36px;
-  height: 4px;
-  background: #E5E6EB;
-  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  background: #FFFFFF;
+  border-radius: 10px 0 0 10px;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  z-index: 10;
+  font-size: 13px;
+  font-weight: 600;
+  color: #86909C;
+  line-height: 1;
   transition: all 0.2s ease;
 }
 
-.drag-handle:active .handle-bar {
-  background: #00B96B;
-  width: 48px;
+.panel-tab:active {
+  background: #E8F5EE;
+  color: #00B96B;
 }
 
-/* 面板头部 */
-.panel-header {
+.panel-tab .van-icon {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* 顶部栏 */
+.panel-top {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 20px 12px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #F0F1F2;
 }
 
-.header-left {
+.top-title {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  margin-bottom: 14px;
 }
 
 .sub-indicator {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #00B96B;
 }
@@ -506,40 +604,10 @@ const nextSub = () => {
   color: #86909C;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.sub-score {
-  font-size: 14px;
-  font-weight: 600;
-  color: #F77234;
-}
-
-.answer-status {
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.status-done {
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.status-pending {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
 /* 进度点 */
-.header-progress {
+.top-progress {
   display: flex;
   gap: 6px;
-  padding: 0 20px 12px;
 }
 
 .progress-dot {
@@ -565,23 +633,23 @@ const nextSub = () => {
   background: #00B96B;
 }
 
-/* 面板内容 */
+/* 内容区域 */
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 20px 16px;
-  border-top: 1px solid #F0F1F2;
+  padding: 20px;
 }
 
 .sub-question-wrapper {
-  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* 子题题干 */
 .sub-stem {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .stem-number {
@@ -598,9 +666,17 @@ const nextSub = () => {
   color: #1D2129;
 }
 
-/* 子题类型标签 */
-.sub-type-tag {
-  margin-bottom: 16px;
+/* 子题元信息 */
+.sub-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sub-score {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F77234;
 }
 
 /* 答题区域 */
@@ -628,70 +704,242 @@ const nextSub = () => {
   color: #D46B08;
 }
 
-/* 选项卡片 */
-.option-card {
+/* 判断题区域 */
+.judge-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.judge-row {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
-  background: #F9FAFB;
-  border: 2px solid #E5E6EB;
-  border-radius: 12px;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   gap: 12px;
 }
 
-.option-card:active {
+.judge-row:active {
   transform: scale(0.98);
+  background: #F0F1F3;
+}
+
+.row-selected.correct {
+  background: #E8F8F0;
+}
+
+.row-selected.wrong {
+  background: #FFF1F0;
+}
+
+.row-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.correct-icon {
+  background: #D1FAE5;
+  color: #00B96B;
+}
+
+.wrong-icon {
+  background: #FEE2E2;
+  color: #F53F3F;
+}
+
+.row-selected.correct .correct-icon {
+  background: #00B96B;
+  color: #FFFFFF;
+}
+
+.row-selected.wrong .wrong-icon {
+  background: #F53F3F;
+  color: #FFFFFF;
+}
+
+.row-icon .van-icon {
+  font-size: 14px;
+}
+
+.row-text {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+/* 填空题区域 */
+.blank-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.blank-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blank-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.blank-num {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1D2129;
+}
+
+.blank-hint {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4E5969;
+  padding: 8px 12px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  border-left: 3px solid #00B96B;
+}
+
+.filled-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #00B96B;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.blank-input {
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  background: #F7F8FA;
+  border: 2px solid #E5E6EB;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #1D2129;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.blank-input:focus {
+  background: #FFFFFF;
+  border-color: #00B96B;
+  box-shadow: 0 0 0 2px rgba(0, 185, 107, 0.15);
+}
+
+.blank-input::placeholder {
+  color: #C9CDD4;
+}
+
+.clear-input-btn {
+  position: absolute;
+  right: 12px;
+  font-size: 18px;
+  color: #C9CDD4;
+  cursor: pointer;
+}
+
+.clear-input-btn:active {
+  color: #86909C;
+}
+
+/* 选项卡片 — 与 SingleChoice 统一风格 */
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.option-item:active {
+  transform: scale(0.98);
+  background: #F0F1F3;
 }
 
 .option-selected {
-  background: linear-gradient(135deg, #F0E6FF 0%, #F5F0FF 100%);
-  border-color: #722ED1;
-  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.12);
+  background: #E8F8F0;
 }
 
-.option-indicator {
+.option-badge {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #E5E6EB;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: #4E5969;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
-.option-selected .option-indicator {
-  background: #722ED1;
+.option-selected .option-badge {
+  background: #00B96B;
   color: #FFFFFF;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1D2129;
+}
+
+.option-check {
+  flex-shrink: 0;
+  color: #00B96B;
+  font-size: 18px;
+}
+
+.option-check .van-icon {
+  color: #00B96B;
+  font-size: 18px;
 }
 
 /* 多选复选框 */
 .checkbox-indicator {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 2px solid #C9CDD4;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .checkbox-checked {
-  background: #722ED1;
-  border-color: #722ED1;
+  background: #00B96B;
+  border-color: #00B96B;
 }
 
 .checkbox-indicator .van-icon {
   color: #FFFFFF;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .option-label {
@@ -699,45 +947,15 @@ const nextSub = () => {
   font-size: 14px;
   font-weight: 600;
   color: #4E5969;
-  min-width: 20px;
+  min-width: 16px;
 }
 
 .option-selected .option-label {
-  color: #722ED1;
+  color: #00B96B;
 }
 
-.option-content {
-  flex: 1;
-  font-size: 15px;
-  line-height: 1.5;
-  color: #1D2129;
-}
-
-.option-selected .option-content {
-  font-weight: 500;
-}
-
-.option-check {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #722ED1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: checkPop 0.3s ease;
-}
-
-.option-check .van-icon {
-  color: #FFFFFF;
-  font-size: 12px;
-}
-
-@keyframes checkPop {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+.multi-option.option-selected {
+  background: #E8F8F0;
 }
 
 /* 简答题区域 */
@@ -768,8 +986,8 @@ const nextSub = () => {
 }
 
 .essay-input:focus {
-  border-color: #722ED1;
-  box-shadow: 0 4px 12px rgba(114, 46, 209, 0.1);
+  border-color: #00B96B;
+  box-shadow: 0 4px 12px rgba(0, 185, 107, 0.1);
 }
 
 .essay-footer {
@@ -883,8 +1101,8 @@ const nextSub = () => {
 }
 
 .upload-trigger:active {
-  border-color: #F7BA1E;
-  background: #FFFBE6;
+  border-color: #00B96B;
+  background: #E8F5EE;
 }
 
 .trigger-disabled {
@@ -894,7 +1112,7 @@ const nextSub = () => {
 
 .upload-trigger .van-icon {
   font-size: 18px;
-  color: #F7BA1E;
+  color: #00B96B;
 }
 
 .upload-trigger > span {
@@ -915,7 +1133,7 @@ const nextSub = () => {
   display: block;
 }
 
-/* 导航栏 */
+/* 底部导航 */
 .panel-nav {
   flex-shrink: 0;
   display: flex;
@@ -955,30 +1173,19 @@ const nextSub = () => {
   color: #FFFFFF;
 }
 
+.nav-btn-done {
+  background: #00B96B;
+  border-color: #00B96B;
+  color: #FFFFFF;
+}
+
 .nav-btn .van-icon {
   font-size: 14px;
 }
 
-.nav-progress {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.progress-current {
+.nav-indicator {
   font-size: 14px;
+  color: #86909C;
   font-weight: 500;
-  color: #86909C;
-}
-
-.progress-divider {
-  font-size: 14px;
-  color: #C9CDD4;
-  margin: 0 2px;
-}
-
-.progress-total {
-  font-size: 14px;
-  color: #86909C;
 }
 </style>

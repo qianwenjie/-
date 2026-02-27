@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import { mockExamList, mockExamDetail, mockPaperQuestions } from '@/mock/exam'
+import { mockExamList, mockExamDetail, mockPaperQuestions, mockDocPaperQuestions, mockDocumentPages } from '@/mock/exam'
 
 // 是否使用 Mock 数据
 const USE_MOCK = true
@@ -59,11 +59,17 @@ export function enterExam(examId) {
   if (USE_MOCK) {
     return new Promise((resolve) => {
       setTimeout(() => {
+        // 根据 examId 查找考试信息，判断试卷模式
+        const exam = mockExamList.find(e => e.id === examId)
+        const isDocMode = exam?.paper?.mode === 'document'
+
         resolve({
           ...mockExamDetail,
           paper: {
             ...mockExamDetail.paper,
-            questions: mockPaperQuestions,
+            mode: isDocMode ? 'document' : 'question',
+            questions: isDocMode ? mockDocPaperQuestions : mockPaperQuestions,
+            ...(isDocMode ? { documentPages: mockDocumentPages } : {}),
           },
         })
       }, 500)

@@ -11,7 +11,6 @@
         {{ option.label }}
       </div>
       <div class="option-text">{{ option.text }}</div>
-      <van-icon v-if="isSelected(option.label)" name="success" class="check-icon" />
     </div>
   </div>
 </template>

@@ -139,7 +139,7 @@
           </div>
           <div class="tip-item">
             <span class="tip-dot"></span>
-            <span>如遇问题请及时联系监考老师</span>
+            <span>如遇问题请及时联系老师</span>
           </div>
         </div>
       </div>
@@ -152,15 +152,22 @@
             <van-icon name="clock-o" />
             <span>允许提前 {{ exam.config.earlyMinutes }} 分钟进入</span>
           </div>
+          <!-- 需要人脸识别：提前验证身份 -->
           <van-button
+            v-if="exam.config.enableFaceRecognition"
             type="primary"
             size="large"
             block
             :disabled="!canEarlyEnter"
             @click="handleEnterExam"
           >
-            <van-icon name="play-circle-o" style="margin-right: 6px;" />
-            提前进入
+            <van-icon name="scan" style="margin-right: 6px;" />
+            提前验证身份
+          </van-button>
+          <!-- 不需要人脸识别：等待开始 -->
+          <van-button v-else type="default" size="large" block disabled>
+            <van-icon name="clock-o" style="margin-right: 6px;" />
+            等待考试开始
           </van-button>
         </template>
         <!-- 不允许提前进入时显示 -->
@@ -305,7 +312,7 @@
           </div>
           <div class="tip-item">
             <span class="tip-dot"></span>
-            <span>如遇问题请及时联系监考老师</span>
+            <span>如遇问题请及时联系老师</span>
           </div>
         </div>
       </div>
@@ -337,8 +344,37 @@
 
     <!-- 已结束状态 -->
     <div v-else class="ended-content">
+      <!-- 原型配置工具条 -->
+      <div class="proto-toolbar" :class="{ collapsed: protoCollapsed }">
+        <div v-if="!protoCollapsed" class="proto-toolbar-content">
+          <div class="proto-toolbar-header">
+            <span class="proto-label">🔧 原型演示配置</span>
+            <span class="proto-collapse-btn" @click="protoCollapsed = true">收起 ∧</span>
+          </div>
+          <div class="proto-group">
+            <span class="proto-group-label">公布时机</span>
+            <div class="proto-btns">
+              <span v-for="m in publishModes" :key="m.value"
+                class="proto-btn" :class="{ active: protoPublishMode === m.value }"
+                @click="protoPublishMode = m.value">{{ m.label }}</span>
+            </div>
+          </div>
+          <div class="proto-group">
+            <span class="proto-group-label">公布内容</span>
+            <div class="proto-btns">
+              <span v-for="c in publishContents" :key="c.value"
+                class="proto-btn" :class="{ active: protoPublishContent === c.value }"
+                @click="protoPublishContent = c.value">{{ c.label }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="proto-toolbar-icon" @click="protoCollapsed = false">
+          <van-icon name="setting-o" size="20" />
+        </div>
+      </div>
+
       <!-- 状态提示 -->
-      <div class="status-hero ended">
+      <div class="status-hero ended" :style="{ marginTop: protoCollapsed ? '40px' : '150px' }">
         <div class="status-icon">
           <van-icon name="passed" size="48" />
         </div>
@@ -374,45 +410,63 @@
         </div>
       </div>
 
-      <!-- 成绩卡片（如果已提交） -->
-      <div v-if="exam.myStatus === 'submitted' && exam.score !== null" class="score-card">
-        <div class="score-header">我的成绩</div>
-        <div class="score-body">
-          <div class="score-main" :class="getScoreLevel(exam.score, exam.totalScore)">
-            <span class="score-value">{{ exam.score }}</span>
-            <span class="score-total">/ {{ exam.totalScore }}</span>
-          </div>
-          <div class="score-label">{{ getScoreLevelText(exam.score, exam.totalScore) }}</div>
+      <!-- 成绩未公布提示 -->
+      <div v-if="exam.myStatus === 'submitted' && !isScorePublished" class="unpublished-card">
+        <van-icon name="clock-o" class="unpublished-icon" />
+        <div class="unpublished-title">成绩暂未公布</div>
+        <div class="unpublished-desc">
+          成绩将于 <span class="highlight">{{ scorePublishDate }}</span> 公布
         </div>
+        <div class="unpublished-hint">届时可在此查看成绩</div>
       </div>
+
+      <!-- 成绩卡片（已提交且成绩已公布） -->
+      <template v-if="exam.myStatus === 'submitted' && isScorePublished">
+        <div class="score-card-ring">
+          <div class="score-ring-wrap">
+            <svg class="score-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#e8e8e8" stroke-width="8" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#00B96B" stroke-width="8"
+                stroke-linecap="round" :stroke-dasharray="ringDash" stroke-dashoffset="0"
+                transform="rotate(-90 60 60)" />
+            </svg>
+            <div class="score-number">
+              <span class="ring-score-value">{{ exam.score }}</span>
+              <span class="ring-score-total">/ {{ exam.totalScore }}</span>
+            </div>
+          </div>
+          <div class="score-stats">
+            <template v-if="protoPublishContent === 'scoreOnly'">
+              <span>答对 -- 题</span>
+              <span class="dot">·</span>
+              <span>答错 -- 题</span>
+            </template>
+            <template v-else>
+              <span class="stat-correct">答对 {{ exam.statistics?.correctCount ?? '--' }} 题</span>
+              <span class="dot">·</span>
+              <span class="stat-wrong">答错 {{ exam.statistics?.wrongCount ?? '--' }} 题</span>
+              <span v-if="exam.statistics?.partialCount > 0" class="dot">·</span>
+              <span v-if="exam.statistics?.partialCount > 0" class="stat-partial">
+                部分得分 {{ exam.statistics.partialCount }} 题
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- 查看答案详情入口（仅分数模式不显示） -->
+        <div v-if="protoPublishContent !== 'scoreOnly'" class="review-entry" @click="handleViewResult">
+          <div class="review-entry-left">
+            <van-icon name="description" size="20" color="#00B96B" />
+            <span class="review-entry-text">查看答案详情</span>
+          </div>
+          <van-icon name="arrow" size="16" color="#c0c4cc" />
+        </div>
+      </template>
 
       <!-- 未参加提示 -->
       <div v-else-if="exam.myStatus === 'not_started'" class="missed-card">
         <van-icon name="warning-o" size="32" />
         <div class="missed-text">您未参加此次考试</div>
-      </div>
-
-      <!-- 底部按钮 -->
-      <div class="bottom-actions safe-area-bottom">
-        <van-button
-          v-if="exam.myStatus === 'submitted'"
-          type="primary"
-          size="large"
-          block
-          @click="handleViewResult"
-        >
-          <van-icon name="description" style="margin-right: 6px;" />
-          查看答题详情
-        </van-button>
-        <van-button
-          v-else
-          type="default"
-          size="large"
-          block
-          disabled
-        >
-          考试已结束
-        </van-button>
       </div>
     </div>
   </div>
@@ -555,37 +609,134 @@ const loadExamDetail = async () => {
 const handleEnterExam = () => {
   if (!exam.value) return
 
-  // 如果需要人脸识别，跳转到人脸识别页面
-  if (exam.value.config.enableFaceRecognition) {
+  // 提前进入阶段（考试尚未开始）：只能去做人脸识别
+  if (exam.value.status === 'not_started') {
+    if (exam.value.config.enableFaceRecognition) {
+      // 无论是否已验证，都跳转到人脸验证页（已验证的会自动进入等待状态）
+      router.push(`/exam/face-verify/${exam.value.id}`)
+    } else {
+      // 不需要人脸识别，提示等待考试开始
+      showToast('考试尚未开始，请耐心等待')
+    }
+    return
+  }
+
+  // 考试已开始：正常流程
+  if (exam.value.config.enableFaceRecognition && !examStore.isFaceVerified(exam.value.id)) {
+    // 需要人脸识别且未验证过
     router.push(`/exam/face-verify/${exam.value.id}`)
   } else {
-    // 直接进入答题页面
-    router.push(`/exam/answer/${exam.value.id}`)
+    // 不需要人脸识别 或 已通过验证，根据试卷模式跳转
+    const answerPath = exam.value.paper.mode === 'document'
+      ? `/exam/answer-doc/${exam.value.id}`
+      : `/exam/answer/${exam.value.id}`
+    router.push(answerPath)
   }
 }
 
-// 查看成绩
+// 查看答题详情 — 跳转到答案详情页，传递公布内容模式
 const handleViewResult = () => {
-  router.push(`/exam/result/${exam.value.id}`)
+  const content = protoPublishContent.value
+  const modeMap = { scoreOnly: 'score', scoreAndCorrect: 'score', full: 'full' }
+  const mode = modeMap[content] || 'full'
+  const isDocMode = exam.value.paper?.mode === 'document'
+  if (isDocMode) {
+    router.push(`/exam/review-doc/${exam.value.id}?mode=${mode}`)
+  } else {
+    router.push(`/exam/review/${exam.value.id}?mode=${mode}`)
+  }
 }
 
-// 获取成绩等级
-const getScoreLevel = (score, total) => {
-  const percent = (score / total) * 100
-  if (percent >= 90) return 'excellent'
-  if (percent >= 80) return 'good'
-  if (percent >= 60) return 'pass'
-  return 'fail'
-}
+// 原型配置工具条
+const protoCollapsed = ref(false)
+const protoPublishMode = ref('immediate')
+const protoPublishContent = ref('full')
 
-// 获取成绩等级文本
-const getScoreLevelText = (score, total) => {
-  const percent = (score / total) * 100
-  if (percent >= 90) return '优秀'
-  if (percent >= 80) return '良好'
-  if (percent >= 60) return '及格'
-  return '不及格'
-}
+const publishModes = [
+  { value: 'immediate', label: '立即公布' },
+  { value: 'delayAfterSubmit', label: '交卷后延迟' },
+  { value: 'afterExamEnd', label: '考试结束后' },
+  { value: 'delayAfterExamEnd', label: '结束后延迟' },
+]
+const publishContents = [
+  { value: 'scoreOnly', label: '仅分数' },
+  { value: 'scoreAndCorrect', label: '分数及对错' },
+  { value: 'full', label: '分数对错答案解析' },
+]
+
+// 环形进度条
+const ringDash = computed(() => {
+  if (!exam.value || !exam.value.score) return '0 327'
+  const circumference = 2 * Math.PI * 52
+  const percent = exam.value.score / exam.value.totalScore
+  return `${circumference * percent} ${circumference * (1 - percent)}`
+})
+
+// 公布时机文本
+const publishModeText = computed(() => {
+  const mode = protoPublishMode.value
+  const delay = exam.value?.config?.scorePublishDelay || 3
+  const map = {
+    immediate: '交卷后立即公布',
+    delayAfterSubmit: `交卷后${delay}天公布`,
+    afterExamEnd: '考试结束后公布',
+    delayAfterExamEnd: `考试结束${delay}天后公布`,
+  }
+  return map[mode] || '未设置'
+})
+
+// 公布内容文本
+const publishContentText = computed(() => {
+  const content = protoPublishContent.value
+  const map = {
+    scoreOnly: '仅公布分数',
+    scoreAndCorrect: '公布分数及对错',
+    full: '公布分数、对错、答案及解析',
+  }
+  return map[content] || '未设置'
+})
+
+// 是否已公布成绩（基于原型配置）
+const isScorePublished = computed(() => {
+  const mode = protoPublishMode.value
+  if (mode === 'immediate') return true
+  if (mode === 'afterExamEnd' || mode === 'after_exam') {
+    return exam.value?.status === 'ended'
+  }
+  if (mode === 'delayAfterSubmit') {
+    const delay = (exam.value?.config?.scorePublishDelay || 3) * 24 * 60 * 60 * 1000
+    const submitTime = new Date(exam.value?.submitTime || exam.value?.endTime).getTime()
+    return Date.now() >= submitTime + delay
+  }
+  if (mode === 'delayAfterExamEnd') {
+    const delay = (exam.value?.config?.scorePublishDelay || 3) * 24 * 60 * 60 * 1000
+    const endTime = new Date(exam.value?.endTime).getTime()
+    return Date.now() >= endTime + delay
+  }
+  return true
+})
+
+// 成绩公布日期（未公布时显示）
+const scorePublishDate = computed(() => {
+  const mode = protoPublishMode.value
+  const delay = (exam.value?.config?.scorePublishDelay || 3) * 24 * 60 * 60 * 1000
+  let target
+  if (mode === 'delayAfterSubmit') {
+    const submitTime = new Date(exam.value?.submitTime || exam.value?.endTime).getTime()
+    target = new Date(submitTime + delay)
+  } else if (mode === 'delayAfterExamEnd') {
+    const endTime = new Date(exam.value?.endTime).getTime()
+    target = new Date(endTime + delay)
+  } else {
+    return ''
+  }
+  const y = target.getFullYear()
+  const m = String(target.getMonth() + 1).padStart(2, '0')
+  const d = String(target.getDate()).padStart(2, '0')
+  const h = String(target.getHours()).padStart(2, '0')
+  const min = String(target.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${d} ${h}:${min}`
+})
 
 onMounted(() => {
   loadExamDetail()
@@ -788,67 +939,170 @@ onUnmounted(() => {
   padding: 8px 16px;
 }
 
-/* 成绩卡片 */
-.score-card {
-  background: white;
+/* 环形进度条成绩卡片 */
+.score-card-ring {
+  background: #fff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px 20px;
+  text-align: center;
   margin-bottom: 12px;
+}
+
+.score-ring-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+}
+
+.score-ring {
+  width: 100%;
+  height: 100%;
+}
+
+.score-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   text-align: center;
 }
 
-.score-header {
-  font-size: 14px;
-  color: #86909C;
-  margin-bottom: 16px;
+.ring-score-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #00B96B;
+  display: block;
 }
 
-.score-body {
+.ring-score-total {
+  font-size: 14px;
+  color: #86909c;
+  display: block;
+  margin-top: -4px;
+}
+
+.score-stats {
+  font-size: 13px;
+  color: #86909c;
+}
+
+.score-stats .dot {
+  margin: 0 6px;
+}
+
+.stat-correct { color: #00B96B; }
+.stat-wrong { color: #F53F3F; }
+.stat-partial { color: #FF7D00; }
+
+/* 查看答案详情入口 */
+.review-entry {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.review-entry-left {
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.score-main {
+.review-entry-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d2129;
+}
+
+/* 原型配置工具条 */
+.proto-toolbar {
+  position: fixed;
+  top: 46px;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: #fffbe6;
+  border-bottom: 1px dashed #faad14;
+}
+
+.proto-toolbar.collapsed {
+  background: transparent;
+  border: none;
+}
+
+.proto-toolbar-content {
+  padding: 8px 12px;
+}
+
+.proto-toolbar-header {
   display: flex;
-  align-items: baseline;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
 }
 
-.score-value {
-  font-size: 48px;
-  font-weight: 700;
-  font-family: 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
+.proto-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #d48806;
 }
 
-.score-total {
-  font-size: 18px;
-  color: #86909C;
-  margin-left: 4px;
+.proto-collapse-btn {
+  font-size: 12px;
+  color: #8c8c8c;
+  cursor: pointer;
 }
 
-.score-main.excellent .score-value {
-  color: #52C41A;
+.proto-group {
+  margin-bottom: 6px;
 }
 
-.score-main.good .score-value {
-  color: #1890FF;
+.proto-group-label {
+  font-size: 11px;
+  color: #8c8c8c;
+  display: block;
+  margin-bottom: 4px;
 }
 
-.score-main.pass .score-value {
-  color: #FA8C16;
+.proto-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.score-main.fail .score-value {
-  color: #FF4D4F;
+.proto-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  color: #595959;
+  cursor: pointer;
 }
 
-.score-label {
-  font-size: 14px;
-  color: #4E5969;
-  padding: 4px 16px;
-  background: #F5F6F7;
-  border-radius: 12px;
+.proto-btn.active {
+  background: #00B96B;
+  border-color: #00B96B;
+  color: #fff;
+}
+
+.proto-toolbar-icon {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fffbe6;
+  border: 1px dashed #faad14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 /* 未参加提示 */
@@ -860,6 +1114,43 @@ onUnmounted(() => {
   margin-bottom: 12px;
   text-align: center;
   color: #FF4D4F;
+}
+
+/* 成绩未公布提示 */
+.unpublished-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.unpublished-icon {
+  font-size: 48px;
+  color: #c0c4cc;
+}
+
+.unpublished-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4e5969;
+  margin: 12px 0 8px;
+}
+
+.unpublished-desc {
+  font-size: 14px;
+  color: #86909c;
+}
+
+.unpublished-desc .highlight {
+  color: #00B96B;
+  font-weight: 500;
+}
+
+.unpublished-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 8px;
 }
 
 .missed-text {

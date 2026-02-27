@@ -15,7 +15,7 @@
       <van-tabbar-item to="/practice/list" icon="edit">
         刷题
       </van-tabbar-item>
-      <van-tabbar-item to="/message" icon="bell-o" :badge="unreadCount > 0 ? unreadCount : ''">
+      <van-tabbar-item to="/message" icon="chat-o" :badge="unreadCount > 0 ? unreadCount : ''">
         消息
       </van-tabbar-item>
       <van-tabbar-item to="/profile" icon="user-o">
@@ -28,15 +28,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores'
+import { useUserStore, usePracticeStore, useMessageStore } from '@/stores'
 
 const route = useRoute()
 const userStore = useUserStore()
+const practiceStore = usePracticeStore()
+const messageStore = useMessageStore()
 
 const active = ref(0)
 
-// 未读消息数量（模拟数据）
-const unreadCount = ref(3)
+const unreadCount = computed(() => messageStore.unreadCount)
 
 // 需要隐藏 TabBar 的页面
 const hideTabbarPages = [
@@ -50,7 +51,12 @@ const hideTabbarPages = [
   '/exam/score',
   '/exam/review',
   '/practice/answer',
+  '/practice/detail',
   '/practice/result',
+  '/practice/wrong-book',
+  '/practice/favorites',
+  '/practice/stats',
+  '/exam/score-stats',
 ]
 
 // 是否显示 TabBar
@@ -59,9 +65,14 @@ const showTabbar = computed(() => {
   return !hideTabbarPages.some(page => path.startsWith(page))
 })
 
-onMounted(() => {
+onMounted(async () => {
   // 从本地恢复用户信息
   userStore.loadFromLocal()
+  // 初始化错题本 mock 数据（首次访问时注入）
+  practiceStore.loadWrongBook()
+  // 加载刷题任务列表，同步即将截止通知
+  const data = await practiceStore.fetchTaskList()
+  messageStore.syncPracticeSoon(data.list || [])
 })
 
 // 监听路由变化，更新 active

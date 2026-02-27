@@ -8,3 +8,5 @@ export default pinia
 export { useExamStore } from './exam'
 export { useAnswerStore } from './answer'
 export { useUserStore } from './user'
+export { usePracticeStore } from './practice'
+export { useMessageStore } from './message'

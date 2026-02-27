@@ -84,7 +84,7 @@ const toggleOption = (label) => {
 }
 
 .option-selected {
-  background: #F0E6FF;
+  background: #E8F8F0;
 }
 
 .checkbox {
@@ -100,8 +100,8 @@ const toggleOption = (label) => {
 }
 
 .checkbox-checked {
-  background: #722ED1;
-  border-color: #722ED1;
+  background: #00B96B;
+  border-color: #00B96B;
 }
 
 .checkbox .van-icon {
@@ -118,7 +118,7 @@ const toggleOption = (label) => {
 }
 
 .option-selected .option-label {
-  color: #722ED1;
+  color: #00B96B;
 }
 
 .option-text {

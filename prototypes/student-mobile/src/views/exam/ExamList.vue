@@ -46,9 +46,6 @@
             class="exam-card"
             @click="goToDetail(exam.id)"
           >
-            <!-- 左侧状态指示条 -->
-            <div class="status-bar" :class="exam.status"></div>
-
             <!-- 卡片主体 -->
             <div class="card-body">
               <!-- 头部：标题和状态 -->
@@ -68,6 +65,23 @@
                 <div class="info-row">
                   <van-icon name="description" />
                   <span>{{ exam.paper.name }}</span>
+                  <span class="paper-mode-divider">|</span>
+                  <!-- 文档模式图标 -->
+                  <svg v-if="exam.paper.mode === 'document'" class="mode-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                    <line x1="5" y1="4.5" x2="11" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg>
+                  <!-- 抽题模式图标 -->
+                  <svg v-else class="mode-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1.5" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                    <rect x="4.5" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="white"/>
+                    <line x1="7" y1="5.5" x2="12" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="7" y1="8" x2="12" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <line x1="7" y1="10.5" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg>
+                  <span>{{ exam.paper.mode === 'document' ? '文档' : '抽题' }}</span>
                 </div>
                 <div class="info-tags">
                   <span class="tag">{{ exam.duration }}分钟</span>
@@ -81,7 +95,7 @@
 
               <!-- 底部：成绩或操作 -->
               <div class="card-footer">
-                <!-- 已提交显示成绩 -->
+                <!-- 左侧：成绩 or 倒计时 -->
                 <div v-if="exam.myStatus === 'submitted' && exam.score !== null" class="score-section">
                   <div class="score-badge" :class="getScoreLevel(exam.score, exam.totalScore)">
                     <span class="score-num">{{ exam.score }}</span>
@@ -89,9 +103,10 @@
                   </div>
                   <span class="score-text">已完成</span>
                 </div>
+                <div v-else-if="exam.status === 'not_started'" class="countdown-text" v-html="getCountdown(exam)"></div>
                 <div v-else class="score-section empty"></div>
 
-                <!-- 操作按钮 -->
+                <!-- 右侧：操作按钮 -->
                 <div class="action-section">
                   <!-- 进行中的考试 -->
                   <van-button
@@ -110,16 +125,13 @@
                     type="primary"
                     size="small"
                     round
-                    @click.stop="viewResult(exam.id)"
+                    @click.stop="goToDetail(exam.id)"
                   >
                     查看详情
                   </van-button>
                   <!-- 未开始且允许提前进入 -->
-                  <div v-else-if="exam.status === 'not_started' && exam.config.allowEarlyEntry" class="early-entry-row">
-                    <div class="early-entry-left">
-                      <div class="countdown-text" v-html="getCountdown(exam)"></div>
-                      <div class="early-hint">允许提前{{ exam.config.earlyMinutes }}分钟</div>
-                    </div>
+                  <div v-else-if="exam.status === 'not_started' && exam.config.allowEarlyEntry" class="early-entry-right">
+                    <div class="early-hint">提前{{ exam.config.earlyMinutes }}分钟</div>
                     <van-button
                       type="success"
                       size="small"
@@ -129,9 +141,6 @@
                     >
                       提前进入
                     </van-button>
-                  </div>
-                  <!-- 未开始且不允许提前进入 -->
-                  <div v-else-if="exam.status === 'not_started'" class="countdown-text" v-html="getCountdown(exam)">
                   </div>
                 </div>
               </div>
@@ -292,14 +301,31 @@ const formatDateTime = (time) => {
   return `${month}月${day}日 ${hour}:${minute}`
 }
 
-// 格式化结束时间（处理跨天情况）
+// 格式化考试时间范围（处理跨天情况）
+const formatExamTimeRange = (startTime, endTime) => {
+  const startDate = new Date(startTime)
+  const endDate = new Date(endTime)
+  const endHour = String(endDate.getHours()).padStart(2, '0')
+  const endMinute = String(endDate.getMinutes()).padStart(2, '0')
+
+  const isSameDay = startDate.getFullYear() === endDate.getFullYear() &&
+                    startDate.getMonth() === endDate.getMonth() &&
+                    startDate.getDate() === endDate.getDate()
+
+  const endStr = isSameDay
+    ? `${endHour}:${endMinute}`
+    : `${endDate.getMonth() + 1}月${endDate.getDate()}日 ${endHour}:${endMinute}`
+
+  return `${formatDateTime(startTime)} ~ ${endStr}`
+}
+
+// 保留旧函数名兼容模板
 const formatEndTime = (startTime, endTime) => {
   const startDate = new Date(startTime)
   const endDate = new Date(endTime)
   const endHour = String(endDate.getHours()).padStart(2, '0')
   const endMinute = String(endDate.getMinutes()).padStart(2, '0')
 
-  // 判断是否跨天
   const isSameDay = startDate.getFullYear() === endDate.getFullYear() &&
                     startDate.getMonth() === endDate.getMonth() &&
                     startDate.getDate() === endDate.getDate()
@@ -307,7 +333,6 @@ const formatEndTime = (startTime, endTime) => {
   if (isSameDay) {
     return `${endHour}:${endMinute}`
   } else {
-    // 跨天显示日期
     const endMonth = endDate.getMonth() + 1
     const endDay = endDate.getDate()
     return `${endMonth}月${endDay}日 ${endHour}:${endMinute}`
@@ -384,18 +409,9 @@ const goToDetail = (examId) => {
   router.push(`/exam/detail/${examId}`)
 }
 
-// 进入考试
+// 进入考试（统一跳转到详情页，由详情页处理后续流程）
 const enterExam = (exam) => {
-  if (exam.config.enableFaceRecognition) {
-    router.push(`/exam/face-verify/${exam.id}`)
-  } else {
-    router.push(`/exam/answer/${exam.id}`)
-  }
-}
-
-// 查看成绩
-const viewResult = (examId) => {
-  router.push(`/exam/result/${examId}`)
+  router.push(`/exam/detail/${exam.id}`)
 }
 
 onMounted(() => {
@@ -503,24 +519,6 @@ onUnmounted(() => {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
-/* 状态指示条 */
-.status-bar {
-  width: 4px;
-  flex-shrink: 0;
-}
-
-.status-bar.in_progress {
-  background: linear-gradient(180deg, #FA8C16 0%, #FFC53D 100%);
-}
-
-.status-bar.not_started {
-  background: linear-gradient(180deg, #1890FF 0%, #69C0FF 100%);
-}
-
-.status-bar.ended {
-  background: linear-gradient(180deg, #8C8C8C 0%, #BFBFBF 100%);
-}
-
 /* 卡片主体 */
 .card-body {
   flex: 1;
@@ -567,6 +565,20 @@ onUnmounted(() => {
 .info-row .van-icon {
   font-size: 14px;
   color: #C9CDD4;
+}
+
+/* 试卷模式自定义图标 */
+.mode-icon {
+  width: 14px;
+  height: 14px;
+  color: #C9CDD4;
+  flex-shrink: 0;
+}
+
+/* 试卷模式分隔符 */
+.paper-mode-divider {
+  color: #E5E6EB;
+  margin: 0 2px;
 }
 
 .info-tags {
@@ -656,6 +668,7 @@ onUnmounted(() => {
 .action-section {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex: 1;
 }
 
@@ -681,18 +694,11 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* 提前进入行 */
-.early-entry-row {
+/* 提前进入（右侧：提示+按钮） */
+.early-entry-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.early-entry-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .early-hint {

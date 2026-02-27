@@ -41,10 +41,14 @@ const routes = [
         meta: { title: '在线答题', keepAlive: true },
       },
       {
+        path: 'answer-doc/:id',
+        name: 'ExamAnswerDoc',
+        component: () => import('@/views/exam/ExamAnswerDoc.vue'),
+        meta: { title: '文档答题', keepAlive: true },
+      },
+      {
         path: 'submit/:id',
-        name: 'ExamSubmit',
-        component: () => import('@/views/exam/ExamSubmit.vue'),
-        meta: { title: '提交确认' },
+        redirect: to => `/exam/success/${to.params.id}`,
       },
       {
         path: 'success/:id',
@@ -54,21 +58,29 @@ const routes = [
       },
       {
         path: 'result/:id',
-        name: 'ExamResult',
-        component: () => import('@/views/exam/ExamResult.vue'),
-        meta: { title: '考试结果' },
+        redirect: to => `/exam/success/${to.params.id}`,
       },
       {
         path: 'score/:id',
-        name: 'ExamScore',
-        component: () => import('@/views/exam/ExamScore.vue'),
-        meta: { title: '成绩详情' },
+        redirect: to => `/exam/success/${to.params.id}`,
       },
       {
         path: 'review/:id',
         name: 'ExamReview',
         component: () => import('@/views/exam/ExamReview.vue'),
-        meta: { title: '查看批阅' },
+        meta: { title: '答案详情' },
+      },
+      {
+        path: 'review-doc/:id',
+        name: 'ExamReviewDoc',
+        component: () => import('@/views/exam/ExamReviewDoc.vue'),
+        meta: { title: '答案详情' },
+      },
+      {
+        path: 'score-stats',
+        name: 'ExamScoreStats',
+        component: () => import('@/views/exam/ExamScoreStats.vue'),
+        meta: { title: '成绩统计' },
       },
     ],
   },
@@ -81,6 +93,96 @@ const routes = [
         name: 'PracticeList',
         component: () => import('@/views/practice/PracticeList.vue'),
         meta: { title: '刷题练习' },
+      },
+      {
+        path: 'detail/:id',
+        name: 'PracticeDetail',
+        component: () => import('@/views/practice/PracticeDetail.vue'),
+        meta: { title: '任务详情' },
+      },
+      {
+        path: 'answer/:id',
+        name: 'PracticeAnswer',
+        component: () => import('@/views/practice/PracticeAnswer.vue'),
+        meta: { title: '刷题答题' },
+      },
+      {
+        path: 'result/:id',
+        name: 'PracticeResult',
+        component: () => import('@/views/practice/PracticeResult.vue'),
+        meta: { title: '刷题结果' },
+      },
+      {
+        path: 'wrong-book',
+        name: 'WrongBook',
+        component: () => import('@/views/practice/WrongBook.vue'),
+        meta: { title: '错题本' },
+      },
+      // 错题回顾（按任务）
+      {
+        path: 'wrong-book/review/:id',
+        name: 'WrongBookReview',
+        component: () => import('@/views/practice/WrongBookReview.vue'),
+        meta: { title: '错题回顾' },
+      },
+      // 错题回顾（按题型）
+      {
+        path: 'wrong-book/review-type/:id',
+        name: 'WrongBookReviewType',
+        component: () => import('@/views/practice/WrongBookReview.vue'),
+        meta: { title: '错题回顾' },
+      },
+      // 错题复习（按任务）
+      {
+        path: 'wrong-book/practice/:id',
+        name: 'WrongBookPractice',
+        component: () => import('@/views/practice/WrongBookPractice.vue'),
+        meta: { title: '错题复习' },
+      },
+      // 错题复习（按题型）
+      {
+        path: 'wrong-book/practice-type/:id',
+        name: 'WrongBookPracticeType',
+        component: () => import('@/views/practice/WrongBookPractice.vue'),
+        meta: { title: '错题复习' },
+      },
+      // 易掌握题集（按任务）
+      {
+        path: 'wrong-book/mastered/:id',
+        name: 'WrongBookMastered',
+        component: () => import('@/views/practice/WrongBookMastered.vue'),
+        meta: { title: '易掌握题集' },
+      },
+      // 易掌握题集（按题型）
+      {
+        path: 'wrong-book/mastered-type/:id',
+        name: 'WrongBookMasteredType',
+        component: () => import('@/views/practice/WrongBookMastered.vue'),
+        meta: { title: '易掌握题集' },
+      },
+      // 单题重做
+      {
+        path: 'wrong-book/redo/:qId',
+        name: 'WrongBookRedo',
+        component: () => import('@/views/practice/WrongBookRedo.vue'),
+        meta: { title: '重做题目' },
+      },
+      // 旧路由兼容（保留）
+      {
+        path: 'wrong-book/:taskId',
+        redirect: to => `/practice/wrong-book/review/${to.params.taskId}`,
+      },
+      {
+        path: 'favorites',
+        name: 'FavoriteList',
+        component: () => import('@/views/practice/FavoriteList.vue'),
+        meta: { title: '收藏夹' },
+      },
+      {
+        path: 'stats',
+        name: 'PracticeStats',
+        component: () => import('@/views/practice/PracticeStats.vue'),
+        meta: { title: '刷题统计' },
       },
     ],
   },

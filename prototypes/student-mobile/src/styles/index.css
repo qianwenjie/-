@@ -138,3 +138,13 @@ input, textarea, select {
 .van-dialog--confirm .van-dialog__confirm {
   flex: 1;
 }
+
+/* Toast 样式修复 */
+.van-toast {
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.van-toast__text {
+  color: #fff !important;
+}

@@ -117,6 +117,7 @@ const onSubmit = async () => {
         name: '张三',
         studentId: '2024001',
         className: '计算机科学与技术2024级1班',
+        phone: '138****8888',
         avatar: '',
       }
 

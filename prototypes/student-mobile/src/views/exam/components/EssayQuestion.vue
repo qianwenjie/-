@@ -182,10 +182,7 @@ const addAttachment = (file) => {
   }
   emit('update:value', newValue)
 
-  showToast({
-    message: '附件添加成功',
-    icon: 'passed',
-  })
+  showToast('附件添加成功')
 }
 
 // 删除附件
@@ -203,10 +200,7 @@ const handleDeleteFile = (index) => {
 
 // 文件超出大小限制
 const handleOversize = () => {
-  showToast({
-    message: '文件大小不能超过 10MB',
-    icon: 'warning-o',
-  })
+  showToast('文件大小不能超过 10MB')
 }
 </script>
 
@@ -236,7 +230,7 @@ const handleOversize = () => {
 
 .header-left .van-icon {
   font-size: 18px;
-  color: #722ED1;
+  color: #00B96B;
 }
 
 .optional-tag {
@@ -257,7 +251,7 @@ const handleOversize = () => {
 }
 
 .counter-active {
-  color: #722ED1;
+  color: #00B96B;
 }
 
 /* 文本域容器 */
@@ -286,8 +280,8 @@ const handleOversize = () => {
 }
 
 .textarea-focused {
-  border-color: #722ED1;
-  box-shadow: 0 4px 16px rgba(114, 46, 209, 0.12);
+  border-color: #00B96B;
+  box-shadow: 0 4px 16px rgba(0, 185, 107, 0.12);
 }
 
 /* 答题提示 */
@@ -307,7 +301,7 @@ const handleOversize = () => {
 
 /* 附件区域 */
 .attachment-section {
-  background: #F9FAFB;
+  background: transparent;
   border-radius: 12px;
   padding: 16px;
 }
@@ -413,8 +407,8 @@ const handleOversize = () => {
 }
 
 .upload-trigger:active {
-  border-color: #722ED1;
-  background: #F9F0FF;
+  border-color: #00B96B;
+  background: #E8F8F0;
 }
 
 .trigger-disabled {
@@ -424,7 +418,7 @@ const handleOversize = () => {
 
 .upload-trigger .van-icon {
   font-size: 28px;
-  color: #722ED1;
+  color: #00B96B;
   margin-bottom: 8px;
 }
 

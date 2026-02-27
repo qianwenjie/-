@@ -17,6 +17,25 @@
         <div class="status-desc">正在进入考试...</div>
       </div>
 
+      <!-- 等待考试开始状态 -->
+      <div v-else-if="verifyStatus === 'waiting'" class="status-view waiting">
+        <div class="status-icon-wrapper waiting">
+          <van-icon name="checked" size="48" />
+        </div>
+        <div class="status-title">身份验证通过</div>
+        <div class="waiting-countdown-section">
+          <div class="waiting-label">距离考试开始还有</div>
+          <div class="waiting-time">{{ waitCountdownText }}</div>
+        </div>
+        <div class="waiting-tips">
+          <van-icon name="info-o" />
+          <span>考试开始后将自动进入答题页面，请耐心等待</span>
+        </div>
+        <van-button type="default" round class="back-btn" @click="router.back()">
+          返回详情页
+        </van-button>
+      </div>
+
       <!-- 识别失败状态 -->
       <div v-else-if="verifyStatus === 'failed'" class="status-view failed">
         <div class="status-icon-wrapper failed">
@@ -95,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useExamStore } from '@/stores'
 import { showToast, showConfirmDialog } from 'vant'
@@ -107,8 +126,16 @@ const examStore = useExamStore()
 const loading = ref(true)
 const exam = ref(null)
 const recognizing = ref(false)
-const verifyStatus = ref('') // '', 'success', 'failed'
+const verifyStatus = ref('') // '', 'success', 'failed', 'waiting'
 const errorMessage = ref('')
+const waitCountdownTimer = ref(null)
+const waitCountdownText = ref('')
+
+// 根据试卷模式获取答题页路径
+const getAnswerPath = (examId) => {
+  const isDocMode = exam.value?.paper?.mode === 'document'
+  return isDocMode ? `/exam/answer-doc/${examId}` : `/exam/answer/${examId}`
+}
 
 // 是否可以跳过
 const canSkip = computed(() => {
@@ -126,8 +153,25 @@ const loadExamInfo = async () => {
     // 检查是否需要人脸识别
     if (!data.config.enableFaceRecognition) {
       showToast('该考试无需人脸识别')
-      router.replace(`/exam/answer/${examId}`)
+      router.replace(getAnswerPath(examId))
       return
+    }
+
+    // 已通过人脸验证
+    if (examStore.isFaceVerified(examId)) {
+      const startTime = new Date(data.startTime).getTime()
+      const isExamStarted = Date.now() >= startTime
+
+      if (isExamStarted) {
+        // 考试已开始，直接进入答题
+        router.replace(getAnswerPath(examId))
+        return
+      } else {
+        // 考试未开始，显示等待状态
+        verifyStatus.value = 'waiting'
+        startWaitCountdown()
+        return
+      }
     }
   } catch (error) {
     showToast('加载失败')
@@ -155,13 +199,26 @@ const handleCapture = async () => {
     const success = Math.random() > 0.1
 
     if (success) {
-      verifyStatus.value = 'success'
       recognizing.value = false
 
-      // 延迟跳转到答题页面
-      setTimeout(() => {
-        router.replace(`/exam/answer/${exam.value.id}`)
-      }, 1500)
+      // 标记该考试已通过人脸验证
+      examStore.setFaceVerified(exam.value.id)
+
+      // 判断考试是否已开始
+      const startTime = new Date(exam.value.startTime).getTime()
+      const isExamStarted = Date.now() >= startTime
+
+      if (isExamStarted) {
+        // 考试已开始，直接进入答题
+        verifyStatus.value = 'success'
+        setTimeout(() => {
+          router.replace(getAnswerPath(exam.value.id))
+        }, 1500)
+      } else {
+        // 考试未开始，进入等待状态
+        verifyStatus.value = 'waiting'
+        startWaitCountdown()
+      }
     } else {
       verifyStatus.value = 'failed'
       errorMessage.value = '未能识别到人脸，请重试'
@@ -182,9 +239,64 @@ const handleSkip = async () => {
       message: '确定要跳过人脸识别吗？',
     })
 
-    router.replace(`/exam/answer/${exam.value.id}`)
+    // 跳过验证也视为已验证
+    examStore.setFaceVerified(exam.value.id)
+
+    // 判断考试是否已开始
+    const startTime = new Date(exam.value.startTime).getTime()
+    const isExamStarted = Date.now() >= startTime
+
+    if (isExamStarted) {
+      router.replace(getAnswerPath(exam.value.id))
+    } else {
+      // 考试未开始，进入等待状态
+      verifyStatus.value = 'waiting'
+      startWaitCountdown()
+    }
   } catch {
     // 取消
+  }
+}
+
+// 等待考试开始的倒计时
+const startWaitCountdown = () => {
+  updateWaitCountdown()
+  waitCountdownTimer.value = setInterval(() => {
+    updateWaitCountdown()
+  }, 1000)
+}
+
+const updateWaitCountdown = () => {
+  if (!exam.value) return
+  const startTime = new Date(exam.value.startTime).getTime()
+  const diff = startTime - Date.now()
+
+  if (diff <= 0) {
+    // 考试已开始，自动跳转
+    stopWaitCountdown()
+    verifyStatus.value = 'success'
+    showToast('考试已开始，正在进入...')
+    setTimeout(() => {
+      router.replace(getAnswerPath(exam.value.id))
+    }, 1000)
+    return
+  }
+
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+  if (hours > 0) {
+    waitCountdownText.value = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  } else {
+    waitCountdownText.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+}
+
+const stopWaitCountdown = () => {
+  if (waitCountdownTimer.value) {
+    clearInterval(waitCountdownTimer.value)
+    waitCountdownTimer.value = null
   }
 }
 
@@ -204,6 +316,10 @@ const handleBack = async () => {
 
 onMounted(() => {
   loadExamInfo()
+})
+
+onUnmounted(() => {
+  stopWaitCountdown()
 })
 </script>
 
@@ -419,6 +535,57 @@ onMounted(() => {
 }
 
 .skip-btn {
+  color: #86909C;
+}
+
+/* 等待考试开始状态 */
+.status-icon-wrapper.waiting {
+  background: linear-gradient(135deg, #00B96B 0%, #52C41A 100%);
+  color: white;
+}
+
+.waiting-countdown-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 20px 32px;
+  background: #F7F8FA;
+  border-radius: 16px;
+}
+
+.waiting-label {
+  font-size: 13px;
+  color: #86909C;
+}
+
+.waiting-time {
+  font-size: 40px;
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'SF Mono', 'Menlo', monospace;
+  color: #00B96B;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.waiting-tips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #86909C;
+  margin-top: 8px;
+}
+
+.waiting-tips .van-icon {
+  font-size: 15px;
+  color: #3491FA;
+}
+
+.back-btn {
+  margin-top: 24px;
+  width: 140px;
   color: #86909C;
 }
 </style>

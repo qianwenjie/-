@@ -1,99 +1,116 @@
 <template>
   <div class="cloze-question">
-    <!-- 答题面板 -->
-    <div class="answer-panel" :style="{ height: panelHeight + 'vh' }">
-      <!-- 拖拽手柄 -->
+    <!-- 全屏答题面板 -->
+    <van-popup
+      v-model:show="panelVisible"
+      position="right"
+      :style="{ width: '90%', height: '100vh' }"
+      :lock-scroll="true"
+      :close-on-click-overlay="true"
+    >
       <div
-        class="drag-handle"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
+        class="panel-wrapper"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
       >
-        <div class="handle-bar"></div>
-      </div>
-
-      <!-- 面板头部 -->
-      <div class="panel-header">
-        <div class="header-title">
-          <span class="blank-indicator">第 {{ currentBlankIndex + 1 }} 空</span>
-          <span class="blank-total">共 {{ question.blanks.length }} 空</span>
+        <!-- 左侧突出页签：查看题目 -->
+        <div class="panel-tab" @click="panelVisible = false">
+          <van-icon name="arrow" />
+          <span>查</span>
+          <span>看</span>
+          <span>题</span>
+          <span>目</span>
         </div>
-        <div class="header-progress">
+
+        <!-- 顶部栏 -->
+        <div class="panel-top">
+          <div class="top-title">
+            <span class="blank-indicator">第 {{ currentBlankIndex + 1 }} 空</span>
+            <span class="blank-total">共 {{ question.blanks.length }} 空</span>
+          </div>
+          <div class="top-progress">
+            <div
+              v-for="(blank, index) in question.blanks"
+              :key="blank.id"
+              class="progress-dot"
+              :class="{
+                'dot-current': index === currentBlankIndex,
+                'dot-answered': value[blank.id]
+              }"
+              @click="currentBlankIndex = index"
+            ></div>
+          </div>
+        </div>
+
+        <!-- 选项区域 -->
+        <div class="panel-content">
           <div
             v-for="(blank, index) in question.blanks"
             :key="blank.id"
-            class="progress-dot"
-            :class="{
-              'dot-current': index === currentBlankIndex,
-              'dot-answered': value[blank.id]
-            }"
-            @click="currentBlankIndex = index"
-          ></div>
-        </div>
-      </div>
-
-      <!-- 选项区域 -->
-      <div class="panel-content">
-        <div
-          v-for="(blank, index) in question.blanks"
-          :key="blank.id"
-          class="blank-options"
-          v-show="currentBlankIndex === index"
-        >
-          <div
-            v-for="option in blank.options"
-            :key="option.label"
-            class="option-item"
-            :class="{ 'option-selected': isSelected(blank.id, option.label) }"
-            @click="selectOption(blank.id, option.label)"
+            class="blank-options"
+            v-show="currentBlankIndex === index"
           >
-            <div class="option-badge">{{ option.label }}</div>
-            <div class="option-text">{{ option.text }}</div>
-            <div class="option-check" v-if="isSelected(blank.id, option.label)">
-              <van-icon name="success" />
+            <div
+              v-for="option in blank.options"
+              :key="option.label"
+              class="option-item"
+              :class="{ 'option-selected': isSelected(blank.id, option.label) }"
+              @click="selectOption(blank.id, option.label)"
+            >
+              <div class="option-badge">{{ option.label }}</div>
+              <div class="option-text">{{ option.text }}</div>
+            </div>
+
+            <!-- 清除按钮 -->
+            <div v-if="value[blank.id]" class="clear-action">
+              <van-button
+                size="small"
+                plain
+                round
+                icon="delete-o"
+                @click="clearAnswer(blank.id)"
+              >
+                清除本空答案
+              </van-button>
             </div>
           </div>
+        </div>
 
-          <!-- 清除按钮 -->
-          <div v-if="value[blank.id]" class="clear-action">
-            <van-button
-              size="small"
-              plain
-              round
-              icon="delete-o"
-              @click="clearAnswer(blank.id)"
-            >
-              清除本空答案
-            </van-button>
+        <!-- 底部导航 -->
+        <div class="panel-nav">
+          <van-button
+            class="nav-btn"
+            :disabled="currentBlankIndex === 0"
+            @click="prevBlank"
+          >
+            <van-icon name="arrow-left" />
+            上一空
+          </van-button>
+
+          <div class="nav-indicator">
+            {{ currentBlankIndex + 1 }} / {{ question.blanks.length }}
           </div>
+
+          <van-button
+            v-if="currentBlankIndex < question.blanks.length - 1"
+            class="nav-btn nav-btn-primary"
+            @click="nextBlank"
+          >
+            下一空
+            <van-icon name="arrow" />
+          </van-button>
+          <van-button
+            v-else
+            class="nav-btn nav-btn-done"
+            @click="panelVisible = false"
+          >
+            完成作答
+            <van-icon name="success" />
+          </van-button>
         </div>
       </div>
-
-      <!-- 导航栏 -->
-      <div class="panel-nav">
-        <van-button
-          class="nav-btn"
-          :disabled="currentBlankIndex === 0"
-          @click="prevBlank"
-        >
-          <van-icon name="arrow-left" />
-          上一空
-        </van-button>
-
-        <div class="nav-indicator">
-          {{ currentBlankIndex + 1 }} / {{ question.blanks.length }}
-        </div>
-
-        <van-button
-          class="nav-btn nav-btn-primary"
-          :disabled="currentBlankIndex === question.blanks.length - 1"
-          @click="nextBlank"
-        >
-          下一空
-          <van-icon name="arrow" />
-        </van-button>
-      </div>
-    </div>
+    </van-popup>
   </div>
 </template>
 
@@ -111,43 +128,42 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:value', 'complete'])
+const emit = defineEmits(['update:value'])
+
+// 面板显示状态
+const panelVisible = ref(false)
 
 // 当前空位索引
 const currentBlankIndex = ref(0)
 
-// 面板高度（默认55vh）
-const panelHeight = ref(55)
+// 右滑收起手势
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const isSwiping = ref(false)
 
-// 拖动相关
-let startY = 0
-let startHeight = 0
-let isDragging = false
-
-const handleTouchStart = (e) => {
-  isDragging = true
-  startY = e.touches[0].clientY
-  startHeight = panelHeight.value
-  e.preventDefault()
+const onTouchStart = (e) => {
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
+  isSwiping.value = false
 }
 
-const handleTouchMove = (e) => {
-  if (!isDragging) return
-  e.preventDefault()
-
-  const currentY = e.touches[0].clientY
-  const deltaY = startY - currentY
-  const deltaVh = (deltaY / window.innerHeight) * 100
-  const newHeight = startHeight + deltaVh
-
-  if (newHeight >= 35 && newHeight <= 85) {
-    panelHeight.value = newHeight
+const onTouchMove = (e) => {
+  const deltaX = e.touches[0].clientX - touchStartX.value
+  const deltaY = Math.abs(e.touches[0].clientY - touchStartY.value)
+  // 水平滑动距离大于垂直滑动，判定为横向手势
+  if (deltaX > 20 && deltaX > deltaY) {
+    isSwiping.value = true
   }
 }
 
-const handleTouchEnd = (e) => {
-  isDragging = false
-  e.preventDefault()
+const onTouchEnd = (e) => {
+  if (!isSwiping.value) return
+  const deltaX = e.changedTouches[0].clientX - touchStartX.value
+  // 右滑超过 80px 收起面板
+  if (deltaX > 80) {
+    panelVisible.value = false
+  }
+  isSwiping.value = false
 }
 
 const isSelected = (blankId, label) => {
@@ -176,72 +192,89 @@ const nextBlank = () => {
     currentBlankIndex.value++
   }
 }
+
+// 暴露给父组件的方法
+const showPanel = () => {
+  panelVisible.value = true
+}
+
+const openAtBlank = (index) => {
+  currentBlankIndex.value = index
+  panelVisible.value = true
+}
+
+defineExpose({ showPanel, openAtBlank })
 </script>
 
 <style scoped>
 .cloze-question {
   position: relative;
-  min-height: 400px;
 }
 
-/* 答题面板 */
-.answer-panel {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 64px;
-  background: #FFFFFF;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+/* 覆盖 van-popup 溢出裁切，让页签可以突出 */
+.cloze-question :deep(.van-popup) {
+  overflow: visible !important;
+}
+
+/* 面板容器 */
+.panel-wrapper {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  z-index: 60; /* 高于题目信息栏的 z-index: 50 */
-  will-change: height;
+  background: #FFFFFF;
+  position: relative;
 }
 
-/* 拖拽手柄 */
-.drag-handle {
-  flex-shrink: 0;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: ns-resize;
-  touch-action: none;
-  user-select: none;
-}
-
-.handle-bar {
+/* 左侧突出页签 */
+.panel-tab {
+  position: absolute;
+  left: -36px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 36px;
-  height: 4px;
-  background: #E5E6EB;
-  border-radius: 2px;
-  transition: background 0.2s ease;
-}
-
-.drag-handle:active .handle-bar {
-  background: #00B96B;
-  width: 48px;
-}
-
-/* 面板头部 */
-.panel-header {
-  flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 20px 16px;
+  gap: 2px;
+  padding: 12px 6px;
+  background: #FFFFFF;
+  border-radius: 10px 0 0 10px;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  z-index: 10;
+  font-size: 13px;
+  font-weight: 600;
+  color: #86909C;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.panel-tab:active {
+  background: #E8F5EE;
+  color: #00B96B;
+}
+
+.panel-tab .van-icon {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* 顶部栏 */
+.panel-top {
+  flex-shrink: 0;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid #F0F1F2;
 }
 
-.header-title {
+.top-title {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  margin-bottom: 14px;
 }
 
 .blank-indicator {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #00B96B;
 }
@@ -252,7 +285,7 @@ const nextBlank = () => {
 }
 
 /* 进度点 */
-.header-progress {
+.top-progress {
   display: flex;
   gap: 6px;
 }
@@ -280,11 +313,11 @@ const nextBlank = () => {
   background: #00B96B;
 }
 
-/* 面板内容 */
+/* 选项区域 */
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 20px;
 }
 
 .blank-options {
@@ -293,46 +326,44 @@ const nextBlank = () => {
   gap: 12px;
 }
 
-/* 选项卡片 */
+/* 选项卡片 — 与 SingleChoice 统一风格 */
 .option-item {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
-  background: #F9FAFB;
-  border: 2px solid #E5E6EB;
-  border-radius: 12px;
+  padding: 12px 14px;
+  background: #F7F8FA;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   gap: 12px;
 }
 
 .option-item:active {
   transform: scale(0.98);
+  background: #F0F1F3;
 }
 
 .option-selected {
-  background: linear-gradient(135deg, #FFFBE6 0%, #FFF9E6 100%);
-  border-color: #F7BA1E;
-  box-shadow: 0 4px 12px rgba(247, 186, 30, 0.15);
+  background: #E8F8F0;
 }
 
 .option-badge {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   background: #E5E6EB;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: #4E5969;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .option-selected .option-badge {
-  background: #F7BA1E;
+  background: #00B96B;
   color: #FFFFFF;
 }
 
@@ -343,31 +374,15 @@ const nextBlank = () => {
   color: #1D2129;
 }
 
-.option-selected .option-text {
-  font-weight: 500;
-}
-
 .option-check {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #F7BA1E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: checkPop 0.3s ease;
+  color: #00B96B;
+  font-size: 18px;
 }
 
 .option-check .van-icon {
-  color: #FFFFFF;
-  font-size: 12px;
-}
-
-@keyframes checkPop {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  color: #00B96B;
+  font-size: 18px;
 }
 
 /* 清除按钮 */
@@ -382,7 +397,7 @@ const nextBlank = () => {
   border-color: #E5E6EB;
 }
 
-/* 导航栏 */
+/* 底部导航 */
 .panel-nav {
   flex-shrink: 0;
   display: flex;
@@ -417,6 +432,12 @@ const nextBlank = () => {
 }
 
 .nav-btn-primary {
+  background: #00B96B;
+  border-color: #00B96B;
+  color: #FFFFFF;
+}
+
+.nav-btn-done {
   background: #00B96B;
   border-color: #00B96B;
   color: #FFFFFF;

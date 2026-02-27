@@ -7,6 +7,8 @@ export const useExamStore = defineStore('exam', {
     currentExam: null,
     currentPaper: null,
     loading: false,
+    // 已通过人脸验证的考试ID集合
+    faceVerifiedExams: new Set(),
   }),
 
   getters: {
@@ -64,6 +66,16 @@ export const useExamStore = defineStore('exam', {
     clearCurrentExam() {
       this.currentExam = null
       this.currentPaper = null
+    },
+
+    // 标记考试已通过人脸验证
+    setFaceVerified(examId) {
+      this.faceVerifiedExams.add(examId)
+    },
+
+    // 检查考试是否已通过人脸验证
+    isFaceVerified(examId) {
+      return this.faceVerifiedExams.has(examId)
     },
   },
 })

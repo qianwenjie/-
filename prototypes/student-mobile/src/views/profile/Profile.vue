@@ -1,10 +1,5 @@
 <template>
   <div class="profile-page">
-    <!-- 顶部标题 -->
-    <div class="header-section">
-      <div class="page-title">我的</div>
-    </div>
-
     <!-- 用户信息卡片 -->
     <div class="user-card">
       <div class="user-avatar">
@@ -17,29 +12,28 @@
       </div>
       <div class="user-info">
         <div class="user-name">{{ userStore.userInfo?.name || '未登录' }}</div>
-        <div class="user-meta">
-          <span class="user-id">学号: {{ userStore.userInfo?.studentId || '-' }}</span>
-          <span class="user-class">{{ userStore.userInfo?.className || '' }}</span>
+        <div class="user-meta-row">
+          <span class="meta-item">
+            <van-icon name="contact-o" />
+            {{ userStore.userInfo?.username || '—' }}
+          </span>
+          <span class="meta-item">
+            <van-icon name="phone-o" />
+            {{ userStore.userInfo?.phone || '未绑定' }}
+          </span>
         </div>
       </div>
-      <van-icon name="arrow" class="arrow-icon" />
     </div>
 
     <!-- 功能列表 -->
     <van-cell-group :border="false" class="menu-group">
-      <van-cell title="我的考试" icon="notes-o" is-link to="/exam/list" />
-      <van-cell title="刷题记录" icon="edit" is-link to="/practice/list" />
-      <van-cell title="错题本" icon="warning-o" is-link />
-      <van-cell title="成绩统计" icon="chart-trending-o" is-link />
+      <van-cell title="错题本" icon="warning-o" is-link to="/practice/wrong-book" />
+      <van-cell title="错题收藏" icon="star-o" is-link to="/practice/favorites" />
+      <van-cell title="刷题统计" icon="chart-trending-o" is-link to="/practice/stats" />
+      <van-cell title="成绩统计" icon="bar-chart-o" is-link to="/exam/score-stats" />
     </van-cell-group>
 
     <van-cell-group :border="false" class="menu-group">
-      <van-cell title="个人信息" icon="manager-o" is-link />
-      <van-cell title="设置" icon="setting-o" is-link />
-    </van-cell-group>
-
-    <van-cell-group :border="false" class="menu-group">
-      <van-cell title="关于" icon="info-o" is-link />
       <van-cell title="退出登录" icon="logout" is-link @click="handleLogout" />
     </van-cell-group>
   </div>
@@ -76,18 +70,6 @@ const handleLogout = () => {
   padding-bottom: 60px;
 }
 
-/* 顶部区域 */
-.header-section {
-  background: #FFFFFF;
-  padding: 16px;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1D2129;
-}
-
 .user-card {
   margin: 12px;
   padding: 20px;
@@ -116,31 +98,26 @@ const handleLogout = () => {
 .user-name {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.user-meta {
+.user-meta-row {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.user-id {
-  font-size: 13px;
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
   opacity: 0.9;
 }
 
-.user-class {
-  font-size: 12px;
-  opacity: 0.8;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.arrow-icon {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 16px;
+.meta-item .van-icon {
+  font-size: 13px;
 }
 
 .menu-group {

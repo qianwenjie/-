@@ -52,9 +52,9 @@
           <div v-else class="question-text" v-html="currentQuestion?.content"></div>
         </div>
 
-        <!-- 已答回显区域（与 PracticeAnswer 完全一致） -->
+        <!-- 已答回显区域（只显示用户选择，不显示正确答案） -->
         <div v-if="!isClozeOrComposite" class="answer-area answered-review">
-          <!-- 单选/多选：选项带对错标记 -->
+          <!-- 单选/多选：选项带对错标记，不显示正确答案 -->
           <div v-if="currentQuestion?.type === 'single' || currentQuestion?.type === 'multiple'" class="review-options">
             <div
               v-for="opt in currentQuestion.options"
@@ -64,23 +64,19 @@
             >
               <span class="review-opt-label">{{ opt.label }}</span>
               <span class="review-opt-text">{{ opt.text }}</span>
-              <span v-if="isUserSelected(opt.label) && isCorrectOption(opt.label)" class="review-opt-mark correct">✓</span>
-              <span v-if="isUserSelected(opt.label) && !isCorrectOption(opt.label)" class="review-opt-mark wrong">✗</span>
-              <span v-if="!isUserSelected(opt.label) && isCorrectOption(opt.label)" class="review-opt-mark correct">✓</span>
+              <span v-if="isUserSelected(opt.label)" class="review-opt-mark" :class="isCorrectOption(opt.label) ? 'correct' : 'wrong'">
+                {{ isCorrectOption(opt.label) ? '✓' : '✗' }}
+              </span>
             </div>
           </div>
-          <!-- 判断题：显示用户选择和正确答案 -->
+          <!-- 判断题：只显示用户选择，不显示正确答案 -->
           <div v-else-if="currentQuestion?.type === 'judge'" class="review-judge">
             <div class="review-judge-row">
               <span class="review-judge-label">你的答案：</span>
               <span class="text-wrong">{{ formatJudgeAnswer(userAnswer) }}</span>
             </div>
-            <div class="review-judge-row">
-              <span class="review-judge-label">正确答案：</span>
-              <span class="text-correct">{{ formatJudgeAnswer(currentQuestion.correctAnswer) }}</span>
-            </div>
           </div>
-          <!-- 填空题：显示逐空对比 -->
+          <!-- 填空题：只显示用户填写内容，不显示正确答案 -->
           <div v-else-if="currentQuestion?.type === 'blank'" class="review-blank">
             <div v-for="(item, idx) in getBlankReviewDetails()" :key="idx" class="review-blank-row">
               <span class="review-blank-index">第{{ idx + 1 }}空：</span>
@@ -88,19 +84,12 @@
               <span v-if="item.isCorrect" class="review-blank-mark correct">✓</span>
               <span v-else class="review-blank-mark wrong">✗</span>
             </div>
-            <div class="review-correct-hint">
-              正确答案：{{ formatArrayAnswer(currentQuestion.correctAnswer) }}
-            </div>
           </div>
-          <!-- 简答题：显示用户作答和参考答案 -->
+          <!-- 简答题：只显示用户作答，不显示参考答案 -->
           <div v-else-if="currentQuestion?.type === 'essay'" class="review-essay">
             <div class="review-essay-block">
               <div class="review-essay-label label-student">我的作答</div>
               <div class="review-essay-content student">{{ getEssayUserText() || '未作答' }}</div>
-            </div>
-            <div class="review-essay-block">
-              <div class="review-essay-label label-reference">参考答案</div>
-              <div class="review-essay-content reference">{{ currentQuestion.correctAnswer || '--' }}</div>
             </div>
           </div>
         </div>
@@ -245,13 +234,11 @@ const isCorrectOption = (label) => {
   return Array.isArray(correct) ? correct.includes(label) : correct === label
 }
 
-// 选项回显样式（与 PracticeAnswer 一致）
+// 选项回显样式：错题回顾页面，整体答错，用户选择的选项显示红色
 const getReviewOptionClass = (label) => {
   const selected = isUserSelected(label)
-  const correct = isCorrectOption(label)
-  if (selected && correct) return 'review-opt-correct'
-  if (selected && !correct) return 'review-opt-wrong'
-  if (!selected && correct) return 'review-opt-correct'
+  // 错题回顾：错题整体都是错的，用户选择的选项都显示红色
+  if (selected) return 'review-opt-wrong'
   return ''
 }
 

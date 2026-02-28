@@ -11,7 +11,7 @@
               {{ blankResults[blank.id] ? '✓ 正确' : '✗ 错误' }}
             </span>
           </div>
-          <!-- 选项列表 -->
+          <!-- 选项列表（不显示正确答案） -->
           <div class="cloze-options">
             <div
               v-for="opt in blank.options"
@@ -21,17 +21,15 @@
             >
               <span class="opt-label">{{ opt.label }}</span>
               <span class="opt-text">{{ opt.text }}</span>
-              <!-- 选对：✓ -->
-              <span v-if="opt.label === userAnswer[blank.id] && blankResults[blank.id]" class="opt-mark correct">✓</span>
-              <!-- 选错：✗ -->
-              <span v-if="opt.label === userAnswer[blank.id] && !blankResults[blank.id]" class="opt-mark wrong">✗</span>
-              <!-- 未选但是正确答案：标记 -->
-              <span v-if="opt.label !== userAnswer[blank.id] && opt.label === correctAnswer[blank.id] && !blankResults[blank.id]" class="opt-mark correct">✓</span>
+              <!-- 只显示用户选择的标记 -->
+              <span v-if="opt.label === userAnswer[blank.id]" class="opt-mark" :class="blankResults[blank.id] ? 'correct' : 'wrong'">
+                {{ blankResults[blank.id] ? '✓' : '✗' }}
+              </span>
             </div>
-            <!-- 错误时显示正确答案提示 -->
-            <div v-if="!blankResults[blank.id]" class="correct-answer-hint">
-              正确答案：{{ correctAnswer[blank.id] }}
-            </div>
+          </div>
+          <!-- 错误时在头部下方显示正确答案 -->
+          <div v-if="!blankResults[blank.id]" class="correct-answer-hint">
+            正确答案：{{ correctAnswer[blank.id] }}
           </div>
         </div>
       </div>
@@ -77,15 +75,13 @@ const allCorrect = computed(() => {
   return Object.values(blankResults.value).every(v => v)
 })
 
-// 选项样式：选中且正确→绿色，选中且错误→红色，未选中的正确答案→绿色
+// 选项样式：只标记用户选择的选项，不标记正确答案
 const getOptClass = (blank, label) => {
   const isSelected = label === props.userAnswer[blank.id]
-  const isCorrectAnswer = label === props.correctAnswer[blank.id]
   const isBlankCorrect = blankResults.value[blank.id]
 
   if (isSelected && isBlankCorrect) return 'opt-correct-selected'
   if (isSelected && !isBlankCorrect) return 'opt-wrong-selected'
-  if (!isSelected && isCorrectAnswer && !isBlankCorrect) return 'opt-correct-selected'
   return ''
 }
 </script>

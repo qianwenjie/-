@@ -89,8 +89,8 @@
             <span class="result-text">{{ isCorrect ? '回答正确！' : '回答错误' }}</span>
           </div>
 
-          <!-- 正确答案 -->
-          <div class="answer-card">
+          <!-- 正确答案（仅错误时显示） -->
+          <div v-if="!isCorrect" class="answer-card">
             <div class="answer-title">正确答案</div>
             <div class="answer-content">{{ formatCorrectAnswer }}</div>
           </div>

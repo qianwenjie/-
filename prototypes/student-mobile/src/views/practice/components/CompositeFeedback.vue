@@ -20,7 +20,7 @@
           <!-- 子题题干 -->
           <div class="composite-sub-stem">{{ sq.content }}</div>
 
-          <!-- 子题：选择题（单选/多选） -->
+          <!-- 子题：选择题（只显示用户选择，不在选项中显示正确答案） -->
           <div v-if="['single', 'multiple'].includes(sq.type)" class="options-list">
             <div
               v-for="opt in sq.options"
@@ -30,16 +30,16 @@
             >
               <span class="opt-label">{{ opt.label }}</span>
               <span class="opt-text">{{ opt.text }}</span>
-              <span v-if="isSubSelected(sq, opt.label) && subResults[sq.id]" class="opt-mark correct">✓</span>
-              <span v-if="isSubSelected(sq, opt.label) && !subResults[sq.id]" class="opt-mark wrong">✗</span>
-              <span v-if="!isSubSelected(sq, opt.label) && isCorrectOption(sq, opt.label) && !subResults[sq.id]" class="opt-mark correct">✓</span>
+              <span v-if="isSubSelected(sq, opt.label)" class="opt-mark" :class="isCorrectOption(sq, opt.label) ? 'correct' : 'wrong'">
+                {{ isCorrectOption(sq, opt.label) ? '✓' : '✗' }}
+              </span>
             </div>
             <div v-if="!subResults[sq.id]" class="correct-answer-hint">
               正确答案：{{ formatCorrectAnswer(sq.correctAnswer) }}
             </div>
           </div>
 
-          <!-- 子题：判断题 -->
+          <!-- 子题：判断题（只显示用户答案） -->
           <div v-if="sq.type === 'judge'" class="judge-result">
             <div class="judge-row">
               <span class="judge-label">你的答案：</span>
@@ -47,13 +47,12 @@
                 {{ formatJudge(userAnswer[sq.id]) }}
               </span>
             </div>
-            <div v-if="!subResults[sq.id]" class="judge-row">
-              <span class="judge-label">正确答案：</span>
-              <span class="text-correct">{{ formatJudge(sq.correctAnswer) }}</span>
+            <div v-if="!subResults[sq.id]" class="correct-answer-hint">
+              正确答案：{{ formatJudge(sq.correctAnswer) }}
             </div>
           </div>
 
-          <!-- 子题：填空题 -->
+          <!-- 子题：填空题（只显示用户填写内容） -->
           <div v-if="sq.type === 'blank'" class="blank-result">
             <div v-for="(ans, ai) in getBlankAnswers(sq)" :key="ai" class="blank-row">
               <span class="blank-index">第{{ ai + 1 }}空：</span>
@@ -66,15 +65,14 @@
             </div>
           </div>
 
-          <!-- 子题：简答题 -->
+          <!-- 子题：简答题（只显示用户作答，参考答案在准确率下显示） -->
           <div v-if="sq.type === 'essay'" class="essay-result">
             <div class="essay-block">
               <div class="essay-label label-student">我的作答</div>
               <div class="essay-content student">{{ getEssayText(userAnswer[sq.id]) || '未作答' }}</div>
             </div>
-            <div class="essay-block">
-              <div class="essay-label label-reference">参考答案</div>
-              <div class="essay-content reference">{{ sq.correctAnswer || '--' }}</div>
+            <div class="correct-answer-hint">
+              参考答案：{{ sq.correctAnswer || '--' }}
             </div>
           </div>
 
@@ -177,15 +175,14 @@ const isCorrectOption = (sq, label) => {
   return Array.isArray(c) ? c.includes(label) : c === label
 }
 
-// 选项样式
+// 选项样式：只标记用户选择的选项，不在选项中高亮正确答案
 const getSubOptionClass = (sq, label) => {
   const selected = isSubSelected(sq, label)
   const isCorrect = isCorrectOption(sq, label)
   const subCorrect = subResults.value[sq.id]
 
-  if (selected && subCorrect) return 'opt-correct-selected'
-  if (selected && !subCorrect) return 'opt-wrong-selected'
-  if (!selected && isCorrect && !subCorrect) return 'opt-correct-selected'
+  if (selected && isCorrect) return 'opt-correct-selected'
+  if (selected && !isCorrect) return 'opt-wrong-selected'
   return ''
 }
 

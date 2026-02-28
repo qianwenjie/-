@@ -52,9 +52,9 @@
           <div v-else class="question-text" v-html="currentQuestion?.content"></div>
         </div>
 
-        <!-- 已答回显区域（cloze/composite 由各自 Feedback 组件处理，不渲染此区域） -->
+        <!-- 已答回显区域（与 PracticeAnswer 完全一致） -->
         <div v-if="!isClozeOrComposite" class="answer-area answered-review">
-          <!-- 单选/多选 -->
+          <!-- 单选/多选：选项带对错标记 -->
           <div v-if="currentQuestion?.type === 'single' || currentQuestion?.type === 'multiple'" class="review-options">
             <div
               v-for="opt in currentQuestion.options"
@@ -69,8 +69,7 @@
               <span v-if="!isUserSelected(opt.label) && isCorrectOption(opt.label)" class="review-opt-mark correct">✓</span>
             </div>
           </div>
-
-          <!-- 判断题 -->
+          <!-- 判断题：显示用户选择和正确答案 -->
           <div v-else-if="currentQuestion?.type === 'judge'" class="review-judge">
             <div class="review-judge-row">
               <span class="review-judge-label">你的答案：</span>
@@ -81,8 +80,7 @@
               <span class="text-correct">{{ formatJudgeAnswer(currentQuestion.correctAnswer) }}</span>
             </div>
           </div>
-
-          <!-- 填空题 -->
+          <!-- 填空题：显示逐空对比 -->
           <div v-else-if="currentQuestion?.type === 'blank'" class="review-blank">
             <div v-for="(item, idx) in getBlankReviewDetails()" :key="idx" class="review-blank-row">
               <span class="review-blank-index">第{{ idx + 1 }}空：</span>
@@ -94,8 +92,7 @@
               正确答案：{{ formatArrayAnswer(currentQuestion.correctAnswer) }}
             </div>
           </div>
-
-          <!-- 简答题 -->
+          <!-- 简答题：显示用户作答和参考答案 -->
           <div v-else-if="currentQuestion?.type === 'essay'" class="review-essay">
             <div class="review-essay-block">
               <div class="review-essay-label label-student">我的作答</div>
@@ -105,12 +102,22 @@
               <div class="review-essay-label label-reference">参考答案</div>
               <div class="review-essay-content reference">{{ currentQuestion.correctAnswer || '--' }}</div>
             </div>
-            <div v-if="currentQuestion.explanation" class="review-essay-explanation">
-              <div class="review-essay-explanation-title">解析</div>
-              <div class="review-essay-explanation-content">{{ currentQuestion.explanation }}</div>
-            </div>
           </div>
         </div>
+
+        <!-- 其他题型反馈（使用 AnswerFeedback 组件，与刷题页面一致） -->
+        <AnswerFeedback
+          v-if="!isClozeOrComposite"
+          :visible="true"
+          :is-correct="false"
+          :correct-answer="currentQuestion?.correctAnswer"
+          :user-answer="userAnswer"
+          :explanation="currentQuestion?.explanation"
+          :question-type="currentQuestion?.type"
+          :question="currentQuestion"
+          :accuracy="0"
+          :hide-wrong-tip="true"
+        />
 
         <!-- 完形填空反馈 -->
         <ClozeFeedback
@@ -133,15 +140,6 @@
           :essay-accuracies="{}"
           :hide-wrong-tip="true"
         />
-
-        <!-- 解析（非完形填空/复合题/简答题，这三种已在各自区域内处理解析） -->
-        <div
-          v-if="currentQuestion && !isClozeOrComposite && currentQuestion.type !== 'essay' && currentQuestion.explanation"
-          class="explanation-card"
-        >
-          <div class="explanation-title">解析</div>
-          <div class="explanation-content">{{ currentQuestion.explanation }}</div>
-        </div>
       </div>
 
       <!-- 底部操作栏 -->
@@ -178,6 +176,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePracticeStore } from '@/stores'
 import { showToast, showConfirmDialog } from 'vant'
+import AnswerFeedback from './components/AnswerFeedback.vue'
 import ClozeFeedback from './components/ClozeFeedback.vue'
 import CompositeFeedback from './components/CompositeFeedback.vue'
 
@@ -246,14 +245,13 @@ const isCorrectOption = (label) => {
   return Array.isArray(correct) ? correct.includes(label) : correct === label
 }
 
-// 选项回显样式（完全复用 PracticeAnswer 逻辑）
+// 选项回显样式（与 PracticeAnswer 一致）
 const getReviewOptionClass = (label) => {
   const selected = isUserSelected(label)
   const correct = isCorrectOption(label)
-  // 错题回顾：答案一定是错的
-  if (selected && correct) return 'review-opt-correct'   // 选对了（多选部分正确）
-  if (selected && !correct) return 'review-opt-wrong'    // 选错了
-  if (!selected && correct) return 'review-opt-correct'  // 未选但是正确答案
+  if (selected && correct) return 'review-opt-correct'
+  if (selected && !correct) return 'review-opt-wrong'
+  if (!selected && correct) return 'review-opt-correct'
   return ''
 }
 
@@ -454,6 +452,50 @@ onMounted(() => {
   border-top-right-radius: 0;
 }
 
+/* 反馈卡片样式（与 AnswerFeedback 一致） */
+.answer-feedback {
+  --success-color: #00B42A;
+  --error-color: #F53F3F;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0 12px 12px 12px;
+}
+
+.answer-feedback.correct {
+  background: #f0fff4;
+  border: 1px solid var(--success-color);
+}
+
+.answer-feedback.wrong {
+  background: #fff2f0;
+  border: 1px solid var(--error-color);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.result-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.result-text {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.answer-feedback.correct .result-text {
+  color: var(--success-color);
+}
+
+.answer-feedback.wrong .result-text {
+  color: var(--error-color);
+}
+
 /* 选项回显 */
 .review-options {
   display: flex;
@@ -502,6 +544,36 @@ onMounted(() => {
 }
 
 /* 判断题回显 */
+.correct-answer-section {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.answer-row {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.answer-label {
+  color: #86909c;
+  margin-right: 8px;
+}
+
+.answer-value.user-answer {
+  color: #F53F3F;
+  font-weight: 500;
+}
+
+.answer-value.correct-answer {
+  color: #00B96B;
+  font-weight: 500;
+}
+
 .review-judge-row {
   font-size: 14px;
   line-height: 2.2;
@@ -512,6 +584,39 @@ onMounted(() => {
 .text-wrong   { color: #F53F3F; font-weight: 500; }
 
 /* 填空题回显 */
+.blank-feedback-section {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.blank-feedback-row {
+  font-size: 14px;
+  line-height: 2.2;
+}
+
+.blank-feedback-index {
+  color: #86909c;
+}
+
+.blank-feedback-mark {
+  font-weight: 700;
+  margin-left: 6px;
+  color: #00B96B;
+}
+
+.blank-feedback-mark.wrong {
+  color: #F53F3F;
+}
+
+.correct-answer-hint {
+  font-size: 13px;
+  color: #00B96B;
+  font-weight: 500;
+  padding: 4px 0;
+  margin-top: 2px;
+}
+
 .review-blank-row {
   font-size: 14px;
   line-height: 2.2;
@@ -536,6 +641,67 @@ onMounted(() => {
 }
 
 /* 简答题回显 */
+.essay-feedback-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.essay-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.essay-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4e5969;
+  margin-bottom: 6px;
+}
+
+.essay-label.label-student   { color: #1989fa; }
+.essay-label.label-reference { color: #00B96B; }
+
+.essay-content {
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 12px;
+  border-radius: 8px;
+  white-space: pre-line;
+}
+
+.essay-content.student {
+  background: rgba(255, 255, 255, 0.8);
+  color: #4e5969;
+  border: 1px solid #e5e6eb;
+}
+
+.essay-content.reference {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1d2129;
+  border: 1px solid #AFF0B5;
+}
+
+/* 解析区域 */
+.explanation-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.explanation-section .explanation-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #86909c;
+  margin-bottom: 6px;
+}
+
+.explanation-section .explanation-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1d2129;
+}
+
 .review-essay-block { margin-bottom: 10px; }
 .review-essay-block:last-child { margin-bottom: 0; }
 

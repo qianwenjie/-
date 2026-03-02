@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>查看批阅详情 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E8FFF3',
+              100: '#C3F5CD',
+              500: '#00B96B',
+              600: '#009E5A'
+            },
+            success: {
+              50: '#E8FFEA',
+              100: '#C3F5CD',
+              500: '#00B42A',
+              600: '#00A35C'
+            },
+            warning: {
+              50: '#FFF7E8',
+              100: '#FFE7BA',
+              500: '#FF7D00',
+              600: '#F57C00'
+            },
+            error: {
+              50: '#FFECE8',
+              100: '#FFD4CC',
+              500: '#F53F3F',
+              600: '#E53935'
+            },
+            info: {
+              50: '#E8F7FF',
+              100: '#B8E8F5',
+              500: '#14C9C9',
+              600: '#00ACC1'
+            },
+            purple: {
+              50: '#F3E8FF',
+              100: '#E0C5FF',
+              500: '#9333EA',
+              600: '#7E22CE'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .question-card {
+      break-inside: avoid;
+    }
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部导航栏 -->
+  <nav class="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 h-16 no-print">
+    <div class="flex items-center justify-between px-6 h-full">
+      <div class="flex items-center gap-4">
+        <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">批阅详情</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">
+          得分：<span id="totalScore" class="text-2xl font-bold text-primary-600">0</span> / <span id="fullScore">100</span>
+        </div>
+        <button onclick="window.print()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-print mr-2"></i>
+          打印
+        </button>
+        <button onclick="reGrade()" class="px-4 py-2 bg-warning-500 hover:bg-warning-600 text-white rounded-lg transition-colors">
+          <i class="fas fa-redo mr-2"></i>
+          重新批阅
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="pt-16">
+    <div class="max-w-5xl mx-auto p-6">
+      <!-- 批阅信息卡片 -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-lg font-semibold text-gray-900">批阅信息</h2>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 bg-success-100 text-success-700 rounded-full text-sm font-medium">
+              <i class="fas fa-check-circle mr-1"></i>
+              已批阅
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <!-- 考生信息 -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-medium text-gray-500 mb-3">考生信息</h3>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">姓名：</span>
+              <span class="text-sm font-medium text-gray-900" id="studentName">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">学号：</span>
+              <span class="text-sm text-gray-900" id="studentUsername">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">手机号：</span>
+              <span class="text-sm text-gray-900" id="studentPhone">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">提交时间：</span>
+              <span class="text-sm text-gray-900" id="submitTime">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">答题用时：</span>
+              <span class="text-sm text-gray-900" id="duration">-</span>
+            </div>
+          </div>
+
+          <!-- 批阅信息 -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-medium text-gray-500 mb-3">批阅信息</h3>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">批阅人：</span>
+              <span class="text-sm font-medium text-gray-900" id="graderName">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">批阅时间：</span>
+              <span class="text-sm text-gray-900" id="gradeTime">-</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">总分：</span>
+              <span class="text-sm text-gray-900" id="paperFullScore">100</span> 分
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">得分：</span>
+              <span class="text-lg font-bold text-primary-600" id="studentScore">0</span> 分
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-600 w-20">得分率：</span>
+              <span class="text-sm font-medium" id="scoreRate">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 试卷标题 -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h2 class="text-2xl font-bold text-center text-gray-900 mb-2" id="examName">考试名称</h2>
+        <div class="flex items-center justify-center gap-6 text-sm text-gray-600">
+          <span>考试编号：<span id="examCode" class="text-gray-900">-</span></span>
+          <span>题目数：<span id="questionCount" class="text-gray-900">0</span> 题</span>
+        </div>
+      </div>
+
+      <!-- 题目列表 -->
+      <div id="questionsContainer" class="space-y-6">
+        <!-- 题目将通过 JS 动态生成 -->
+      </div>
+
+      <!-- 总结统计 -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">答题统计</h3>
+        <div class="grid grid-cols-4 gap-4" id="statistics">
+          <!-- 统计数据将通过 JS 动态生成 -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 获取参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('examId');
+    const studentId = urlParams.get('studentId');
+
+    // 数据
+    let currentExam = null;
+    let currentStudent = null;
+    let questions = [];
+    let answers = {};
+    let scores = {};
+    let comments = {};
+
+    // 题型配置
+    const questionTypes = {
+      single: { name: '单选题', color: 'info', autoGrade: true },
+      multiple: { name: '多选题', color: 'purple', autoGrade: true },
+      judge: { name: '判断题', color: 'indigo', autoGrade: true },
+      fillBlank: { name: '填空题', color: 'warning', autoGrade: false },
+      shortAnswer: { name: '简答题', color: 'amber', autoGrade: false },
+      cloze: { name: '完形填空', color: 'success', autoGrade: true },
+      composite: { name: '复合题', color: 'error', autoGrade: false }
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadExamData();
+      loadStudentData();
+      loadPaperData();
+      renderQuestions();
+      renderStatistics();
+    });
+
+    // 加载考试数据
+    function loadExamData() {
+      const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+      currentExam = exams.find(e => e.id === examId);
+
+      if (currentExam) {
+        document.getElementById('examName').textContent = currentExam.name;
+        document.getElementById('examCode').textContent = currentExam.code;
+      }
+    }
+
+    // 加载学生数据
+    function loadStudentData() {
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      const examStudents = allStudentsData[examId] || [];
+      currentStudent = examStudents.find(s => s.username === studentId);
+
+      if (currentStudent) {
+        document.getElementById('studentName').textContent = currentStudent.name;
+        document.getElementById('studentUsername').textContent = currentStudent.username;
+        document.getElementById('studentPhone').textContent = currentStudent.phone;
+        document.getElementById('submitTime').textContent = currentStudent.submitTime || '-';
+        document.getElementById('duration').textContent = currentStudent.duration || '-';
+        document.getElementById('graderName').textContent = currentStudent.graderName || '-';
+        document.getElementById('gradeTime').textContent = currentStudent.gradeTime || '-';
+
+        scores = currentStudent.scores || {};
+        comments = currentStudent.comments || {};
+
+        const totalScore = currentStudent.highestScore || 0;
+        document.getElementById('totalScore').textContent = totalScore;
+        document.getElementById('studentScore').textContent = totalScore;
+      }
+    }
+
+    // 加载试卷数据
+    function loadPaperData() {
+      // 这里简化处理，使用与批阅页面相同的模拟数据
+      questions = generateMockQuestions();
+
+      const fullScore = questions.reduce((sum, q) => sum + parseFloat(q.score), 0);
+      document.getElementById('paperFullScore').textContent = fullScore;
+      document.getElementById('fullScore').textContent = fullScore;
+      document.getElementById('questionCount').textContent = questions.length;
+
+      // 计算得分率
+      const totalScore = currentStudent.highestScore || 0;
+      const scoreRate = ((totalScore / fullScore) * 100).toFixed(1);
+      document.getElementById('scoreRate').textContent = scoreRate + '%';
+
+      // 生成学生答案（这里应该从存储中读取，这里简化生成）
+      generateStudentAnswers();
+    }
+
+    // 生成模拟题目（与批阅页面相同）
+    function generateMockQuestions() {
+      const mockQuestions = [];
+
+      for (let i = 1; i <= 10; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'single',
+          number: i,
+          content: `这是第${i}题的题干内容，这是一道单选题。`,
+          options: [
+            { label: 'A', text: '选项A的内容' },
+            { label: 'B', text: '选项B的内容' },
+            { label: 'C', text: '选项C的内容' },
+            { label: 'D', text: '选项D的内容' }
+          ],
+          correctAnswer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+          score: 2
+        });
+      }
+
+      for (let i = 11; i <= 15; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'multiple',
+          number: i,
+          content: `这是第${i}题的题干内容，这是一道多选题。`,
+          options: [
+            { label: 'A', text: '选项A的内容' },
+            { label: 'B', text: '选项B的内容' },
+            { label: 'C', text: '选项C的内容' },
+            { label: 'D', text: '选项D的内容' }
+          ],
+          correctAnswer: ['AB', 'AC', 'AD', 'BC', 'BD', 'CD', 'ABC', 'ABD', 'ACD', 'BCD'][Math.floor(Math.random() * 10)].split(''),
+          score: 4
+        });
+      }
+
+      for (let i = 16; i <= 18; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'fillBlank',
+          number: i,
+          content: `这是第${i}题的题干内容，请在下列空格中填入合适的答案：（1）______；（2）______；（3）______。`,
+          blanks: 3,
+          correctAnswer: ['答案1', '答案2', '答案3'],
+          score: 5
+        });
+      }
+
+      for (let i = 19; i <= 20; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'shortAnswer',
+          number: i,
+          content: `这是第${i}题的题干内容，请简要回答下列问题。`,
+          score: 10
+        });
+      }
+
+      return mockQuestions;
+    }
+
+    // 生成学生答案
+    function generateStudentAnswers() {
+      questions.forEach(q => {
+        if (q.type === 'single') {
+          answers[q.id] = Math.random() > 0.2 ? q.correctAnswer : ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)];
+        } else if (q.type === 'multiple') {
+          if (Math.random() > 0.4) {
+            answers[q.id] = q.correctAnswer;
+          } else {
+            const options = ['A', 'B', 'C', 'D'];
+            const count = Math.floor(Math.random() * 3) + 1;
+            answers[q.id] = [];
+            for (let i = 0; i < count; i++) {
+              const option = options[Math.floor(Math.random() * options.length)];
+              if (!answers[q.id].includes(option)) {
+                answers[q.id].push(option);
+              }
+            }
+          }
+        } else if (q.type === 'fillBlank') {
+          answers[q.id] = [];
+          for (let i = 0; i < q.blanks; i++) {
+            answers[q.id].push(`学生填写的答案${i + 1}`);
+          }
+        } else if (q.type === 'shortAnswer') {
+          answers[q.id] = `这是学生对第${q.number}题的回答内容。学生写了一些文字来回答这个问题，内容可能完整也可能不完整，需要老师进行评分。`;
+        }
+      });
+    }
+
+    // 渲染题目
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+
+      container.innerHTML = questions.map(q => {
+        const type = questionTypes[q.type];
+        const studentAnswer = answers[q.id];
+        const score = scores[q.id] !== undefined ? scores[q.id] : 0;
+        const comment = comments[q.id] || '';
+
+        // 判断答题结果
+        let isCorrect = false;
+        if (type.autoGrade) {
+          if (q.type === 'single') {
+            isCorrect = studentAnswer === q.correctAnswer;
+          } else if (q.type === 'multiple') {
+            isCorrect = JSON.stringify(studentAnswer.sort()) === JSON.stringify(q.correctAnswer.sort());
+          }
+        }
+
+        const isFullScore = score === q.score;
+        const isZeroScore = score === 0;
+
+        return `
+          <div class="bg-white rounded-lg shadow-sm p-6 question-card">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-start gap-3 flex-1">
+                <span class="px-2.5 py-1 rounded text-xs font-medium bg-${type.color}-100 text-${type.color}-700">
+                  ${type.name}
+                </span>
+                <div class="flex-1">
+                  <div class="text-gray-900 font-medium mb-2">
+                    ${q.number}. ${q.content}
+                  </div>
+                  ${renderQuestionOptions(q)}
+                </div>
+              </div>
+              <div class="ml-4">
+                <div class="text-sm text-gray-500 mb-1 text-right">${q.score} 分</div>
+                <div class="px-3 py-1 rounded ${
+                  isFullScore ? 'bg-success-100 text-success-700' :
+                  isZeroScore ? 'bg-error-100 text-error-700' :
+                  'bg-warning-100 text-warning-700'
+                } text-sm font-medium">
+                  ${score} 分
+                </div>
+              </div>
+            </div>
+
+            <!-- 学生答案 -->
+            <div class="mt-4 p-4 ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-blue-50'} rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm font-medium ${isCorrect ? 'text-green-900' : 'text-blue-900'}">学生答案：</div>
+                ${type.autoGrade ? `
+                  <span class="px-2 py-0.5 rounded text-xs font-medium ${
+                    isCorrect ? 'bg-success-500 text-white' : 'bg-error-500 text-white'
+                  }">
+                    <i class="fas fa-${isCorrect ? 'check' : 'times'} mr-1"></i>
+                    ${isCorrect ? '正确' : '错误'}
+                  </span>
+                ` : ''}
+              </div>
+              <div class="text-sm ${isCorrect ? 'text-green-800' : 'text-blue-800'}">
+                ${renderStudentAnswer(q, studentAnswer)}
+              </div>
+            </div>
+
+            <!-- 正确答案（仅客观题显示） -->
+            ${type.autoGrade && !isCorrect ? `
+              <div class="mt-2 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="text-sm font-medium text-green-900 mb-2">正确答案：</div>
+                <div class="text-sm text-green-800">
+                  ${renderCorrectAnswer(q)}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- 评语 -->
+            ${comment ? `
+              <div class="mt-2 p-4 bg-purple-50 rounded-lg">
+                <div class="text-sm font-medium text-purple-900 mb-2">
+                  <i class="fas fa-comment-alt mr-1"></i>
+                  批阅评语：
+                </div>
+                <div class="text-sm text-purple-800">${comment}</div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 渲染题目选项
+    function renderQuestionOptions(q) {
+      if (q.type === 'single' || q.type === 'multiple') {
+        return `
+          <div class="mt-2 space-y-2">
+            ${q.options.map(opt => `
+              <div class="text-sm text-gray-700">
+                <span class="font-medium">${opt.label}.</span> ${opt.text}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    // 渲染学生答案
+    function renderStudentAnswer(q, answer) {
+      if (q.type === 'single') {
+        return answer || '未作答';
+      } else if (q.type === 'multiple') {
+        return Array.isArray(answer) && answer.length > 0 ? answer.join('、') : '未作答';
+      } else if (q.type === 'fillBlank') {
+        if (Array.isArray(answer) && answer.length > 0) {
+          return answer.map((a, i) => `（${i + 1}）${a}`).join('；');
+        }
+        return '未作答';
+      } else if (q.type === 'shortAnswer') {
+        return answer || '未作答';
+      }
+      return '未作答';
+    }
+
+    // 渲染正确答案
+    function renderCorrectAnswer(q) {
+      if (q.type === 'single') {
+        return q.correctAnswer;
+      } else if (q.type === 'multiple') {
+        return Array.isArray(q.correctAnswer) ? q.correctAnswer.join('、') : q.correctAnswer;
+      }
+      return '';
+    }
+
+    // 渲染统计信息
+    function renderStatistics() {
+      const container = document.getElementById('statistics');
+
+      // 统计各题型得分
+      const typeStats = {};
+      questions.forEach(q => {
+        const typeName = questionTypes[q.type].name;
+        if (!typeStats[typeName]) {
+          typeStats[typeName] = { total: 0, scored: 0, count: 0 };
+        }
+        typeStats[typeName].total += q.score;
+        typeStats[typeName].scored += scores[q.id] || 0;
+        typeStats[typeName].count += 1;
+      });
+
+      container.innerHTML = Object.entries(typeStats).map(([typeName, stats]) => {
+        const rate = ((stats.scored / stats.total) * 100).toFixed(1);
+        return `
+          <div class="text-center">
+            <div class="text-sm text-gray-500 mb-2">${typeName}</div>
+            <div class="text-lg font-bold text-gray-900">${stats.scored} / ${stats.total}</div>
+            <div class="text-xs text-gray-500 mt-1">${rate}%（${stats.count}题）</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 重新批阅
+    function reGrade() {
+      if (confirm('确定要重新批阅这份试卷吗？')) {
+        window.location.href = `grade-paper.html?examId=${examId}&studentId=${studentId}`;
+      }
+    }
+  </script>
+</body>
+</html>

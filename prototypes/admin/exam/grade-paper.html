@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批阅试卷 - 考试系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#E8FFF3',
+              100: '#C3F5CD',
+              500: '#00B96B',
+              600: '#009E5A'
+            },
+            success: {
+              50: '#E8FFEA',
+              100: '#C3F5CD',
+              500: '#00B42A',
+              600: '#00A35C'
+            },
+            warning: {
+              50: '#FFF7E8',
+              100: '#FFE7BA',
+              500: '#FF7D00',
+              600: '#F57C00'
+            },
+            error: {
+              50: '#FFECE8',
+              100: '#FFD4CC',
+              500: '#F53F3F',
+              600: '#E53935'
+            },
+            info: {
+              50: '#E8F7FF',
+              100: '#B8E8F5',
+              500: '#14C9C9',
+              600: '#00ACC1'
+            },
+            purple: {
+              50: '#F3E8FF',
+              100: '#E0C5FF',
+              500: '#9333EA',
+              600: '#7E22CE'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .question-card {
+      break-inside: avoid;
+    }
+    .score-input {
+      width: 80px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 顶部导航栏 -->
+  <nav class="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 h-16">
+    <div class="flex items-center justify-between px-6 h-full">
+      <div class="flex items-center gap-4">
+        <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-xl font-semibold text-gray-900">批阅试卷</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-gray-600">
+          总分：<span id="totalScore" class="text-xl font-bold text-primary-600">0</span> / <span id="fullScore">100</span>
+        </div>
+        <button onclick="submitGrading()" class="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors">
+          <i class="fas fa-check mr-2"></i>
+          提交批阅
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="fixed top-16 left-0 right-0 bottom-0 flex">
+    <!-- 左侧：试卷内容 -->
+    <div class="flex-1 overflow-auto p-6">
+      <div class="max-w-4xl mx-auto">
+        <!-- 考生信息 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">考生信息</h2>
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <span>提交时间：<span id="submitTime" class="text-gray-900">-</span></span>
+              <span>答题用时：<span id="duration" class="text-gray-900">-</span></span>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-4">
+            <div>
+              <div class="text-xs text-gray-500 mb-1">姓名</div>
+              <div class="text-sm font-medium text-gray-900" id="studentName">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">学号</div>
+              <div class="text-sm text-gray-900" id="studentUsername">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">手机号</div>
+              <div class="text-sm text-gray-900" id="studentPhone">-</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 mb-1">考试次数</div>
+              <div class="text-sm text-gray-900"><span id="attemptedCount">-</span> / <span id="allowedAttempts">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 试卷标题 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 class="text-2xl font-bold text-center text-gray-900 mb-2" id="examName">考试名称</h2>
+          <div class="flex items-center justify-center gap-6 text-sm text-gray-600">
+            <span>考试编号：<span id="examCode" class="text-gray-900">-</span></span>
+            <span>总分：<span id="paperFullScore" class="text-gray-900">100</span> 分</span>
+            <span>题目数：<span id="questionCount" class="text-gray-900">20</span> 题</span>
+          </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div id="questionsContainer" class="space-y-6">
+          <!-- 题目将通过 JS 动态生成 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：答题卡 -->
+    <div class="w-80 bg-white border-l border-gray-200 flex flex-col">
+      <div class="p-4 border-b border-gray-200">
+        <h3 class="font-semibold text-gray-900">答题卡</h3>
+      </div>
+      <div class="flex-1 overflow-auto p-4">
+        <div id="answerSheet" class="space-y-3">
+          <!-- 答题卡将通过 JS 动态生成 -->
+        </div>
+      </div>
+      <div class="p-4 border-t border-gray-200 bg-gray-50">
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">已批阅：</span>
+            <span class="font-semibold text-success-600"><span id="gradedCount">0</span> 题</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">未批阅：</span>
+            <span class="font-semibold text-warning-600"><span id="ungradedCount">0</span> 题</span>
+          </div>
+          <div class="flex justify-between pt-2 border-t border-gray-200">
+            <span class="text-gray-600">当前得分：</span>
+            <span class="font-semibold text-primary-600 text-lg"><span id="currentScore">0</span> 分</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 获取参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const examId = urlParams.get('examId');
+    const studentId = urlParams.get('studentId');
+
+    // 数据
+    let currentExam = null;
+    let currentStudent = null;
+    let questions = [];
+    let answers = {}; // 学生答案
+    let scores = {}; // 各题得分
+
+    // 题型配置
+    const questionTypes = {
+      single: { name: '单选题', color: 'info', autoGrade: true },
+      multiple: { name: '多选题', color: 'purple', autoGrade: true },
+      judge: { name: '判断题', color: 'indigo', autoGrade: true },
+      fillBlank: { name: '填空题', color: 'warning', autoGrade: false },
+      shortAnswer: { name: '简答题', color: 'amber', autoGrade: false },
+      cloze: { name: '完形填空', color: 'success', autoGrade: true },
+      composite: { name: '复合题', color: 'error', autoGrade: false }
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadExamData();
+      loadStudentData();
+      loadPaperData();
+      generateStudentAnswers();
+      renderQuestions();
+      renderAnswerSheet();
+      autoGradeObjectiveQuestions();
+    });
+
+    // 加载考试数据
+    function loadExamData() {
+      const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+      currentExam = exams.find(e => e.id === examId);
+
+      if (currentExam) {
+        document.getElementById('examName').textContent = currentExam.name;
+        document.getElementById('examCode').textContent = currentExam.code;
+      }
+    }
+
+    // 加载学生数据
+    function loadStudentData() {
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      const examStudents = allStudentsData[examId] || [];
+      currentStudent = examStudents.find(s => s.username === studentId);
+
+      if (currentStudent) {
+        document.getElementById('studentName').textContent = currentStudent.name;
+        document.getElementById('studentUsername').textContent = currentStudent.username;
+        document.getElementById('studentPhone').textContent = currentStudent.phone;
+        document.getElementById('attemptedCount').textContent = currentStudent.attemptedCount || 1;
+        document.getElementById('allowedAttempts').textContent = currentStudent.allowedAttempts || 1;
+        document.getElementById('submitTime').textContent = currentStudent.submitTime || '-';
+        document.getElementById('duration').textContent = currentStudent.duration || '-';
+      }
+    }
+
+    // 加载试卷数据
+    function loadPaperData() {
+      // 这里简化处理，生成模拟题目
+      questions = generateMockQuestions();
+
+      const fullScore = questions.reduce((sum, q) => sum + parseFloat(q.score), 0);
+      document.getElementById('paperFullScore').textContent = fullScore;
+      document.getElementById('fullScore').textContent = fullScore;
+      document.getElementById('questionCount').textContent = questions.length;
+    }
+
+    // 生成模拟题目
+    function generateMockQuestions() {
+      const mockQuestions = [];
+
+      // 10道单选题，每题2分
+      for (let i = 1; i <= 10; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'single',
+          number: i,
+          content: `这是第${i}题的题干内容，这是一道单选题。`,
+          options: [
+            { label: 'A', text: '选项A的内容' },
+            { label: 'B', text: '选项B的内容' },
+            { label: 'C', text: '选项C的内容' },
+            { label: 'D', text: '选项D的内容' }
+          ],
+          correctAnswer: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+          score: 2
+        });
+      }
+
+      // 5道多选题，每题4分
+      for (let i = 11; i <= 15; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'multiple',
+          number: i,
+          content: `这是第${i}题的题干内容，这是一道多选题。`,
+          options: [
+            { label: 'A', text: '选项A的内容' },
+            { label: 'B', text: '选项B的内容' },
+            { label: 'C', text: '选项C的内容' },
+            { label: 'D', text: '选项D的内容' }
+          ],
+          correctAnswer: ['AB', 'AC', 'AD', 'BC', 'BD', 'CD', 'ABC', 'ABD', 'ACD', 'BCD'][Math.floor(Math.random() * 10)].split(''),
+          score: 4
+        });
+      }
+
+      // 3道填空题，每题5分
+      for (let i = 16; i <= 18; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'fillBlank',
+          number: i,
+          content: `这是第${i}题的题干内容，请在下列空格中填入合适的答案：（1）______；（2）______；（3）______。`,
+          blanks: 3,
+          correctAnswer: ['答案1', '答案2', '答案3'],
+          score: 5
+        });
+      }
+
+      // 2道简答题，每题10分
+      for (let i = 19; i <= 20; i++) {
+        mockQuestions.push({
+          id: `Q${i}`,
+          type: 'shortAnswer',
+          number: i,
+          content: `这是第${i}题的题干内容，请简要回答下列问题。`,
+          score: 10
+        });
+      }
+
+      return mockQuestions;
+    }
+
+    // 生成学生答案
+    function generateStudentAnswers() {
+      questions.forEach(q => {
+        if (q.type === 'single') {
+          // 80% 正确率
+          answers[q.id] = Math.random() > 0.2 ? q.correctAnswer : ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)];
+        } else if (q.type === 'multiple') {
+          // 60% 正确率
+          if (Math.random() > 0.4) {
+            answers[q.id] = q.correctAnswer;
+          } else {
+            const options = ['A', 'B', 'C', 'D'];
+            const count = Math.floor(Math.random() * 3) + 1;
+            answers[q.id] = [];
+            for (let i = 0; i < count; i++) {
+              const option = options[Math.floor(Math.random() * options.length)];
+              if (!answers[q.id].includes(option)) {
+                answers[q.id].push(option);
+              }
+            }
+          }
+        } else if (q.type === 'fillBlank') {
+          answers[q.id] = [];
+          for (let i = 0; i < q.blanks; i++) {
+            answers[q.id].push(`学生填写的答案${i + 1}`);
+          }
+        } else if (q.type === 'shortAnswer') {
+          answers[q.id] = `这是学生对第${q.number}题的回答内容。学生写了一些文字来回答这个问题，内容可能完整也可能不完整，需要老师进行评分。`;
+        }
+      });
+    }
+
+    // 自动批改客观题
+    function autoGradeObjectiveQuestions() {
+      questions.forEach(q => {
+        const type = questionTypes[q.type];
+        if (type && type.autoGrade) {
+          const studentAnswer = answers[q.id];
+          let isCorrect = false;
+
+          if (q.type === 'single') {
+            isCorrect = studentAnswer === q.correctAnswer;
+          } else if (q.type === 'multiple') {
+            isCorrect = JSON.stringify(studentAnswer.sort()) === JSON.stringify(q.correctAnswer.sort());
+          }
+
+          scores[q.id] = isCorrect ? q.score : 0;
+        }
+      });
+
+      updateScoreDisplay();
+    }
+
+    // 渲染题目
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+
+      container.innerHTML = questions.map(q => {
+        const type = questionTypes[q.type];
+        const studentAnswer = answers[q.id];
+        const score = scores[q.id] !== undefined ? scores[q.id] : '';
+
+        return `
+          <div class="bg-white rounded-lg shadow-sm p-6 question-card" id="question-${q.id}">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-start gap-3 flex-1">
+                <span class="px-2.5 py-1 rounded text-xs font-medium bg-${type.color}-100 text-${type.color}-700">
+                  ${type.name}
+                </span>
+                <div class="flex-1">
+                  <div class="text-gray-900 font-medium mb-2">
+                    ${q.number}. ${q.content}
+                  </div>
+                  ${renderQuestionOptions(q)}
+                </div>
+              </div>
+              <div class="text-sm text-gray-500 ml-4 whitespace-nowrap">
+                ${q.score} 分
+              </div>
+            </div>
+
+            <!-- 学生答案 -->
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+              <div class="text-sm font-medium text-blue-900 mb-2">学生答案：</div>
+              <div class="text-sm text-blue-800">
+                ${renderStudentAnswer(q, studentAnswer)}
+              </div>
+            </div>
+
+            <!-- 正确答案（仅客观题显示） -->
+            ${type.autoGrade ? `
+              <div class="mt-2 p-4 bg-green-50 rounded-lg">
+                <div class="text-sm font-medium text-green-900 mb-2">正确答案：</div>
+                <div class="text-sm text-green-800">
+                  ${renderCorrectAnswer(q)}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- 评分区域 -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <label class="text-sm font-medium text-gray-700">得分：</label>
+                  <input type="number"
+                    id="score-${q.id}"
+                    min="0"
+                    max="${q.score}"
+                    step="0.5"
+                    value="${score}"
+                    ${type.autoGrade ? 'readonly' : ''}
+                    onchange="updateQuestionScore('${q.id}', this.value, ${q.score})"
+                    class="score-input px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${type.autoGrade ? 'bg-gray-100' : ''}">
+                  <span class="text-sm text-gray-500">/ ${q.score} 分</span>
+                  ${type.autoGrade ? `
+                    <span class="text-xs px-2 py-1 rounded ${score === q.score ? 'bg-success-100 text-success-700' : 'bg-error-100 text-error-700'}">
+                      ${score === q.score ? '正确' : '错误'}
+                    </span>
+                  ` : ''}
+                </div>
+                ${!type.autoGrade ? `
+                  <textarea id="comment-${q.id}"
+                    placeholder="可选：添加评语或批注"
+                    class="ml-4 flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                    rows="2"></textarea>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 渲染题目选项
+    function renderQuestionOptions(q) {
+      if (q.type === 'single' || q.type === 'multiple') {
+        return `
+          <div class="mt-2 space-y-2">
+            ${q.options.map(opt => `
+              <div class="text-sm text-gray-700">
+                <span class="font-medium">${opt.label}.</span> ${opt.text}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    // 渲染学生答案
+    function renderStudentAnswer(q, answer) {
+      if (q.type === 'single') {
+        return answer || '未作答';
+      } else if (q.type === 'multiple') {
+        return Array.isArray(answer) && answer.length > 0 ? answer.join('、') : '未作答';
+      } else if (q.type === 'fillBlank') {
+        if (Array.isArray(answer) && answer.length > 0) {
+          return answer.map((a, i) => `（${i + 1}）${a}`).join('；');
+        }
+        return '未作答';
+      } else if (q.type === 'shortAnswer') {
+        return answer || '未作答';
+      }
+      return '未作答';
+    }
+
+    // 渲染正确答案
+    function renderCorrectAnswer(q) {
+      if (q.type === 'single') {
+        return q.correctAnswer;
+      } else if (q.type === 'multiple') {
+        return Array.isArray(q.correctAnswer) ? q.correctAnswer.join('、') : q.correctAnswer;
+      }
+      return '';
+    }
+
+    // 渲染答题卡
+    function renderAnswerSheet() {
+      const container = document.getElementById('answerSheet');
+
+      // 按题型分组
+      const grouped = {};
+      questions.forEach(q => {
+        const typeName = questionTypes[q.type].name;
+        if (!grouped[typeName]) {
+          grouped[typeName] = [];
+        }
+        grouped[typeName].push(q);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([typeName, qs]) => `
+        <div class="mb-4">
+          <div class="text-xs font-medium text-gray-500 mb-2">${typeName}</div>
+          <div class="grid grid-cols-5 gap-2">
+            ${qs.map(q => {
+              const hasScore = scores[q.id] !== undefined && scores[q.id] !== '';
+              const isFullScore = hasScore && scores[q.id] === q.score;
+              const isZeroScore = hasScore && scores[q.id] === 0;
+
+              return `
+                <button onclick="scrollToQuestion('${q.id}')"
+                  class="w-10 h-10 rounded text-sm font-medium border transition-colors ${
+                    hasScore
+                      ? (isFullScore ? 'bg-success-500 text-white border-success-500' :
+                         isZeroScore ? 'bg-error-500 text-white border-error-500' :
+                         'bg-warning-500 text-white border-warning-500')
+                      : 'border-gray-300 text-gray-600 hover:border-primary-500 hover:text-primary-600'
+                  }">
+                  ${q.number}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      updateScoreDisplay();
+    }
+
+    // 滚动到指定题目
+    function scrollToQuestion(questionId) {
+      const element = document.getElementById(`question-${questionId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 更新题目得分
+    function updateQuestionScore(questionId, value, maxScore) {
+      const score = parseFloat(value);
+
+      if (isNaN(score) || score < 0 || score > maxScore) {
+        alert(`请输入 0 到 ${maxScore} 之间的分数`);
+        document.getElementById(`score-${questionId}`).value = scores[questionId] || '';
+        return;
+      }
+
+      scores[questionId] = score;
+      updateScoreDisplay();
+      renderAnswerSheet();
+    }
+
+    // 更新分数显示
+    function updateScoreDisplay() {
+      const total = Object.values(scores).reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+      const gradedCount = Object.keys(scores).filter(k => scores[k] !== undefined && scores[k] !== '').length;
+      const ungradedCount = questions.length - gradedCount;
+
+      document.getElementById('totalScore').textContent = total.toFixed(1);
+      document.getElementById('currentScore').textContent = total.toFixed(1);
+      document.getElementById('gradedCount').textContent = gradedCount;
+      document.getElementById('ungradedCount').textContent = ungradedCount;
+    }
+
+    // 提交批阅
+    function submitGrading() {
+      // 检查是否所有题目都已批阅
+      const ungradedQuestions = questions.filter(q =>
+        scores[q.id] === undefined || scores[q.id] === ''
+      );
+
+      if (ungradedQuestions.length > 0) {
+        if (!confirm(`还有 ${ungradedQuestions.length} 道题未批阅，确定要提交吗？`)) {
+          return;
+        }
+      }
+
+      // 计算总分
+      const totalScore = Object.values(scores).reduce((sum, s) => sum + (parseFloat(s) || 0), 0);
+
+      // 收集评语
+      const comments = {};
+      questions.forEach(q => {
+        const commentEl = document.getElementById(`comment-${q.id}`);
+        if (commentEl && commentEl.value.trim()) {
+          comments[q.id] = commentEl.value.trim();
+        }
+      });
+
+      // 更新学生数据
+      const allStudentsData = JSON.parse(localStorage.getItem('examStudents') || '{}');
+      const examStudents = allStudentsData[examId] || [];
+      const studentIndex = examStudents.findIndex(s => s.username === studentId);
+
+      if (studentIndex !== -1) {
+        examStudents[studentIndex].status = 'graded';
+        examStudents[studentIndex].highestScore = totalScore;
+        examStudents[studentIndex].gradeTime = new Date().toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+        examStudents[studentIndex].scores = scores;
+        examStudents[studentIndex].comments = comments;
+
+        allStudentsData[examId] = examStudents;
+        localStorage.setItem('examStudents', JSON.stringify(allStudentsData));
+
+        // 更新考试的已批阅数量
+        const exams = JSON.parse(localStorage.getItem('exams') || '[]');
+        const examIndex = exams.findIndex(e => e.id === examId);
+        if (examIndex !== -1) {
+          const gradedCount = examStudents.filter(s => s.status === 'graded').length;
+          exams[examIndex].gradedCount = gradedCount;
+          localStorage.setItem('exams', JSON.stringify(exams));
+        }
+
+        alert(`批阅完成！\n学生：${currentStudent.name}\n得分：${totalScore.toFixed(1)} 分`);
+
+        // 返回阅卷管理页面
+        window.location.href = `grading.html?examId=${examId}`;
+      } else {
+        alert('保存失败，请重试');
+      }
+    }
+  </script>
+</body>
+</html>

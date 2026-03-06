@@ -17,6 +17,7 @@
           <van-icon name="clock-o" size="14" />
           <span>{{ formatDate(task.startTime) }} ~ {{ formatDate(task.endTime) }}</span>
         </div>
+        <div v-if="task.description" class="task-desc">{{ task.description }}</div>
       </div>
 
       <!-- 抽题模式 -->
@@ -281,6 +282,13 @@ onMounted(() => {
   gap: 4px;
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+.task-desc {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .mode-card {

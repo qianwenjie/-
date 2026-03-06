@@ -431,35 +431,24 @@ const handleAnswerChange = (val) => {
     return
   }
 
-  // 多选题/填空题/简答题：先暂存，等确认按钮
-  if (currentQuestion.value.type === 'multiple' || currentQuestion.value.type === 'blank' || currentQuestion.value.type === 'essay') {
-    store.answers[currentQuestion.value.id] = val
-    return
-  }
-
-  // 单选/判断：直接判定
-  const isCorrect = checkAnswer(val, currentQuestion.value)
+  // 所有题型：先暂存，等确认按钮
   store.answers[currentQuestion.value.id] = val
-  store.submitAnswer(currentQuestion.value.id, val, isCorrect)
-  if (isWrongRedoMode.value) store.recordRedoAttempt(currentQuestion.value.id)
 }
 
-// 是否需要确认按钮（多选/填空/简答，未答且有答案）
+// 是否需要确认按钮（未答且有答案的所有题型）
 const needConfirmBtn = computed(() => {
   if (!currentQuestion.value || isAnswered.value) return false
   const type = currentQuestion.value.type
-  if (type !== 'multiple' && type !== 'blank' && type !== 'essay') return false
+  if (type === 'cloze' || type === 'composite') return false
   const ans = currentAnswer.value
-  // 多选题：数组格式
+  if (type === 'single' || type === 'judge') return ans !== null && ans !== undefined && ans !== ''
   if (type === 'multiple') return Array.isArray(ans) && ans.length > 0
-  // 填空题：对象格式 { blankId: value }，至少有一个空填了内容
   if (type === 'blank') {
     if (ans && typeof ans === 'object' && !Array.isArray(ans)) {
       return Object.values(ans).some(v => v && String(v).trim())
     }
     return Array.isArray(ans) && ans.length > 0
   }
-  // 简答题：有文本内容
   if (type === 'essay') {
     if (typeof ans === 'string') return ans.trim().length > 0
     if (ans && typeof ans === 'object') return (ans.text && ans.text.trim().length > 0) || (ans.attachments && ans.attachments.length > 0)
@@ -468,7 +457,7 @@ const needConfirmBtn = computed(() => {
   return false
 })
 
-// 多选/填空/简答确认提交
+// 确认提交答案（所有题型统一走此处）
 const confirmAnswer = () => {
   const val = currentAnswer.value
   const q = currentQuestion.value

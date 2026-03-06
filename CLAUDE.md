@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 当前状态
 - **阶段**: 原型开发中
-- **版本**: v0.6.3
+- **版本**: v0.6.4
 - **进度**: 题库模块 98% 完成，AI助手模块 100% 完成，学生手机端原型 100% 完成
 - **核心文档**: `考试系统功能清单.md`、`prototypes/IMPLEMENTATION_STATUS.md`
 
